@@ -5,12 +5,13 @@ import { setCachedToken } from "./redis-fn";
 
 const client = new Twilio(config.TWILIO_ACCOUNT_SID, config.TWILIO_AUTH_TOKEN);
 
+// would me making a queue for sending SMS in production
 export const sendSMS = async (otp: string, phone: string) => {
   try {
     await client.messages.create({
       body: `Your verification code is ${otp}`,
-      from: config.TWILIO_PHONE_NUMBER, // Use config instead of process.env
-      to: phone, // Remove .toString() since phone is already a string
+      from: config.TWILIO_PHONE_NUMBER,
+      to: phone,
     });
     console.log(`SMS sent successfully to ${phone}`);
   } catch (error) {
@@ -33,7 +34,7 @@ export const createToken = (
       expiresIn: expiresIn,
     });
 
-    // Store the token in Redis (async operation, but we don't await to avoid blocking)
+    // Store the token in Redis
     setCachedToken(token, userId).catch((error) => {
       console.error("Failed to cache token:", error);
       // Don't throw here as token creation succeeded

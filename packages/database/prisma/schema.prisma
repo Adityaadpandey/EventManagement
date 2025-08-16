@@ -23,8 +23,9 @@ model User {
     isActive Boolean @default(true)
     avatar   String?
 
-    phoneVerified Boolean @default(false)
-    emailVerified Boolean @default(false)
+    phoneVerified   Boolean @default(false)
+    emailVerified   Boolean @default(false)
+    profileComplete Boolean @default(false)
 
     role Role @default(USER) // USER, LISTER, ADMIN
 

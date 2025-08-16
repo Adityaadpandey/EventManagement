@@ -12,6 +12,7 @@ import { limiter } from "./middlewares/rate-limit.middleware";
 import { reqMiddleware } from "./middlewares/req.middleware";
 
 import { authRouter } from "./routes/auth.router";
+import { userRouter } from "./routes/user.router";
 import { setupGracefulShutdown } from "./utils/gracefullShutdown";
 import { healthCheck } from "./utils/healthCheck";
 
@@ -25,7 +26,7 @@ app.use(cors({ origin: config.CORS_ORIGIN || "http://localhost:3000" }));
 app.use(limiter);
 app.use(reqMiddleware);
 
-app.get("/api/v1/auth/health", async (_, res: Response) => {
+app.get("/health", async (_, res: Response) => {
   const status = await healthCheck();
   const allHealthy = Object.values(status).every(Boolean);
 
@@ -37,6 +38,9 @@ app.get("/api/v1/auth/health", async (_, res: Response) => {
 
 // auth routes
 app.use("/api/v1/auth", authRouter);
+
+// user routes
+app.use("/api/v1/user", userRouter);
 
 app.use((req: Request, res: Response) => {
   logger.warn(`Resource not found: ${req.method} ${req.url}`);

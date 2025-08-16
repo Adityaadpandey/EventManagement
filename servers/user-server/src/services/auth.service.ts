@@ -1,4 +1,5 @@
 import { prisma } from "../config/db";
+import logger from "../config/logger";
 import { redis } from "../config/redis";
 import { createToken, sendSMS } from "../lib";
 
@@ -29,7 +30,7 @@ class AuthService {
         throw new Error("Failed to send OTP via SMS");
       }
     } catch (error) {
-      console.error("Error in requestOtp:", error);
+      logger.error("Error in requestOtp:", error);
       throw error;
     }
   }
@@ -77,14 +78,24 @@ class AuthService {
       const token = createToken(user.userId);
 
       // Safely destructure with defaults
-      const { userId = user.userId, name = null, role = "user" } = user;
 
       return {
         token,
-        user: { userId, phone, name, role },
+        user: {
+          userId: user.userId,
+          name: user.name || null,
+          phone: user.phone,
+          role: user.role,
+          profileComplete: user.profileComplete || false,
+          email: user.email || null,
+          avatar: user.avatar || null,
+          phoneVerified: user.phoneVerified || false,
+          emailVerified: user.emailVerified || false,
+          isActive: user.isActive !== undefined ? user.isActive : true,
+        },
       };
     } catch (error) {
-      console.error("Error in verifyOtp:", error);
+      logger.error("Error in verifyOtp:", error);
       throw error;
     }
   }

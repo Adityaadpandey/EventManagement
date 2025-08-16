@@ -13,8 +13,12 @@ post {
 body:json {
   {
     "phone":"+919415379379",
-    "otp":"615903"
+    "otp":"631152"
   }
+}
+
+script:post-response {
+  bru.setEnvVar("token",res.body.data.token)
 }
 
 settings {

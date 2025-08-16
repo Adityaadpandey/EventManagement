@@ -1,0 +1,22 @@
+meta {
+  name: patch profile
+  type: http
+  seq: 4
+}
+
+patch {
+  url: http://localhost:7001/api/v1/user/profile
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Aditya",
+    "email":"adityapandeyadp@gmail.com"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
