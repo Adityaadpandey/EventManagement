@@ -2,6 +2,7 @@ import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { redis } from "../config/redis";
 import { createToken, sendSMS } from "../lib";
+import { setCachedUser } from "../lib/redis-fn";
 
 class AuthService {
   async requestOtp(phone: string): Promise<{ message: string }> {
@@ -37,48 +38,110 @@ class AuthService {
 
   async verifyOtp(phone: string, otp: string): Promise<any> {
     try {
-      // Retrieve the OTP from Redis
-      const storedOtp = await redis.get(`otp:${phone}`);
+      // Step 1: Verify OTP and get user in parallel
+      const [storedOtp, existingUser] = await Promise.all([
+        redis.get(`otp:${phone}`),
+        prisma.user.findUnique({
+          where: { phone },
+          select: {
+            userId: true,
+            name: true,
+            phone: true,
+            role: true,
+            profileComplete: true,
+            email: true,
+            avatar: true,
+            phoneVerified: true,
+            emailVerified: true,
+            isActive: true,
+          },
+        }),
+      ]);
+
+      // Step 2: Validate OTP
       if (!storedOtp) {
         throw new Error("OTP not found or expired");
       }
 
-      // Check if the provided OTP matches the stored OTP
       if (storedOtp !== otp) {
         throw new Error("Invalid OTP");
       }
 
-      // If valid, delete the OTP from Redis
-      await redis.del(`otp:${phone}`);
+      // Step 3: Handle user creation/update and OTP deletion in parallel
+      let user;
 
-      let user = await prisma.user.findUnique({ where: { phone } });
-
-      // If user does not exist, create a new user
-      if (!user) {
-        user = await prisma.user.create({
-          data: { phone, phoneVerified: true },
-        });
+      if (!existingUser) {
+        // Create new user and delete OTP in parallel
+        const [newUser] = await Promise.all([
+          prisma.user.create({
+            data: {
+              phone,
+              phoneVerified: true,
+            },
+            select: {
+              userId: true,
+              name: true,
+              phone: true,
+              role: true,
+              profileComplete: true,
+              email: true,
+              avatar: true,
+              phoneVerified: true,
+              emailVerified: true,
+              isActive: true,
+            },
+          }),
+          redis.del(`otp:${phone}`),
+        ]);
+        user = newUser;
       } else {
-        user = await prisma.user.update({
-          where: { phone },
-          data: { phoneVerified: true },
-        });
+        // Update existing user if not already verified and delete OTP in parallel
+        if (!existingUser.phoneVerified) {
+          const [, updatedUser] = await Promise.all([
+            redis.del(`otp:${phone}`),
+            prisma.user.update({
+              where: { phone },
+              data: { phoneVerified: true },
+              select: {
+                userId: true,
+                name: true,
+                phone: true,
+                role: true,
+                profileComplete: true,
+                email: true,
+                avatar: true,
+                phoneVerified: true,
+                emailVerified: true,
+                isActive: true,
+              },
+            }),
+          ]);
+          user = updatedUser;
+        } else {
+          await redis.del(`otp:${phone}`);
+          user = existingUser;
+        }
       }
 
-      // Verify user object exists and has required properties
-      if (!user) {
+      // Step 4: Validate user
+      if (!user || !user.userId) {
         throw new Error("Failed to create or retrieve user");
       }
 
-      if (!user.userId) {
-        throw new Error("User object missing userId property");
+      if (!user.isActive) {
+        throw new Error("Account has been deactivated");
       }
 
-      // Create a token for the user
+      // Step 5: Create token and cache user data in parallel
       const token = createToken(user.userId);
 
-      // Safely destructure with defaults
+      // Cache the user data for future auth middleware calls
+      setCachedUser(user.userId, user).catch((error) => {
+        logger.error("Failed to cache user:", error);
+        // Don't throw as the main operation succeeded
+      });
 
+      // Step 6: Return response
       return {
         token,
         user: {

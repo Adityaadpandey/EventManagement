@@ -12,6 +12,7 @@ enum Role {
     USER
     LISTER
     ADMIN
+    SUPER_ADMIN
 }
 
 model User {
@@ -27,7 +28,7 @@ model User {
     emailVerified   Boolean @default(false)
     profileComplete Boolean @default(false)
 
-    role Role @default(USER) // USER, LISTER, ADMIN
+    role Role @default(USER) // USER, LISTER, ADMIN, SUPER_ADMIN
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

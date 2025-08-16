@@ -21,6 +21,26 @@ const hashToken = (token: string): string => {
   return createHash("sha256").update(token).digest("hex");
 };
 
+export const getTokenDataAndBlacklistStatus = async (
+  token: string,
+): Promise<[boolean, string | null]> => {
+  try {
+    const pipeline = redis.pipeline();
+    pipeline.get(CACHE_KEYS.BLACKLIST(token));
+    pipeline.get(CACHE_KEYS.TOKEN(token));
+
+    const results = await pipeline.exec();
+
+    const isBlacklisted = results?.[0]?.[1] !== null;
+    const userId = results?.[1]?.[1] as string | null;
+
+    return [isBlacklisted, userId];
+  } catch (error) {
+    logger.error("Redis batch operation error:", error);
+    return [false, null]; // Fail open for availability
+  }
+};
+
 // User caching functions
 export const getCachedUser = async (userId: string) => {
   try {
@@ -52,7 +72,7 @@ export const deleteCachedUser = async (userId: string) => {
   }
 };
 
-// Token caching functions (for faster auth middleware)
+// Token caching functions
 export const getCachedToken = async (token: string): Promise<string | null> => {
   try {
     const userId = await redis.get(CACHE_KEYS.TOKEN(token));
@@ -79,5 +99,23 @@ export const isTokenBlacklisted = async (token: string): Promise<boolean> => {
   } catch (error) {
     logger.error("Redis check blacklist error:", error);
     return false; // Fail open for availability
+  }
+};
+
+export const blacklistToken = async (token: string) => {
+  try {
+    await redis.setex(CACHE_KEYS.BLACKLIST(token), CACHE_TTL.BLACKLIST, "1");
+  } catch (error) {
+    logger.error("Redis blacklist token error:", error);
+  }
+};
+
+// Batch operations for even faster performance
+export const invalidateUserSessions = async (userId: string) => {
+  try {
+    // Clear user cache when user data changes
+    await deleteCachedUser(userId);
+  } catch (error) {
+    logger.error("Redis invalidate user sessions error:", error);
   }
 };

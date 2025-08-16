@@ -1,7 +1,6 @@
 import { NextFunction, Response } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/db";
-
 import {
   getCachedToken,
   getCachedUser,
@@ -31,25 +30,34 @@ export const authMiddleware = async (
       return res.status(500).json({ error: "Server configuration error" });
     }
 
-    const isBlacklisted = await isTokenBlacklisted(token);
+    // Check blacklist early - fastest check
+    const [isBlacklisted, cachedUserId] = await Promise.all([
+      isTokenBlacklisted(token),
+      getCachedToken(token),
+    ]);
+
     if (isBlacklisted) {
       return res.status(401).json({ error: "Token has been invalidated." });
     }
 
-    let userId = await getCachedToken(token);
+    let userId = cachedUserId;
+    let decoded: JwtPayload | null = null;
 
+    // If no cached token, verify JWT
     if (!userId) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
+        decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
         userId = decoded.userId;
       } catch (jwtError) {
         return res.status(401).json({ error: "Invalid token." });
       }
     }
 
+    // Try to get user from cache first
     let user = await getCachedUser(userId);
 
     if (!user) {
+      // Fetch from database with minimal fields
       user = await prisma.user.findUnique({
         where: { userId },
         select: {
@@ -59,6 +67,7 @@ export const authMiddleware = async (
           phone: true,
           phoneVerified: true,
           emailVerified: true,
+          isActive: true, // Added this important field
         },
       });
 
@@ -66,11 +75,30 @@ export const authMiddleware = async (
         return res.status(401).json({ error: "Invalid token." });
       }
 
-      // Cache user and token
-      await Promise.all([
-        setCachedUser(userId, user),
-        setCachedToken(token, userId),
-      ]);
+      // Check if user is active
+      if (!user.isActive) {
+        return res.status(401).json({ error: "Account has been deactivated." });
+      }
+
+      // Cache both user and token (only if we had to fetch from DB)
+      const cachePromises = [setCachedUser(userId, user)];
+
+      // Only cache token if we just verified it (not already cached)
+      if (!cachedUserId) {
+        cachePromises.push(setCachedToken(token, userId));
+      }
+
+      await Promise.all(cachePromises);
+    } else {
+      // Even if user is cached, check if active (this is a fast in-memory check)
+      if (!user.isActive) {
+        return res.status(401).json({ error: "Account has been deactivated." });
+      }
+
+      // If user was cached but token wasn't, cache the token
+      if (!cachedUserId) {
+        await setCachedToken(token, userId);
+      }
     }
 
     req.user = user;
@@ -81,14 +109,17 @@ export const authMiddleware = async (
   }
 };
 
-// Role-based access control middleware
+// Optimized role-based access control middleware
 export const requireRole = (roles: string[]) => {
+  // Create a Set for O(1) lookup instead of O(n) array.includes
+  const roleSet = new Set(roles);
+
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    if (!roles.includes(req.user.role)) {
+    if (!roleSet.has(req.user.role)) {
       return res.status(403).json({ error: "Insufficient permissions" });
     }
 
