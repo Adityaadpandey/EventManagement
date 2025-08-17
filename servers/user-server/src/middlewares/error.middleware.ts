@@ -1,28 +1,24 @@
+// middlewares/errorHandler.ts
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 import logger from "../config/logger";
 import { CustomError } from "../types";
+import { sendError } from "../utils/responseMsg";
 
 export const errorHandler = (
   error: CustomError,
   req: Request,
   res: Response,
   next: NextFunction,
-): void => {
+) => {
   logger.error(error);
 
   if (error instanceof z.ZodError) {
-    res.status(400).json({
-      status: "error",
-      message: "Invalid input",
-      errors: error.issues,
-    });
-    return;
+    return sendError(res, "Invalid input", 400, error.issues);
   }
 
   const statusCode = error.statusCode || 500;
   const message = error.message || "Internal server error";
-  const status = error.status || "error";
 
   if (process.env.NODE_ENV !== "production") {
     logger.error({
@@ -35,8 +31,5 @@ export const errorHandler = (
     });
   }
 
-  res.status(statusCode).json({
-    status,
-    message,
-  });
+  return sendError(res, message, statusCode);
 };

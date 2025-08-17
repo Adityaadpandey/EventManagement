@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { UserService } from "../services/user.service";
 import { AuthenticatedRequest } from "../types/auth";
+import { sendError, sendSuccess } from "../utils/responseMsg";
 
 export class UserController {
   private userService: UserService;
@@ -12,32 +13,39 @@ export class UserController {
   async getUserProfile(req: AuthenticatedRequest, res: Response) {
     const userId = req.user?.userId;
     if (!userId) {
-      return res.status(400).json({ error: "User ID is required" });
+      return sendError(res, "User ID is required", 400);
     }
 
     try {
       const userProfile = await this.userService.getUserProfile(userId);
-      res.status(200).json({ data: userProfile });
+      return sendSuccess(
+        res,
+        "User profile retrieved successfully",
+        userProfile,
+      );
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      return sendError(
+        res,
+        error.message || "Failed to retrieve user profile",
+        500,
+      );
     }
   }
 
   async updateUserProfile(req: AuthenticatedRequest, res: Response) {
     const userId = req.user?.userId;
     if (!userId) {
-      return res.status(400).json({ error: "User ID is required" });
+      return sendError(res, "User ID is required", 400);
     }
 
     const { name, email, avatar } = req.body;
 
     if (!name && !email && !avatar) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "At least one field (name, email, avatar) is required to update",
-        });
+      return sendError(
+        res,
+        "At least one field (name, email, avatar) is required to update",
+        400,
+      );
     }
 
     try {
@@ -46,9 +54,13 @@ export class UserController {
         email,
         avatar,
       });
-      res.status(200).json({ data: updatedUser });
+      return sendSuccess(res, "User profile updated successfully", updatedUser);
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      return sendError(
+        res,
+        error.message || "Failed to update user profile",
+        500,
+      );
     }
   }
 }

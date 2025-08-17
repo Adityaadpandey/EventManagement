@@ -15,21 +15,276 @@ enum Role {
     SUPER_ADMIN
 }
 
+enum Status {
+    NOT_VIEWED
+    PENDING
+    APPROVED
+    REJECTED
+    CANCELLATION_REQUESTED
+    CANCELLED
+}
+
+enum RefundStatus {
+    PENDING
+    COMPLETED
+    REJECTED
+}
+
 model User {
     userId   String  @id @default(uuid())
     phone    String  @unique
     email    String? @unique
-    password String? // Null if OAuth
+    password String? // Null if OAuth (store hashed)
     name     String?
-    isActive Boolean @default(true)
     avatar   String?
 
+    isActive        Boolean @default(true)
     phoneVerified   Boolean @default(false)
     emailVerified   Boolean @default(false)
     profileComplete Boolean @default(false)
 
-    role Role @default(USER) // USER, LISTER, ADMIN, SUPER_ADMIN
+    role Role @default(USER)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    // Relations
+    Lister        Lister?
+    Ticket        Ticket[]
+    TicketScanLog TicketScanLog[] // scans performed by this user (if used as checker)
+    Refund        Refund[]
+}
+
+model Lister {
+    listerId String @id @default(uuid())
+    userId   String @unique
+    user     User   @relation(fields: [userId], references: [userId])
+
+    companyName String?
+    companyLogo String?
+    bio         String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Relations
+    Event           Event[]
+    TicketChecker   TicketChecker[] // checkers created by this lister
+    ListerAnalytics ListerAnalytics?
+}
+
+model Event {
+    eventId  String @id @default(uuid())
+    listerId String
+    lister   Lister @relation(fields: [listerId], references: [listerId])
+
+    // User-facing details
+    title             String
+    description       String
+    banner_horizontal String
+    banner_vertical   String
+    banner_square     String
+    date              DateTime
+    time              DateTime
+    location          String
+    capacity          Int?
+
+    // Admin workflow
+    status            Status  @default(NOT_VIEWED)
+    rejection_comment String?
+    cancellation_note String?
+
+    // Admin-only details
+    samplePoster       String?
+    socialMediaGraphic String?
+    eventFormat        String? // text or PDF link
+    requestedVenue     String?
+    termsConditions    String?
+    rulesRegulations   String?
+    policies           String?
+    dutyLeavesDetails  String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Basic aggregated analytics (fast reads)
+    viewsCount     Int   @default(0)
+    ctaClicksCount Int   @default(0)
+    ticketsSold    Int   @default(0)
+    revenue        Float @default(0)
+
+    // Relations
+    TicketType     TicketType[]
+    CustomField    CustomField[]
+    TicketChecker  TicketChecker[] // checkers assigned specific to this event (nullable relation also stored on checker)
+    Ticket         Ticket[]
+    TicketScanLog  TicketScanLog[]
+    EventAnalytics EventAnalytics?
+    Refund         Refund[]
+}
+
+model CustomField {
+    fieldId               String                  @id @default(uuid())
+    eventId               String
+    event                 Event                   @relation(fields: [eventId], references: [eventId])
+    label                 String
+    fieldType             String // e.g., text, number, dropdown, email
+    required              Boolean                 @default(false)
+    options               String? // JSON or comma-separated for dropdown options
+    AttendeeFieldResponse AttendeeFieldResponse[]
+}
+
+model TicketType {
+    ticketTypeId String @id @default(uuid())
+    eventId      String
+    event        Event  @relation(fields: [eventId], references: [eventId])
+
+    name        String
+    description String?
+    price       Float
+    quantity    Int
+    salesCutoff DateTime?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // basic counters
+    soldCount Int @default(0)
+
+    // Relations
+    Ticket Ticket[]
+}
+
+model Ticket {
+    ticketId     String     @id @default(uuid())
+    ticketTypeId String
+    ticketType   TicketType @relation(fields: [ticketTypeId], references: [ticketTypeId])
+
+    userId String
+    user   User   @relation(fields: [userId], references: [userId])
+
+    quantity   Int
+    totalPrice Float
+    qrCode     String  @unique
+    checkedIn  Boolean @default(false)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // store how custom fields were answered for this ticket (attendee details)
+    AttendeeFieldResponse AttendeeFieldResponse[]
+
+    // relation to refunds
+    Event         Event?          @relation(fields: [eventEventId], references: [eventId])
+    eventEventId  String?
+    TicketScanLog TicketScanLog[]
+    Refund        Refund[]
+}
+
+model AttendeeFieldResponse {
+    responseId String      @id @default(uuid())
+    ticketId   String
+    ticket     Ticket      @relation(fields: [ticketId], references: [ticketId])
+    fieldId    String
+    field      CustomField @relation(fields: [fieldId], references: [fieldId])
+    value      String
+    createdAt  DateTime    @default(now())
+}
+
+model TicketChecker {
+    checkerId String @id @default(uuid())
+
+    // Who created this checker credential
+    listerId String
+    lister   Lister @relation(fields: [listerId], references: [listerId])
+
+    // Optional: assign to a specific event. If null, checker can be assigned to multiple events via EventCheckerAssignment
+    eventId String?
+    event   Event?  @relation(fields: [eventId], references: [eventId])
+
+    // Credentials (store hashed passwords in production)
+    username String
+    password String
+
+    // lifecycle
+    active     Boolean   @default(true) // quick enable/disable
+    deprecated Boolean   @default(false) // intentionally deprecated
+    expiresAt  DateTime? // when this credential auto-expires
+    revokedAt  DateTime?
+
+    createdAt     DateTime        @default(now())
+    createdBy     String? // optional admin/userId who created it
+    TicketScanLog TicketScanLog[]
+
+    // ensure uniqueness per event+username (if eventId present)
+    @@unique([eventId, username])
+    @@index([listerId])
+}
+
+model TicketScanLog {
+    scanId   String @id @default(uuid())
+    ticketId String
+    ticket   Ticket @relation(fields: [ticketId], references: [ticketId])
+
+    checkerId String? // null if unknown/manual
+    checker   TicketChecker? @relation(fields: [checkerId], references: [checkerId])
+
+    performedByUserId String? // optional: user id of checker if they are a registered user
+    performedByUser   User?   @relation(fields: [performedByUserId], references: [userId])
+
+    scannedAt DateTime @default(now())
+    action    String // SCAN / RESET / OVERRIDE
+    success   Boolean
+    note      String?
+
+    deviceInfo   String?
+    ipAddress    String?
+    Event        Event?  @relation(fields: [eventEventId], references: [eventId])
+    eventEventId String?
+}
+
+model EventAnalytics {
+    analyticsId String @id @default(uuid())
+    eventId     String @unique
+    event       Event  @relation(fields: [eventId], references: [eventId])
+
+    // cumulative metrics (can be expanded to daily snapshots)
+    views          Int   @default(0)
+    clicks         Int   @default(0)
+    ticketsSold    Int   @default(0)
+    revenue        Float @default(0)
+    conversionRate Float @default(0) // optional cached metric
+
+    lastUpdated DateTime @default(now()) @updatedAt
+}
+
+model ListerAnalytics {
+    id       String @id @default(uuid())
+    listerId String @unique
+    lister   Lister @relation(fields: [listerId], references: [listerId])
+
+    totalEvents      Int   @default(0)
+    totalRevenue     Float @default(0)
+    totalTicketsSold Int   @default(0)
+
+    lastUpdated DateTime @default(now()) @updatedAt
+}
+
+model Refund {
+    refundId String @id @default(uuid())
+    ticketId String
+    ticket   Ticket @relation(fields: [ticketId], references: [ticketId])
+
+    amount      Float
+    reason      String?
+    status      RefundStatus @default(PENDING)
+    processedBy String? // admin userId who processed
+    processedAt DateTime?
+
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+    User         User?    @relation(fields: [userUserId], references: [userId])
+    userUserId   String?
+    Event        Event?   @relation(fields: [eventEventId], references: [eventId])
+    eventEventId String?
 }

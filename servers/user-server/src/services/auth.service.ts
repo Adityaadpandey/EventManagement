@@ -1,33 +1,47 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { redis } from "../config/redis";
-import { createToken, sendSMS } from "../lib";
+import { createToken } from "../lib/jwt-token";
 import { setCachedUser } from "../lib/redis-fn";
+import { sendSMS } from "../lib/twilio-sms";
 
 class AuthService {
   async requestOtp(phone: string): Promise<{ message: string }> {
     try {
-      // Check if the otp for this is already present
-      const existingOtp = await redis.get(`otp:${phone}`);
+      const otpKey = `otp:${phone}`;
+      const countKey = `otp:count:${phone}`;
+
+      // Check if the OTP is already active
+      const existingOtp = await redis.get(otpKey);
       if (existingOtp) {
         throw new Error(
           "OTP already requested. Please wait before requesting a new one.",
         );
       }
 
-      // Generate a random 6-digit OTP
+      const requestCount = await redis.get(countKey);
+      if (requestCount && parseInt(requestCount) >= 3) {
+        throw new Error(
+          "Too many OTP requests. Please try again after 1 hour.",
+        );
+      }
+
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-      // Store OTP in Redis with 5 min TTL
-      await redis.setex(`otp:${phone}`, 300, otp);
+      // Store with 5-minute TTL
+      await redis.setex(otpKey, 300, otp);
 
-      // Send the OTP via SMS
+      const pipeline = redis.pipeline();
+      pipeline.incr(countKey);
+      pipeline.expire(countKey, 3600); // 1 hour TTL
+      await pipeline.exec();
+
       try {
         await sendSMS(otp, phone);
         return { message: "OTP sent successfully" };
       } catch (error) {
-        // Clean up Redis if SMS fails
-        await redis.del(`otp:${phone}`);
+        // Clean up Redis if SMS sending fails
+        await redis.del(otpKey);
         throw new Error("Failed to send OTP via SMS");
       }
     } catch (error) {
@@ -38,7 +52,6 @@ class AuthService {
 
   async verifyOtp(phone: string, otp: string): Promise<any> {
     try {
-      // Step 1: Verify OTP and get user in parallel
       const [storedOtp, existingUser] = await Promise.all([
         redis.get(`otp:${phone}`),
         prisma.user.findUnique({
@@ -58,7 +71,7 @@ class AuthService {
         }),
       ]);
 
-      // Step 2: Validate OTP
+      // Validate OTP
       if (!storedOtp) {
         throw new Error("OTP not found or expired");
       }
@@ -67,7 +80,7 @@ class AuthService {
         throw new Error("Invalid OTP");
       }
 
-      // Step 3: Handle user creation/update and OTP deletion in parallel
+      // Handle user creation/update and OTP deletion in parallel
       let user;
 
       if (!existingUser) {
@@ -123,7 +136,7 @@ class AuthService {
         }
       }
 
-      // Step 4: Validate user
+      // Validate user
       if (!user || !user.userId) {
         throw new Error("Failed to create or retrieve user");
       }
@@ -132,7 +145,7 @@ class AuthService {
         throw new Error("Account has been deactivated");
       }
 
-      // Step 5: Create token and cache user data in parallel
+      // Create token and cache user data in parallel
       const token = createToken(user.userId);
 
       // Cache the user data for future auth middleware calls
@@ -141,7 +154,7 @@ class AuthService {
         // Don't throw as the main operation succeeded
       });
 
-      // Step 6: Return response
+      // Return response
       return {
         token,
         user: {
