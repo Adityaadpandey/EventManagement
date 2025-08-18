@@ -1,7 +1,11 @@
 import "dotenv/config";
 
 import cors from "cors";
-import express, { NextFunction, Request, Response } from "express";
+import express, {
+	type NextFunction,
+	type Request,
+	type Response,
+} from "express";
 import helmet from "helmet";
 
 import { config } from "./config";
@@ -28,13 +32,13 @@ app.use(limiter);
 app.use(reqMiddleware);
 
 app.get("/health", async (_, res: Response) => {
-  const status = await healthCheck();
-  const allHealthy = Object.values(status).every(Boolean);
+	const status = await healthCheck();
+	const allHealthy = Object.values(status).every(Boolean);
 
-  res.status(allHealthy ? 200 : 503).json({
-    ...status,
-    status: allHealthy ? "ok" : "unhealthy",
-  });
+	res.status(allHealthy ? 200 : 503).json({
+		...status,
+		status: allHealthy ? "ok" : "unhealthy",
+	});
 });
 
 // auth routes
@@ -47,25 +51,25 @@ app.use("/api/v1/user", userRouter);
 app.use("/api/v1/lister", listerRouter);
 
 app.use((req: Request, res: Response) => {
-  logger.warn(`Resource not found: ${req.method} ${req.url}`);
-  res.status(404).json({ message: "Resource not found" });
+	logger.warn(`Resource not found: ${req.method} ${req.url}`);
+	res.status(404).json({ message: "Resource not found" });
 });
 
 // Error handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  logger.error("Unhandled error:", err);
-  res.status(500).json({ message: "Internal server error" });
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+	logger.error("Unhandled error:", err);
+	res.status(500).json({ message: "Internal server error" });
 });
 
 export const startServer = async () => {
-  try {
-    await connectRedis();
-    const server = app.listen(config.PORT, () => {
-      logger.info(`${config.SERVICE_NAME} running on port ${config.PORT}`);
-    });
-    setupGracefulShutdown(server);
-  } catch (error) {
-    logger.error("Failed to start server:", error);
-    process.exit(1);
-  }
+	try {
+		await connectRedis();
+		const server = app.listen(config.PORT, () => {
+			logger.info(`${config.SERVICE_NAME} running on port ${config.PORT}`);
+		});
+		setupGracefulShutdown(server);
+	} catch (error) {
+		logger.error("Failed to start server:", error);
+		process.exit(1);
+	}
 };

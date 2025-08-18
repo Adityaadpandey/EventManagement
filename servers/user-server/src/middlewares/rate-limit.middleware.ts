@@ -1,11 +1,11 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import reateLimit from "express-rate-limit";
 import { config } from "../config";
 
 export const limiter = reateLimit({
-  skip: (req: Request, res: Response) => {
-    return config.NODE_ENV !== "production";
-  },
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+	skip: (_req: Request, _res: Response) => {
+		return config.NODE_ENV !== "production";
+	},
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 100, // Limit each IP to 100 requests per windowMs
 });

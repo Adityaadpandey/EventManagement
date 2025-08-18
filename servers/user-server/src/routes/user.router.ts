@@ -8,16 +8,16 @@ const userController = new UserController();
 
 // GET /api/v1/user/profile/
 router.get(
-  "/profile",
-  authMiddleware,
-  userController.getUserProfile.bind(userController),
+	"/profile",
+	authMiddleware,
+	userController.getUserProfile.bind(userController),
 );
 
 // PATCH /api/v1/user/profile/
 router.patch(
-  "/profile",
-  authMiddleware,
-  userController.updateUserProfile.bind(userController),
+	"/profile",
+	authMiddleware,
+	userController.updateUserProfile.bind(userController),
 );
 
 export { router as userRouter };
