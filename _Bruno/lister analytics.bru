@@ -1,0 +1,15 @@
+meta {
+  name: lister analytics
+  type: http
+  seq: 7
+}
+
+get {
+  url: http://localhost:7001/api/v1/listers/analytics
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

@@ -13,4 +13,5 @@ export interface AuthenticatedRequest extends Request {
 
 export interface JwtPayload {
   userId: string;
+  role: "USER" | "LISTER" | "ADMIN" | "SUPER_ADMIN";
 }

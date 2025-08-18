@@ -6,14 +6,14 @@ const router = Router();
 
 const userController = new UserController();
 
-// GET /user/profile/
+// GET /api/v1/user/profile/
 router.get(
   "/profile",
   authMiddleware,
   userController.getUserProfile.bind(userController),
 );
 
-// PATCH /user/profile/
+// PATCH /api/v1/user/profile/
 router.patch(
   "/profile",
   authMiddleware,

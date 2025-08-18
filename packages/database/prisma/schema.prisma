@@ -30,6 +30,12 @@ enum RefundStatus {
     REJECTED
 }
 
+enum ListerStatus {
+    PENDING
+    COMPLETED
+    REJECTED
+}
+
 model User {
     userId   String  @id @default(uuid())
     phone    String  @unique
@@ -64,8 +70,9 @@ model Lister {
     companyLogo String?
     bio         String?
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    createdAt DateTime     @default(now())
+    updatedAt DateTime     @updatedAt
+    status    ListerStatus @default(PENDING)
 
     // Relations
     Event           Event[]

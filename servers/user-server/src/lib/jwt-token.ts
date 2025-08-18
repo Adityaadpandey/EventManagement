@@ -4,6 +4,7 @@ import { setCachedToken } from "./redis-fn";
 
 export const createToken = (
   userId: string,
+  role: "USER" | "LISTER" | "ADMIN" | "SUPER_ADMIN" = "USER",
   expiresIn: number = 60 * 60 * 24 * 7, // Default to 7 day,
 ): string => {
   try {
@@ -12,7 +13,7 @@ export const createToken = (
       throw new Error("JWT_SECRET environment variable is not set");
     }
 
-    const token = jwt.sign({ userId }, secret, {
+    const token = jwt.sign({ userId, role }, secret, {
       expiresIn: expiresIn,
     });
 

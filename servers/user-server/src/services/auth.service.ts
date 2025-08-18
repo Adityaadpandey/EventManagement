@@ -146,7 +146,7 @@ class AuthService {
       }
 
       // Create token and cache user data in parallel
-      const token = createToken(user.userId);
+      const token = createToken(user.userId, user.role);
 
       // Cache the user data for future auth middleware calls
       setCachedUser(user.userId, user).catch((error) => {

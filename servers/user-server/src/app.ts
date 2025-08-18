@@ -12,6 +12,7 @@ import { limiter } from "./middlewares/rate-limit.middleware";
 import { reqMiddleware } from "./middlewares/req.middleware";
 
 import { authRouter } from "./routes/auth.router";
+import { listerRouter } from "./routes/lister.router";
 import { userRouter } from "./routes/user.router";
 import { setupGracefulShutdown } from "./utils/gracefullShutdown";
 import { healthCheck } from "./utils/healthCheck";
@@ -41,6 +42,9 @@ app.use("/api/v1/auth", authRouter);
 
 // user routes
 app.use("/api/v1/user", userRouter);
+
+// lister routes
+app.use("/api/v1/lister", listerRouter);
 
 app.use((req: Request, res: Response) => {
   logger.warn(`Resource not found: ${req.method} ${req.url}`);
