@@ -1,11 +1,11 @@
 meta {
   name: patch profile
   type: http
-  seq: 4
+  seq: 2
 }
 
 patch {
-  url: http://localhost:7001/api/v1/user/profile
+  url: {{host}}/user/profile
   body: json
   auth: inherit
 }

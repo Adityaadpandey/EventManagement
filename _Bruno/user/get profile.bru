@@ -1,11 +1,11 @@
 meta {
   name: get profile
   type: http
-  seq: 3
+  seq: 2
 }
 
 get {
-  url: http://localhost:7001/api/v1/user/profile
+  url: {{host}}/user/profile
   body: none
   auth: bearer
 }

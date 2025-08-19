@@ -1,0 +1,15 @@
+meta {
+  name: lister analytics
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{host}}/lister/analytics/me
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

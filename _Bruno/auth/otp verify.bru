@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: http://localhost:7001/api/v1/auth/otp/verify
+  url: {{host}}/auth/otp/verify
   body: json
   auth: inherit
 }
@@ -13,7 +13,7 @@ post {
 body:json {
   {
     "phone":"+919415379379",
-    "otp":"631152"
+    "otp":"63 1152"
   }
 }
 

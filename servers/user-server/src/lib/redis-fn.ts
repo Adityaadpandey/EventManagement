@@ -7,6 +7,7 @@ export const CACHE_KEYS = {
 	USER: (userId: string) => `user:${userId}`,
 	TOKEN: (token: string) => `token:${hashToken(token)}`,
 	BLACKLIST: (token: string) => `blacklist:${hashToken(token)}`,
+	PUBLIC_EVENTS: "events:public",
 };
 
 // Cache TTL (Time To Live) in seconds
@@ -14,6 +15,7 @@ export const CACHE_TTL = {
 	USER: 3600, // 1 hour
 	TOKEN: 604800, // 7 days (same as JWT expiry)
 	BLACKLIST: 604800, // 7 days
+	PUBLIC_EVENTS: 600, // 10 minutes
 };
 
 // Hash function for tokens (for secure cache keys)
@@ -117,5 +119,27 @@ export const invalidateUserSessions = async (userId: string) => {
 		await deleteCachedUser(userId);
 	} catch (error) {
 		logger.error("Redis invalidate user sessions error:", error);
+	}
+};
+
+export const getCachedPublicEvents = async () => {
+	try {
+		const cached = await redis.get(CACHE_KEYS.PUBLIC_EVENTS);
+		return cached ? JSON.parse(cached) : null;
+	} catch (error) {
+		logger.error("Redis get public events error:", error);
+		return null;
+	}
+};
+
+export const setCachedPublicEvents = async (events: any) => {
+	try {
+		await redis.setex(
+			CACHE_KEYS.PUBLIC_EVENTS,
+			CACHE_TTL.PUBLIC_EVENTS,
+			JSON.stringify(events),
+		);
+	} catch (error) {
+		logger.error("Redis set public events error:", error);
 	}
 };

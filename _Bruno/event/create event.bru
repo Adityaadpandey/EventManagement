@@ -1,0 +1,56 @@
+meta {
+  name: create event
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host}}/event
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "title": "Concert Night",
+    "description": "Amazing live music event",
+    "banner_horizontal": "url_to_banner",
+    "banner_vertical": "url_to_banner", 
+    "banner_square": "url_to_banner",
+    "date": "2026-12-25",
+    "time": "2024-12-25T19:00:00Z",
+    "location": "Main Stadium",
+    "capacity": 1000,
+    "ticketTypes": [
+      {
+        "name": "General Admission",
+        "description": "Standard entry ticket",
+        "price": 50.00,
+        "quantity": 500,
+        "salesCutoff": "2024-12-24T23:59:59Z"
+      },
+      {
+        "name": "VIP",
+        "price": 150.00,
+        "quantity": 50
+      }
+    ],
+    "customFields": [
+      {
+        "label": "Dietary Requirements",
+        "fieldType": "dropdown",
+        "required": false,
+        "options": "Vegetarian,Vegan,No Restrictions"
+      },
+      {
+        "label": "Emergency Contact",
+        "fieldType": "text",
+        "required": true
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+}

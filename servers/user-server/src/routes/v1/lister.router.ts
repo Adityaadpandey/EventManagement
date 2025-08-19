@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { ListerController } from "../controllers/lister.controller";
-import { authMiddleware, requireRole } from "../middlewares/auth.middleware";
+import { ListerController } from "../../controllers/lister.controller";
+import { authMiddleware, requireRole } from "../../middlewares/auth.middleware";
 
 const router = Router();
 const listerController = new ListerController();

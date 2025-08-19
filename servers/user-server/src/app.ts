@@ -15,9 +15,10 @@ import { connectRedis } from "./config/redis";
 import { limiter } from "./middlewares/rate-limit.middleware";
 import { reqMiddleware } from "./middlewares/req.middleware";
 
-import { authRouter } from "./routes/auth.router";
-import { listerRouter } from "./routes/lister.router";
-import { userRouter } from "./routes/user.router";
+import { authRouter } from "./routes/v1/auth.router";
+import { eventsRouter } from "./routes/v1/events.router";
+import { listerRouter } from "./routes/v1/lister.router";
+import { userRouter } from "./routes/v1/user.router";
 import { setupGracefulShutdown } from "./utils/gracefullShutdown";
 import { healthCheck } from "./utils/healthCheck";
 
@@ -49,6 +50,9 @@ app.use("/api/v1/user", userRouter);
 
 // lister routes
 app.use("/api/v1/lister", listerRouter);
+
+// events routes
+app.use("/api/v1/event", eventsRouter);
 
 app.use((req: Request, res: Response) => {
 	logger.warn(`Resource not found: ${req.method} ${req.url}`);

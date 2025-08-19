@@ -6,7 +6,7 @@ import { redis } from "../config/redis";
 
 interface ServiceCheckResult {
 	status: boolean;
-	latencyMs: number;
+	latencyUs: number;
 	error?: string;
 }
 
@@ -35,14 +35,18 @@ interface FullHealthReport {
 const measure = async (
 	fn: () => Promise<void>,
 ): Promise<ServiceCheckResult> => {
-	const start = Date.now();
+	const start = process.hrtime.bigint();
 	try {
 		await fn();
-		return { status: true, latencyMs: Date.now() - start };
+		const end = process.hrtime.bigint();
+		const latencyUs = Number(end - start) / 1_000;
+		return { status: true, latencyUs };
 	} catch (error: any) {
+		const end = process.hrtime.bigint();
+		const latencyUs = Number(end - start) / 1_000;
 		return {
 			status: false,
-			latencyMs: Date.now() - start,
+			latencyUs,
 			error: error?.message || "Unknown error",
 		};
 	}

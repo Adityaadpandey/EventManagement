@@ -1,11 +1,11 @@
 meta {
   name: Apply for lister
   type: http
-  seq: 5
+  seq: 2
 }
 
 post {
-  url: http://localhost:7001/api/v1/lister/apply
+  url: {{host}}/lister/apply
   body: json
   auth: inherit
 }
