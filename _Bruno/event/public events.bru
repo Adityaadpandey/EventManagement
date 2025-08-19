@@ -1,0 +1,19 @@
+meta {
+  name: public events
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{host}}/event/public
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  bru.setEnvVar("eventId",res.body.data[0].eventId)
+}
+
+settings {
+  encodeUrl: true
+}

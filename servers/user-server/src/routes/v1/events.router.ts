@@ -17,10 +17,33 @@ router.post(
 router.get("/public", eventController.getPublicEvents.bind(eventController));
 
 // GET /api/v1/event (LISTER)
+router.get(
+	"/lister",
+	authMiddleware,
+	requireRole(["LISTER"]),
+	eventController.getListerEvents.bind(eventController),
+);
 
-// GET /api/v1/event/:eventId
+// GET /api/v1/event/:eventId/public (PUBLIC)
+router.get(
+	"/:eventId/public",
+	eventController.getPublicEventDetails.bind(eventController),
+);
+// GET /api/v1/event/:eventId/lister
+router.get(
+	"/:eventId/lister",
+	authMiddleware,
+	requireRole(["LISTER", "ADMIN"]),
+	eventController.getEventDetails.bind(eventController),
+);
 
 // PATCH /api/v1/event/:eventId
+router.patch(
+	"/:eventId",
+	authMiddleware,
+	requireRole(["LISTER"]),
+	eventController.patchEvent.bind(eventController),
+);
 
 // DELETE /api/v1/event/:eventId
 

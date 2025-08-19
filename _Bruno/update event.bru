@@ -1,11 +1,11 @@
 meta {
-  name: public events
+  name: update event
   type: http
-  seq: 6
+  seq: 9
 }
 
-get {
-  url: {{host}}/event/public
+patch {
+  url: {{host}}/event/{{eventId}}
   body: none
   auth: inherit
 }

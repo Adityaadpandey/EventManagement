@@ -220,71 +220,139 @@ export class EventService {
 		}
 	}
 
-	async getPublicEvents() {
+	async getPublicEvents(page = 1, limit = 20) {
 		try {
-			const cached = await getCachedPublicEvents();
+			const offset = (page - 1) * limit;
 
+			const cached = await getCachedPublicEvents(page, limit);
 			if (cached) {
 				logger.info("Public events fetched from cache");
 				return cached;
 			}
 
-			const events = await prisma.event.findMany({
-				where: {
-					status: "APPROVED",
-				},
-				select: {
-					lister: {
-						select: {
-							user: {
-								select: {
-									name: true,
-									email: true,
+			const [events, total] = await Promise.all([
+				prisma.event.findMany({
+					where: { status: "APPROVED" },
+					select: {
+						eventId: true,
+						lister: {
+							select: {
+								user: {
+									select: { name: true, email: true },
 								},
 							},
 						},
-					},
-					title: true,
-					description: true,
-					banner_horizontal: true,
-					banner_vertical: true,
-					banner_square: true,
-					date: true,
-					time: true,
-					location: true,
-					capacity: true,
-					TicketType: {
-						select: {
-							name: true,
-							price: true,
-							quantity: true,
+						title: true,
+						description: true,
+						banner_horizontal: true,
+						banner_vertical: true,
+						banner_square: true,
+						date: true,
+						time: true,
+						location: true,
+						capacity: true,
+						TicketType: {
+							select: {
+								name: true,
+								price: true,
+								quantity: true,
+							},
 						},
 					},
+					orderBy: { date: "asc" },
+					skip: offset,
+					take: limit,
+				}),
+				prisma.event.count({
+					where: { status: "APPROVED" },
+				}),
+			]);
+			logger.info(`Fetched ${events} public events`);
+			await setCachedPublicEvents({ events, total }, page, limit);
+			logger.info("Public events cached after DB fetch");
+
+			return { events, total };
+		} catch (error) {
+			logger.error("Error in getPublicEvents:", error);
+
+			const [events, total] = await Promise.all([
+				prisma.event.findMany({
+					where: { status: "APPROVED" },
+					select: {
+						lister: {
+							select: {
+								user: {
+									select: { name: true, email: true },
+								},
+							},
+						},
+						title: true,
+						description: true,
+						banner_horizontal: true,
+						banner_vertical: true,
+						banner_square: true,
+						date: true,
+						time: true,
+						location: true,
+						capacity: true,
+						TicketType: {
+							select: {
+								name: true,
+								price: true,
+								quantity: true,
+							},
+						},
+					},
+					orderBy: { date: "asc" },
+					skip: (page - 1) * limit,
+					take: limit,
+				}),
+				prisma.event.count({
+					where: { status: "APPROVED" },
+				}),
+			]);
+
+			return { events, total };
+		}
+	}
+
+	async getListerEvents(userId: string) {
+		try {
+			const events = await prisma.event.findMany({
+				where: {
+					lister: {
+						userId,
+					},
 				},
-				orderBy: {
-					date: "asc",
+				include: {
+					TicketType: true,
+					CustomField: true,
+					EventAnalytics: true,
 				},
 			});
-
-			await setCachedPublicEvents(events);
-			logger.info("Public events cached after DB fetch");
+			logger.info(`Fetched ${events.length} events for user ${userId}`);
+			if (events.length === 0) {
+				logger.warn(`No events found for user ${userId}`);
+			}
 
 			return events;
 		} catch (error) {
-			logger.error("Error in getPublicEvents:", error);
-			// Fallback (best effort)
-			return prisma.event.findMany({
+			logger.error("Error in getListerEvents:", error);
+			throw error;
+		}
+	}
+
+	async getPublicEventDetails(eventId: string) {
+		try {
+			const event = await prisma.event.findUnique({
 				where: {
-					status: "APPROVED",
+					eventId,
 				},
 				select: {
 					lister: {
 						select: {
 							user: {
-								select: {
-									name: true,
-									email: true,
-								},
+								select: { name: true, email: true },
 							},
 						},
 					},
@@ -304,11 +372,89 @@ export class EventService {
 							quantity: true,
 						},
 					},
-				},
-				orderBy: {
-					date: "asc",
+					CustomField: {
+						select: {
+							label: true,
+							fieldType: true,
+							required: true,
+							options: true,
+						},
+					},
 				},
 			});
+
+			if (!event) {
+				throw new Error("Event not found");
+			}
+			return event;
+		} catch (error) {
+			logger.error("Error in getPublicEventDetails:", error);
+			throw error;
+		}
+	}
+
+	async getEventDetails(userId: string, eventId: string) {
+		try {
+			const event = await prisma.event.findUnique({
+				where: {
+					eventId,
+				},
+				include: {
+					lister: {
+						select: {
+							user: {
+								select: { name: true, email: true, userId: true },
+							},
+						},
+					},
+					TicketType: true,
+					CustomField: true,
+					EventAnalytics: true,
+				},
+			});
+
+			if (!event) {
+				throw new Error("Event not found");
+			}
+
+			if (event.lister.user.userId !== userId) {
+				throw new Error("You do not have permission to view this event");
+			}
+
+			return event;
+		} catch (error) {
+			logger.error("Error in getEventDetails:", error);
+			throw error;
+		}
+	}
+	async patchEvent(userId: string, eventId: string, updateData: any) {
+		try {
+			const updatedEvent = await prisma.event.update({
+				where: { eventId },
+				data: {
+					...updateData,
+					lister: {
+						connect: { userId },
+					},
+				},
+				include: {
+					lister: {
+						select: {
+							user: {
+								select: { name: true, email: true },
+							},
+						},
+					},
+					TicketType: true,
+					CustomField: true,
+					EventAnalytics: true,
+				},
+			});
+
+			return updatedEvent;
+		} catch (error) {
+			logger.error("Error in patchEvent:", error);
+			throw error;
 		}
 	}
 }

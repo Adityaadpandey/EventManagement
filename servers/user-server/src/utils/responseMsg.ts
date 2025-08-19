@@ -5,11 +5,13 @@ export const sendSuccess = (
 	message: string,
 	data: any = null,
 	statusCode = 200,
+	meta?: object,
 ) => {
 	return res.status(statusCode).json({
 		status: "success",
 		message,
 		...(data !== null && { data }),
+		...(meta ? { meta } : {}),
 	});
 };
 

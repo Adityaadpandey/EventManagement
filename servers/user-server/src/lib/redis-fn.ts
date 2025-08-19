@@ -122,9 +122,10 @@ export const invalidateUserSessions = async (userId: string) => {
 	}
 };
 
-export const getCachedPublicEvents = async () => {
+export const getCachedPublicEvents = async (page: number, limit: number) => {
 	try {
-		const cached = await redis.get(CACHE_KEYS.PUBLIC_EVENTS);
+		const cacheKey = `${CACHE_KEYS.PUBLIC_EVENTS}:${page}:${limit}`;
+		const cached = await redis.get(cacheKey);
 		return cached ? JSON.parse(cached) : null;
 	} catch (error) {
 		logger.error("Redis get public events error:", error);
@@ -132,10 +133,15 @@ export const getCachedPublicEvents = async () => {
 	}
 };
 
-export const setCachedPublicEvents = async (events: any) => {
+export const setCachedPublicEvents = async (
+	events: any,
+	page: number,
+	limit: number,
+) => {
 	try {
+		const cacheKey = `${CACHE_KEYS.PUBLIC_EVENTS}:${page}:${limit}`;
 		await redis.setex(
-			CACHE_KEYS.PUBLIC_EVENTS,
+			cacheKey,
 			CACHE_TTL.PUBLIC_EVENTS,
 			JSON.stringify(events),
 		);

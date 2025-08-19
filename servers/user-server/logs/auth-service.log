@@ -1,156 +1,247 @@
-{"level":"info","message":"Redis Connected Successfully","timestamp":"03:15:43.869"}
-{"level":"info","message":"Redis Ready","timestamp":"03:15:43.871"}
-{"level":"info","message":"Redis Ping Successful","timestamp":"03:15:43.871"}
-{"level":"info","message":"auth-service running on port 7001","timestamp":"03:15:43.872"}
-{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:15:50.345"}
-{"level":"info","message":"HTTP server closed.","timestamp":"03:15:50.345"}
-{"level":"info","message":"Redis connection closed.","timestamp":"03:15:50.346"}
-{"level":"info","message":"Redis Connected Successfully","timestamp":"03:15:50.502"}
-{"level":"info","message":"Redis Ready","timestamp":"03:15:50.504"}
-{"level":"info","message":"Redis Ping Successful","timestamp":"03:15:50.505"}
-{"level":"info","message":"auth-service running on port 7001","timestamp":"03:15:50.506"}
-{"level":"info","message":"Received SIGINT. Shutting down gracefully...","timestamp":"03:15:52.431"}
-{"level":"info","message":"HTTP server closed.","timestamp":"03:15:52.432"}
-{"level":"info","message":"Redis connection closed.","timestamp":"03:15:52.434"}
-{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"05:41:27.098"}
-{"level":"info","message":"Redis Reconnecting...","timestamp":"05:41:27.099"}
-{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"05:41:27.151"}
-{"level":"info","message":"Redis Reconnecting...","timestamp":"05:41:27.151"}
-{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"05:41:27.253"}
-{"level":"info","message":"Redis Reconnecting...","timestamp":"05:41:27.253"}
-{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"05:41:27.407"}
-{"level":"info","message":"Redis Reconnecting...","timestamp":"05:41:27.408"}
-{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"05:41:27.611"}
-{"level":"info","message":"Redis Reconnecting...","timestamp":"05:41:27.612"}
-{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"05:41:27.865"}
-{"level":"info","message":"Redis Reconnecting...","timestamp":"05:41:27.866"}
-{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"05:41:28.168"}
-{"level":"info","message":"Redis Reconnecting...","timestamp":"05:41:28.169"}
-{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"05:41:28.523"}
-{"level":"info","message":"Redis Reconnecting...","timestamp":"05:41:28.524"}
-{"level":"info","message":"Redis Connected Successfully","timestamp":"05:41:49.137"}
-{"level":"info","message":"Redis Ready","timestamp":"05:41:49.139"}
-{"level":"info","message":"Redis Ping Successful","timestamp":"05:41:49.140"}
-{"level":"info","message":"auth-service running on port 7001","timestamp":"05:41:49.140"}
-{"level":"info","message":"Incoming request: POST /api/v1/event from ::ffff:127.0.0.1","timestamp":"05:41:55.349"}
-{"level":"info","message":"Request completed: POST /api/v1/event - Status: 500 - Duration: 68.17 ms","timestamp":"05:41:55.417"}
-{"level":"info","message":"Incoming request: POST /api/v1/event from ::ffff:127.0.0.1","timestamp":"05:42:56.552"}
-{"level":"info","message":"Request completed: POST /api/v1/event - Status: 500 - Duration: 9.53 ms","timestamp":"05:42:56.561"}
-{"level":"info","message":"Incoming request: POST /api/v1/event from ::ffff:127.0.0.1","timestamp":"05:43:20.567"}
-{"level":"info","message":"Request completed: POST /api/v1/event - Status: 201 - Duration: 36.92 ms","timestamp":"05:43:20.604"}
-{"level":"info","message":"Incoming request: GET /api/v1/listers/analytics from ::ffff:127.0.0.1","timestamp":"05:45:39.935"}
-{"level":"warn","message":"Resource not found: GET /api/v1/listers/analytics","timestamp":"05:45:39.936"}
-{"level":"info","message":"Request completed: GET /api/v1/listers/analytics - Status: 404 - Duration: 2.26 ms","timestamp":"05:45:39.937"}
-{"level":"info","message":"Incoming request: GET /api/v1/lister/analytics from ::ffff:127.0.0.1","timestamp":"05:45:43.607"}
-{"data":{"error":"Lister not found for given listerId","stack":"Error: Lister not found for given listerId\n    at ListerServer.getLister (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/services/lister.service.ts:197:11)\n    at ListerController.getLister (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/controllers/lister.controller.ts:79:19)"},"level":"error","message":"Error in getLister:","timestamp":"05:45:43.617"}
-{"level":"info","message":"Request completed: GET /api/v1/lister/analytics - Status: 500 - Duration: 11.54 ms","timestamp":"05:45:43.618"}
-{"level":"info","message":"Incoming request: GET /api/v1/lister/analytics from ::ffff:127.0.0.1","timestamp":"05:45:54.329"}
-{"data":{"error":"Lister not found for given listerId","stack":"Error: Lister not found for given listerId\n    at ListerServer.getLister (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/services/lister.service.ts:197:11)\n    at ListerController.getLister (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/controllers/lister.controller.ts:79:19)"},"level":"error","message":"Error in getLister:","timestamp":"05:45:54.332"}
-{"level":"info","message":"Request completed: GET /api/v1/lister/analytics - Status: 500 - Duration: 3.58 ms","timestamp":"05:45:54.333"}
-{"level":"info","message":"Incoming request: GET /api/v1/lister/analytics/me from ::ffff:127.0.0.1","timestamp":"05:46:11.427"}
-{"level":"info","message":"Request completed: GET /api/v1/lister/analytics/me - Status: 200 - Duration: 12.95 ms","timestamp":"05:46:11.440"}
-{"level":"info","message":"Incoming request: GET /api/v1/api/v1/user/profile from ::ffff:127.0.0.1","timestamp":"06:05:36.739"}
-{"level":"warn","message":"Resource not found: GET /api/v1/api/v1/user/profile","timestamp":"06:05:36.739"}
-{"level":"info","message":"Request completed: GET /api/v1/api/v1/user/profile - Status: 404 - Duration: 0.48 ms","timestamp":"06:05:36.739"}
-{"level":"info","message":"Incoming request: GET /api/v1/user/profile from ::ffff:127.0.0.1","timestamp":"06:05:53.762"}
-{"level":"info","message":"Request completed: GET /api/v1/user/profile - Status: 200 - Duration: 26.07 ms","timestamp":"06:05:53.788"}
-{"level":"info","message":"Incoming request: GET /health from ::ffff:127.0.0.1","timestamp":"06:07:29.089"}
-{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 7.02 ms","timestamp":"06:07:29.096"}
-{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"06:09:13.522"}
-{"level":"info","message":"HTTP server closed.","timestamp":"06:09:13.522"}
-{"level":"info","message":"Redis connection closed.","timestamp":"06:09:13.523"}
-{"level":"info","message":"Redis Connected Successfully","timestamp":"06:09:13.768"}
-{"level":"info","message":"Redis Ready","timestamp":"06:09:13.770"}
-{"level":"info","message":"Redis Ping Successful","timestamp":"06:09:13.770"}
-{"level":"info","message":"auth-service running on port 7001","timestamp":"06:09:13.771"}
-{"level":"info","message":"Incoming request: GET /health from ::ffff:127.0.0.1","timestamp":"06:09:17.983"}
-{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 28.21 ms","timestamp":"06:09:18.011"}
-{"level":"info","message":"Incoming request: GET /health from ::ffff:127.0.0.1","timestamp":"06:09:23.926"}
-{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 2.79 ms","timestamp":"06:09:23.929"}
-{"level":"info","message":"Incoming request: GET /health from ::ffff:127.0.0.1","timestamp":"06:09:24.362"}
-{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 3.45 ms","timestamp":"06:09:24.366"}
-{"level":"info","message":"Incoming request: GET /health from ::ffff:127.0.0.1","timestamp":"06:09:24.614"}
-{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 3.24 ms","timestamp":"06:09:24.618"}
-{"level":"info","message":"Incoming request: GET /health from ::ffff:127.0.0.1","timestamp":"06:09:24.850"}
-{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 3.20 ms","timestamp":"06:09:24.853"}
-{"level":"info","message":"Incoming request: GET /health from ::ffff:127.0.0.1","timestamp":"06:09:25.041"}
-{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 1.76 ms","timestamp":"06:09:25.043"}
-{"level":"info","message":"Incoming request: GET /health from ::ffff:127.0.0.1","timestamp":"06:09:25.192"}
-{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 2.92 ms","timestamp":"06:09:25.195"}
-{"level":"info","message":"Incoming request: GET /health from ::ffff:127.0.0.1","timestamp":"06:09:25.505"}
-{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 2.23 ms","timestamp":"06:09:25.507"}
-{"level":"info","message":"Incoming request: GET /health from ::ffff:127.0.0.1","timestamp":"06:09:25.681"}
-{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 2.95 ms","timestamp":"06:09:25.684"}
-{"level":"info","message":"Incoming request: GET /health from ::ffff:127.0.0.1","timestamp":"06:09:26.286"}
-{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 3.33 ms","timestamp":"06:09:26.289"}
-{"level":"info","message":"Incoming request: GET /health from ::ffff:127.0.0.1","timestamp":"06:09:26.868"}
-{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 2.01 ms","timestamp":"06:09:26.870"}
-{"level":"info","message":"Received SIGINT. Shutting down gracefully...","timestamp":"06:09:37.864"}
-{"level":"info","message":"HTTP server closed.","timestamp":"06:09:37.866"}
-{"level":"info","message":"Redis connection closed.","timestamp":"06:09:37.869"}
-{"level":"info","message":"Redis Connected Successfully","timestamp":"06:20:23.891"}
-{"level":"info","message":"Redis Ready","timestamp":"06:20:23.893"}
-{"level":"info","message":"Redis Ping Successful","timestamp":"06:20:23.893"}
-{"level":"info","message":"auth-service running on port 7001","timestamp":"06:20:23.894"}
-{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"06:20:50.051"}
-{"level":"info","message":"HTTP server closed.","timestamp":"06:20:50.051"}
-{"level":"info","message":"Redis connection closed.","timestamp":"06:20:50.052"}
-{"level":"info","message":"Redis Connected Successfully","timestamp":"06:20:50.206"}
-{"level":"info","message":"Redis Ready","timestamp":"06:20:50.208"}
-{"level":"info","message":"Redis Ping Successful","timestamp":"06:20:50.215"}
-{"level":"info","message":"auth-service running on port 7001","timestamp":"06:20:50.215"}
-{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"06:21:02.358"}
-{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 43.31 ms","timestamp":"06:21:02.401"}
-{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"06:21:23.474"}
-{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 14.85 ms","timestamp":"06:21:23.489"}
-{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"06:23:53.215"}
-{"level":"info","message":"HTTP server closed.","timestamp":"06:23:53.216"}
-{"level":"info","message":"Redis connection closed.","timestamp":"06:23:53.217"}
-{"level":"info","message":"Redis Connected Successfully","timestamp":"06:23:53.475"}
-{"level":"info","message":"Redis Ready","timestamp":"06:23:53.477"}
-{"level":"info","message":"Redis Ping Successful","timestamp":"06:23:53.478"}
-{"level":"info","message":"auth-service running on port 7001","timestamp":"06:23:53.479"}
-{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"06:23:54.748"}
-{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 31.90 ms","timestamp":"06:23:54.780"}
-{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"06:24:25.783"}
-{"level":"info","message":"HTTP server closed.","timestamp":"06:24:25.784"}
-{"level":"info","message":"Redis connection closed.","timestamp":"06:24:25.785"}
-{"level":"info","message":"Redis Connected Successfully","timestamp":"06:24:25.950"}
-{"level":"info","message":"Redis Ready","timestamp":"06:24:25.952"}
-{"level":"info","message":"Redis Ping Successful","timestamp":"06:24:25.953"}
-{"level":"info","message":"auth-service running on port 7001","timestamp":"06:24:25.953"}
-{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"06:24:43.614"}
-{"level":"info","message":"HTTP server closed.","timestamp":"06:24:43.615"}
-{"level":"info","message":"Redis connection closed.","timestamp":"06:24:43.615"}
-{"level":"info","message":"Redis Connected Successfully","timestamp":"06:24:43.780"}
-{"level":"info","message":"Redis Ready","timestamp":"06:24:43.782"}
-{"level":"info","message":"Redis Ping Successful","timestamp":"06:24:43.782"}
-{"level":"info","message":"auth-service running on port 7001","timestamp":"06:24:43.783"}
-{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"06:24:51.631"}
-{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 34.11 ms","timestamp":"06:24:51.665"}
-{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"06:27:13.374"}
-{"level":"info","message":"HTTP server closed.","timestamp":"06:27:13.374"}
-{"level":"info","message":"Redis connection closed.","timestamp":"06:27:13.375"}
-{"level":"info","message":"Redis Connected Successfully","timestamp":"06:27:13.617"}
-{"level":"info","message":"Redis Ready","timestamp":"06:27:13.619"}
-{"level":"info","message":"Redis Ping Successful","timestamp":"06:27:13.620"}
-{"level":"info","message":"auth-service running on port 7001","timestamp":"06:27:13.621"}
-{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"06:27:48.088"}
-{"level":"info","message":"HTTP server closed.","timestamp":"06:27:48.088"}
-{"level":"info","message":"Redis connection closed.","timestamp":"06:27:48.089"}
-{"level":"info","message":"Redis Connected Successfully","timestamp":"06:29:16.857"}
-{"level":"info","message":"Redis Ready","timestamp":"06:29:16.859"}
-{"level":"info","message":"Redis Ping Successful","timestamp":"06:29:16.860"}
-{"level":"info","message":"auth-service running on port 7001","timestamp":"06:29:16.861"}
-{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"06:29:20.600"}
-{"level":"info","message":"Public events cached after DB fetch","timestamp":"06:29:20.640"}
-{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 41.97 ms","timestamp":"06:29:20.642"}
-{"level":"info","message":"Incoming request: GET /api/v1/event/public' from ::ffff:127.0.0.1","timestamp":"06:29:21.689"}
-{"level":"warn","message":"Resource not found: GET /api/v1/event/public'","timestamp":"06:29:21.690"}
-{"level":"info","message":"Request completed: GET /api/v1/event/public' - Status: 404 - Duration: 1.43 ms","timestamp":"06:29:21.691"}
-{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"06:29:24.011"}
-{"level":"info","message":"Public events fetched from cache","timestamp":"06:29:24.012"}
-{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 2.62 ms","timestamp":"06:29:24.013"}
-{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"06:29:24.824"}
-{"level":"info","message":"Public events fetched from cache","timestamp":"06:29:24.826"}
-{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 2.81 ms","timestamp":"06:29:24.827"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"14:09:20.580"}
+{"level":"info","message":"Redis Ready","timestamp":"14:09:20.582"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"14:09:20.583"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"14:09:20.583"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"16:10:09.084"}
+{"level":"info","message":"HTTP server closed.","timestamp":"16:10:09.085"}
+{"level":"info","message":"Redis connection closed.","timestamp":"16:10:09.086"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"16:10:09.377"}
+{"level":"info","message":"Redis Ready","timestamp":"16:10:09.379"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"16:10:09.380"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"16:10:09.381"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"16:23:18.269"}
+{"level":"info","message":"HTTP server closed.","timestamp":"16:23:18.270"}
+{"level":"info","message":"Redis connection closed.","timestamp":"16:23:18.271"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"16:23:18.508"}
+{"level":"info","message":"Redis Ready","timestamp":"16:23:18.510"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"16:23:18.511"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"16:23:18.512"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"16:23:23.114"}
+{"level":"info","message":"HTTP server closed.","timestamp":"16:23:23.114"}
+{"level":"info","message":"Redis connection closed.","timestamp":"16:23:23.115"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"16:23:23.275"}
+{"level":"info","message":"Redis Ready","timestamp":"16:23:23.278"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"16:23:23.278"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"16:23:23.279"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"16:24:54.142"}
+{"level":"info","message":"HTTP server closed.","timestamp":"16:24:54.142"}
+{"level":"info","message":"Redis connection closed.","timestamp":"16:24:54.143"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"16:24:54.310"}
+{"level":"info","message":"Redis Ready","timestamp":"16:24:54.312"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"16:24:54.313"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"16:24:54.313"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/lister from ::ffff:127.0.0.1","timestamp":"16:25:22.272"}
+{"level":"info","message":"Fetched 1 events for user 5e3cea26-1b1d-4b9d-851b-2da513447063","timestamp":"16:25:22.310"}
+{"level":"info","message":"Request completed: GET /api/v1/event/lister - Status: 200 - Duration: 41.52 ms","timestamp":"16:25:22.313"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:03:53.390"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:03:53.391"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:03:53.392"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:03:53.640"}
+{"level":"info","message":"Redis Ready","timestamp":"19:03:53.642"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:03:53.642"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"19:03:53.643"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:03:56.229"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:03:56.230"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:03:56.231"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:03:56.382"}
+{"level":"info","message":"Redis Ready","timestamp":"19:03:56.384"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:03:56.385"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"19:03:56.386"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:04:09.759"}
+{"level":"info","message":"Public events cached after DB fetch","timestamp":"19:04:09.793"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 35.75 ms","timestamp":"19:04:09.795"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:04:20.252"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:04:20.253"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:04:20.254"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:04:20.491"}
+{"level":"info","message":"Redis Ready","timestamp":"19:04:20.494"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:04:20.494"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"19:04:20.495"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:04:26.689"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:04:26.691"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 4.81 ms","timestamp":"19:04:26.694"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:04:27.497"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:04:27.499"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 2.55 ms","timestamp":"19:04:27.500"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:07:17.306"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:07:17.306"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:07:17.307"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:07:17.545"}
+{"level":"info","message":"Redis Ready","timestamp":"19:07:17.548"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:07:17.548"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"19:07:17.549"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:07:28.767"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:07:28.768"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:07:28.769"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:08:14.840"}
+{"level":"info","message":"Redis Ready","timestamp":"19:08:14.843"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:08:14.843"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"19:08:14.844"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:08:18.728"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:08:18.730"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 4.60 ms","timestamp":"19:08:18.733"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:08:50.893"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:08:50.894"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 2.00 ms","timestamp":"19:08:50.895"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:08:51.362"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:08:51.364"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 2.69 ms","timestamp":"19:08:51.365"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:08:51.555"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:08:51.557"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 2.44 ms","timestamp":"19:08:51.558"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:08:51.739"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:08:51.740"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 1.49 ms","timestamp":"19:08:51.740"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:08:51.900"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:08:51.901"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 1.58 ms","timestamp":"19:08:51.901"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:08:52.092"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:08:52.094"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 2.79 ms","timestamp":"19:08:52.095"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:08:52.278"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:08:52.279"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 2.43 ms","timestamp":"19:08:52.280"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:08:52.772"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:08:52.774"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 2.45 ms","timestamp":"19:08:52.775"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:09:22.732"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:09:22.732"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:09:22.734"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:09:22.888"}
+{"level":"info","message":"Redis Ready","timestamp":"19:09:22.890"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:09:22.890"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"19:09:22.891"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:09:24.805"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:09:24.807"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 5.67 ms","timestamp":"19:09:24.810"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:10:20.015"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:10:20.015"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:10:20.016"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:10:20.182"}
+{"level":"info","message":"Redis Ready","timestamp":"19:10:20.184"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:10:20.184"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"19:10:20.185"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:10:22.316"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:10:22.318"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 6.41 ms","timestamp":"19:10:22.322"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:11:15.378"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:11:15.379"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:11:15.381"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:11:15.626"}
+{"level":"info","message":"Redis Ready","timestamp":"19:11:15.628"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:11:15.629"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"19:11:15.629"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:11:19.689"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:11:19.691"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 8.08 ms","timestamp":"19:11:19.697"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:11:53.199"}
+{"level":"info","message":"Fetched [object Object] public events","timestamp":"19:11:53.244"}
+{"level":"info","message":"Public events cached after DB fetch","timestamp":"19:11:53.245"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 47.57 ms","timestamp":"19:11:53.246"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:12:08.889"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:12:08.890"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 1.88 ms","timestamp":"19:12:08.891"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:12:27.797"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:12:27.797"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:12:27.798"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:12:28.027"}
+{"level":"info","message":"Redis Ready","timestamp":"19:12:28.030"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:12:28.030"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"19:12:28.031"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:12:35.931"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:12:35.932"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:12:35.932"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:13:22.967"}
+{"level":"info","message":"Redis Ready","timestamp":"19:13:22.970"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:13:22.970"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"19:13:22.971"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:13:32.528"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:13:32.530"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 5.35 ms","timestamp":"19:13:32.534"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:19:04.325"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:19:04.326"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:19:04.327"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:19:04.484"}
+{"level":"info","message":"Redis Ready","timestamp":"19:19:04.486"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:19:04.486"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"19:19:04.487"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:19:24.292"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:19:24.292"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:19:24.293"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:20:53.449"}
+{"level":"info","message":"Redis Ready","timestamp":"19:20:53.451"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:20:53.452"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"19:20:53.452"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:20:57.996"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:20:57.998"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 5.33 ms","timestamp":"19:20:58.002"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:21:08.307"}
+{"level":"info","message":"Fetched [object Object] public events","timestamp":"19:21:08.344"}
+{"level":"info","message":"Public events cached after DB fetch","timestamp":"19:21:08.345"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 38.45 ms","timestamp":"19:21:08.345"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::ffff:127.0.0.1","timestamp":"19:22:53.288"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"19:22:53.290"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 2.31 ms","timestamp":"19:22:53.290"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be from ::ffff:127.0.0.1","timestamp":"19:23:01.594"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be from ::ffff:127.0.0.1","timestamp":"19:23:29.664"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:23:49.625"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:23:49.626"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:23:49.627"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:23:49.872"}
+{"level":"info","message":"Redis Ready","timestamp":"19:23:49.874"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:23:49.874"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"19:23:49.875"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be from ::ffff:127.0.0.1","timestamp":"19:23:51.884"}
+{"level":"info","message":"Request completed: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be - Status: 200 - Duration: 27.82 ms","timestamp":"19:23:51.911"}
+{"level":"info","message":"Received SIGINT. Shutting down gracefully...","timestamp":"22:54:54.310"}
+{"level":"info","message":"HTTP server closed.","timestamp":"22:54:54.313"}
+{"level":"info","message":"Redis connection closed.","timestamp":"22:54:54.317"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"23:06:04.476"}
+{"level":"info","message":"Redis Ready","timestamp":"23:06:04.480"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"23:06:04.480"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"23:06:04.481"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"23:06:39.557"}
+{"level":"info","message":"HTTP server closed.","timestamp":"23:06:39.557"}
+{"level":"info","message":"Redis connection closed.","timestamp":"23:06:39.558"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"23:06:39.723"}
+{"level":"info","message":"Redis Ready","timestamp":"23:06:39.725"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"23:06:39.725"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"23:06:39.726"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/listert from ::ffff:127.0.0.1","timestamp":"23:06:58.548"}
+{"level":"warn","message":"Resource not found: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/listert","timestamp":"23:06:58.549"}
+{"level":"info","message":"Request completed: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/listert - Status: 404 - Duration: 4.01 ms","timestamp":"23:06:58.552"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/lister from ::ffff:127.0.0.1","timestamp":"23:06:59.344"}
+{"level":"warn","message":"Resource not found: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/lister","timestamp":"23:06:59.344"}
+{"level":"info","message":"Request completed: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/lister - Status: 404 - Duration: 1.84 ms","timestamp":"23:06:59.346"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"23:07:28.266"}
+{"level":"info","message":"HTTP server closed.","timestamp":"23:07:28.266"}
+{"level":"info","message":"Redis connection closed.","timestamp":"23:07:28.267"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"23:07:28.541"}
+{"level":"info","message":"Redis Ready","timestamp":"23:07:28.542"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"23:07:28.543"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"23:07:28.544"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/lister from ::ffff:127.0.0.1","timestamp":"23:07:29.654"}
+{"level":"info","message":"Request completed: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/lister - Status: 200 - Duration: 56.21 ms","timestamp":"23:07:29.710"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be from ::ffff:127.0.0.1","timestamp":"23:07:37.085"}
+{"level":"warn","message":"Resource not found: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be","timestamp":"23:07:37.086"}
+{"level":"info","message":"Request completed: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be - Status: 404 - Duration: 1.72 ms","timestamp":"23:07:37.087"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/public from ::ffff:127.0.0.1","timestamp":"23:07:40.781"}
+{"level":"info","message":"Request completed: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/public - Status: 200 - Duration: 12.68 ms","timestamp":"23:07:40.794"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/lister] from ::ffff:127.0.0.1","timestamp":"23:07:45.813"}
+{"level":"warn","message":"Resource not found: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/lister]","timestamp":"23:07:45.814"}
+{"level":"info","message":"Request completed: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/lister] - Status: 404 - Duration: 1.58 ms","timestamp":"23:07:45.815"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/lister from ::ffff:127.0.0.1","timestamp":"23:07:47.639"}
+{"level":"info","message":"Request completed: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/lister - Status: 200 - Duration: 12.37 ms","timestamp":"23:07:47.652"}
+{"level":"info","message":"Incoming request: PATCH /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be from ::ffff:127.0.0.1","timestamp":"23:08:39.922"}
+{"level":"info","message":"Request completed: PATCH /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be - Status: 400 - Duration: 2.73 ms","timestamp":"23:08:39.925"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"23:09:05.429"}
+{"level":"info","message":"HTTP server closed.","timestamp":"23:09:05.429"}
+{"level":"info","message":"Redis connection closed.","timestamp":"23:09:05.430"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"23:09:05.665"}
+{"level":"info","message":"Redis Ready","timestamp":"23:09:05.667"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"23:09:05.667"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"23:09:05.668"}
+{"level":"info","message":"Incoming request: PATCH /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be from ::ffff:127.0.0.1","timestamp":"23:09:08.477"}
+{"level":"info","message":"Request completed: PATCH /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be - Status: 200 - Duration: 46.92 ms","timestamp":"23:09:08.524"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/public from ::ffff:127.0.0.1","timestamp":"23:09:25.573"}
+{"level":"info","message":"Request completed: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/public - Status: 200 - Duration: 14.36 ms","timestamp":"23:09:25.587"}

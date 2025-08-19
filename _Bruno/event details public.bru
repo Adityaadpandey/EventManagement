@@ -1,11 +1,11 @@
 meta {
-  name: health
+  name: event details public
   type: http
-  seq: 6
+  seq: 7
 }
 
 get {
-  url: http://localhost:7001/health
+  url: {{host}}/event/{{eventId}}/public
   body: none
   auth: inherit
 }

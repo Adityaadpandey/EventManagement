@@ -1,11 +1,11 @@
 meta {
-  name: health
+  name: lister events
   type: http
   seq: 6
 }
 
 get {
-  url: http://localhost:7001/health
+  url: {{host}}/event/lister
   body: none
   auth: inherit
 }

@@ -121,7 +121,7 @@ export class EventController {
 				date,
 				time,
 				location,
-				capacity: capacity ? Number.parseInt(capacity) : undefined,
+				capacity: capacity ? Number.parseInt(capacity, 10) : undefined,
 				samplePoster,
 				socialMediaGraphic,
 				eventFormat,
@@ -142,26 +142,159 @@ export class EventController {
 		}
 	}
 
+	//  all the event details for public view
 	async getPublicEvents(req: Request, res: Response) {
 		try {
-			const events = await this.eventService.getPublicEvents();
+			const page = Number.parseInt(req.query.page as string, 10) || 1;
+			const limit = Number.parseInt(req.query.limit as string, 10) || 20;
+
+			const { events, total } = await this.eventService.getPublicEvents(
+				page,
+				limit,
+			);
+
+			const totalPages = Math.ceil(total / limit);
+
 			return sendSuccess(
 				res,
 				"Public events retrieved successfully",
 				events,
 				200,
+				{
+					page,
+					limit,
+					total,
+					totalPages,
+				},
 			);
 		} catch (error: any) {
-			logger.error("Failed to get public event:", error);
-			return sendError(res, "Failed to get public event", 500, error.message);
+			logger.error("Failed to get public events:", error);
+			return sendError(res, "Failed to get public events", 500, error.message);
 		}
 	}
 
-	async getListerEvent(req: AuthenticatedRequest, res: Response) {}
+	// for getting lister events
+	async getListerEvents(req: AuthenticatedRequest, res: Response) {
+		try {
+			const userId = req.user?.userId;
+			if (!userId) return sendError(res, "User ID is required", 400);
 
-	async patchEvent(req: AuthenticatedRequest, res: Response) {}
+			const events = await this.eventService.getListerEvents(userId);
+			return sendSuccess(
+				res,
+				"Lister events retrieved successfully",
+				events,
+				200,
+			);
+		} catch (error: any) {
+			logger.error("Failed to get lister event:", error);
+			return sendError(res, "Failed to get lister event", 500, error.message);
+		}
+	}
 
-	async submitEventForApproval(req: AuthenticatedRequest, res: Response) {}
+	// for getting specific event details
+	async getPublicEventDetails(req: Request, res: Response) {
+		try {
+			const eventId = req.params.eventId;
+			if (!eventId) return sendError(res, "Event ID is required", 400);
 
-	async getEventAttendees(req: AuthenticatedRequest, res: Response) {}
+			const eventDetails =
+				await this.eventService.getPublicEventDetails(eventId);
+
+			if (!eventDetails) {
+				return sendError(res, "Event not found", 404);
+			}
+
+			return sendSuccess(
+				res,
+				"Public event details retrieved successfully",
+				eventDetails,
+				200,
+			);
+		} catch (error: any) {
+			logger.error("Failed to get public event details:", error);
+			return sendError(
+				res,
+				"Failed to get public event details",
+				500,
+				error.message,
+			);
+		}
+	}
+
+	async getEventDetails(req: AuthenticatedRequest, res: Response) {
+		try {
+			const userId = req.user?.userId;
+			if (!userId) return sendError(res, "User ID is required", 400);
+
+			const eventId = req.params.eventId;
+			if (!eventId) return sendError(res, "Event ID is required", 400);
+			const eventDetails = await this.eventService.getEventDetails(
+				userId,
+				eventId,
+			);
+			if (!eventDetails) {
+				return sendError(res, "Event not found", 404);
+			}
+
+			return sendSuccess(
+				res,
+				"Event details retrieved successfully",
+				eventDetails,
+				200,
+			);
+		} catch (error: any) {
+			logger.error("Failed to get event details:", error);
+			return sendError(res, "Failed to get event details", 500, error.message);
+		}
+	}
+
+	async patchEvent(req: AuthenticatedRequest, res: Response) {
+		try {
+			const userId = req.user?.userId;
+			if (!userId) return sendError(res, "User ID is required", 400);
+
+			const eventId = req.params.eventId;
+			if (!eventId) return sendError(res, "Event ID is required", 400);
+
+			const updateData = req.body;
+
+			// Validate required fields
+			// if (
+			// 	!updateData.title ||
+			// 	!updateData.description ||
+			// 	!updateData.banner_horizontal ||
+			// 	!updateData.banner_vertical ||
+			// 	!updateData.banner_square ||
+			// 	!updateData.date ||
+			// 	!updateData.time ||
+			// 	!updateData.location
+			// ) {
+			// 	return sendError(
+			// 		res,
+			// 		"Missing required fields: title, description, banners, date, time, location",
+			// 		400,
+			// 	);
+			// }
+
+			const updatedEvent = await this.eventService.patchEvent(
+				userId,
+				eventId,
+				updateData,
+			);
+			return sendSuccess(
+				res,
+				`Update succesfully executed for eventId:${eventId}`,
+				updatedEvent,
+				200,
+			);
+		} catch (error: any) {
+			logger.error("Failed to patch event:", error);
+			return sendError(res, "Failed to patch event", 500, error.message);
+		}
+	}
+
+	async submitEventForApproval(_req: AuthenticatedRequest, _res: Response) {}
+
+	async getEventAttendees(_req: AuthenticatedRequest, _res: Response) {}
 }
