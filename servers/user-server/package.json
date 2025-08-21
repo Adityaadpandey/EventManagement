@@ -46,6 +46,7 @@
 		"jsonwebtoken": "^9.0.2",
 		"libphonenumber-js": "^1.12.12",
 		"nodemailer": "^7.0.3",
+		"razorpay": "^2.9.6",
 		"twilio": "^5.8.0",
 		"zod": "^4.0.17"
 	}

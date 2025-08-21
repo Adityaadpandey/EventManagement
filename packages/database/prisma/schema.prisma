@@ -23,7 +23,11 @@ enum Status {
     CANCELLATION_REQUESTED
     CANCELLED
 }
-
+enum TicketPaymentStatus {
+    PENDING
+    SUCCESS
+    FAILED
+}
 enum RefundStatus {
     PENDING
     COMPLETED
@@ -170,6 +174,7 @@ model Ticket {
     userId String
     user   User   @relation(fields: [userId], references: [userId])
 
+    status     TicketPaymentStatus  @default(PENDING) // PENDING, APPROVED, REJECTED, CANCELLED
     quantity   Int
     totalPrice Float
     qrCode     String  @unique

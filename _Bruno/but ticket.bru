@@ -1,0 +1,15 @@
+meta {
+  name: but ticket
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{host}}/ticket/buy
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

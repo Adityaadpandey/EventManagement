@@ -1,0 +1,22 @@
+meta {
+  name: proccess refund
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{host}}/ticket/refund/process
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "refundId":"6d42b3bd-c254-41d9-8871-3fade324bba7",
+    "action":"approve"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

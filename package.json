@@ -2,7 +2,7 @@
 	"name": "eventmanagement",
 	"private": true,
 	"scripts": {
-		"check": "biome check --write .",
+		"check": "biome check --write . --max-diagnostics=1000",
 		"build": "turbo run build",
 		"dev": "turbo run dev",
 		"build:packages": "pnpm -r --filter @repo/* run build",

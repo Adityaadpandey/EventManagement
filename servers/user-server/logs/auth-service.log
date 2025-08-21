@@ -245,3 +245,249 @@
 {"level":"info","message":"Request completed: PATCH /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be - Status: 200 - Duration: 46.92 ms","timestamp":"23:09:08.524"}
 {"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/public from ::ffff:127.0.0.1","timestamp":"23:09:25.573"}
 {"level":"info","message":"Request completed: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/public - Status: 200 - Duration: 14.36 ms","timestamp":"23:09:25.587"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"23:10:15.823"}
+{"level":"info","message":"HTTP server closed.","timestamp":"23:10:15.823"}
+{"level":"info","message":"Redis connection closed.","timestamp":"23:10:15.824"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"23:10:16.189"}
+{"level":"info","message":"Redis Ready","timestamp":"23:10:16.191"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"23:10:16.192"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"23:10:16.192"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"23:55:03.553"}
+{"level":"info","message":"HTTP server closed.","timestamp":"23:55:03.555"}
+{"level":"info","message":"Redis connection closed.","timestamp":"23:55:03.557"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"23:55:03.946"}
+{"level":"info","message":"Redis Ready","timestamp":"23:55:03.949"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"23:55:03.950"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"23:55:03.951"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"06:07:57.322"}
+{"level":"info","message":"HTTP server closed.","timestamp":"06:07:57.332"}
+{"level":"info","message":"Redis connection closed.","timestamp":"06:07:57.336"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"06:07:58.125"}
+{"level":"info","message":"Redis Ready","timestamp":"06:07:58.129"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"06:07:58.130"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"06:07:58.131"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"06:53:50.124"}
+{"level":"info","message":"HTTP server closed.","timestamp":"06:53:50.124"}
+{"level":"info","message":"Redis connection closed.","timestamp":"06:53:50.125"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"06:53:50.373"}
+{"level":"info","message":"Redis Ready","timestamp":"06:53:50.375"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"06:53:50.375"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"06:53:50.376"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"14:28:08.674"}
+{"level":"info","message":"HTTP server closed.","timestamp":"14:28:08.675"}
+{"level":"info","message":"Redis connection closed.","timestamp":"14:28:08.676"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"14:28:09.013"}
+{"level":"info","message":"Redis Ready","timestamp":"14:28:09.015"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"14:28:09.017"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"14:28:09.018"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"15:20:41.460"}
+{"level":"info","message":"HTTP server closed.","timestamp":"15:20:41.460"}
+{"level":"info","message":"Redis connection closed.","timestamp":"15:20:41.461"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:20:41.709"}
+{"level":"info","message":"Redis Ready","timestamp":"15:20:41.713"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:20:41.713"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"15:20:41.714"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"20:10:44.466"}
+{"level":"info","message":"HTTP server closed.","timestamp":"20:10:44.474"}
+{"level":"info","message":"Redis connection closed.","timestamp":"20:10:44.477"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"20:10:44.896"}
+{"level":"info","message":"Redis Ready","timestamp":"20:10:44.898"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"20:10:44.898"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"20:10:44.899"}
+{"level":"info","message":"Received SIGINT. Shutting down gracefully...","timestamp":"03:47:45.992"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:47:45.996"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:47:45.998"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"01:21:14.112"}
+{"level":"info","message":"Redis Ready","timestamp":"01:21:14.114"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"01:21:14.115"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"01:21:14.116"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"01:24:28.943"}
+{"level":"info","message":"HTTP server closed.","timestamp":"01:24:28.943"}
+{"level":"info","message":"Redis connection closed.","timestamp":"01:24:28.944"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"01:24:29.383"}
+{"level":"info","message":"Redis Ready","timestamp":"01:24:29.385"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"01:24:29.386"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"01:24:29.387"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/public from ::ffff:127.0.0.1","timestamp":"02:12:03.185"}
+{"level":"info","message":"Request completed: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/public - Status: 200 - Duration: 37.05 ms","timestamp":"02:12:03.221"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/buy from ::ffff:127.0.0.1","timestamp":"02:14:15.296"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/buy - Status: 200 - Duration: 1306.34 ms","timestamp":"02:14:16.603"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/payment/verify from ::ffff:127.0.0.1","timestamp":"02:25:45.533"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/payment/verify - Status: 400 - Duration: 3.43 ms","timestamp":"02:25:45.537"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"02:50:59.088"}
+{"level":"info","message":"Redis Ready","timestamp":"02:50:59.089"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"02:50:59.090"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"02:50:59.091"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/buy from ::ffff:127.0.0.1","timestamp":"02:51:00.392"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/buy - Status: 200 - Duration: 966.08 ms","timestamp":"02:51:01.358"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/payment/verify from ::ffff:127.0.0.1","timestamp":"02:52:06.742"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/payment/verify - Status: 400 - Duration: 1962.84 ms","timestamp":"02:52:08.705"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/payment/verify from ::ffff:127.0.0.1","timestamp":"02:52:28.809"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/payment/verify - Status: 400 - Duration: 690.13 ms","timestamp":"02:52:29.500"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/payment/verify from ::ffff:127.0.0.1","timestamp":"02:52:47.074"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/payment/verify - Status: 400 - Duration: 979.40 ms","timestamp":"02:52:48.054"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/buy from ::ffff:127.0.0.1","timestamp":"02:53:33.158"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/buy - Status: 200 - Duration: 474.12 ms","timestamp":"02:53:33.632"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/payment/verify from ::ffff:127.0.0.1","timestamp":"02:54:38.885"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/payment/verify - Status: 400 - Duration: 808.18 ms","timestamp":"02:54:39.693"}
+{"level":"info","message":"Received SIGINT. Shutting down gracefully...","timestamp":"02:55:22.980"}
+{"level":"info","message":"HTTP server closed.","timestamp":"02:55:22.981"}
+{"level":"info","message":"Redis connection closed.","timestamp":"02:55:22.982"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"02:55:26.350"}
+{"level":"info","message":"Redis Ready","timestamp":"02:55:26.354"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"02:55:26.354"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"02:55:26.355"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/buy from ::ffff:127.0.0.1","timestamp":"02:55:36.766"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/buy - Status: 200 - Duration: 392.94 ms","timestamp":"02:55:37.158"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/payment/verify from ::ffff:127.0.0.1","timestamp":"02:56:51.063"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/payment/verify - Status: 400 - Duration: 980.57 ms","timestamp":"02:56:52.044"}
+{"level":"info","message":"Received SIGINT. Shutting down gracefully...","timestamp":"02:57:42.807"}
+{"level":"info","message":"HTTP server closed.","timestamp":"02:57:42.808"}
+{"level":"info","message":"Redis connection closed.","timestamp":"02:57:42.810"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"02:57:46.148"}
+{"level":"info","message":"Redis Ready","timestamp":"02:57:46.150"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"02:57:46.150"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"02:57:46.151"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/buy from ::ffff:127.0.0.1","timestamp":"02:58:13.159"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/buy - Status: 200 - Duration: 441.11 ms","timestamp":"02:58:13.600"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/payment/verify from ::ffff:127.0.0.1","timestamp":"02:59:40.951"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/payment/verify - Status: 400 - Duration: 1054.23 ms","timestamp":"02:59:42.005"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/payment/verify from ::ffff:127.0.0.1","timestamp":"03:00:42.097"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/payment/verify - Status: 200 - Duration: 888.85 ms","timestamp":"03:00:42.986"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/buy from ::ffff:127.0.0.1","timestamp":"03:12:14.763"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/buy - Status: 200 - Duration: 1047.81 ms","timestamp":"03:12:15.810"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/payment/verify from ::ffff:127.0.0.1","timestamp":"03:13:07.723"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/payment/verify - Status: 200 - Duration: 855.64 ms","timestamp":"03:13:08.579"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/payment/failed from ::ffff:127.0.0.1","timestamp":"03:13:31.669"}
+{"level":"warn","message":"Resource not found: POST /api/v1/ticket/payment/failed","timestamp":"03:13:31.670"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/payment/failed - Status: 404 - Duration: 1.40 ms","timestamp":"03:13:31.671"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/payment/failure from ::ffff:127.0.0.1","timestamp":"03:13:41.714"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/payment/failure - Status: 400 - Duration: 2.06 ms","timestamp":"03:13:41.716"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/refund/request from ::ffff:127.0.0.1","timestamp":"03:14:16.911"}
+{"level":"warn","message":"Resource not found: GET /api/v1/ticket/refund/request","timestamp":"03:14:16.912"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/refund/request - Status: 404 - Duration: 1.32 ms","timestamp":"03:14:16.912"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/refund/request from ::ffff:127.0.0.1","timestamp":"03:14:20.098"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/refund/request - Status: 500 - Duration: 17.72 ms","timestamp":"03:14:20.115"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/refund/request from ::ffff:127.0.0.1","timestamp":"03:15:18.031"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/refund/request - Status: 200 - Duration: 19.19 ms","timestamp":"03:15:18.050"}
+{"data":{"error":"Expected property name or '}' in JSON at position 4 (line 2 column 3)","stack":"SyntaxError: Expected property name or '}' in JSON at position 4 (line 2 column 3)\n    at JSON.parse (<anonymous>)\n    at parse (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/body-parser/lib/types/json.js:77:19)\n    at /Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/body-parser/lib/read.js:123:18\n    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)\n    at invokeCallback (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/raw-body/index.js:238:16)\n    at done (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/raw-body/index.js:227:7)\n    at IncomingMessage.onEnd (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/raw-body/index.js:287:7)\n    at IncomingMessage.emit (node:events:507:28)\n    at endReadableNT (node:internal/streams/readable:1701:12)\n    at processTicksAndRejections (node:internal/process/task_queues:90:21)"},"level":"error","message":"Unhandled error:","timestamp":"03:16:49.033"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/refund/process from ::ffff:127.0.0.1","timestamp":"03:17:09.330"}
+{"level":"warn","message":"Resource not found: GET /api/v1/ticket/refund/process","timestamp":"03:17:09.331"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/refund/process - Status: 404 - Duration: 1.13 ms","timestamp":"03:17:09.331"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:17:48.265"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:17:48.266"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:17:48.267"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:17:48.558"}
+{"level":"info","message":"Redis Ready","timestamp":"03:17:48.560"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:17:48.561"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:17:48.561"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:18:01.043"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:18:01.044"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:18:01.045"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:18:07.145"}
+{"level":"info","message":"Redis Ready","timestamp":"03:18:07.147"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:18:07.148"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:18:07.148"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/refund/process from ::ffff:127.0.0.1","timestamp":"03:18:10.350"}
+{"level":"warn","message":"Resource not found: GET /api/v1/ticket/refund/process","timestamp":"03:18:10.350"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/refund/process - Status: 404 - Duration: 3.27 ms","timestamp":"03:18:10.353"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/refund/process from ::ffff:127.0.0.1","timestamp":"03:18:27.617"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/refund/process - Status: 200 - Duration: 40.26 ms","timestamp":"03:18:27.657"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:20:45.209"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:20:45.210"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:20:45.211"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:20:45.584"}
+{"level":"info","message":"Redis Ready","timestamp":"03:20:45.586"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:20:45.587"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:20:45.587"}
+{"level":"info","message":"Incoming request: POST /api/v1/payment/failure from ::ffff:127.0.0.1","timestamp":"03:20:50.835"}
+{"level":"info","message":"Request completed: POST /api/v1/payment/failure - Status: 400 - Duration: 4.70 ms","timestamp":"03:20:50.840"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:21:09.203"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:21:09.203"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:21:09.204"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:21:09.460"}
+{"level":"info","message":"Redis Ready","timestamp":"03:21:09.464"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:21:09.464"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:21:09.465"}
+{"level":"info","message":"Incoming request: POST /api/v1/payment/verify from ::ffff:127.0.0.1","timestamp":"03:21:12.441"}
+{"level":"info","message":"Request completed: POST /api/v1/payment/verify - Status: 200 - Duration: 1124.85 ms","timestamp":"03:21:13.566"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:21:40.506"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:21:40.506"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:21:40.507"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:21:40.777"}
+{"level":"info","message":"Redis Ready","timestamp":"03:21:40.779"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:21:40.780"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:21:40.781"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:21:43.203"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:21:43.203"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:21:43.204"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:21:43.359"}
+{"level":"info","message":"Redis Ready","timestamp":"03:21:43.361"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:21:43.362"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:21:43.363"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:21:48.319"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:21:48.319"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:21:48.320"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:21:48.472"}
+{"level":"info","message":"Redis Ready","timestamp":"03:21:48.474"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:21:48.475"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:21:48.475"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:21:57.788"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:21:57.788"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:21:57.790"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:22:00.969"}
+{"level":"info","message":"Redis Ready","timestamp":"03:22:00.971"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:22:00.972"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:22:00.972"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:22:28.201"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:22:28.201"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:22:28.202"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:22:28.367"}
+{"level":"info","message":"Redis Ready","timestamp":"03:22:28.368"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:22:28.369"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:22:28.369"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:22:42.477"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:22:42.477"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:22:42.478"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:22:42.688"}
+{"level":"info","message":"Redis Ready","timestamp":"03:22:42.690"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:22:42.690"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:22:42.691"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:22:53.815"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:22:53.815"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:22:53.817"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:22:53.972"}
+{"level":"info","message":"Redis Ready","timestamp":"03:22:53.974"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:22:53.974"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:22:53.975"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:23:00.806"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:23:00.807"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:23:00.808"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:23:00.992"}
+{"level":"info","message":"Redis Ready","timestamp":"03:23:00.994"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:23:00.995"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:23:00.996"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:25:35.321"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:25:35.321"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:25:35.323"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:25:59.417"}
+{"level":"info","message":"Redis Ready","timestamp":"03:25:59.420"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:25:59.420"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:25:59.421"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:26:30.028"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:26:30.029"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:26:30.029"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:27:02.475"}
+{"level":"info","message":"Redis Ready","timestamp":"03:27:02.477"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:27:02.477"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:27:02.478"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:27:26.177"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:27:26.178"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:27:26.179"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"03:27:26.353"}
+{"level":"info","message":"Redis Ready","timestamp":"03:27:26.355"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"03:27:26.355"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"03:27:26.356"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"03:30:09.045"}
+{"level":"info","message":"HTTP server closed.","timestamp":"03:30:09.046"}
+{"level":"info","message":"Redis connection closed.","timestamp":"03:30:09.047"}

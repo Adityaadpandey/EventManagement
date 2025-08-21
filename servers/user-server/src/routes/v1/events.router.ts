@@ -29,6 +29,7 @@ router.get(
 	"/:eventId/public",
 	eventController.getPublicEventDetails.bind(eventController),
 );
+
 // GET /api/v1/event/:eventId/lister
 router.get(
 	"/:eventId/lister",
@@ -46,8 +47,6 @@ router.patch(
 );
 
 // DELETE /api/v1/event/:eventId
-
-// POST /api/v1/event/:eventId/submit-for-approval
 
 // GET /api/v1/event/:eventId/attendees
 
