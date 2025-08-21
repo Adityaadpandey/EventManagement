@@ -20,6 +20,8 @@ coverage
 # Vercel
 .vercel
 
+.env
+
 # Build Outputs
 .next/
 out/
@@ -37,3 +39,4 @@ yarn-error.log*
 *.pem
 
 generated
+.env

@@ -1,5 +1,6 @@
 import type { Response } from "express";
 import { prisma } from "../config/db";
+import logger from "../config/logger";
 import { PaymentService } from "../services/payment.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
@@ -38,7 +39,7 @@ export class PaymentController {
 				paymentDetails: paymentDetails.data,
 			});
 		} catch (error) {
-			console.error("Error verifying payment:", error);
+			logger.error("Error verifying payment:", error);
 			return sendError(res, "Failed to verify payment", 500);
 		}
 	}
@@ -82,7 +83,7 @@ export class PaymentController {
 				result.data,
 			);
 		} catch (error) {
-			console.error("Error requesting refund:", error);
+			logger("Error requesting refund:", error);
 			return sendError(res, "Failed to request refund", 500);
 		}
 	}
@@ -109,7 +110,7 @@ export class PaymentController {
 
 			return sendSuccess(res, `Refund ${action}d successfully`, result.data);
 		} catch (error) {
-			console.error("Error processing refund:", error);
+			logger("Error processing refund:", error);
 			return sendError(res, "Failed to process refund", 500);
 		}
 	}
@@ -163,7 +164,7 @@ export class PaymentController {
 
 			return sendSuccess(res, "Refunds fetched successfully", result.data);
 		} catch (error) {
-			console.error("Error fetching refunds:", error);
+			logger("Error fetching refunds:", error);
 			return sendError(res, "Failed to fetch refunds", 500);
 		}
 	}

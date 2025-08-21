@@ -1,4 +1,5 @@
 import { prisma } from "../config/db";
+import logger from "../config/logger";
 
 export class UserService {
 	async getUserProfile(userId: string) {
@@ -22,7 +23,7 @@ export class UserService {
 			}
 			return userProfile;
 		} catch (error: any) {
-			console.error("Error fetching user profile:", error);
+			logger.error("Error fetching user profile:", error);
 			throw new Error("Failed to fetch user profile");
 		}
 	}
@@ -54,7 +55,7 @@ export class UserService {
 
 			return updatedUser;
 		} catch (error: any) {
-			console.error("Error updating user profile:", error);
+			logger("Error updating user profile:", error);
 			throw new Error("Failed to update user profile");
 		}
 	}

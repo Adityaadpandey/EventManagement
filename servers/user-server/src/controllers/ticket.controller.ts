@@ -1,4 +1,5 @@
 import type { Response } from "express";
+import logger from "../config/logger";
 import { TicketService } from "../services/ticket.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
@@ -41,7 +42,7 @@ export class TicketController {
 				result.data,
 			);
 		} catch (error) {
-			console.error("Error buying ticket:", error);
+			logger.error("Error buying ticket:", error);
 			return sendError(res, "Failed to create ticket", 500);
 		}
 	}
@@ -71,7 +72,7 @@ export class TicketController {
 				result.data,
 			);
 		} catch (error) {
-			console.error("Error verifying payment:", error);
+			logger("Error verifying payment:", error);
 			return sendError(res, "Failed to verify payment", 500);
 		}
 	}
@@ -88,7 +89,7 @@ export class TicketController {
 
 			return sendSuccess(res, "Payment failure handled", result.data);
 		} catch (error) {
-			console.error("Error handling payment failure:", error);
+			logger("Error handling payment failure:", error);
 			return sendError(res, "Failed to handle payment failure", 500);
 		}
 	}
@@ -101,7 +102,7 @@ export class TicketController {
 			const result = await this.ticketService.getUserTickets(userId);
 			return sendSuccess(res, "User tickets fetched successfully", result.data);
 		} catch (error) {
-			console.error("Error fetching user tickets:", error);
+			logger("Error fetching user tickets:", error);
 			return sendError(res, "Failed to fetch user tickets", 500);
 		}
 	}
@@ -131,7 +132,7 @@ export class TicketController {
 				result.data,
 			);
 		} catch (error) {
-			console.error("Error fetching ticket buyers for event:", error);
+			logger("Error fetching ticket buyers for event:", error);
 			return sendError(res, "Failed to fetch ticket buyers", 500);
 		}
 	}
@@ -153,7 +154,7 @@ export class TicketController {
 				result.data,
 			);
 		} catch (error) {
-			console.error("Error fetching all ticket buyers:", error);
+			logger("Error fetching all ticket buyers:", error);
 			return sendError(res, "Failed to fetch all ticket buyers", 500);
 		}
 	}
@@ -187,7 +188,7 @@ export class TicketController {
 				result.data,
 			);
 		} catch (error) {
-			console.error("Error fetching ticket details:", error);
+			logger("Error fetching ticket details:", error);
 			return sendError(res, "Failed to fetch ticket details", 500);
 		}
 	}

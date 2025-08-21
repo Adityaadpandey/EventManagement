@@ -215,7 +215,7 @@ export class EventService {
 				data: completeEvent,
 			};
 		} catch (error) {
-			console.error("Error creating event:", error);
+			logger("Error creating event:", error);
 			throw error;
 		}
 	}
