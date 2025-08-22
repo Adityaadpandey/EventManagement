@@ -165,3 +165,10 @@
 {"level":"info","message":"Request completed: GET /api/v1/ticket/event/9c473cbb-450b-429e-84d4-05c34e9967be/buyers - Status: 200 - Duration: 18.98 ms","timestamp":"05:30:07.740"}
 {"level":"info","message":"Incoming request: GET /api/v1/ticket/admin/all-buyers from ::1","timestamp":"05:30:39.516"}
 {"level":"info","message":"Request completed: GET /api/v1/ticket/admin/all-buyers - Status: 403 - Duration: 2.20 ms","timestamp":"05:30:39.518"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:32:22.981"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:32:22.982"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:32:22.982"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:32:23.519"}
+{"level":"info","message":"Redis Ready","timestamp":"05:32:23.521"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:32:23.521"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:32:23.522"}
