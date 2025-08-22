@@ -15,14 +15,14 @@ RUN pnpm install && pnpm run build
 
 WORKDIR /workspace
 
-COPY server/user-server/package*.json ./server/user-server/
+COPY servers/user-server/package*.json ./servers/user-server/
 
-WORKDIR /workspace/server/user-server
+WORKDIR /workspace/servers/user-server
 RUN pnpm install
 
-COPY server/user-server/package*.json ./
-COPY server/user-server/tsconfig.json ./
-COPY server/user-server/src ./src
+COPY servers/user-server/package*.json ./
+COPY servers/user-server/tsconfig.json ./
+COPY servers/user-server/src ./src
 
 RUN pnpm run build
 
@@ -35,10 +35,10 @@ WORKDIR /workspace
 
 # Copy built assets from builder
 COPY --from=builder /workspace/packages ./packages
-COPY --from=builder /workspace/server/user-server/dist ./server/user-server/dist
-COPY --from=builder /workspace/server/user-server/package*.json ./server/user-server/
+COPY --from=builder /workspace/servers/user-server/dist ./servers/user-server/dist
+COPY --from=builder /workspace/servers/user-server/package*.json ./servers/user-server/
 
-WORKDIR /workspace/server/user-server
+WORKDIR /workspace/servers/user-server
 
 ENV NODE_ENV=production
 
@@ -46,6 +46,6 @@ RUN npm install -g pnpm
 
 RUN pnpm i --prod
 
-EXPOSE 7001
+EXPOSE 7003
 
-CMD ["node", "dist/app.js"]
+CMD ["node", "dist/index.js"]

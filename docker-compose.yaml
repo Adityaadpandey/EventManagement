@@ -1,4 +1,4 @@
-name: event_management
+version: '3.9'
 
 services:
   postgres:
@@ -13,6 +13,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis/redis-stack:6.2.6-v19
@@ -24,11 +29,45 @@ services:
       - "8001:8001"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "cantremember", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build:
+      context: .
+      dockerfile: servers/user-server/Dockerfile
+    image: backend-user-service
+    ports:
+      - "7001:7001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgress@postgres:5432/event_management"
+      REDIS_URL: "redis://:cantremember@redis:6379"
+      PORT: 7001
+      LOG_LEVEL: info
+      NODE_ENV: DEVELOPMENT
+      JWT_SECRET: supersecretkey
 
 
+
+      TWILIO_ACCOUNT_SID: "ACf50823dfd38d3c25f233259e5219e050"
+      TWILIO_AUTH_TOKEN: "dada382dcc9d9b4b57914225a8e32930"
+      TWILIO_PHONE_NUMBER: "+18722175972"
+
+
+      RAZORPAY_KEY_ID: "rzp_test_PgwgpRUzFvMbAn"
+      RAZORPAY_KEY_SECRET: "KpfGqUxbUb3cQFfkLMGMVmtp"
 
 
 volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
