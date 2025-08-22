@@ -40,7 +40,7 @@ router.post(
 
 // Get refunds
 router.get(
-	"/refunds",
+	"/refunds/:eventId",
 	authMiddleware,
 	paymentController.getRefunds.bind(paymentController),
 );

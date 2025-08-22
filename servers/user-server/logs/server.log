@@ -1,0 +1,167 @@
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:03:50.205"}
+{"level":"info","message":"Redis Ready","timestamp":"05:03:50.209"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:03:50.210"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:03:50.211"}
+{"level":"info","message":"Incoming request: GET /health from ::1","timestamp":"05:04:53.726"}
+{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 28.67 ms","timestamp":"05:04:53.754"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:08:11.833"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:08:11.834"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:08:11.835"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:08:12.103"}
+{"level":"info","message":"Redis Ready","timestamp":"05:08:12.105"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:08:12.106"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:08:12.106"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/public from ::1","timestamp":"05:08:14.516"}
+{"level":"info","message":"Request completed: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/public - Status: 200 - Duration: 32.65 ms","timestamp":"05:08:14.548"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/buy from ::1","timestamp":"05:08:29.083"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/buy - Status: 404 - Duration: 7.35 ms","timestamp":"05:08:29.090"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/buy from ::1","timestamp":"05:08:51.553"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/buy - Status: 404 - Duration: 6.38 ms","timestamp":"05:08:51.560"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/buy from ::1","timestamp":"05:09:09.410"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/buy - Status: 400 - Duration: 13.72 ms","timestamp":"05:09:09.424"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/buy from ::1","timestamp":"05:10:28.760"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/buy - Status: 200 - Duration: 1013.26 ms","timestamp":"05:10:29.773"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:11:17.374"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:11:17.374"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:11:17.375"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:11:17.614"}
+{"level":"info","message":"Redis Ready","timestamp":"05:11:17.617"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:11:17.619"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:11:17.620"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/payment/verify from ::1","timestamp":"05:11:59.405"}
+{"level":"warn","message":"Resource not found: POST /api/v1/ticket/payment/verify","timestamp":"05:11:59.405"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/payment/verify - Status: 404 - Duration: 2.97 ms","timestamp":"05:11:59.407"}
+{"level":"info","message":"Incoming request: POST /api/v1/payment/verify from ::1","timestamp":"05:12:04.805"}
+{"level":"info","message":"Request completed: POST /api/v1/payment/verify - Status: 200 - Duration: 1077.80 ms","timestamp":"05:12:05.883"}
+{"level":"info","message":"Incoming request: POST /api/v1/payment/refund/request from ::1","timestamp":"05:13:37.023"}
+{"level":"info","message":"Request completed: POST /api/v1/payment/refund/request - Status: 200 - Duration: 20.93 ms","timestamp":"05:13:37.044"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/refund/process from ::1","timestamp":"05:14:06.974"}
+{"level":"warn","message":"Resource not found: GET /api/v1/ticket/refund/process","timestamp":"05:14:06.974"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/refund/process - Status: 404 - Duration: 1.54 ms","timestamp":"05:14:06.975"}
+{"level":"info","message":"Incoming request: GET /api/v1/payment/refund/process from ::1","timestamp":"05:14:12.541"}
+{"level":"warn","message":"Resource not found: GET /api/v1/payment/refund/process","timestamp":"05:14:12.542"}
+{"level":"info","message":"Request completed: GET /api/v1/payment/refund/process - Status: 404 - Duration: 1.51 ms","timestamp":"05:14:12.543"}
+{"level":"info","message":"Incoming request: POST /api/v1/payment/refund/process from ::1","timestamp":"05:14:15.254"}
+{"level":"info","message":"Request completed: POST /api/v1/payment/refund/process - Status: 200 - Duration: 21.19 ms","timestamp":"05:14:15.275"}
+{"level":"info","message":"Incoming request: GET /api/v1/payment/refunds from ::1","timestamp":"05:16:44.942"}
+{"level":"info","message":"Request completed: GET /api/v1/payment/refunds - Status: 400 - Duration: 3.44 ms","timestamp":"05:16:44.945"}
+{"data":{"error":"Expected ',' or '}' after property value in JSON at position 15 (line 2 column 14)","stack":"SyntaxError: Expected ',' or '}' after property value in JSON at position 15 (line 2 column 14)\n    at JSON.parse (<anonymous>)\n    at parse (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/body-parser/lib/types/json.js:77:19)\n    at /Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/body-parser/lib/read.js:123:18\n    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)\n    at invokeCallback (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/raw-body/index.js:238:16)\n    at done (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/raw-body/index.js:227:7)\n    at IncomingMessage.onEnd (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/raw-body/index.js:287:7)\n    at IncomingMessage.emit (node:events:507:28)\n    at endReadableNT (node:internal/streams/readable:1701:12)\n    at processTicksAndRejections (node:internal/process/task_queues:90:21)"},"level":"error","message":"Unhandled error:","timestamp":"05:17:14.587"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:21:08.632"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:21:08.632"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:21:08.633"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:21:08.879"}
+{"level":"info","message":"Redis Ready","timestamp":"05:21:08.881"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:21:08.881"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:21:08.882"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:21:25.046"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:21:25.046"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:21:25.047"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:21:25.207"}
+{"level":"info","message":"Redis Ready","timestamp":"05:21:25.209"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:21:25.209"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:21:25.210"}
+{"data":{"error":"Expected ',' or '}' after property value in JSON at position 15 (line 2 column 14)","stack":"SyntaxError: Expected ',' or '}' after property value in JSON at position 15 (line 2 column 14)\n    at JSON.parse (<anonymous>)\n    at parse (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/body-parser/lib/types/json.js:77:19)\n    at /Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/body-parser/lib/read.js:123:18\n    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)\n    at invokeCallback (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/raw-body/index.js:238:16)\n    at done (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/raw-body/index.js:227:7)\n    at IncomingMessage.onEnd (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/raw-body/index.js:287:7)\n    at IncomingMessage.emit (node:events:507:28)\n    at endReadableNT (node:internal/streams/readable:1701:12)\n    at processTicksAndRejections (node:internal/process/task_queues:90:21)"},"level":"error","message":"Unhandled error:","timestamp":"05:21:28.211"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:21:54.143"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:21:54.144"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:21:54.144"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:21:54.319"}
+{"level":"info","message":"Redis Ready","timestamp":"05:21:54.321"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:21:54.322"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:21:54.323"}
+{"data":{"error":"Expected ',' or '}' after property value in JSON at position 15 (line 2 column 14)","stack":"SyntaxError: Expected ',' or '}' after property value in JSON at position 15 (line 2 column 14)\n    at JSON.parse (<anonymous>)\n    at parse (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/body-parser/lib/types/json.js:77:19)\n    at /Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/body-parser/lib/read.js:123:18\n    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)\n    at invokeCallback (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/raw-body/index.js:238:16)\n    at done (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/raw-body/index.js:227:7)\n    at IncomingMessage.onEnd (/Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/raw-body/index.js:287:7)\n    at IncomingMessage.emit (node:events:507:28)\n    at endReadableNT (node:internal/streams/readable:1701:12)\n    at processTicksAndRejections (node:internal/process/task_queues:90:21)"},"level":"error","message":"Unhandled error:","timestamp":"05:21:56.734"}
+{"level":"info","message":"Incoming request: GET /api/v1/payment/refunds from ::1","timestamp":"05:22:23.877"}
+{"level":"info","message":"Request completed: GET /api/v1/payment/refunds - Status: 400 - Duration: 4.44 ms","timestamp":"05:22:23.881"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:22:57.579"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:22:57.579"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:22:57.580"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:22:57.842"}
+{"level":"info","message":"Redis Ready","timestamp":"05:22:57.844"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:22:57.844"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:22:57.845"}
+{"level":"info","message":"Incoming request: GET /api/v1/payment/refunds from ::1","timestamp":"05:23:01.776"}
+{"level":"info","message":"Request completed: GET /api/v1/payment/refunds - Status: 200 - Duration: 34.08 ms","timestamp":"05:23:01.810"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:23:12.757"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:23:12.758"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:23:12.760"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:23:13.028"}
+{"level":"info","message":"Redis Ready","timestamp":"05:23:13.030"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:23:13.031"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:23:13.031"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:23:29.747"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:23:29.748"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:23:29.749"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:23:29.920"}
+{"level":"info","message":"Redis Ready","timestamp":"05:23:29.922"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:23:29.922"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:23:29.923"}
+{"level":"info","message":"Incoming request: GET /api/v1/payment/refunds/9c473cbb-450b-429e-84d4-05c34e9967be from ::1","timestamp":"05:23:40.334"}
+{"level":"info","message":"Request completed: GET /api/v1/payment/refunds/9c473cbb-450b-429e-84d4-05c34e9967be - Status: 400 - Duration: 4.63 ms","timestamp":"05:23:40.339"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:24:12.798"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:24:12.798"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:24:12.799"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:24:12.978"}
+{"level":"info","message":"Redis Ready","timestamp":"05:24:12.980"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:24:12.981"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:24:12.982"}
+{"level":"info","message":"Incoming request: GET /api/v1/payment/refunds/9c473cbb-450b-429e-84d4-05c34e9967be from ::1","timestamp":"05:24:15.846"}
+{"level":"info","message":"Request completed: GET /api/v1/payment/refunds/9c473cbb-450b-429e-84d4-05c34e9967be - Status: 400 - Duration: 5.52 ms","timestamp":"05:24:15.851"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:25:10.172"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:25:10.172"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:25:10.174"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:25:10.350"}
+{"level":"info","message":"Redis Ready","timestamp":"05:25:10.352"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:25:10.353"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:25:10.354"}
+{"level":"info","message":"Incoming request: GET /api/v1/payment/refunds/9c473cbb-450b-429e-84d4-05c34e9967be from ::1","timestamp":"05:25:12.558"}
+{"level":"info","message":"Request completed: GET /api/v1/payment/refunds/9c473cbb-450b-429e-84d4-05c34e9967be - Status: 400 - Duration: 7.45 ms","timestamp":"05:25:12.566"}
+{"level":"info","message":"Incoming request: GET /api/v1/payment/refunds?9c473cbb-450b-429e-84d4-05c34e9967be from ::1","timestamp":"05:25:51.927"}
+{"level":"warn","message":"Resource not found: GET /api/v1/payment/refunds?9c473cbb-450b-429e-84d4-05c34e9967be","timestamp":"05:25:51.928"}
+{"level":"info","message":"Request completed: GET /api/v1/payment/refunds?9c473cbb-450b-429e-84d4-05c34e9967be - Status: 404 - Duration: 1.40 ms","timestamp":"05:25:51.929"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:26:19.589"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:26:19.589"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:26:19.590"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:26:19.758"}
+{"level":"info","message":"Redis Ready","timestamp":"05:26:19.760"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:26:19.761"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:26:19.762"}
+{"level":"info","message":"Incoming request: GET /api/v1/payment/refunds/9c473cbb-450b-429e-84d4-05c34e9967be from ::1","timestamp":"05:26:20.779"}
+{"level":"info","message":"Request completed: GET /api/v1/payment/refunds/9c473cbb-450b-429e-84d4-05c34e9967be - Status: 200 - Duration: 36.88 ms","timestamp":"05:26:20.816"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:26:36.977"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:26:36.978"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:26:36.978"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:26:37.161"}
+{"level":"info","message":"Redis Ready","timestamp":"05:26:37.163"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:26:37.164"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:26:37.165"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:26:42.338"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:26:42.339"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:26:42.340"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:26:42.499"}
+{"level":"info","message":"Redis Ready","timestamp":"05:26:42.501"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:26:42.507"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:26:42.508"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:26:48.321"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:26:48.322"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:26:48.323"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"05:26:48.486"}
+{"level":"info","message":"Redis Ready","timestamp":"05:26:48.488"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"05:26:48.488"}
+{"level":"info","message":"server running on port 7001","timestamp":"05:26:48.489"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/my-tickets from ::1","timestamp":"05:27:33.483"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/my-tickets - Status: 200 - Duration: 29.51 ms","timestamp":"05:27:33.513"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/my-tickets from ::1","timestamp":"05:28:36.853"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/my-tickets - Status: 200 - Duration: 11.29 ms","timestamp":"05:28:36.864"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/my-tickets/9e06af0c-38cd-48f6-8453-3ae6ff23cbbd from ::1","timestamp":"05:29:14.302"}
+{"level":"warn","message":"Resource not found: GET /api/v1/ticket/my-tickets/9e06af0c-38cd-48f6-8453-3ae6ff23cbbd","timestamp":"05:29:14.303"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/my-tickets/9e06af0c-38cd-48f6-8453-3ae6ff23cbbd - Status: 404 - Duration: 2.10 ms","timestamp":"05:29:14.304"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/9e06af0c-38cd-48f6-8453-3ae6ff23cbbd from ::1","timestamp":"05:29:22.110"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/9e06af0c-38cd-48f6-8453-3ae6ff23cbbd - Status: 200 - Duration: 18.21 ms","timestamp":"05:29:22.128"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket//9e06af0c-38cd-48f6-8453-3ae6ff23cbbd from ::1","timestamp":"05:29:23.989"}
+{"level":"warn","message":"Resource not found: GET /api/v1/ticket//9e06af0c-38cd-48f6-8453-3ae6ff23cbbd","timestamp":"05:29:23.989"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket//9e06af0c-38cd-48f6-8453-3ae6ff23cbbd - Status: 404 - Duration: 1.03 ms","timestamp":"05:29:23.990"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/9e06af0c-38cd-48f6-8453-3ae6ff23cbbd from ::1","timestamp":"05:29:25.068"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/9e06af0c-38cd-48f6-8453-3ae6ff23cbbd - Status: 200 - Duration: 20.74 ms","timestamp":"05:29:25.089"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/event/9c473cbb-450b-429e-84d4-05c34e9967be/buyers from ::1","timestamp":"05:30:07.721"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/event/9c473cbb-450b-429e-84d4-05c34e9967be/buyers - Status: 200 - Duration: 18.98 ms","timestamp":"05:30:07.740"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/admin/all-buyers from ::1","timestamp":"05:30:39.516"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/admin/all-buyers - Status: 403 - Duration: 2.20 ms","timestamp":"05:30:39.518"}

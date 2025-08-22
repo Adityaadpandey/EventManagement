@@ -1,0 +1,22 @@
+meta {
+  name: refund
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{host}}/payment/refund/request
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "ticketId":"9e06af0c-38cd-48f6-8453-3ae6ff23cbbd",
+    "reason":"good question"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

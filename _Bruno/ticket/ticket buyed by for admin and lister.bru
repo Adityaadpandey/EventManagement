@@ -1,0 +1,15 @@
+meta {
+  name: ticket buyed by for admin and lister
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{host}}/ticket/event/{{eventId}}/buyers
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,17 +1,17 @@
 meta {
-  name: public events
+  name: user tickets
   type: http
-  seq: 5
+  seq: 7
 }
 
 get {
-  url: {{host}}/event/public
+  url: {{host}}/ticket/my-tickets
   body: none
   auth: inherit
 }
 
 script:post-response {
-  bru.setEnvVar("eventId",res.body.data[0].eventId)
+  bru.setEnvVar("ticketId",res.body.data[0].ticketId)
 }
 
 settings {

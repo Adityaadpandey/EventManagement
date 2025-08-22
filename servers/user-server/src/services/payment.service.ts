@@ -194,8 +194,7 @@ export class PaymentService {
 				},
 				orderBy: { createdAt: "desc" },
 			});
-
-			return { data: refunds };
+			return refunds;
 		} catch (error) {
 			logger.error("Error fetching refunds:", error);
 			throw error;

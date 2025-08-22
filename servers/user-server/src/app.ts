@@ -23,6 +23,7 @@ import { ticketRouter } from "./routes/v1/ticket.router";
 import { userRouter } from "./routes/v1/user.router";
 import { setupGracefulShutdown } from "./utils/gracefullShutdown";
 import { healthCheck } from "./utils/healthCheck";
+import { sendError } from "./utils/responseMsg";
 
 const app = express();
 
@@ -64,13 +65,13 @@ app.use("/api/v1/payment", paymentRouter);
 
 app.use((req: Request, res: Response) => {
 	logger.warn(`Resource not found: ${req.method} ${req.url}`);
-	res.status(404).json({ message: "Resource not found" });
+	return sendError(res, "Resource not found", 404);
 });
 
 // Error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 	logger.error("Unhandled error:", err);
-	res.status(500).json({ message: "Internal server error" });
+	return sendError(res, "Internal server error", 500);
 });
 
 export const startServer = async () => {

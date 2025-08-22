@@ -1,11 +1,11 @@
 meta {
-  name: refund
+  name: my ticket by id
   type: http
-  seq: 12
+  seq: 7
 }
 
 get {
-  url: {{host}}
+  url: {{host}}/ticket/{{ticketId}}
   body: none
   auth: inherit
 }

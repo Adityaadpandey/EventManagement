@@ -367,6 +367,7 @@ export class EventService {
 					capacity: true,
 					TicketType: {
 						select: {
+							ticketTypeId: true,
 							name: true,
 							price: true,
 							quantity: true,

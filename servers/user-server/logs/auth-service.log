@@ -1,0 +1,24 @@
+{"level":"info","message":"Redis Connected Successfully","timestamp":"04:58:59.338"}
+{"level":"info","message":"Redis Ready","timestamp":"04:58:59.340"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"04:58:59.340"}
+{"level":"info","message":"auth-service running on port 7001","timestamp":"04:58:59.341"}
+{"level":"info","message":"Incoming request: GET /health from ::1","timestamp":"05:01:08.872"}
+{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 35.81 ms","timestamp":"05:01:08.908"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/lister from ::1","timestamp":"05:01:12.820"}
+{"level":"info","message":"Fetched 1 events for user 5e3cea26-1b1d-4b9d-851b-2da513447063","timestamp":"05:01:12.850"}
+{"level":"info","message":"Request completed: GET /api/v1/event/lister - Status: 200 - Duration: 30.26 ms","timestamp":"05:01:12.851"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/%7B%7BeventId%7D%7D/public from ::1","timestamp":"05:01:21.404"}
+{"data":{"error":"Event not found","stack":"Error: Event not found\n    at EventService.getPublicEventDetails (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/services/event.service.ts:387:11)\n    at EventController.getPublicEventDetails (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/controllers/event.controller.ts:202:5)"},"level":"error","message":"Error in getPublicEventDetails:","timestamp":"05:01:21.416"}
+{"data":{"error":"Event not found","stack":"Error: Event not found\n    at EventService.getPublicEventDetails (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/services/event.service.ts:387:11)\n    at EventController.getPublicEventDetails (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/controllers/event.controller.ts:202:5)"},"level":"error","message":"Failed to get public event details:","timestamp":"05:01:21.416"}
+{"level":"info","message":"Request completed: GET /api/v1/event/%7B%7BeventId%7D%7D/public - Status: 500 - Duration: 13.19 ms","timestamp":"05:01:21.417"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::1","timestamp":"05:01:49.924"}
+{"level":"info","message":"Fetched [object Object] public events","timestamp":"05:01:49.955"}
+{"level":"info","message":"Public events cached after DB fetch","timestamp":"05:01:49.956"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 32.38 ms","timestamp":"05:01:49.957"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/buy from ::1","timestamp":"05:02:08.360"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/buy - Status: 404 - Duration: 10.56 ms","timestamp":"05:02:08.371"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/public from ::1","timestamp":"05:02:38.478"}
+{"level":"info","message":"Request completed: GET /api/v1/event/9c473cbb-450b-429e-84d4-05c34e9967be/public - Status: 200 - Duration: 17.28 ms","timestamp":"05:02:38.495"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"05:03:49.622"}
+{"level":"info","message":"HTTP server closed.","timestamp":"05:03:49.626"}
+{"level":"info","message":"Redis connection closed.","timestamp":"05:03:49.628"}

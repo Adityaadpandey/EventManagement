@@ -1,13 +1,19 @@
 meta {
   name: but ticket
   type: http
-  seq: 10
+  seq: 7
 }
 
-get {
+post {
   url: {{host}}/ticket/buy
-  body: none
+  body: json
   auth: inherit
+}
+
+body:json {
+  {
+    "ticketTypeId":"99ba0cf8-5fb1-4c18-ba53-7deecd45beaf"
+  }
 }
 
 settings {

@@ -1,0 +1,26 @@
+meta {
+  name: payment
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{host}}/payment/verify
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "razorpay_order_id": "order_R8AYR30i9324BA",
+    "razorpay_payment_id": "pay_R8AZTecb4jyDEj",
+    "razorpay_signature": "cf8c76e9d56d4ac1d423c261c3187ddeba5655be322cfccd985de9ad88315740"
+  }
+  
+  
+            
+}
+
+settings {
+  encodeUrl: true
+}

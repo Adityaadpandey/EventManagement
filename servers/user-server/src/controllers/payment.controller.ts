@@ -119,7 +119,7 @@ export class PaymentController {
 		try {
 			const userId = req.user?.userId;
 			const userRole = req.user?.role;
-			const { eventId } = req.query;
+			const eventId = req.params.eventId;
 
 			let searchUserId: string | undefined;
 			let searchEventId: string | undefined;
@@ -162,7 +162,7 @@ export class PaymentController {
 				searchUserId,
 			);
 
-			return sendSuccess(res, "Refunds fetched successfully", result.data);
+			return sendSuccess(res, "Refunds fetched successfully", result);
 		} catch (error) {
 			logger("Error fetching refunds:", error);
 			return sendError(res, "Failed to fetch refunds", 500);

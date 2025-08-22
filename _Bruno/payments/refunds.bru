@@ -1,0 +1,15 @@
+meta {
+  name: refunds
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{host}}/payment/refunds/{{eventId}}
+  body: json
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
