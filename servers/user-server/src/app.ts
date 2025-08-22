@@ -16,10 +16,12 @@ import { limiter } from "./middlewares/rate-limit.middleware";
 import { reqMiddleware } from "./middlewares/req.middleware";
 
 import { authRouter } from "./routes/v1/auth.router";
+import { checkerRouter } from "./routes/v1/checker.router";
 import { eventsRouter } from "./routes/v1/events.router";
 import { listerRouter } from "./routes/v1/lister.router";
 import { paymentRouter } from "./routes/v1/payment.router";
 import { ticketRouter } from "./routes/v1/ticket.router";
+import { ticketValidationRouter } from "./routes/v1/ticket-validation.router";
 import { userRouter } from "./routes/v1/user.router";
 import { setupGracefulShutdown } from "./utils/gracefullShutdown";
 import { healthCheck } from "./utils/healthCheck";
@@ -62,6 +64,12 @@ app.use("/api/v1/ticket", ticketRouter);
 
 // payemnt routes
 app.use("/api/v1/payment", paymentRouter);
+
+// checker routes
+app.use("/api/v1/checker", checkerRouter);
+
+// ticker validation routes
+app.use("/api/v1/ticket-validation", ticketValidationRouter);
 
 app.use((req: Request, res: Response) => {
 	logger.warn(`Resource not found: ${req.method} ${req.url}`);

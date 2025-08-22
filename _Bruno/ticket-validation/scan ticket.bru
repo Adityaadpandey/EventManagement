@@ -1,0 +1,21 @@
+meta {
+  name: scan ticket
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host}}/ticket-validation/scan
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "qrCode":"TICKET_1755812534792_mfsfes540fb"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

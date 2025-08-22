@@ -1,0 +1,15 @@
+meta {
+  name: event checkers
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{host}}/checker/{{eventId}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

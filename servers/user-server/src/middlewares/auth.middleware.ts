@@ -126,3 +126,28 @@ export const requireRole = (roles: string[]) => {
 		next();
 	};
 };
+
+export const checkerAuthMiddleware = (
+	req: any,
+	res: Response,
+	next: NextFunction,
+) => {
+	try {
+		const token = req.header("checker-auth")?.replace("Bearer ", "");
+
+		if (!token) {
+			return res
+				.status(401)
+				.json({ success: false, message: "Access denied. No token provided." });
+		}
+
+		const decoded = jwt.verify(
+			token,
+			process.env.JWT_SECRET || "your-secret-key",
+		) as any;
+		req.checker = decoded;
+		next();
+	} catch (error) {
+		res.status(401).json({ success: false, message: "Invalid token." });
+	}
+};

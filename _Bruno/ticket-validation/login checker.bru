@@ -1,0 +1,26 @@
+meta {
+  name: login checker
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{host}}/ticket-validation/checker/login
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username":"adp",
+    "password":"adp123"
+  }
+}
+
+script:post-response {
+  bru.setEnvVar("checker-token",res.body.data.token)
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,15 @@
+meta {
+  name: profile
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{host}}/ticket-validation/profile
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,22 @@
+meta {
+  name: cred for checkers
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{host}}/checker/create/{{eventId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username":"adp",
+    "password":"adp123"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
