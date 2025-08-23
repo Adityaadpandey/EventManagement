@@ -11,7 +11,7 @@ export class TicketService {
 		attendeeData?: any[],
 	) {
 		try {
-			// Validate ticket type exists and is available
+			// Fetch ticket type and event details
 			const ticketType = await prisma.ticketType.findUnique({
 				where: { ticketTypeId },
 				include: {
@@ -27,7 +27,7 @@ export class TicketService {
 				return { error: "Ticket type not found" };
 			}
 
-			// Check if event is approved
+			// Ensure event is approved
 			if (ticketType.event.status !== "APPROVED") {
 				return { error: "Event is not available for ticket purchase" };
 			}
@@ -44,11 +44,13 @@ export class TicketService {
 			}
 
 			const totalPrice = ticketType.price * quantity;
-
-			// Generate unique QR code
 			const qrCode = this.generateQRCode();
 
-			// Create ticket with PENDING status
+			// Determine payment status
+			const isFree = totalPrice === 0;
+			const ticketStatus = isFree ? "SUCCESS" : "PENDING";
+
+			// Create ticket
 			const ticket = await prisma.ticket.create({
 				data: {
 					ticketTypeId,
@@ -56,24 +58,12 @@ export class TicketService {
 					quantity,
 					totalPrice,
 					qrCode,
-					status: "PENDING",
+					status: ticketStatus,
 					eventEventId: ticketType.eventId,
 				},
 			});
 
-			// Create Razorpay order
-			const razorpayOrder = await razorpay.orders.create({
-				amount: totalPrice * 100, // Razorpay expects amount in paise
-				currency: "INR",
-				receipt: ticket.ticketId,
-				notes: {
-					ticketId: ticket.ticketId,
-					eventId: ticketType.eventId,
-					userId,
-				},
-			});
-
-			// Store attendee field responses if provided
+			// Store attendee custom field responses if provided
 			if (attendeeData && attendeeData.length > 0) {
 				const responses = attendeeData.map((response) => ({
 					ticketId: ticket.ticketId,
@@ -85,6 +75,29 @@ export class TicketService {
 					data: responses,
 				});
 			}
+
+			// If ticket is free, return success directly
+			if (isFree) {
+				return {
+					data: {
+						ticket,
+						event: ticketType.event,
+						message: "Free ticket issued successfully",
+					},
+				};
+			}
+
+			// Else, create Razorpay order
+			const razorpayOrder = await razorpay.orders.create({
+				amount: totalPrice * 100, // in paise
+				currency: "INR",
+				receipt: ticket.ticketId,
+				notes: {
+					ticketId: ticket.ticketId,
+					eventId: ticketType.eventId,
+					userId,
+				},
+			});
 
 			return {
 				data: {
