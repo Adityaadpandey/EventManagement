@@ -494,3 +494,172 @@
 {"level":"info","message":"SMS sent successfully to +919415379379, SID: SM116b7d9257349cf6fc8cb0961313c5e2","timestamp":"19:47:33.468"}
 {"level":"info","message":"Incoming request: PATCH /api/v1/user/profile from ::1","timestamp":"19:47:48.582"}
 {"level":"info","message":"Request completed: PATCH /api/v1/user/profile - Status: 200 - Duration: 10.54 ms","timestamp":"19:47:48.592"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"04:33:38.168"}
+{"level":"info","message":"Redis Ready","timestamp":"04:33:38.171"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"04:33:38.171"}
+{"level":"info","message":"server running on port 7001","timestamp":"04:33:38.172"}
+{"level":"info","message":"Incoming request: GET /api/v1/user/profile from ::1","timestamp":"04:33:40.478"}
+{"level":"info","message":"Request completed: GET /api/v1/user/profile - Status: 401 - Duration: 6.14 ms","timestamp":"04:33:40.484"}
+{"level":"info","message":"Incoming request: POST /api/v1/auth/otp/verify from ::1","timestamp":"04:34:10.876"}
+{"level":"info","message":"Request completed: POST /api/v1/auth/otp/verify - Status: 200 - Duration: 40.98 ms","timestamp":"04:34:10.917"}
+{"level":"info","message":"Incoming request: PATCH /api/v1/user/profile from ::1","timestamp":"04:34:14.889"}
+{"level":"info","message":"Request completed: PATCH /api/v1/user/profile - Status: 200 - Duration: 9.30 ms","timestamp":"04:34:14.899"}
+{"level":"info","message":"Incoming request: POST /api/v1/lister/apply from ::1","timestamp":"04:34:18.777"}
+{"level":"info","message":"Request completed: POST /api/v1/lister/apply - Status: 403 - Duration: 2.49 ms","timestamp":"04:34:18.780"}
+{"level":"info","message":"Incoming request: GET /api/v1/lister/analytics/me from ::1","timestamp":"04:34:29.108"}
+{"level":"info","message":"Request completed: GET /api/v1/lister/analytics/me - Status: 200 - Duration: 26.15 ms","timestamp":"04:34:29.134"}
+{"level":"info","message":"Incoming request: GET /api/v1/lister/me from ::1","timestamp":"04:34:35.644"}
+{"level":"info","message":"Request completed: GET /api/v1/lister/me - Status: 200 - Duration: 11.00 ms","timestamp":"04:34:35.655"}
+{"level":"info","message":"Incoming request: GET /api/v1/event//lister from ::1","timestamp":"04:34:43.053"}
+{"level":"warn","message":"Resource not found: GET /api/v1/event//lister","timestamp":"04:34:43.053"}
+{"level":"info","message":"Request completed: GET /api/v1/event//lister - Status: 404 - Duration: 1.03 ms","timestamp":"04:34:43.054"}
+{"level":"info","message":"Incoming request: POST /api/v1/event from ::1","timestamp":"04:34:56.859"}
+{"level":"info","message":"Request completed: POST /api/v1/event - Status: 400 - Duration: 6.93 ms","timestamp":"04:34:56.866"}
+{"level":"info","message":"Incoming request: POST /api/v1/lister/apply from ::1","timestamp":"04:35:20.299"}
+{"level":"info","message":"Request completed: POST /api/v1/lister/apply - Status: 403 - Duration: 2.16 ms","timestamp":"04:35:20.301"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"04:36:28.573"}
+{"level":"info","message":"HTTP server closed.","timestamp":"04:36:28.574"}
+{"level":"info","message":"Redis connection closed.","timestamp":"04:36:28.575"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"04:36:28.864"}
+{"level":"info","message":"Redis Ready","timestamp":"04:36:28.866"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"04:36:28.867"}
+{"level":"info","message":"server running on port 7001","timestamp":"04:36:28.867"}
+{"level":"info","message":"Incoming request: POST /api/v1/event from ::1","timestamp":"04:36:31.565"}
+{"level":"info","message":"Request completed: POST /api/v1/event - Status: 400 - Duration: 4.78 ms","timestamp":"04:36:31.569"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"04:37:00.735"}
+{"level":"info","message":"HTTP server closed.","timestamp":"04:37:00.735"}
+{"level":"info","message":"Redis connection closed.","timestamp":"04:37:00.737"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"04:37:01.025"}
+{"level":"info","message":"Redis Ready","timestamp":"04:37:01.026"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"04:37:01.027"}
+{"level":"info","message":"server running on port 7001","timestamp":"04:37:01.028"}
+{"level":"info","message":"Incoming request: POST /api/v1/event from ::1","timestamp":"04:37:03.251"}
+{"level":"info","message":"Request completed: POST /api/v1/event - Status: 400 - Duration: 5.47 ms","timestamp":"04:37:03.256"}
+{"level":"info","message":"Incoming request: POST /api/v1/event from ::1","timestamp":"04:37:05.204"}
+{"level":"info","message":"Request completed: POST /api/v1/event - Status: 400 - Duration: 3.64 ms","timestamp":"04:37:05.207"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"04:37:40.165"}
+{"level":"info","message":"HTTP server closed.","timestamp":"04:37:40.165"}
+{"level":"info","message":"Redis connection closed.","timestamp":"04:37:40.166"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"04:37:40.369"}
+{"level":"info","message":"Redis Ready","timestamp":"04:37:40.372"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"04:37:40.372"}
+{"level":"info","message":"server running on port 7001","timestamp":"04:37:40.373"}
+{"level":"info","message":"Incoming request: POST /api/v1/event from ::1","timestamp":"04:38:06.512"}
+{"data":{"error":"(0 , logger_1.default) is not a function","stack":"TypeError: (0 , logger_1.default) is not a function\n    at EventService.createEvent (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/services/event.service.ts:218:10)\n    at EventController.createEvent (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/controllers/event.controller.ts:25:19)"},"level":"error","message":"Create event error:","timestamp":"04:38:06.542"}
+{"level":"info","message":"Request completed: POST /api/v1/event - Status: 500 - Duration: 32.09 ms","timestamp":"04:38:06.544"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"04:38:55.754"}
+{"level":"info","message":"HTTP server closed.","timestamp":"04:38:55.754"}
+{"level":"info","message":"Redis connection closed.","timestamp":"04:38:55.755"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"04:38:55.946"}
+{"level":"info","message":"Redis Ready","timestamp":"04:38:55.948"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"04:38:55.949"}
+{"level":"info","message":"server running on port 7001","timestamp":"04:38:55.950"}
+{"level":"info","message":"Incoming request: POST /api/v1/event from ::1","timestamp":"04:38:57.640"}
+{"data":{"error":"Lister profile must be approved before creating events","stack":"Error: Lister profile must be approved before creating events\n    at EventService.createEvent (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/services/event.service.ts:60:11)\n    at EventController.createEvent (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/controllers/event.controller.ts:25:19)"},"level":"error","message":"Error creating event:","timestamp":"04:38:57.675"}
+{"data":{"error":"Lister profile must be approved before creating events","stack":"Error: Lister profile must be approved before creating events\n    at EventService.createEvent (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/services/event.service.ts:60:11)\n    at EventController.createEvent (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/controllers/event.controller.ts:25:19)"},"level":"error","message":"Create event error:","timestamp":"04:38:57.676"}
+{"level":"info","message":"Request completed: POST /api/v1/event - Status: 500 - Duration: 37.26 ms","timestamp":"04:38:57.677"}
+{"level":"info","message":"Incoming request: GET /api/v1/event//lister from ::1","timestamp":"04:39:54.841"}
+{"level":"warn","message":"Resource not found: GET /api/v1/event//lister","timestamp":"04:39:54.843"}
+{"level":"info","message":"Request completed: GET /api/v1/event//lister - Status: 404 - Duration: 2.54 ms","timestamp":"04:39:54.844"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/lister from ::1","timestamp":"04:40:04.559"}
+{"level":"info","message":"Fetched 0 events for user 7d1b5f52-bb77-4e95-9d0b-08c591aab48e","timestamp":"04:40:04.569"}
+{"level":"warn","message":"No events found for user 7d1b5f52-bb77-4e95-9d0b-08c591aab48e","timestamp":"04:40:04.569"}
+{"level":"info","message":"Request completed: GET /api/v1/event/lister - Status: 200 - Duration: 11.03 ms","timestamp":"04:40:04.570"}
+{"level":"info","message":"Incoming request: POST /api/v1/lister/apply from ::1","timestamp":"04:40:09.450"}
+{"level":"info","message":"Request completed: POST /api/v1/lister/apply - Status: 403 - Duration: 3.84 ms","timestamp":"04:40:09.454"}
+{"level":"info","message":"Incoming request: POST /api/v1/event from ::1","timestamp":"04:41:11.204"}
+{"level":"info","message":"Request completed: POST /api/v1/event - Status: 201 - Duration: 34.55 ms","timestamp":"04:41:11.239"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/lister from ::1","timestamp":"04:41:16.436"}
+{"level":"info","message":"Fetched 1 events for user 7d1b5f52-bb77-4e95-9d0b-08c591aab48e","timestamp":"04:41:16.449"}
+{"level":"info","message":"Request completed: GET /api/v1/event/lister - Status: 200 - Duration: 13.07 ms","timestamp":"04:41:16.449"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::1","timestamp":"04:41:19.836"}
+{"level":"info","message":"Fetched  public events","timestamp":"04:41:19.860"}
+{"level":"info","message":"Public events cached after DB fetch","timestamp":"04:41:19.861"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 24.95 ms","timestamp":"04:41:19.861"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::1","timestamp":"04:41:50.230"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"04:41:50.231"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 1.81 ms","timestamp":"04:41:50.231"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::1","timestamp":"04:41:52.615"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"04:41:52.616"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 1.71 ms","timestamp":"04:41:52.616"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::1","timestamp":"04:41:53.054"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"04:41:53.056"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 2.84 ms","timestamp":"04:41:53.057"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::1","timestamp":"04:41:53.231"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"04:41:53.233"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 3.11 ms","timestamp":"04:41:53.234"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::1","timestamp":"04:41:53.387"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"04:41:53.390"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 3.58 ms","timestamp":"04:41:53.391"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::1","timestamp":"04:41:53.566"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"04:41:53.568"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 3.10 ms","timestamp":"04:41:53.569"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::1","timestamp":"04:41:53.734"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"04:41:53.736"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 2.76 ms","timestamp":"04:41:53.736"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::1","timestamp":"04:41:53.923"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"04:41:53.926"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 2.69 ms","timestamp":"04:41:53.926"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::1","timestamp":"04:42:12.935"}
+{"level":"info","message":"Fetched [object Object] public events","timestamp":"04:42:12.947"}
+{"level":"info","message":"Public events cached after DB fetch","timestamp":"04:42:12.949"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 15.10 ms","timestamp":"04:42:12.950"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"04:45:39.021"}
+{"level":"info","message":"HTTP server closed.","timestamp":"04:45:39.021"}
+{"level":"info","message":"Redis connection closed.","timestamp":"04:45:39.022"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"04:45:39.314"}
+{"level":"info","message":"Redis Ready","timestamp":"04:45:39.316"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"04:45:39.316"}
+{"level":"info","message":"server running on port 7001","timestamp":"04:45:39.317"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/public from ::1","timestamp":"04:45:53.846"}
+{"level":"info","message":"Public events fetched from cache","timestamp":"04:45:53.849"}
+{"level":"info","message":"Request completed: GET /api/v1/event/public - Status: 200 - Duration: 6.90 ms","timestamp":"04:45:53.853"}
+{"level":"info","message":"Incoming request: GET /api/v1/event/05abbdf9-66c8-4fa1-b4ac-16e8fa5363c1/public from ::1","timestamp":"04:45:59.851"}
+{"level":"info","message":"Request completed: GET /api/v1/event/05abbdf9-66c8-4fa1-b4ac-16e8fa5363c1/public - Status: 200 - Duration: 26.39 ms","timestamp":"04:45:59.877"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/admin/all-buyers from ::1","timestamp":"04:46:05.384"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/admin/all-buyers - Status: 403 - Duration: 4.02 ms","timestamp":"04:46:05.388"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/buy from ::1","timestamp":"04:46:17.536"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/buy - Status: 400 - Duration: 4.76 ms","timestamp":"04:46:17.541"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/buy from ::1","timestamp":"04:47:07.456"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/buy - Status: 200 - Duration: 1164.31 ms","timestamp":"04:47:08.620"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/buy from ::1","timestamp":"04:47:56.021"}
+{"data":{"error":{"code":"BAD_REQUEST_ERROR","description":"Order amount less than minimum amount allowed","metadata":{},"reason":"NA","source":"order","step":"NA"},"statusCode":400},"level":"error","message":"Error buying ticket:","timestamp":"04:47:56.588"}
+{"data":{"error":{"code":"BAD_REQUEST_ERROR","description":"Order amount less than minimum amount allowed","metadata":{},"reason":"NA","source":"order","step":"NA"},"statusCode":400},"level":"error","message":"Error buying ticket:","timestamp":"04:47:56.588"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/buy - Status: 500 - Duration: 567.72 ms","timestamp":"04:47:56.589"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/buy from ::1","timestamp":"04:48:02.760"}
+{"data":{"error":{"code":"BAD_REQUEST_ERROR","description":"Order amount less than minimum amount allowed","metadata":{},"reason":"NA","source":"order","step":"NA"},"statusCode":400},"level":"error","message":"Error buying ticket:","timestamp":"04:48:03.117"}
+{"data":{"error":{"code":"BAD_REQUEST_ERROR","description":"Order amount less than minimum amount allowed","metadata":{},"reason":"NA","source":"order","step":"NA"},"statusCode":400},"level":"error","message":"Error buying ticket:","timestamp":"04:48:03.118"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/buy - Status: 500 - Duration: 358.54 ms","timestamp":"04:48:03.118"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"04:50:26.605"}
+{"level":"info","message":"HTTP server closed.","timestamp":"04:50:26.605"}
+{"level":"info","message":"Redis connection closed.","timestamp":"04:50:26.607"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"04:50:26.881"}
+{"level":"info","message":"Redis Ready","timestamp":"04:50:26.884"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"04:50:26.884"}
+{"level":"info","message":"server running on port 7001","timestamp":"04:50:26.885"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket/buy from ::1","timestamp":"04:50:31.274"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket/buy - Status: 200 - Duration: 32.48 ms","timestamp":"04:50:31.307"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/6411f163-6ee8-4846-81c7-cde1079b3894 from ::1","timestamp":"04:51:28.708"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/6411f163-6ee8-4846-81c7-cde1079b3894 - Status: 200 - Duration: 20.64 ms","timestamp":"04:51:28.728"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket/my-tickets from ::1","timestamp":"04:51:34.906"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket/my-tickets - Status: 200 - Duration: 13.73 ms","timestamp":"04:51:34.920"}
+{"level":"info","message":"Incoming request: POST /api/v1/checker/create/05abbdf9-66c8-4fa1-b4ac-16e8fa5363c1 from ::1","timestamp":"04:51:41.798"}
+{"level":"info","message":"Request completed: POST /api/v1/checker/create/05abbdf9-66c8-4fa1-b4ac-16e8fa5363c1 - Status: 201 - Duration: 93.13 ms","timestamp":"04:51:41.891"}
+{"level":"info","message":"Incoming request: GET /api/v1/checker/details/ddb31fc4-fe67-4bcf-a063-f03c4c5f9ad3 from ::1","timestamp":"04:51:47.249"}
+{"data":{"error":"Checker not found","stack":"Error: Checker not found\n    at CheckerService.getCheckerById (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/services/checker.service.ts:106:11)\n    at CheckerController.getCheckerById (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/controllers/checker.controller.ts:76:20)"},"level":"error","message":"Error getting checker:","timestamp":"04:51:47.265"}
+{"data":{"error":"Checker not found","stack":"Error: Checker not found\n    at CheckerService.getCheckerById (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/services/checker.service.ts:114:10)\n    at CheckerController.getCheckerById (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/controllers/checker.controller.ts:76:20)"},"level":"error","message":"Error getting checker:","timestamp":"04:51:47.266"}
+{"level":"info","message":"Request completed: GET /api/v1/checker/details/ddb31fc4-fe67-4bcf-a063-f03c4c5f9ad3 - Status: 500 - Duration: 17.64 ms","timestamp":"04:51:47.266"}
+{"level":"info","message":"Incoming request: GET /api/v1/checker/details/50b5f97a-7187-49bd-bfd5-04e9a34cd0da from ::1","timestamp":"04:52:02.517"}
+{"level":"info","message":"Request completed: GET /api/v1/checker/details/50b5f97a-7187-49bd-bfd5-04e9a34cd0da - Status: 200 - Duration: 15.52 ms","timestamp":"04:52:02.532"}
+{"level":"info","message":"Incoming request: GET /api/v1/checker/05abbdf9-66c8-4fa1-b4ac-16e8fa5363c1 from ::1","timestamp":"04:52:06.566"}
+{"level":"info","message":"Request completed: GET /api/v1/checker/05abbdf9-66c8-4fa1-b4ac-16e8fa5363c1 - Status: 200 - Duration: 10.52 ms","timestamp":"04:52:06.577"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket-validation/scan from ::1","timestamp":"04:52:45.521"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket-validation/scan - Status: 401 - Duration: 1.67 ms","timestamp":"04:52:45.522"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket-validation/checker/login from ::1","timestamp":"04:52:51.301"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket-validation/checker/login - Status: 200 - Duration: 83.49 ms","timestamp":"04:52:51.384"}
+{"level":"info","message":"Incoming request: POST /api/v1/ticket-validation/scan from ::1","timestamp":"04:52:55.387"}
+{"level":"info","message":"Request completed: POST /api/v1/ticket-validation/scan - Status: 200 - Duration: 18.85 ms","timestamp":"04:52:55.406"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket-validation/history from ::1","timestamp":"04:53:03.393"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket-validation/history - Status: 200 - Duration: 14.79 ms","timestamp":"04:53:03.408"}
+{"level":"info","message":"Incoming request: GET /api/v1/ticket-validation/profile from ::1","timestamp":"04:53:08.393"}
+{"level":"info","message":"Request completed: GET /api/v1/ticket-validation/profile - Status: 200 - Duration: 7.12 ms","timestamp":"04:53:08.401"}

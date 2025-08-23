@@ -215,7 +215,7 @@ export class EventService {
 				data: completeEvent,
 			};
 		} catch (error) {
-			logger("Error creating event:", error);
+			logger.error("Error creating event:", error);
 			throw error;
 		}
 	}
@@ -267,7 +267,8 @@ export class EventService {
 					where: { status: "APPROVED" },
 				}),
 			]);
-			logger.info(`Fetched ${events} public events`);
+			logger.info(`Fetched ${events.length} public events`);
+			logger.info(`Fetched ${events.length} public events`);
 			await setCachedPublicEvents({ events, total }, page, limit);
 			logger.info("Public events cached after DB fetch");
 
