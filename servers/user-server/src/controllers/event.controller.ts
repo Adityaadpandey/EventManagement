@@ -26,11 +26,7 @@ export class EventController {
 			return sendSuccess(res, result.message, result.data, 201);
 		} catch (error: any) {
 			if (error.name === "ZodError") {
-				return sendError(
-					res,
-					error.errors?.[0]?.message || "Validation error",
-					400,
-				);
+				return sendError(res, error.errors, 400);
 			}
 			logger.error("Create event error:", error);
 			return sendError(res, "Failed to create event", 500, error.message);
@@ -139,6 +135,13 @@ export class EventController {
 				200,
 			);
 		} catch (error: any) {
+			if (error.name === "ZodError") {
+				return sendError(
+					res,
+					error.errors?.[0]?.message || "Validation error",
+					400,
+				);
+			}
 			logger.error("Failed to get event details:", error);
 			return sendError(res, "Failed to get event details", 500, error.message);
 		}
