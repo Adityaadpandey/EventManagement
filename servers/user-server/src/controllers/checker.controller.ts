@@ -3,6 +3,7 @@ import logger from "../config/logger";
 import { CheckerService } from "../services/checker.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
+import { createCheckerSchema } from "../validators/checker.validator";
 
 export class CheckerController {
 	private checkerService: CheckerService;
@@ -21,19 +22,7 @@ export class CheckerController {
 				return sendError(res, "Event ID is required", 400);
 			}
 
-			const { username, password } = req.body;
-			if (!username || !password) {
-				return sendError(res, "Username and password are required", 400);
-			}
-
-			// Validate password strength
-			if (password.length < 6) {
-				return sendError(
-					res,
-					"Password must be at least 6 characters long",
-					400,
-				);
-			}
+			const { username, password } = createCheckerSchema.parse(req.body);
 
 			const checker = await this.checkerService.createChecker(
 				eventId,
@@ -43,6 +32,14 @@ export class CheckerController {
 			);
 			return sendSuccess(res, "Checker created successfully", checker, 201);
 		} catch (error: any) {
+			if (error.name === "ZodError") {
+				return sendError(
+					res,
+					error.errors?.[0]?.message || "Validation error",
+					400,
+				);
+			}
+
 			logger.error("Error creating checker:", error);
 			return sendError(res, error.message || "Failed to create checker", 500);
 		}

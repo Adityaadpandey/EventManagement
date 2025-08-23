@@ -239,3 +239,258 @@
 {"level":"info","message":"Redis Ready","timestamp":"19:50:02.660"}
 {"level":"info","message":"Redis Ping Successful","timestamp":"19:50:02.661"}
 {"level":"info","message":"server running on port 7001","timestamp":"19:50:02.662"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:50:49.158"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:50:49.158"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:50:49.159"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:50:49.654"}
+{"level":"info","message":"Redis Ready","timestamp":"19:50:49.656"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:50:49.657"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:50:49.658"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:19.442"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"21:04:19.495"}
+{"data":{"error":"read ECONNRESET","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:19.496"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:19.496"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"21:04:19.598"}
+{"data":{"error":"read ECONNRESET","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:19.598"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:19.599"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:19.750"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:19.751"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:19.953"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:19.953"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:20.204"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:20.204"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:20.506"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:20.506"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:20.860"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:20.860"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:21.262"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:21.262"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:21.715"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:21.715"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:22.217"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:22.218"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:22.770"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:22.771"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:23.373"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:23.374"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:24.027"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:24.028"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:24.730"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:24.731"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:25.483"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:25.483"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:26.285"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:26.285"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:27.138"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:27.139"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:28.040"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:28.041"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:28.994"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:28.994"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:29.997"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:29.997"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:31.000"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:31.001"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:32.004"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:32.005"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"21:04:33.007"}
+{"level":"info","message":"Redis Ready","timestamp":"21:04:33.008"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:43.108"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"21:04:43.160"}
+{"data":{"error":"read ECONNRESET","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:43.161"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:43.161"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"21:04:43.262"}
+{"data":{"error":"read ECONNRESET","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:43.263"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:43.263"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:43.416"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:43.416"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:04:43.618"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:04:43.619"}
+{"level":"info","message":"Received SIGINT. Shutting down gracefully...","timestamp":"21:04:43.835"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"21:33:56.362"}
+{"level":"info","message":"Redis Ready","timestamp":"21:33:56.447"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"21:33:56.517"}
+{"level":"info","message":"server running on port 7001","timestamp":"21:33:56.519"}
+{"level":"info","message":"Incoming request: GET /health from ::1","timestamp":"21:33:59.240"}
+{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 571.19 ms","timestamp":"21:33:59.811"}
+{"level":"info","message":"Incoming request: GET /health from ::1","timestamp":"21:34:05.970"}
+{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 78.95 ms","timestamp":"21:34:06.049"}
+{"level":"info","message":"Received SIGINT. Shutting down gracefully...","timestamp":"21:34:24.994"}
+{"level":"info","message":"HTTP server closed.","timestamp":"21:34:24.995"}
+{"level":"info","message":"Redis connection closed.","timestamp":"21:34:25.087"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:27.471"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:27.473"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:27.525"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:27.525"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:27.627"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:27.627"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:27.779"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:27.779"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:27.981"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:27.981"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:28.234"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:28.235"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:28.538"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:28.539"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:28.893"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:28.894"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:29.296"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:29.297"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:29.749"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:29.749"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:30.252"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:30.252"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:30.804"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:30.805"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:31.405"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:31.405"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:32.057"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:32.057"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:32.760"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:32.760"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:33.513"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:33.513"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:34.316"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:34.316"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:35.168"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:35.169"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:36.070"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:36.070"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:37.022"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:37.023"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:38.025"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:38.026"}
+{"data":{"error":"connect ECONNREFUSED 127.0.0.1:6379","stack":"Error: connect ECONNREFUSED 127.0.0.1:6379\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"},"level":"error","message":"Redis Client Error:","timestamp":"21:34:39.028"}
+{"level":"info","message":"Redis Reconnecting...","timestamp":"21:34:39.029"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"21:34:52.998"}
+{"level":"info","message":"Redis Ready","timestamp":"21:34:53.005"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"21:34:53.005"}
+{"level":"info","message":"server running on port 7001","timestamp":"21:34:53.006"}
+{"level":"info","message":"Incoming request: GET /health from ::1","timestamp":"21:34:54.948"}
+{"level":"info","message":"Request completed: GET /health - Status: 200 - Duration: 46.94 ms","timestamp":"21:34:54.995"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"23:25:11.505"}
+{"level":"info","message":"HTTP server closed.","timestamp":"23:25:11.507"}
+{"level":"info","message":"Redis connection closed.","timestamp":"23:25:11.508"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"23:25:11.863"}
+{"level":"info","message":"Redis Ready","timestamp":"23:25:11.865"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"23:25:11.866"}
+{"level":"info","message":"server running on port 7001","timestamp":"23:25:11.867"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"01:19:16.713"}
+{"level":"info","message":"HTTP server closed.","timestamp":"01:19:16.714"}
+{"level":"info","message":"Redis connection closed.","timestamp":"01:19:16.717"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"01:19:17.074"}
+{"level":"info","message":"Redis Ready","timestamp":"01:19:17.076"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"01:19:17.077"}
+{"level":"info","message":"server running on port 7001","timestamp":"01:19:17.078"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:15:04.371"}
+{"level":"info","message":"Redis Ready","timestamp":"19:15:04.373"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:15:04.374"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:15:04.375"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:37:29.329"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:37:29.329"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:37:29.331"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:37:29.677"}
+{"level":"info","message":"Redis Ready","timestamp":"19:37:29.680"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:37:29.681"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:37:29.682"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:37:31.045"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:37:31.045"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:37:31.047"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:37:31.265"}
+{"level":"info","message":"Redis Ready","timestamp":"19:37:31.268"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:37:31.269"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:37:31.269"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:37:31.846"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:37:31.847"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:37:31.848"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:37:32.028"}
+{"level":"info","message":"Redis Ready","timestamp":"19:37:32.030"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:37:32.031"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:37:32.032"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:37:32.827"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:37:32.827"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:37:32.828"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:37:33.026"}
+{"level":"info","message":"Redis Ready","timestamp":"19:37:33.029"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:37:33.031"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:37:33.032"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:37:34.329"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:37:34.329"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:37:34.331"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:37:34.538"}
+{"level":"info","message":"Redis Ready","timestamp":"19:37:34.540"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:37:34.540"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:37:34.541"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:37:35.244"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:37:35.244"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:37:35.246"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:37:35.429"}
+{"level":"info","message":"Redis Ready","timestamp":"19:37:35.431"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:37:35.432"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:37:35.435"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:37:35.747"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:37:35.748"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:37:35.749"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:37:35.942"}
+{"level":"info","message":"Redis Ready","timestamp":"19:37:35.945"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:37:35.945"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:37:35.946"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:37:36.525"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:37:36.526"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:37:36.527"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:37:36.723"}
+{"level":"info","message":"Redis Ready","timestamp":"19:37:36.725"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:37:36.726"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:37:36.726"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:37:37.424"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:37:37.425"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:37:37.426"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:37:37.632"}
+{"level":"info","message":"Redis Ready","timestamp":"19:37:37.634"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:37:37.635"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:37:37.636"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:37:38.421"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:37:38.422"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:37:38.423"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:37:38.613"}
+{"level":"info","message":"Redis Ready","timestamp":"19:37:38.616"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:37:38.616"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:37:38.617"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:37:39.777"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:37:39.778"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:37:39.779"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:37:39.968"}
+{"level":"info","message":"Redis Ready","timestamp":"19:37:39.971"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:37:39.972"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:37:39.973"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:37:47.953"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:37:47.954"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:37:47.956"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:37:48.144"}
+{"level":"info","message":"Redis Ready","timestamp":"19:37:48.147"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:37:48.148"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:37:48.149"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"19:41:40.649"}
+{"level":"info","message":"HTTP server closed.","timestamp":"19:41:40.650"}
+{"level":"info","message":"Redis connection closed.","timestamp":"19:41:40.651"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"19:41:40.972"}
+{"level":"info","message":"Redis Ready","timestamp":"19:41:40.976"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"19:41:40.978"}
+{"level":"info","message":"server running on port 7001","timestamp":"19:41:40.978"}
+{"level":"info","message":"Incoming request: POST /api/v1/auth/otp/request from ::1","timestamp":"19:44:02.432"}
+{"level":"info","message":"Request completed: POST /api/v1/auth/otp/request - Status: 200 - Duration: 84.56 ms","timestamp":"19:44:02.517"}
+{"level":"info","message":"SMS sent successfully to +919415379379, SID: SMdb0dd3871a6b8d9ee209232e174bf725","timestamp":"19:44:04.792"}
+{"level":"info","message":"Incoming request: POST /api/v1/auth/otp/verify from ::1","timestamp":"19:44:25.516"}
+{"data":{"error":"\nInvalid `\t\tprisma.user.findUnique()` invocation in\n/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/services/auth.service.ts:58:17\n\n  55 try {\n  56 \tconst [storedOtp, existingUser] = await Promise.all([\n  57 \t\tredis.get(`otp:${phone}`),\n→ 58 \t\tprisma.user.findUnique(\nThe table `public.User` does not exist in the current database.","stack":"PrismaClientKnownRequestError: \nInvalid `\t\tprisma.user.findUnique()` invocation in\n/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/services/auth.service.ts:58:17\n\n  55 try {\n  56 \tconst [storedOtp, existingUser] = await Promise.all([\n  57 \t\tredis.get(`otp:${phone}`),\n→ 58 \t\tprisma.user.findUnique(\nThe table `public.User` does not exist in the current database.\n    at ei.handleRequestError (/Users/aditya/Desktop/BuildEthics/EventManagement/packages/database/dist/generated/runtime/library.js:124:7283)\n    at ei.handleAndLogRequestError (/Users/aditya/Desktop/BuildEthics/EventManagement/packages/database/dist/generated/runtime/library.js:124:6608)\n    at ei.request (/Users/aditya/Desktop/BuildEthics/EventManagement/packages/database/dist/generated/runtime/library.js:124:6315)\n    at a (/Users/aditya/Desktop/BuildEthics/EventManagement/packages/database/dist/generated/runtime/library.js:133:9551)\n    at async Promise.all (index 1)\n    at AuthService.verifyOtp (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/services/auth.service.ts:56:38)\n    at AuthController.verifyOtp (/Users/aditya/Desktop/BuildEthics/EventManagement/servers/user-server/src/controllers/auth.controller.ts:47:17)"},"level":"error","message":"Error in verifyOtp:","timestamp":"19:44:25.548"}
+{"level":"info","message":"Request completed: POST /api/v1/auth/otp/verify - Status: 400 - Duration: 33.38 ms","timestamp":"19:44:25.549"}
+{"level":"info","message":"Incoming request: POST /api/v1/auth/otp/verify from ::1","timestamp":"19:46:23.221"}
+{"level":"info","message":"Request completed: POST /api/v1/auth/otp/verify - Status: 200 - Duration: 21.42 ms","timestamp":"19:46:23.242"}
+{"level":"info","message":"Incoming request: GET /api/v1/user/profile from ::1","timestamp":"19:46:27.558"}
+{"level":"info","message":"Request completed: GET /api/v1/user/profile - Status: 200 - Duration: 5.86 ms","timestamp":"19:46:27.563"}
+{"level":"info","message":"Incoming request: POST /api/v1/lister/apply from ::1","timestamp":"19:46:36.771"}
+{"level":"info","message":"Request completed: POST /api/v1/lister/apply - Status: 200 - Duration: 11.34 ms","timestamp":"19:46:36.782"}
+{"level":"info","message":"Incoming request: POST /api/v1/auth/otp/request from ::1","timestamp":"19:47:32.183"}
+{"level":"info","message":"Request completed: POST /api/v1/auth/otp/request - Status: 200 - Duration: 10.16 ms","timestamp":"19:47:32.194"}
+{"level":"info","message":"SMS sent successfully to +919415379379, SID: SM116b7d9257349cf6fc8cb0961313c5e2","timestamp":"19:47:33.468"}
+{"level":"info","message":"Incoming request: PATCH /api/v1/user/profile from ::1","timestamp":"19:47:48.582"}
+{"level":"info","message":"Request completed: PATCH /api/v1/user/profile - Status: 200 - Duration: 10.54 ms","timestamp":"19:47:48.592"}

@@ -3,6 +3,11 @@ import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { TicketValidationService } from "../services/ticket-validation.service";
 import { sendError, sendSuccess } from "../utils/responseMsg";
+import {
+	checkerLoginSchema,
+	resetTicketScanSchema,
+	scanTicketSchema,
+} from "../validators/ticket-validation.validator";
 
 interface CheckerRequest extends Request {
 	checker?: {
@@ -22,11 +27,7 @@ export class TicketValidationController {
 
 	async checkerLogin(req: Request, res: Response) {
 		try {
-			const { username, password } = req.body;
-
-			if (!username || !password) {
-				return sendError(res, "Username and password are required", 400);
-			}
+			const { username, password } = checkerLoginSchema.parse(req.body);
 
 			const result = await this.ticketValidationService.checkerLogin(
 				username,
@@ -34,6 +35,13 @@ export class TicketValidationController {
 			);
 			return sendSuccess(res, "Login successful", result);
 		} catch (error: any) {
+			if (error.name === "ZodError") {
+				return sendError(
+					res,
+					error.errors?.[0]?.message || "Validation error",
+					400,
+				);
+			}
 			logger.error("Error in checker login:", error);
 			return sendError(res, error.message || "Login failed", 401);
 		}
@@ -46,10 +54,7 @@ export class TicketValidationController {
 				return sendError(res, "Checker authentication required", 401);
 			}
 
-			const { qrCode, deviceInfo, note } = req.body;
-			if (!qrCode) {
-				return sendError(res, "QR code is required", 400);
-			}
+			const { qrCode, deviceInfo, note } = scanTicketSchema.parse(req.body);
 
 			const ipAddress = req.ip || req.connection.remoteAddress;
 			const result = await this.ticketValidationService.scanTicket(
@@ -65,6 +70,13 @@ export class TicketValidationController {
 			}
 			return sendError(res, result.message, 400);
 		} catch (error: any) {
+			if (error.name === "ZodError") {
+				return sendError(
+					res,
+					error.errors?.[0]?.message || "Validation error",
+					400,
+				);
+			}
 			logger.error("Error scanning ticket:", error);
 			return sendError(res, error.message || "Failed to scan ticket", 500);
 		}
@@ -73,16 +85,13 @@ export class TicketValidationController {
 	async resetTicketScan(req: CheckerRequest, res: Response) {
 		try {
 			const checkerId = req.checker?.checkerId;
-			if (!checkerId) {
+			if (!checkerId)
 				return sendError(res, "Checker authentication required", 401);
-			}
 
 			const { ticketId } = req.params;
-			const { note } = req.body;
+			if (!ticketId) return sendError(res, "Ticket ID is required", 400);
 
-			if (!ticketId) {
-				return sendError(res, "Ticket ID is required", 400);
-			}
+			const { note } = resetTicketScanSchema.parse(req.body);
 
 			const result = await this.ticketValidationService.resetTicketScan(
 				ticketId,
@@ -91,6 +100,13 @@ export class TicketValidationController {
 			);
 			return sendSuccess(res, result.message, result);
 		} catch (error: any) {
+			if (error.name === "ZodError") {
+				return sendError(
+					res,
+					error.errors?.[0]?.message || "Validation error",
+					400,
+				);
+			}
 			logger.error("Error resetting ticket scan:", error);
 			return sendError(
 				res,

@@ -2,6 +2,10 @@ import type { Response } from "express";
 import { ListerServer } from "../services/lister.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
+import {
+	applyForListerSchema,
+	updateListerSchema,
+} from "../validators/lister.validator";
 
 export class ListerController {
 	private listerService: ListerServer;
@@ -14,17 +18,13 @@ export class ListerController {
 		const userId = req.user?.userId;
 		if (!userId) return sendError(res, "User ID is required", 400);
 
-		const { companyName, companyLogo, bio } = req.body;
-		if (!companyName || !bio) {
-			return sendError(res, "Company name and bio are required", 400);
-		}
+		const validatedData = applyForListerSchema.parse(req.body);
 
 		try {
-			const lister = await this.listerService.applyForLister(userId, {
-				companyName,
-				companyLogo,
-				bio,
-			});
+			const lister = await this.listerService.applyForLister(
+				userId,
+				validatedData,
+			);
 			return sendSuccess(res, "Lister applied successfully", lister);
 		} catch (error: any) {
 			return sendError(res, "Failed to apply for lister", 500, error.message);
@@ -49,20 +49,13 @@ export class ListerController {
 
 		const { companyName, companyLogo, bio } = req.body;
 
-		if (!companyName && !companyLogo && !bio) {
-			return sendError(
-				res,
-				"At least one field must be provided for update",
-				400,
-			);
-		}
+		const validatedData = updateListerSchema.parse(req.body);
 
 		try {
-			const updatedLister = await this.listerService.updateLister(userId, {
-				companyName,
-				companyLogo,
-				bio,
-			});
+			const updatedLister = await this.listerService.updateLister(
+				userId,
+				validatedData,
+			);
 			return sendSuccess(res, "Lister updated successfully", updatedLister);
 		} catch (error: any) {
 			return sendError(res, "Failed to update lister", 500, error.message);

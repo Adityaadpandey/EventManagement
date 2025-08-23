@@ -3,6 +3,11 @@ import logger from "../config/logger";
 import { TicketService } from "../services/ticket.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
+import {
+	buyTicketSchema,
+	handlePaymentFailureSchema,
+	verifyPaymentSchema,
+} from "../validators/ticket.validator";
 
 export class TicketController {
 	private ticketService: TicketService;
@@ -16,15 +21,10 @@ export class TicketController {
 			const userId = req.user?.userId;
 			if (!userId) return sendError(res, "User ID is required", 400);
 
-			const { ticketTypeId, quantity = 1, attendeeData } = req.body;
+			const { ticketTypeId, quantity, attendeeData } = buyTicketSchema.parse(
+				req.body,
+			);
 
-			if (!ticketTypeId)
-				return sendError(res, "Ticket type ID is required", 400);
-
-			if (quantity <= 0)
-				return sendError(res, "Quantity must be greater than 0", 400);
-
-			// Call the service to handle ticket purchase logic
 			const result = await this.ticketService.buyTicket(
 				userId,
 				ticketTypeId,
@@ -41,7 +41,10 @@ export class TicketController {
 				"Ticket created successfully, proceed to payment",
 				result.data,
 			);
-		} catch (error) {
+		} catch (error: any) {
+			if (error.name === "ZodError") {
+				return sendError(res, error.errors?.[0]?.message, 400);
+			}
 			logger.error("Error buying ticket:", error);
 			return sendError(res, "Failed to create ticket", 500);
 		}
@@ -50,11 +53,7 @@ export class TicketController {
 	async verifyPayment(req: AuthenticatedRequest, res: Response) {
 		try {
 			const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-				req.body;
-
-			if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-				return sendError(res, "Missing payment verification data", 400);
-			}
+				verifyPaymentSchema.parse(req.body);
 
 			const result = await this.ticketService.verifyPayment(
 				razorpay_order_id,
@@ -71,7 +70,10 @@ export class TicketController {
 				"Payment verified and ticket confirmed",
 				result.data,
 			);
-		} catch (error) {
+		} catch (error: any) {
+			if (error.name === "ZodError") {
+				return sendError(res, error.errors?.[0]?.message, 400);
+			}
 			logger("Error verifying payment:", error);
 			return sendError(res, "Failed to verify payment", 500);
 		}
@@ -79,16 +81,15 @@ export class TicketController {
 
 	async handlePaymentFailure(req: AuthenticatedRequest, res: Response) {
 		try {
-			const { ticketId } = req.body;
-
-			if (!ticketId) {
-				return sendError(res, "Ticket ID is required", 400);
-			}
+			const { ticketId } = handlePaymentFailureSchema.parse(req.body);
 
 			const result = await this.ticketService.handlePaymentFailure(ticketId);
 
 			return sendSuccess(res, "Payment failure handled", result.data);
-		} catch (error) {
+		} catch (error: any) {
+			if (error.name === "ZodError") {
+				return sendError(res, error.errors?.[0]?.message, 400);
+			}
 			logger("Error handling payment failure:", error);
 			return sendError(res, "Failed to handle payment failure", 500);
 		}

@@ -37,8 +37,10 @@ class AuthService {
 			await pipeline.exec();
 
 			try {
-				await sendSMS(otp, phone);
-				return { message: "OTP sent successfully" };
+				sendSMS(otp, phone).catch((err) =>
+					logger.error("Failed to send SMS:", err),
+				);
+				return { message: "OTP request received. SMS is being sent." };
 			} catch (_error) {
 				// Clean up Redis if SMS sending fails
 				await redis.del(otpKey);

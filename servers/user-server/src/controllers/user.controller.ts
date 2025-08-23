@@ -2,6 +2,7 @@ import type { Response } from "express";
 import { UserService } from "../services/user.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
+import { updateUserProfileSchema } from "../validators/user.validator";
 
 export class UserController {
 	private userService: UserService;
@@ -38,22 +39,13 @@ export class UserController {
 			return sendError(res, "User ID is required", 400);
 		}
 
-		const { name, email, avatar } = req.body;
-
-		if (!name && !email && !avatar) {
-			return sendError(
-				res,
-				"At least one field (name, email, avatar) is required to update",
-				400,
-			);
-		}
+		const updateData = updateUserProfileSchema.parse(req.body);
 
 		try {
-			const updatedUser = await this.userService.updateUserProfile(userId, {
-				name,
-				email,
-				avatar,
-			});
+			const updatedUser = await this.userService.updateUserProfile(
+				userId,
+				updateData,
+			);
 			return sendSuccess(res, "User profile updated successfully", updatedUser);
 		} catch (error: any) {
 			return sendError(
