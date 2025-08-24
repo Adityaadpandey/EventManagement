@@ -9,40 +9,40 @@ const paymentController = new PaymentController();
 
 // Verify payment and update ticket status
 router.post(
-	"/verify",
-	authMiddleware,
-	ticketController.verifyPayment.bind(ticketController),
+  "/verify",
+  authMiddleware,
+  ticketController.verifyPayment.bind(ticketController),
 );
 
 // Handle payment failure
 router.post(
-	"/failure",
-	authMiddleware,
-	ticketController.handlePaymentFailure.bind(ticketController),
+  "/failure",
+  authMiddleware,
+  ticketController.handlePaymentFailure.bind(ticketController),
 );
 
 // ============ REFUND ROUTES ============
 
 // Request refund (user)
 router.post(
-	"/refund/request",
-	authMiddleware,
-	paymentController.requestRefund.bind(paymentController),
+  "/refund/request",
+  authMiddleware,
+  paymentController.requestRefund.bind(paymentController),
 );
 
 // Process refund (admin - approve/reject)
 router.post(
-	"/refund/process",
-	authMiddleware,
-	requireRole(["ADMIN", "SUPER_ADMIN", "LISTER"]),
-	paymentController.processRefund.bind(paymentController),
+  "/refund/process",
+  authMiddleware,
+  requireRole(["ADMIN", "SUPER_ADMIN", "LISTER"]),
+  paymentController.processRefund.bind(paymentController),
 );
 
 // Get refunds
 router.get(
-	"/refunds/:eventId",
-	authMiddleware,
-	paymentController.getRefunds.bind(paymentController),
+  "/refunds/:eventId",
+  authMiddleware,
+  paymentController.getRefunds.bind(paymentController),
 );
 
 export { router as paymentRouter };

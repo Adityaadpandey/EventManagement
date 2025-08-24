@@ -5,184 +5,184 @@ import { PaymentService } from "../services/payment.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
 import {
-	processRefundSchema,
-	requestRefundSchema,
-	verifyPaymentSchema,
+  processRefundSchema,
+  requestRefundSchema,
+  verifyPaymentSchema,
 } from "../validators/payment.validator";
 
 export class PaymentController {
-	private paymentService: PaymentService;
+  private paymentService: PaymentService;
 
-	constructor() {
-		this.paymentService = new PaymentService();
-	}
+  constructor() {
+    this.paymentService = new PaymentService();
+  }
 
-	async verifyPayment(req: AuthenticatedRequest, res: Response) {
-		try {
-			const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-				verifyPaymentSchema.parse(req.body);
+  async verifyPayment(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+        verifyPaymentSchema.parse(req.body);
 
-			const isValid = await this.paymentService.verifySignature(
-				razorpay_order_id,
-				razorpay_payment_id,
-				razorpay_signature,
-			);
+      const isValid = await this.paymentService.verifySignature(
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+      );
 
-			if (!isValid) {
-				return sendError(res, "Invalid payment signature", 400);
-			}
+      if (!isValid) {
+        return sendError(res, "Invalid payment signature", 400);
+      }
 
-			const paymentDetails =
-				await this.paymentService.getPaymentDetails(razorpay_payment_id);
+      const paymentDetails =
+        await this.paymentService.getPaymentDetails(razorpay_payment_id);
 
-			return sendSuccess(res, "Payment verified successfully", {
-				verified: true,
-				paymentDetails: paymentDetails.data,
-			});
-		} catch (error: any) {
-			if (error.name === "ZodError") {
-				return sendError(
-					res,
-					error.errors?.[0]?.message || "Validation error",
-					400,
-				);
-			}
-			logger.error("Error verifying payment:", error);
-			return sendError(res, "Failed to verify payment", 500);
-		}
-	}
+      return sendSuccess(res, "Payment verified successfully", {
+        verified: true,
+        paymentDetails: paymentDetails.data,
+      });
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        return sendError(
+          res,
+          error.errors?.[0]?.message || "Validation error",
+          400,
+        );
+      }
+      logger.error("Error verifying payment:", error);
+      return sendError(res, "Failed to verify payment", 500);
+    }
+  }
 
-	async requestRefund(req: AuthenticatedRequest, res: Response) {
-		try {
-			const userId = req.user?.userId;
-			if (!userId) return sendError(res, "User ID is required", 400);
+  async requestRefund(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) return sendError(res, "User ID is required", 400);
 
-			const { ticketId, reason } = requestRefundSchema.parse(req.body);
-			// Verify user owns the ticket
-			const ticket = await prisma.ticket.findFirst({
-				where: {
-					ticketId,
-					userId,
-				},
-			});
+      const { ticketId, reason } = requestRefundSchema.parse(req.body);
+      // Verify user owns the ticket
+      const ticket = await prisma.ticket.findFirst({
+        where: {
+          ticketId,
+          userId,
+        },
+      });
 
-			if (!ticket) {
-				return sendError(res, "Ticket not found or access denied", 404);
-			}
+      if (!ticket) {
+        return sendError(res, "Ticket not found or access denied", 404);
+      }
 
-			const result = await this.paymentService.processRefund(
-				ticketId,
-				ticket.totalPrice,
-				reason,
-			);
+      const result = await this.paymentService.processRefund(
+        ticketId,
+        ticket.totalPrice,
+        reason,
+      );
 
-			if (result.error) {
-				return sendError(res, result.error, 400);
-			}
+      if (result.error) {
+        return sendError(res, result.error, 400);
+      }
 
-			return sendSuccess(
-				res,
-				"Refund request created successfully",
-				result.data,
-			);
-		} catch (error: any) {
-			if (error.name === "ZodError") {
-				return sendError(
-					res,
-					error.errors?.[0]?.message || "Validation error",
-					400,
-				);
-			}
-			logger("Error requesting refund:", error);
-			return sendError(res, "Failed to request refund", 500);
-		}
-	}
+      return sendSuccess(
+        res,
+        "Refund request created successfully",
+        result.data,
+      );
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        return sendError(
+          res,
+          error.errors?.[0]?.message || "Validation error",
+          400,
+        );
+      }
+      logger("Error requesting refund:", error);
+      return sendError(res, "Failed to request refund", 500);
+    }
+  }
 
-	async processRefund(req: AuthenticatedRequest, res: Response) {
-		try {
-			const userId = req.user?.userId;
-			const userRole = req.user?.role;
+  async processRefund(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      const userRole = req.user?.role;
 
-			const { refundId, action } = processRefundSchema.parse(req.body);
+      const { refundId, action } = processRefundSchema.parse(req.body);
 
-			if (!refundId || !action) {
-				return sendError(res, "Refund ID and action are required", 400);
-			}
+      if (!refundId || !action) {
+        return sendError(res, "Refund ID and action are required", 400);
+      }
 
-			let result: any;
-			if (action === "approve") {
-				result = await this.paymentService.completeRefund(refundId, userId!);
-			} else if (action === "reject") {
-				result = await this.paymentService.rejectRefund(refundId, userId!);
-			} else {
-				return sendError(res, "Invalid action. Use 'approve' or 'reject'", 400);
-			}
+      let result: any;
+      if (action === "approve") {
+        result = await this.paymentService.completeRefund(refundId, userId!);
+      } else if (action === "reject") {
+        result = await this.paymentService.rejectRefund(refundId, userId!);
+      } else {
+        return sendError(res, "Invalid action. Use 'approve' or 'reject'", 400);
+      }
 
-			return sendSuccess(res, `Refund ${action}d successfully`, result.data);
-		} catch (error: any) {
-			if (error.name === "ZodError") {
-				return sendError(
-					res,
-					error.errors?.[0]?.message || "Validation error",
-					400,
-				);
-			}
-			logger("Error processing refund:", error);
-			return sendError(res, "Failed to process refund", 500);
-		}
-	}
+      return sendSuccess(res, `Refund ${action}d successfully`, result.data);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        return sendError(
+          res,
+          error.errors?.[0]?.message || "Validation error",
+          400,
+        );
+      }
+      logger("Error processing refund:", error);
+      return sendError(res, "Failed to process refund", 500);
+    }
+  }
 
-	async getRefunds(req: AuthenticatedRequest, res: Response) {
-		try {
-			const userId = req.user?.userId;
-			const userRole = req.user?.role;
-			const eventId = req.params.eventId;
+  async getRefunds(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      const userRole = req.user?.role;
+      const eventId = req.params.eventId;
 
-			let searchUserId: string | undefined;
-			let searchEventId: string | undefined;
+      let searchUserId: string | undefined;
+      let searchEventId: string | undefined;
 
-			// Set filters based on user role
-			if (userRole === "USER") {
-				searchUserId = userId; // Users can only see their own refunds
-			} else if (userRole === "LISTER") {
-				// Listers can see refunds for their events
-				if (eventId) {
-					// Verify lister owns the event
-					const lister = await prisma.lister.findUnique({
-						where: { userId },
-					});
+      // Set filters based on user role
+      if (userRole === "USER") {
+        searchUserId = userId; // Users can only see their own refunds
+      } else if (userRole === "LISTER") {
+        // Listers can see refunds for their events
+        if (eventId) {
+          // Verify lister owns the event
+          const lister = await prisma.lister.findUnique({
+            where: { userId },
+          });
 
-					if (!lister) {
-						return sendError(res, "Lister profile not found", 400);
-					}
+          if (!lister) {
+            return sendError(res, "Lister profile not found", 400);
+          }
 
-					const event = await prisma.event.findFirst({
-						where: {
-							eventId: eventId as string,
-							listerId: lister.listerId,
-						},
-					});
+          const event = await prisma.event.findFirst({
+            where: {
+              eventId: eventId as string,
+              listerId: lister.listerId,
+            },
+          });
 
-					if (!event) {
-						return sendError(res, "Event not found or access denied", 404);
-					}
+          if (!event) {
+            return sendError(res, "Event not found or access denied", 404);
+          }
 
-					searchEventId = eventId as string;
-				} else {
-					return sendError(res, "Event ID is required for listers", 400);
-				}
-			}
-			// Admins can see all refunds (no filters needed)
+          searchEventId = eventId as string;
+        } else {
+          return sendError(res, "Event ID is required for listers", 400);
+        }
+      }
+      // Admins can see all refunds (no filters needed)
 
-			const result = await this.paymentService.getRefunds(
-				searchEventId,
-				searchUserId,
-			);
+      const result = await this.paymentService.getRefunds(
+        searchEventId,
+        searchUserId,
+      );
 
-			return sendSuccess(res, "Refunds fetched successfully", result);
-		} catch (error) {
-			logger("Error fetching refunds:", error);
-			return sendError(res, "Failed to fetch refunds", 500);
-		}
-	}
+      return sendSuccess(res, "Refunds fetched successfully", result);
+    } catch (error) {
+      logger("Error fetching refunds:", error);
+      return sendError(res, "Failed to fetch refunds", 500);
+    }
+  }
 }
