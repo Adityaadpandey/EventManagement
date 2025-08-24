@@ -100,7 +100,10 @@ export class EventService {
 			const eventDate = new Date(eventData.date);
 			const eventTime = new Date(eventData.time);
 
-			if (isNaN(eventDate.getTime()) || isNaN(eventTime.getTime())) {
+			if (
+				Number.isNaN(eventDate.getTime()) ||
+				Number.isNaN(eventTime.getTime())
+			) {
 				throw new Error("Invalid date or time format");
 			}
 

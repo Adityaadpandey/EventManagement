@@ -1,5 +1,6 @@
 import type { NextFunction, Response } from "express";
 import jwt from "jsonwebtoken";
+import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import {
@@ -141,10 +142,7 @@ export const checkerAuthMiddleware = (
 				.json({ success: false, message: "Access denied. No token provided." });
 		}
 
-		const decoded = jwt.verify(
-			token,
-			process.env.JWT_SECRET || "your-secret-key",
-		) as any;
+		const decoded = jwt.verify(token, config.JWT_SECRET) as any;
 		req.checker = decoded;
 		next();
 	} catch (error) {
