@@ -6,30 +6,30 @@ import type { CustomError } from "../types";
 import { sendError } from "../utils/responseMsg";
 
 export const errorHandler = (
-	error: CustomError,
-	req: Request,
-	res: Response,
-	_next: NextFunction,
+  error: CustomError,
+  req: Request,
+  res: Response,
+  _next: NextFunction,
 ) => {
-	logger.error(error);
+  logger.error(error);
 
-	if (error instanceof z.ZodError) {
-		return sendError(res, "Invalid input", 400, error.issues);
-	}
+  if (error instanceof z.ZodError) {
+    return sendError(res, "Invalid input", 400, error.issues);
+  }
 
-	const statusCode = error.statusCode || 500;
-	const message = error.message || "Internal server error";
+  const statusCode = error.statusCode || 500;
+  const message = error.message || "Internal server error";
 
-	if (process.env.NODE_ENV !== "production") {
-		logger.error({
-			message,
-			stack: error.stack,
-			path: req.path,
-			method: req.method,
-			body: req.body,
-			query: req.query,
-		});
-	}
+  if (process.env.NODE_ENV !== "production") {
+    logger.error({
+      message,
+      stack: error.stack,
+      path: req.path,
+      method: req.method,
+      body: req.body,
+      query: req.query,
+    });
+  }
 
-	return sendError(res, message, statusCode);
+  return sendError(res, message, statusCode);
 };

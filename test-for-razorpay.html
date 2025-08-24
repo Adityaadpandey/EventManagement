@@ -1,73 +1,76 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Razorpay Payment Demo</title>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 100px;
-    }
-    input, button {
-      padding: 10px;
-      margin: 10px;
-      width: 300px;
-    }
-    #response {
-      margin-top: 20px;
-      white-space: pre-wrap;
-    }
-  </style>
-</head>
-<body>
-
-  <h2>Razorpay Payment</h2>
-
-  <input type="text" id="orderIdInput" placeholder="Enter Razorpay Order ID" />
-  <br>
-  <button onclick="makePayment()">Pay Now</button>
-
-  <div id="response"></div>
-
-  <script>
-    function makePayment() {
-      const orderId = document.getElementById('orderIdInput').value.trim();
-      if (!orderId) {
-        alert("Please enter a valid Razorpay Order ID");
-        return;
+  <head>
+    <meta charset="UTF-8" />
+    <title>Razorpay Payment Demo</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin-top: 100px;
       }
+      input,
+      button {
+        padding: 10px;
+        margin: 10px;
+        width: 300px;
+      }
+      #response {
+        margin-top: 20px;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Razorpay Payment</h2>
 
-      const options = {
-        "key": "rzp_test_PgwgpRUzFvMbAn", // Replace with your Razorpay key ID
-        "amount": "50000", // Amount is required (in paise). Use dummy value here.
-        "currency": "INR",
-        "name": "Your Company",
-        "description": "Test Transaction",
-        "order_id": orderId,
-        "handler": function (response) {
-          const output = `
+    <input
+      type="text"
+      id="orderIdInput"
+      placeholder="Enter Razorpay Order ID"
+    />
+    <br />
+    <button onclick="makePayment()">Pay Now</button>
+
+    <div id="response"></div>
+
+    <script>
+      function makePayment() {
+        const orderId = document.getElementById("orderIdInput").value.trim();
+        if (!orderId) {
+          alert("Please enter a valid Razorpay Order ID");
+          return;
+        }
+
+        const options = {
+          key: "rzp_test_PgwgpRUzFvMbAn", // Replace with your Razorpay key ID
+          amount: "50000", // Amount is required (in paise). Use dummy value here.
+          currency: "INR",
+          name: "Your Company",
+          description: "Test Transaction",
+          order_id: orderId,
+          handler: function (response) {
+            const output = `
 Payment ID: ${response.razorpay_payment_id}
 Order ID: ${response.razorpay_order_id}
 Signature: ${response.razorpay_signature}
           `;
-          document.getElementById("response").innerText = output;
-        },
-        "prefill": {
-          "name": "Test User",
-          "email": "test@example.com",
-          "contact": "9415379379"
-        },
-        "theme": {
-          "color": "#3399cc"
-        }
-      };
+            document.getElementById("response").innerText = output;
+          },
+          prefill: {
+            name: "Test User",
+            email: "test@example.com",
+            contact: "9415379379",
+          },
+          theme: {
+            color: "#3399cc",
+          },
+        };
 
-      const rzp1 = new Razorpay(options);
-      rzp1.open();
-    }
-  </script>
-
-</body>
+        const rzp1 = new Razorpay(options);
+        rzp1.open();
+      }
+    </script>
+  </body>
 </html>

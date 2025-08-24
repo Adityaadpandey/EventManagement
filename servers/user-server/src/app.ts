@@ -2,9 +2,9 @@ import "dotenv/config";
 
 import cors from "cors";
 import express, {
-	type NextFunction,
-	type Request,
-	type Response,
+  type NextFunction,
+  type Request,
+  type Response,
 } from "express";
 import helmet from "helmet";
 
@@ -39,13 +39,13 @@ app.use(limiter);
 app.use(reqMiddleware);
 
 app.get("/health", async (_, res: Response) => {
-	const status = await healthCheck();
-	const allHealthy = Object.values(status).every(Boolean);
+  const status = await healthCheck();
+  const allHealthy = Object.values(status).every(Boolean);
 
-	res.status(allHealthy ? 200 : 503).json({
-		...status,
-		status: allHealthy ? "ok" : "unhealthy",
-	});
+  res.status(allHealthy ? 200 : 503).json({
+    ...status,
+    status: allHealthy ? "ok" : "unhealthy",
+  });
 });
 
 // auth routes
@@ -76,25 +76,25 @@ app.use("/api/v1/ticket-validation", ticketValidationRouter);
 app.use("/api/v1/admin", adminRouter);
 
 app.use((req: Request, res: Response) => {
-	logger.warn(`Resource not found: ${req.method} ${req.url}`);
-	return sendError(res, "Resource not found", 404);
+  logger.warn(`Resource not found: ${req.method} ${req.url}`);
+  return sendError(res, "Resource not found", 404);
 });
 
 // Error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-	logger.error("Unhandled error:", err);
-	return sendError(res, "Internal server error", 500);
+  logger.error("Unhandled error:", err);
+  return sendError(res, "Internal server error", 500);
 });
 
 export const startServer = async () => {
-	try {
-		await connectRedis();
-		const server = app.listen(config.PORT, () => {
-			logger.info(`${config.SERVICE_NAME} running on port ${config.PORT}`);
-		});
-		setupGracefulShutdown(server);
-	} catch (error) {
-		logger.error("Failed to start server:", error);
-		process.exit(1);
-	}
+  try {
+    await connectRedis();
+    const server = app.listen(config.PORT, () => {
+      logger.info(`${config.SERVICE_NAME} running on port ${config.PORT}`);
+    });
+    setupGracefulShutdown(server);
+  } catch (error) {
+    logger.error("Failed to start server:", error);
+    process.exit(1);
+  }
 };

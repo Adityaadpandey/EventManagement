@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 
 services:
   postgres:
@@ -55,16 +55,12 @@ services:
       NODE_ENV: DEVELOPMENT
       JWT_SECRET: supersecretkey
 
-
-
       TWILIO_ACCOUNT_SID: ""
       TWILIO_AUTH_TOKEN: ""
       TWILIO_PHONE_NUMBER: ""
 
-
       RAZORPAY_KEY_ID: ""
       RAZORPAY_KEY_SECRET: ""
-
 
 volumes:
   postgres_data:
