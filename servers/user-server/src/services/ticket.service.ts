@@ -1,4 +1,5 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
+import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { razorpay } from "../lib/razorpay";
@@ -121,7 +122,7 @@ export class TicketService {
 			// Verify signature
 			const body = razorpayOrderId + "|" + razorpayPaymentId;
 			const expectedSignature = crypto
-				.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
+				.createHmac("sha256", config.RAZORPAY_KEY_SECRET)
 				.update(body.toString())
 				.digest("hex");
 

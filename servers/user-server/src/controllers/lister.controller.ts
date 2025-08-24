@@ -47,8 +47,6 @@ export class ListerController {
 		const userId = req.user?.userId;
 		if (!userId) return sendError(res, "User ID is required", 400);
 
-		const { companyName, companyLogo, bio } = req.body;
-
 		const validatedData = updateListerSchema.parse(req.body);
 
 		try {
