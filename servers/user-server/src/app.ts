@@ -15,6 +15,7 @@ import { connectRedis } from "./config/redis";
 import { limiter } from "./middlewares/rate-limit.middleware";
 import { reqMiddleware } from "./middlewares/req.middleware";
 
+import { adminRouter } from "./routes/v1/admin.router";
 import { authRouter } from "./routes/v1/auth.router";
 import { checkerRouter } from "./routes/v1/checker.router";
 import { eventsRouter } from "./routes/v1/events.router";
@@ -70,6 +71,9 @@ app.use("/api/v1/checker", checkerRouter);
 
 // ticker validation routes
 app.use("/api/v1/ticket-validation", ticketValidationRouter);
+
+// admin routes
+app.use("/api/v1/admin", adminRouter);
 
 app.use((req: Request, res: Response) => {
 	logger.warn(`Resource not found: ${req.method} ${req.url}`);

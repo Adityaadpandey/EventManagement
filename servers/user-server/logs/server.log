@@ -663,3 +663,91 @@
 {"level":"info","message":"Request completed: GET /api/v1/ticket-validation/history - Status: 200 - Duration: 14.79 ms","timestamp":"04:53:03.408"}
 {"level":"info","message":"Incoming request: GET /api/v1/ticket-validation/profile from ::1","timestamp":"04:53:08.393"}
 {"level":"info","message":"Request completed: GET /api/v1/ticket-validation/profile - Status: 200 - Duration: 7.12 ms","timestamp":"04:53:08.401"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:37:21.865"}
+{"level":"info","message":"Redis Ready","timestamp":"15:37:21.867"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:37:21.868"}
+{"level":"info","message":"server running on port 7001","timestamp":"15:37:21.869"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"15:37:51.894"}
+{"level":"info","message":"HTTP server closed.","timestamp":"15:37:51.894"}
+{"level":"info","message":"Redis connection closed.","timestamp":"15:37:51.896"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:37:52.187"}
+{"level":"info","message":"Redis Ready","timestamp":"15:37:52.189"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:37:52.190"}
+{"level":"info","message":"server running on port 7001","timestamp":"15:37:52.191"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"15:38:30.590"}
+{"level":"info","message":"HTTP server closed.","timestamp":"15:38:30.591"}
+{"level":"info","message":"Redis connection closed.","timestamp":"15:38:30.592"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:38:30.890"}
+{"level":"info","message":"Redis Ready","timestamp":"15:38:30.893"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:38:30.893"}
+{"level":"info","message":"server running on port 7001","timestamp":"15:38:30.894"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"15:38:59.139"}
+{"level":"info","message":"HTTP server closed.","timestamp":"15:38:59.140"}
+{"level":"info","message":"Redis connection closed.","timestamp":"15:38:59.142"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:38:59.425"}
+{"level":"info","message":"Redis Ready","timestamp":"15:38:59.427"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:38:59.428"}
+{"level":"info","message":"server running on port 7001","timestamp":"15:38:59.428"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"15:39:15.504"}
+{"level":"info","message":"HTTP server closed.","timestamp":"15:39:15.505"}
+{"level":"info","message":"Redis connection closed.","timestamp":"15:39:15.507"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:39:15.688"}
+{"level":"info","message":"Redis Ready","timestamp":"15:39:15.690"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:39:15.691"}
+{"level":"info","message":"server running on port 7001","timestamp":"15:39:15.692"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"15:39:30.349"}
+{"level":"info","message":"HTTP server closed.","timestamp":"15:39:30.350"}
+{"level":"info","message":"Redis connection closed.","timestamp":"15:39:30.351"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:39:30.669"}
+{"level":"info","message":"Redis Ready","timestamp":"15:39:30.671"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:39:30.672"}
+{"level":"info","message":"server running on port 7001","timestamp":"15:39:30.673"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"15:41:54.730"}
+{"level":"info","message":"HTTP server closed.","timestamp":"15:41:54.731"}
+{"level":"info","message":"Redis connection closed.","timestamp":"15:41:54.733"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:41:55.031"}
+{"level":"info","message":"Redis Ready","timestamp":"15:41:55.035"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:41:55.035"}
+{"level":"info","message":"server running on port 7001","timestamp":"15:41:55.036"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"15:43:04.390"}
+{"level":"info","message":"HTTP server closed.","timestamp":"15:43:04.391"}
+{"level":"info","message":"Redis connection closed.","timestamp":"15:43:04.393"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:43:04.680"}
+{"level":"info","message":"Redis Ready","timestamp":"15:43:04.682"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:43:04.683"}
+{"level":"info","message":"server running on port 7001","timestamp":"15:43:04.684"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"15:43:38.380"}
+{"level":"info","message":"HTTP server closed.","timestamp":"15:43:38.381"}
+{"level":"info","message":"Redis connection closed.","timestamp":"15:43:38.382"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:43:38.681"}
+{"level":"info","message":"Redis Ready","timestamp":"15:43:38.683"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:43:38.684"}
+{"level":"info","message":"server running on port 7001","timestamp":"15:43:38.685"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"15:44:04.756"}
+{"level":"info","message":"HTTP server closed.","timestamp":"15:44:04.757"}
+{"level":"info","message":"Redis connection closed.","timestamp":"15:44:04.758"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:44:05.056"}
+{"level":"info","message":"Redis Ready","timestamp":"15:44:05.058"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:44:05.059"}
+{"level":"info","message":"server running on port 7001","timestamp":"15:44:05.060"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"15:44:39.225"}
+{"level":"info","message":"HTTP server closed.","timestamp":"15:44:39.225"}
+{"level":"info","message":"Redis connection closed.","timestamp":"15:44:39.227"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:44:39.409"}
+{"level":"info","message":"Redis Ready","timestamp":"15:44:39.412"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:44:39.412"}
+{"level":"info","message":"server running on port 7001","timestamp":"15:44:39.413"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"15:44:43.269"}
+{"level":"info","message":"HTTP server closed.","timestamp":"15:44:43.269"}
+{"level":"info","message":"Redis connection closed.","timestamp":"15:44:43.271"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:44:43.444"}
+{"level":"info","message":"Redis Ready","timestamp":"15:44:43.447"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:44:43.448"}
+{"level":"info","message":"server running on port 7001","timestamp":"15:44:43.449"}
+{"level":"info","message":"Received SIGTERM. Shutting down gracefully...","timestamp":"15:45:15.040"}
+{"level":"info","message":"HTTP server closed.","timestamp":"15:45:15.040"}
+{"level":"info","message":"Redis connection closed.","timestamp":"15:45:15.042"}
+{"level":"info","message":"Redis Connected Successfully","timestamp":"15:45:15.239"}
+{"level":"info","message":"Redis Ready","timestamp":"15:45:15.242"}
+{"level":"info","message":"Redis Ping Successful","timestamp":"15:45:15.243"}
+{"level":"info","message":"server running on port 7001","timestamp":"15:45:15.243"}
