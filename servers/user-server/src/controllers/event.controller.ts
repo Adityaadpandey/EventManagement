@@ -36,8 +36,8 @@ export class EventController {
   //  all the event details for public view
   async getPublicEvents(req: Request, res: Response) {
     try {
-      const page = Number.parseInt(req.query.page as string, 10) || 1;
-      const limit = Number.parseInt(req.query.limit as string, 10) || 20;
+      const page = parseInt(req.query.page as string, 10) || 1;
+      const limit = parseInt(req.query.limit as string, 10) || 20;
 
       const { events, total } = await this.eventService.getPublicEvents(
         page,
