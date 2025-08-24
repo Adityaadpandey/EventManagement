@@ -22,7 +22,9 @@
 			"!**/node_modules",
 			"!**/generated",
 			"!**/+html.tsx",
-			"!**/*.css"
+			"!**/*.css",
+			"!**/.expo",
+			"!**/web"
 		]
 	},
 	"formatter": {
