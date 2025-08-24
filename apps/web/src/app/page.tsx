@@ -1,10 +1,10 @@
 "use client";
 
+import { fetchPublicEvents } from "@/lib/features/eventsSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
-import { fetchPublicEvents } from "@/lib/features/eventsSlice";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
 export default function HomePage() {
   const dispatch = useAppDispatch();
@@ -13,7 +13,7 @@ export default function HomePage() {
   );
 
   useEffect(() => {
-    dispatch(fetchPublicEvents({ page: 1, limit: 20 }));
+    dispatch(fetchPublicEvents({ page: 1, limit: 10 }));
   }, [dispatch]);
 
   if (loading) return <p>Loading events...</p>;
