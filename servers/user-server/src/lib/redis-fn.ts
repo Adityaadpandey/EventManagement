@@ -139,6 +139,11 @@ export const setCachedPublicEvents = async (
   limit: number,
 ) => {
   try {
+    if (!events || !events.events || events.events.length === 0) {
+      // don’t cache empty responses
+      return;
+    }
+
     const cacheKey = `${CACHE_KEYS.PUBLIC_EVENTS}:${page}:${limit}`;
     await redis.setex(
       cacheKey,
