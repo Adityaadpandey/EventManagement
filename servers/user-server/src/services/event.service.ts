@@ -226,7 +226,7 @@ export class EventService {
   async getPublicEvents(page = 1, limit = 20) {
     try {
       const offset = (page - 1) * limit;
-
+      console.log(page, limit, offset);
       const cached = await getCachedPublicEvents(page, limit);
       if (cached) {
         logger.info("Public events fetched from cache");

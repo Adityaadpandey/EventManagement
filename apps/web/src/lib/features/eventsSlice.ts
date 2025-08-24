@@ -1,5 +1,5 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api from "@/lib/api";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 export type TicketType = {
   ticketTypeId: string;
@@ -89,7 +89,7 @@ export const fetchPublicEvents = createAsyncThunk<
   { rejectValue: string }
 >(
   "events/fetchPublic",
-  async ({ page = 1, limit = 20 }, { rejectWithValue }) => {
+  async ({ page = 1, limit = 10 }, { rejectWithValue }) => {
     try {
       const res = await api.get(`/event/public?page=${page}&limit=${limit}`);
       const data = res.data?.data ?? [];
