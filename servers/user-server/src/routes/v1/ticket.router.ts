@@ -7,38 +7,38 @@ const ticketController = new TicketController();
 
 // Buy ticket (creates ticket with PENDING status)
 router.post(
-	"/buy",
-	authMiddleware,
-	ticketController.buyTicket.bind(ticketController),
+  "/buy",
+  authMiddleware,
+  ticketController.buyTicket.bind(ticketController),
 );
 
 // Get user's tickets
 router.get(
-	"/my-tickets",
-	authMiddleware,
-	ticketController.getUserTickets.bind(ticketController),
+  "/my-tickets",
+  authMiddleware,
+  ticketController.getUserTickets.bind(ticketController),
 );
 
 // Get ticket details by ID
 router.get(
-	"/:ticketId",
-	authMiddleware,
-	ticketController.getTicketDetails.bind(ticketController),
+  "/:ticketId",
+  authMiddleware,
+  ticketController.getTicketDetails.bind(ticketController),
 );
 
 // Get ticket buyers for a specific event (for listers and admins)
 router.get(
-	"/event/:eventId/buyers",
-	authMiddleware,
-	ticketController.getTicketBuyersForEvent.bind(ticketController),
+  "/event/:eventId/buyers",
+  authMiddleware,
+  ticketController.getTicketBuyersForEvent.bind(ticketController),
 );
 
 // Get all ticket buyers (admin only)
 router.get(
-	"/admin/all-buyers",
-	authMiddleware,
-	requireRole(["ADMIN", "SUPER_ADMIN"]),
-	ticketController.getAllTicketBuyers.bind(ticketController),
+  "/admin/all-buyers",
+  authMiddleware,
+  requireRole(["ADMIN", "SUPER_ADMIN"]),
+  ticketController.getAllTicketBuyers.bind(ticketController),
 );
 
 export { router as ticketRouter };
