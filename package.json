@@ -21,7 +21,7 @@
 	},
 	"lint-staged": {
 		"*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": [
-			"biome check --write ."
+			"biome check --write . --max-diagnostics=1000"
 		]
 	},
 	"packageManager": "pnpm@9.0.0",

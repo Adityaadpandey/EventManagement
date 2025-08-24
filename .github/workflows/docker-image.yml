@@ -39,3 +39,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Trigger deployment webhook
+        run: |
+          curl --request POST \
+            --url https://hook.sevalla.com/apps/53ed9ce4-d8bd-48d4-ab48-9b8815e2f25c/deploy/tpxeaqmqoqny
