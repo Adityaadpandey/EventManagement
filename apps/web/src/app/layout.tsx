@@ -1,4 +1,3 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "./_components/Navbar";
@@ -18,8 +17,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <Navbar />
-          <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+          <main className="flex md:flex-row flex-col">
+            <Navbar />
+            {children}
+          </main>
         </Providers>
       </body>
     </html>
