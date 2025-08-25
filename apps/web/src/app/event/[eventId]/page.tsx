@@ -5,7 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { fetchEventDetails } from "@/lib/features/eventsSlice";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
-import { requestOtp, verifyOtp } from "@/lib/features/authSlice";
+import {
+  requestOtp,
+  verifyOtp,
+  hydrateSession,
+} from "@/lib/features/authSlice";
 
 type TicketType = {
   ticketTypeId: string;
@@ -47,6 +51,7 @@ export default function EventPage() {
     otpSent,
     loading: authLoading,
     error: authError,
+    hydrated,
   } = useAppSelector((s) => s.auth);
 
   // events slice state
@@ -75,7 +80,9 @@ export default function EventPage() {
   const [localAuthMsg, setLocalAuthMsg] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const isVerified = Boolean(token && me);
+  const isAuthenticated = Boolean(token && me);
+  // show auth block only when hydration finished and user is not authenticated
+  const showAuthBlock = hydrated && !isAuthenticated;
 
   // Fetch event via eventsSlice (will cache in redux)
   useEffect(() => {
@@ -84,7 +91,14 @@ export default function EventPage() {
     }
   }, [dispatch, eventId, ev]);
 
-  // Prefill auth form when user is available
+  // ensure session hydration at page-level if not done yet
+  useEffect(() => {
+    if (!hydrated) {
+      dispatch(hydrateSession());
+    }
+  }, [hydrated, dispatch]);
+
+  // Prefill auth form when user is available (optional, for Razorpay prefill)
   useEffect(() => {
     if (me) {
       setAuthForm({
@@ -93,6 +107,13 @@ export default function EventPage() {
         phone: me.phone ?? "",
         otp: "",
       });
+      // also prefill attendee so required custom fields won't complain
+      setAttendee((a) => ({
+        ...a,
+        name: me.name,
+        email: me.email,
+        phone: me.phone,
+      }));
     }
   }, [me]);
 
@@ -132,6 +153,8 @@ export default function EventPage() {
 
   const sendOtp = async () => {
     setLocalAuthMsg(null);
+
+    // when not authenticated we require name/email/phone to request OTP
     if (
       !authForm.name.trim() ||
       !authForm.email.trim() ||
@@ -141,8 +164,6 @@ export default function EventPage() {
       return;
     }
     try {
-      // dispatch returns a thunk promise; awaiting ensures UX messages are timely
-      // we don't unwrap here because requestOtp doesn't return payload
       await dispatch(requestOtp(authForm.phone));
       setLocalAuthMsg("OTP sent. Check your phone.");
     } catch (e: any) {
@@ -158,7 +179,6 @@ export default function EventPage() {
     }
     try {
       setIsVerifying(true);
-      // verifyOtp returns token+user — unwrap to get rejection reasons easily
       await dispatch(
         verifyOtp({
           phone: authForm.phone,
@@ -167,7 +187,8 @@ export default function EventPage() {
           email: authForm.email,
         }),
       ).unwrap();
-      // on success the auth slice will have persisted token & user; clear otp input
+
+      // after successful verify, auth slice stores token/user and otpSent false
       setAuthForm((s) => ({ ...s, otp: "" }));
       setLocalAuthMsg(null);
     } catch (e: any) {
@@ -197,7 +218,7 @@ export default function EventPage() {
     setBuyError(null);
     setLocalAuthMsg(null);
 
-    if (!isVerified) {
+    if (!isAuthenticated) {
       setBuyError(
         "Please verify your phone (send OTP and verify) before buying.",
       );
@@ -357,6 +378,7 @@ export default function EventPage() {
 
   return (
     <div className="mx-auto px-4 py-8 text-white space-y-10 w-full h-screen overflow-y-auto">
+      {/* Event banner + info */}
       <div>
         {ev.banner_horizontal || ev.banner_square ? (
           <div className="relative w-full h-64 rounded-lg overflow-hidden bg-zinc-800 border border-zinc-700">
@@ -370,17 +392,14 @@ export default function EventPage() {
 
         <h1 className="text-3xl font-bold mt-6">{ev.title}</h1>
         <p className="text-sm text-zinc-400 mt-2">
-          {ev.date ? (
-            <>
-              {new Date(ev.date).toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </>
-          ) : null}
-          {ev.time ? (
+          {ev.date &&
+            new Date(ev.date).toLocaleDateString("en-US", {
+              weekday: "short",
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
+          {ev.time && (
             <>
               {" • "}
               {new Date(ev.time).toLocaleTimeString("en-US", {
@@ -389,7 +408,7 @@ export default function EventPage() {
                 hour12: true,
               })}
             </>
-          ) : null}
+          )}
         </p>
 
         {ev.description && (
@@ -400,16 +419,19 @@ export default function EventPage() {
         )}
       </div>
 
+      {/* Ticket booking */}
       <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 shadow-sm">
         <h2 className="text-xl font-semibold mb-4">🎟 Book Tickets</h2>
 
         <div className="space-y-4">
-          {!isVerified && (
+          {/* Auth only if not verified AND session hydration completed */}
+          {showAuthBlock && (
             <div className="bg-zinc-800 border border-zinc-700 rounded p-4 space-y-3">
               <div className="text-sm text-zinc-300 font-medium">
                 Your details (required)
               </div>
 
+              {/* name */}
               <div>
                 <label className="block text-xs text-zinc-400 mb-1">
                   Full name
@@ -423,6 +445,7 @@ export default function EventPage() {
                 />
               </div>
 
+              {/* email */}
               <div>
                 <label className="block text-xs text-zinc-400 mb-1">
                   Email
@@ -436,6 +459,7 @@ export default function EventPage() {
                 />
               </div>
 
+              {/* phone + OTP */}
               <div>
                 <label className="block text-xs text-zinc-400 mb-1">
                   Phone
@@ -457,11 +481,9 @@ export default function EventPage() {
                       {authLoading ? "Sending..." : "Verify"}
                     </button>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-emerald-400 font-semibold">
-                        OTP sent
-                      </span>
-                    </div>
+                    <span className="text-sm text-emerald-400 font-semibold">
+                      OTP sent
+                    </span>
                   )}
                 </div>
               </div>
@@ -506,6 +528,7 @@ export default function EventPage() {
             </div>
           )}
 
+          {/* Ticket type */}
           <div>
             <label className="block text-sm mb-1 font-medium text-zinc-300">
               Ticket Type
@@ -524,6 +547,7 @@ export default function EventPage() {
             </select>
           </div>
 
+          {/* Quantity */}
           <div>
             <label className="block text-sm mb-1 font-medium text-zinc-300">
               Quantity
@@ -538,6 +562,7 @@ export default function EventPage() {
             />
           </div>
 
+          {/* Custom fields */}
           {ev.CustomField?.length > 0 && (
             <div>
               <label className="block text-sm mb-2 font-medium text-zinc-300">
