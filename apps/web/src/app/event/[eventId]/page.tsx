@@ -1,165 +1,592 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { fetchEventDetails } from "@/lib/features/eventsSlice";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { useAppSelector, useAppDispatch } from "@/lib/hooks";
+import { requestOtp, verifyOtp } from "@/lib/features/authSlice";
 
-export default function EventDetailsPage() {
-  const { eventId } = useParams<{ eventId: string }>();
-  const dispatch = useAppDispatch();
+type TicketType = {
+  ticketTypeId: string;
+  name: string;
+  price: number;
+  quantity: number;
+};
+
+type CustomField = {
+  label: string;
+  fieldType: string;
+  required: boolean;
+  options?: string | null;
+};
+
+type EventPublic = {
+  title: string;
+  description?: string | null;
+  banner_horizontal?: string | null;
+  banner_vertical?: string | null;
+  banner_square?: string | null;
+  date?: string | null;
+  time?: string | null;
+  location?: string | null;
+  capacity?: number | null;
+  TicketType: TicketType[];
+  CustomField: CustomField[];
+};
+
+export default function EventPage() {
+  const { eventId } = useParams() as { eventId: string };
   const router = useRouter();
+  const dispatch = useAppDispatch();
 
-  const { byId, loadingId, error } = useAppSelector((s) => s.events.details);
-  const { token } = useAppSelector((s) => s.auth);
+  // auth state
+  const {
+    user: me,
+    token,
+    otpSent,
+    loading: authLoading,
+    error: authError,
+  } = useAppSelector((s) => s.auth);
 
-  const ev = byId[eventId];
-  const loading = loadingId === eventId;
+  // events slice state
+  const {
+    byId,
+    loadingId,
+    error: eventsError,
+  } = useAppSelector((s) => s.events.details);
+  const ev = byId[eventId] as EventPublic | undefined;
+  const loadingEvent = loadingId === eventId;
 
-  const [ticketTypeId, setTicketTypeId] = useState<string>("");
+  // local UI / booking state
+  const [ticketTypeId, setTicketTypeId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
+  const [attendee, setAttendee] = useState<Record<string, any>>({});
   const [buying, setBuying] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
 
+  // local auth form (for non-logged in flows on the page)
+  const [authForm, setAuthForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    otp: "",
+  });
+  const [localAuthMsg, setLocalAuthMsg] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+
+  const isVerified = Boolean(token && me);
+
+  // Fetch event via eventsSlice (will cache in redux)
   useEffect(() => {
-    if (!ev) dispatch(fetchEventDetails({ eventId }));
+    if (!ev) {
+      dispatch(fetchEventDetails({ eventId }));
+    }
   }, [dispatch, eventId, ev]);
 
+  // Prefill auth form when user is available
   useEffect(() => {
-    if (ev?.ticketTypes && ev.ticketTypes.length && !ticketTypeId) {
-      setTicketTypeId(ev.ticketTypes[0].ticketTypeId);
+    if (me) {
+      setAuthForm({
+        name: me.name ?? "",
+        email: me.email ?? "",
+        phone: me.phone ?? "",
+        otp: "",
+      });
+    }
+  }, [me]);
+
+  // When event loads, default ticket type to first available
+  useEffect(() => {
+    if (!ticketTypeId && ev?.TicketType?.length) {
+      setTicketTypeId(ev.TicketType[0].ticketTypeId);
     }
   }, [ev, ticketTypeId]);
 
   const selectedTicket = useMemo(
-    () => ev?.ticketTypes?.find((t) => t.ticketTypeId === ticketTypeId),
+    () => ev?.TicketType?.find((t) => t.ticketTypeId === ticketTypeId) ?? null,
     [ev, ticketTypeId],
   );
 
-  const handleBuy = async () => {
+  // Razorpay script loader
+  const loadRazorpay = (): Promise<void> =>
+    new Promise((resolve, reject) => {
+      if (typeof window === "undefined")
+        return reject(new Error("Client only"));
+      if ((window as any).Razorpay) return resolve();
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () =>
+        reject(new Error("Razorpay script failed to load"));
+      document.body.appendChild(script);
+    });
+
+  // --- Auth helpers used in this page ---
+  const onAuthFieldChange =
+    (k: keyof typeof authForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setAuthForm((s) => ({ ...s, [k]: e.target.value }));
+      setLocalAuthMsg(null);
+    };
+
+  const sendOtp = async () => {
+    setLocalAuthMsg(null);
+    if (
+      !authForm.name.trim() ||
+      !authForm.email.trim() ||
+      !authForm.phone.trim()
+    ) {
+      setLocalAuthMsg("Name, email and phone are required to request OTP.");
+      return;
+    }
+    try {
+      // dispatch returns a thunk promise; awaiting ensures UX messages are timely
+      // we don't unwrap here because requestOtp doesn't return payload
+      await dispatch(requestOtp(authForm.phone));
+      setLocalAuthMsg("OTP sent. Check your phone.");
+    } catch (e: any) {
+      setLocalAuthMsg(e?.message || "Failed to send OTP");
+    }
+  };
+
+  const verifyPhoneOtp = async () => {
+    setLocalAuthMsg(null);
+    if (!authForm.phone.trim() || !authForm.otp.trim()) {
+      setLocalAuthMsg("Phone and OTP are required.");
+      return;
+    }
+    try {
+      setIsVerifying(true);
+      // verifyOtp returns token+user — unwrap to get rejection reasons easily
+      await dispatch(
+        verifyOtp({
+          phone: authForm.phone,
+          otp: authForm.otp,
+          name: authForm.name,
+          email: authForm.email,
+        }),
+      ).unwrap();
+      // on success the auth slice will have persisted token & user; clear otp input
+      setAuthForm((s) => ({ ...s, otp: "" }));
+      setLocalAuthMsg(null);
+    } catch (e: any) {
+      setLocalAuthMsg(
+        e?.response?.data?.message || e?.message || "Failed to verify OTP",
+      );
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const resendOtp = async () => {
+    if (!authForm.phone.trim()) {
+      setLocalAuthMsg("Phone is required to resend OTP.");
+      return;
+    }
+    try {
+      await dispatch(requestOtp(authForm.phone));
+      setLocalAuthMsg("OTP resent.");
+    } catch {
+      setLocalAuthMsg("Failed to resend OTP.");
+    }
+  };
+
+  // --- Booking flow ---
+  const onBuy = async () => {
     setBuyError(null);
-    if (!token) {
-      router.push("/auth");
+    setLocalAuthMsg(null);
+
+    if (!isVerified) {
+      setBuyError(
+        "Please verify your phone (send OTP and verify) before buying.",
+      );
       return;
     }
-    if (!ticketTypeId) {
-      setBuyError("Please select a ticket type");
+
+    if (!ticketTypeId || !selectedTicket) {
+      setBuyError("Select a ticket type first");
       return;
     }
+    if (quantity <= 0) {
+      setBuyError("Quantity must be at least 1");
+      return;
+    }
+    if (ev?.CustomField) {
+      for (const f of ev.CustomField) {
+        if (f.required && !attendee[f.label]) {
+          setBuyError(`Please fill ${f.label}`);
+          return;
+        }
+      }
+    }
+
+    setBuying(true);
 
     try {
-      setBuying(true);
-      // POST /ticket/buy  (auth required)
-      const res = await api.post("/ticket/buy", {
-        ticketTypeId,
-        quantity,
-        attendeeData: {}, // plug your attendee form here if needed
-      });
+      const finalAttendee = {
+        ...(attendee || {}),
+        name: me?.name ?? authForm.name,
+        email: me?.email ?? authForm.email,
+        phone: me?.phone ?? authForm.phone,
+      };
 
-      // At this point your backend returns `result.data` (whatever your TicketService provides)
-      // If it includes payment order info, open Razorpay here. Example (pseudo-safe):
-      // const order = res.data?.data?.order; // if your service returns it
-      // await openRazorpayCheckout(order);
-      // Then call /payment/verify with the payment response.
+      const payload = { ticketTypeId, quantity, attendeeData: finalAttendee };
+      const res = await api.post("/ticket/buy", payload);
 
-      alert("Ticket created successfully. Proceed to payment.");
-      console.log("Buy response:", res.data);
-    } catch (err: any) {
+      const data = res.data?.data || res.data;
+      const ticketId =
+        data?.ticket?.ticketId ||
+        data?.ticketId ||
+        data?.ticket?.id ||
+        data?.ticket?.id;
+
+      const orderInfo =
+        data?.paymentOrder ||
+        data?.razorpayOrder ||
+        data?.razorpay_order ||
+        data?.order ||
+        data?.payment;
+
+      if (
+        orderInfo &&
+        (orderInfo.order_id || orderInfo.id || orderInfo.razorpay_order_id)
+      ) {
+        const orderId =
+          orderInfo.order_id || orderInfo.id || orderInfo.razorpay_order_id;
+        const amount =
+          orderInfo.amount ||
+          orderInfo.amount_paid ||
+          orderInfo.total ||
+          selectedTicket.price * quantity * 100;
+        const currency = orderInfo.currency || "INR";
+        const key =
+          orderInfo.key ||
+          orderInfo.razorpay_key ||
+          (process.env.NEXT_PUBLIC_RAZORPAY_KEY as string | undefined);
+
+        if (!key) {
+          setBuyError("Payment key missing. Please contact admin.");
+          setBuying(false);
+          return;
+        }
+
+        await loadRazorpay();
+
+        const options: any = {
+          key,
+          amount,
+          currency,
+          name: ev?.title || "Tixin",
+          description: `Ticket(s) for ${ev?.title || "event"}`,
+          order_id: orderId,
+          prefill: {
+            name: me?.name || authForm.name || undefined,
+            email: me?.email || authForm.email || undefined,
+            contact: me?.phone || authForm.phone || undefined,
+          },
+          handler: async (resp: any) => {
+            try {
+              await api.post("/payment/verify", {
+                razorpay_order_id: resp?.razorpay_order_id,
+                razorpay_payment_id: resp?.razorpay_payment_id,
+                razorpay_signature: resp?.razorpay_signature,
+              });
+
+              const gotoId = ticketId || data?.ticket?.id || data?.ticketId;
+              if (gotoId) {
+                router.push(`/ticket/${gotoId}`);
+              } else {
+                router.push("/tickets/my-tickets");
+              }
+            } catch (verifyErr: any) {
+              if (ticketId) {
+                try {
+                  await api.post("/payment/failure", { ticketId });
+                } catch {}
+              }
+              setBuyError(
+                verifyErr?.response?.data?.message ||
+                  "Payment verification failed",
+              );
+            }
+          },
+          modal: {
+            ondismiss: async () => {
+              try {
+                const createdTicketId =
+                  ticketId || data?.ticket?.id || data?.ticketId;
+                if (createdTicketId) {
+                  await api.post("/payment/failure", {
+                    ticketId: createdTicketId,
+                  });
+                }
+              } catch {}
+            },
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } else if (data?.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        const gotoId = ticketId || data?.ticket?.ticketId || data?.ticketId;
+        if (gotoId) {
+          router.push(`/ticket/${gotoId}`);
+        } else {
+          setBuyError(
+            "Purchase succeeded but response was unexpected. Check My Tickets.",
+          );
+          router.push("/tickets/my-tickets");
+        }
+      }
+    } catch (e: any) {
       setBuyError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Failed to create ticket",
+        e?.response?.data?.message || e?.message || "Failed to create ticket",
       );
     } finally {
       setBuying(false);
     }
   };
 
-  if (loading || !ev)
-    return <p>{error ? "Failed to load event." : "Loading event..."}</p>;
-  if (error) return <p className="text-red-600">{error}</p>;
+  // --- render conditions ---
+  if (loadingEvent) return <div className="p-6">Loading event...</div>;
+  if (eventsError) return <div className="p-6 text-red-600">{eventsError}</div>;
+  if (!ev) return <div className="p-6">Event not found</div>;
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
-      <div className="lg:col-span-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          alt={ev.title}
-          src={
-            (ev.banner_horizontal ||
-              ev.banner_vertical ||
-              ev.banner_square) as string
-          }
-          className="h-64 w-full rounded-lg border object-cover"
-        />
-        <h1 className="mt-4 font-semibold text-2xl">{ev.title}</h1>
-        <p className="mt-1 opacity-80">
-          {ev.date || ""} {ev.time ? `• ${ev.time}` : ""}{" "}
-          {ev.location ? `• ${ev.location}` : ""}
+    <div className="mx-auto px-4 py-8 text-white space-y-10 w-full h-screen overflow-y-auto">
+      <div>
+        {ev.banner_horizontal || ev.banner_square ? (
+          <div className="relative w-full h-64 rounded-lg overflow-hidden bg-zinc-800 border border-zinc-700">
+            <img
+              src={ev.banner_horizontal || ev.banner_square!}
+              alt={ev.title}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </div>
+        ) : null}
+
+        <h1 className="text-3xl font-bold mt-6">{ev.title}</h1>
+        <p className="text-sm text-zinc-400 mt-2">
+          {ev.date ? (
+            <>
+              {new Date(ev.date).toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </>
+          ) : null}
+          {ev.time ? (
+            <>
+              {" • "}
+              {new Date(ev.time).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })}
+            </>
+          ) : null}
         </p>
-        {ev.description ? <p className="mt-4">{ev.description}</p> : null}
+
+        {ev.description && (
+          <div
+            className="mt-6 prose prose-invert prose-sm max-w-none"
+            dangerouslySetInnerHTML={{ __html: ev.description }}
+          />
+        )}
       </div>
 
-      <div className="h-fit rounded-lg border p-4 lg:col-span-2">
-        <h2 className="mb-3 font-semibold">Book Tickets</h2>
+      <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 shadow-sm">
+        <h2 className="text-xl font-semibold mb-4">🎟 Book Tickets</h2>
 
-        {!ev.ticketTypes || ev.ticketTypes.length === 0 ? (
-          <p>No ticket types available.</p>
-        ) : (
-          <>
-            <label className="mb-1 block text-sm">Ticket Type</label>
+        <div className="space-y-4">
+          {!isVerified && (
+            <div className="bg-zinc-800 border border-zinc-700 rounded p-4 space-y-3">
+              <div className="text-sm text-zinc-300 font-medium">
+                Your details (required)
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">
+                  Full name
+                </label>
+                <input
+                  type="text"
+                  value={authForm.name}
+                  onChange={onAuthFieldChange("name")}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm"
+                  placeholder="Your full name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={authForm.email}
+                  onChange={onAuthFieldChange("email")}
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm"
+                  placeholder="you@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">
+                  Phone
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="tel"
+                    value={authForm.phone}
+                    onChange={onAuthFieldChange("phone")}
+                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm"
+                    placeholder="+91 98XXXXXXXX"
+                  />
+                  {!otpSent ? (
+                    <button
+                      onClick={sendOtp}
+                      disabled={authLoading}
+                      className="px-3 py-2 bg-indigo-600 rounded text-sm"
+                    >
+                      {authLoading ? "Sending..." : "Verify"}
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-emerald-400 font-semibold">
+                        OTP sent
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {otpSent && (
+                <div className="pt-2">
+                  <label className="block text-xs text-zinc-400 mb-1">
+                    Enter OTP
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={authForm.otp}
+                      onChange={onAuthFieldChange("otp")}
+                      className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm"
+                      placeholder="123456"
+                    />
+                    <button
+                      onClick={verifyPhoneOtp}
+                      disabled={isVerifying}
+                      className="px-3 py-2 bg-emerald-600 rounded text-sm"
+                    >
+                      {isVerifying ? "Verifying..." : "Verify"}
+                    </button>
+                    <button
+                      onClick={resendOtp}
+                      disabled={authLoading}
+                      className="px-3 py-2 bg-zinc-700 rounded text-sm"
+                    >
+                      Resend
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {localAuthMsg && (
+                <div className="text-sm text-yellow-300">{localAuthMsg}</div>
+              )}
+              {authError && (
+                <div className="text-sm text-red-500">{authError}</div>
+              )}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm mb-1 font-medium text-zinc-300">
+              Ticket Type
+            </label>
             <select
-              className="mb-3 w-full rounded border p-2"
-              value={ticketTypeId}
-              onChange={(e) => setTicketTypeId(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm"
+              value={ticketTypeId || ""}
+              onChange={(e) => setTicketTypeId(e.target.value || null)}
             >
-              {ev.ticketTypes.map((t) => (
+              <option value="">-- Select a ticket type --</option>
+              {ev.TicketType.map((t) => (
                 <option key={t.ticketTypeId} value={t.ticketTypeId}>
-                  {t.name} — ₹{t.price}
+                  {t.name} — ₹{t.price} ({t.quantity} available)
                 </option>
               ))}
             </select>
+          </div>
 
-            <label className="mb-1 block text-sm">Quantity</label>
+          <div>
+            <label className="block text-sm mb-1 font-medium text-zinc-300">
+              Quantity
+            </label>
             <input
               type="number"
               min={1}
-              className="mb-4 w-full rounded border p-2"
+              max={selectedTicket?.quantity ?? 100}
               value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+              onChange={(e) => setQuantity(Number(e.target.value))}
+              className="w-28 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm"
             />
+          </div>
 
+          {ev.CustomField?.length > 0 && (
+            <div>
+              <label className="block text-sm mb-2 font-medium text-zinc-300">
+                Attendee Details
+              </label>
+              <div className="space-y-3">
+                {ev.CustomField.map((cf) => (
+                  <div key={cf.label}>
+                    <label className="block text-sm text-zinc-400 mb-1">
+                      {cf.label}
+                      {cf.required && <span className="text-red-500"> *</span>}
+                    </label>
+                    <input
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm"
+                      value={attendee[cf.label] ?? ""}
+                      onChange={(e) =>
+                        setAttendee((a) => ({
+                          ...a,
+                          [cf.label]: e.target.value,
+                        }))
+                      }
+                      placeholder={cf.fieldType}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {buyError && (
+            <div className="text-sm text-red-500 font-medium">{buyError}</div>
+          )}
+
+          <div className="flex flex-wrap items-center gap-3 pt-4">
             <button
-              className="w-full rounded bg-green-600 p-2 text-white"
-              onClick={handleBuy}
               disabled={buying}
+              onClick={onBuy}
+              className="bg-green-600 hover:bg-green-700 transition-colors px-5 py-2.5 rounded text-sm font-medium disabled:opacity-60"
             >
-              {buying
-                ? "Processing..."
-                : selectedTicket
-                  ? `Pay ₹${selectedTicket.price * quantity}`
-                  : "Proceed"}
+              {buying ? "Processing..." : "Buy & Pay"}
             </button>
-
-            {buyError ? (
-              <p className="mt-2 text-red-600 text-sm">{buyError}</p>
-            ) : null}
-
-            {!token ? (
-              <p className="mt-3 text-sm">
-                You must{" "}
-                <span
-                  className="cursor-pointer underline"
-                  onClick={() => router.push("/auth")}
-                >
-                  log in
-                </span>{" "}
-                to buy tickets.
-              </p>
-            ) : null}
-          </>
-        )}
+            <button
+              onClick={() => router.push("/tickets/my-tickets")}
+              className="border border-zinc-600 hover:border-zinc-500 text-sm px-4 py-2 rounded"
+            >
+              My Tickets
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
