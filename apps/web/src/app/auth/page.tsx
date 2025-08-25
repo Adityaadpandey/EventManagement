@@ -15,19 +15,13 @@ export default function Auth() {
     (s) => s.auth,
   );
 
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    otp: "",
-  });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", otp: "" });
+  const [resendTimer, setResendTimer] = useState(0);
 
-  // Hydrate session on first load
   useEffect(() => {
     dispatch(hydrateSession());
   }, [dispatch]);
 
-  // Prefill when user loads
   useEffect(() => {
     if (user) {
       setForm({
@@ -39,12 +33,21 @@ export default function Auth() {
     }
   }, [user]);
 
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      timer = setTimeout(() => setResendTimer((t) => t - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendTimer]);
+
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   const onSendOtp = () => {
-    if (!form.phone) return alert("Phone is required");
+    if (!form.phone) return alert("Phone number is required");
     dispatch(requestOtp(form.phone));
+    setResendTimer(300);
   };
 
   const onVerify = () => {
@@ -59,163 +62,138 @@ export default function Auth() {
     );
   };
 
-  // Logged-in view: prefilled, disabled, logout only
-  if (token && user) {
-    return (
-      <div className="min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50 p-4">
-        <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 space-y-6 border border-indigo-100 transition-all duration-300 hover:shadow-xl">
-          <div className="text-center">
-            <h1 className="font-bold text-3xl text-indigo-800 mb-2">
-              Welcome Back!
-            </h1>
-            <p className="text-gray-600">
-              You're ready to explore exciting events
-            </p>
-          </div>
+  const InputField = ({
+    label,
+    name,
+    type = "text",
+    value,
+    disabled = false,
+    placeholder,
+  }: {
+    label: string;
+    name: string;
+    type?: string;
+    value: string;
+    disabled?: boolean;
+    placeholder?: string;
+  }) => (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-zinc-300">{label}</label>
+      <input
+        name={name}
+        type={type}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        placeholder={placeholder}
+        className={`w-full rounded-lg border ${
+          disabled ? "bg-zinc-800 text-zinc-400" : "bg-zinc-900 text-white"
+        } border-zinc-700 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all`}
+      />
+    </div>
+  );
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Your Name
-              </label>
-              <input
-                className="w-full rounded-lg border border-gray-300 p-3 bg-gray-50 text-gray-800"
-                value={form.name}
-                disabled
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Email Address
-              </label>
-              <input
-                className="w-full rounded-lg border border-gray-300 p-3 bg-gray-50 text-gray-800"
-                value={form.email}
-                disabled
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Phone Number
-              </label>
-              <input
-                className="w-full rounded-lg border border-gray-300 p-3 bg-gray-50 text-gray-800"
-                value={form.phone}
-                disabled
-              />
-            </div>
-          </div>
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center text-white px-4">
+      <div className="w-full max-w-2xl bg-zinc-900 rounded-xl shadow-xl p-8 border border-zinc-800 space-y-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-indigo-400 mb-2">
+            {token && user ? "Welcome Back!" : "Join Tixin"}
+          </h1>
+          <p className="text-sm text-zinc-400">
+            {token && user
+              ? "You're ready to explore exciting events 🎉"
+              : "Sign in to discover and book amazing events"}
+          </p>
+        </div>
 
+        <div className="space-y-4">
+          <InputField
+            label="Full Name"
+            name="name"
+            value={form.name}
+            disabled={!!token}
+            placeholder="Your name"
+          />
+          <InputField
+            label="Email Address"
+            name="email"
+            type="email"
+            value={form.email}
+            disabled={!!token}
+            placeholder="you@example.com"
+          />
+          <InputField
+            label="Phone Number"
+            name="phone"
+            value={form.phone}
+            disabled={!!token}
+            placeholder="+91 98XXXXXXXX"
+          />
+        </div>
+
+        {!token ? (
+          !otpSent ? (
+            <button
+              className="w-full rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold p-3 transition duration-300 focus:ring-4 focus:ring-indigo-400"
+              onClick={onSendOtp}
+              disabled={loading}
+            >
+              {loading ? "Sending OTP..." : "Get Verification Code"}
+            </button>
+          ) : (
+            <>
+              <InputField
+                label="Verification Code"
+                name="otp"
+                value={form.otp}
+                placeholder="Enter OTP"
+              />
+
+              <div className="flex gap-3">
+                <button
+                  className="flex-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold p-3 transition duration-300 focus:ring-4 focus:ring-emerald-400"
+                  onClick={onVerify}
+                  disabled={loading}
+                >
+                  {loading ? "Verifying..." : "Verify & Continue"}
+                </button>
+
+                {otpSent &&
+                  (resendTimer > 0 ? (
+                    <button
+                      className="flex-1 rounded-lg bg-zinc-800 text-zinc-400 font-semibold p-3 cursor-not-allowed"
+                      disabled
+                    >
+                      Resend in {resendTimer}s
+                    </button>
+                  ) : (
+                    <button
+                      className="flex-1 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-white font-semibold p-3 transition duration-300 focus:ring-4 focus:ring-zinc-500"
+                      onClick={onSendOtp}
+                      disabled={loading}
+                    >
+                      Resend OTP
+                    </button>
+                  ))}
+              </div>
+            </>
+          )
+        ) : (
           <button
-            className="w-full rounded-lg bg-gradient-to-r from-rose-500 to-rose-600 p-3 text-white font-medium shadow-md hover:from-rose-600 hover:to-rose-700 transition-all duration-300 focus:ring-4 focus:ring-rose-200"
+            className="w-full rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold p-3 transition duration-300 focus:ring-4 focus:ring-rose-400"
             onClick={() => dispatch(logout())}
             disabled={loading}
           >
             {loading ? "Processing..." : "Sign Out"}
           </button>
-
-          {error ? (
-            <p className="text-red-600 text-sm font-medium bg-red-50 p-3 rounded-lg">
-              {error}
-            </p>
-          ) : null}
-        </div>
-      </div>
-    );
-  }
-
-  // Not logged in view: name, email, phone; OTP after request
-  return (
-    <div className="min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50 p-4">
-      <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-8 space-y-6 border border-indigo-100 transition-all duration-300 hover:shadow-xl">
-        <div className="text-center">
-          <h1 className="font-bold text-3xl text-indigo-800 mb-2">
-            Join the Experience
-          </h1>
-          <p className="text-gray-600">
-            Sign in to discover and book amazing events
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
-              Full Name
-            </label>
-            <input
-              name="name"
-              placeholder="Enter your name"
-              value={form.name}
-              onChange={onChange}
-              className="w-full rounded-lg border border-gray-300 p-3 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
-              Email Address
-            </label>
-            <input
-              name="email"
-              type="email"
-              placeholder="you@example.com"
-              value={form.email}
-              onChange={onChange}
-              className="w-full rounded-lg border border-gray-300 p-3 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">
-              Phone Number
-            </label>
-            <input
-              name="phone"
-              placeholder="+91 98XXXXXXXX"
-              value={form.phone}
-              onChange={onChange}
-              className="w-full rounded-lg border border-gray-300 p-3 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
-            />
-          </div>
-        </div>
-
-        {!otpSent ? (
-          <button
-            className="w-full rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 p-3 text-white font-medium shadow-md hover:from-indigo-600 hover:to-blue-700 transition-all duration-300 focus:ring-4 focus:ring-indigo-200"
-            onClick={onSendOtp}
-            disabled={loading}
-          >
-            {loading ? "Sending Code..." : "Get Verification Code"}
-          </button>
-        ) : (
-          <>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Verification Code
-              </label>
-              <input
-                name="otp"
-                placeholder="Enter the code we sent you"
-                value={form.otp}
-                onChange={onChange}
-                className="w-full rounded-lg border border-gray-300 p-3 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition-all"
-              />
-            </div>
-            <button
-              className="w-full rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 p-3 text-white font-medium shadow-md hover:from-emerald-600 hover:to-green-700 transition-all duration-300 focus:ring-4 focus:ring-green-200"
-              onClick={onVerify}
-              disabled={loading}
-            >
-              {loading ? "Verifying..." : "Verify & Explore Events"}
-            </button>
-          </>
         )}
 
-        {error ? (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-            <p className="text-red-700 text-sm font-medium">{error}</p>
+        {error && (
+          <div className="bg-red-900/40 text-red-400 border border-red-700 rounded p-3 text-sm">
+            {error}
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
