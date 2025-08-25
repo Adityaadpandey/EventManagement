@@ -9,6 +9,38 @@ import {
 } from "@/lib/features/authSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
+const InputField = ({
+  label,
+  name,
+  type = "text",
+  value,
+  disabled = false,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  name: string;
+  type?: string;
+  value: string;
+  disabled?: boolean;
+  placeholder?: string;
+}) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-zinc-300">{label}</label>
+    <input
+      name={name}
+      type={type}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      placeholder={placeholder}
+      className={`w-full rounded-lg border ${
+        disabled ? "bg-zinc-800 text-zinc-400" : "bg-zinc-900 text-white"
+      } border-zinc-700 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all`}
+    />
+  </div>
+);
+
 export default function Auth() {
   const dispatch = useAppDispatch();
   const { user, token, loading, error, otpSent } = useAppSelector(
@@ -22,16 +54,19 @@ export default function Auth() {
     dispatch(hydrateSession());
   }, [dispatch]);
 
+  const [formInitialized, setFormInitialized] = useState(false);
+
   useEffect(() => {
-    if (user) {
+    if (user && !formInitialized) {
       setForm({
         name: user.name || "",
         email: user.email || "",
         phone: user.phone || "",
         otp: "",
       });
+      setFormInitialized(true);
     }
-  }, [user]);
+  }, [user, formInitialized]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -62,37 +97,6 @@ export default function Auth() {
     );
   };
 
-  const InputField = ({
-    label,
-    name,
-    type = "text",
-    value,
-    disabled = false,
-    placeholder,
-  }: {
-    label: string;
-    name: string;
-    type?: string;
-    value: string;
-    disabled?: boolean;
-    placeholder?: string;
-  }) => (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-zinc-300">{label}</label>
-      <input
-        name={name}
-        type={type}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        placeholder={placeholder}
-        className={`w-full rounded-lg border ${
-          disabled ? "bg-zinc-800 text-zinc-400" : "bg-zinc-900 text-white"
-        } border-zinc-700 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all`}
-      />
-    </div>
-  );
-
   return (
     <div className="min-h-screen w-full flex items-center justify-center text-white px-4">
       <div className="w-full max-w-2xl bg-zinc-900 rounded-xl shadow-xl p-8 border border-zinc-800 space-y-6">
@@ -114,6 +118,7 @@ export default function Auth() {
             value={form.name}
             disabled={!!token}
             placeholder="Your name"
+            onChange={onChange}
           />
           <InputField
             label="Email Address"
@@ -122,6 +127,7 @@ export default function Auth() {
             value={form.email}
             disabled={!!token}
             placeholder="you@example.com"
+            onChange={onChange}
           />
           <InputField
             label="Phone Number"
@@ -129,6 +135,7 @@ export default function Auth() {
             value={form.phone}
             disabled={!!token}
             placeholder="+91 98XXXXXXXX"
+            onChange={onChange}
           />
         </div>
 
@@ -148,6 +155,7 @@ export default function Auth() {
                 name="otp"
                 value={form.otp}
                 placeholder="Enter OTP"
+                onChange={onChange}
               />
 
               <div className="flex gap-3">
