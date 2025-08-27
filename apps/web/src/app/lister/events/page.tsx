@@ -112,7 +112,6 @@ export default function ListerEventsPage() {
               key={ev.eventId}
               className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 flex flex-col gap-3 hover:shadow-md transition-shadow"
             >
-              {/* Banner (Optional) */}
               {ev.banner_square || ev.banner_horizontal ? (
                 <div className="relative w-full h-40 rounded overflow-hidden border border-zinc-800">
                   <img

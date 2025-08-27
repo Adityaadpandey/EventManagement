@@ -3,179 +3,135 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Menu, X } from "lucide-react";
-import api from "@/lib/api";
-
-type Profile = {
-  userId: string;
-  name?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  role: "USER" | "LISTER" | "ADMIN" | "SUPER_ADMIN";
-};
+import { motion } from "framer-motion";
+import {
+  Home,
+  PlusSquare,
+  User,
+  Bell,
+  ShieldCheck,
+  TicketIcon,
+} from "lucide-react";
+import { useSelector, useDispatch } from "react-redux";
+import { usePathname } from "next/navigation";
+import { AppDispatch, RootState } from "@/lib/store";
+import {
+  hydrateSession,
+  logout as logoutAction,
+} from "@/lib/features/authSlice";
 
 export default function NavBar() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const router = useRouter();
 
+  const dispatch = useDispatch<AppDispatch>();
+  const {
+    user: profile,
+    loading,
+    hydrated,
+  } = useSelector((state: RootState) => state.auth);
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const hasToken =
-          typeof window !== "undefined" &&
-          (!!localStorage.getItem("token") ||
-            !!sessionStorage.getItem("token"));
-        if (!hasToken) {
-          if (!cancelled) setLoading(false);
-          return;
-        }
-        const res = await api.get("/user/profile");
-        if (!cancelled) setProfile(res.data?.data || null);
-      } catch {
-        if (!cancelled) setProfile(null);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (!hydrated) {
+      dispatch(hydrateSession());
+    }
+  }, [hydrated, dispatch]);
 
   const logout = () => {
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    setProfile(null);
+    dispatch(logoutAction());
     router.refresh();
     router.push("/");
   };
 
-  const links = [
-    { href: "/", label: "Home" },
+  const navItems = [
+    { href: "/", label: "Home", icon: Home },
     ...(profile?.role === "LISTER"
       ? [
-          { href: "/lister/events", label: "My Events" },
-          { href: "/lister/events/create", label: "Create Event" },
+          { href: "/lister/events", label: "My Events", icon: PlusSquare },
+          {
+            href: "/lister/events/create",
+            label: "Create Event",
+            icon: PlusSquare,
+          },
         ]
       : []),
     ...(profile?.role === "ADMIN" || profile?.role === "SUPER_ADMIN"
-      ? [{ href: "/admin/events/pending", label: "Admin – Pending Events" }]
+      ? [
+          {
+            href: "/admin/events/pending",
+            label: "Admin – Pending",
+            icon: ShieldCheck,
+          },
+        ]
       : []),
+
+    ...(profile?.role !== "ADMIN" && profile?.role !== "SUPER_ADMIN"
+      ? [
+          {
+            href: "/tickets/my-tickets",
+            label: "My Bookings",
+            icon: TicketIcon,
+          },
+        ]
+      : []),
+
+    { href: "/profile", label: "Profile", icon: User },
   ];
 
+  const pathname = usePathname();
+
   return (
-    <div className="flex md:min-h-screen bg-zinc-950 text-white">
-      {/* Sidebar (desktop) */}
-      <aside className="hidden md:flex flex-col w-64 bg-zinc-900 border-r border-zinc-800 px-4 py-6">
-        <Link href="/" className="text-xl font-bold mb-6">
-          Tixin
-        </Link>
-
-        <nav className="flex flex-col gap-3 text-sm">
-          {links.map((link) => (
+    <motion.nav
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className={`
+        fixed bottom-10 left-1/2 -translate-x-1/2 z-50
+        w-[95%] sm:w-[500px] md:w-[700px]
+        bg-zinc-900 border border-zinc-700
+        rounded-full px-6 py-3
+        shadow-xl backdrop-blur-md
+        flex justify-between items-center gap-4
+      `}
+    >
+      <div className="flex flex-1 justify-evenly items-center gap-2">
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const isActive = pathname === href;
+          return (
             <Link
-              key={link.href}
-              href={link.href}
-              className="hover:text-white text-zinc-400"
+              key={href}
+              href={href}
+              className={`
+                group flex flex-col md:flex-row items-center md:gap-2 text-xs md:text-sm
+                transition-all duration-200
+                ${isActive ? "text-white font-semibold" : "text-zinc-400 hover:text-white"}
+              `}
             >
-              {link.label}
+              <Icon size={20} strokeWidth={1.5} />
+              <span>{label}</span>
             </Link>
-          ))}
-        </nav>
+          );
+        })}
 
-        <div className="mt-auto pt-6 border-t border-zinc-800 text-sm text-zinc-400">
-          {loading ? (
-            <span>Loading...</span>
-          ) : profile ? (
-            <div className="flex flex-col gap-1">
-              <span>
-                {profile.name || profile.email || profile.phone} ·{" "}
-                {profile.role}
-              </span>
-              <button
-                onClick={logout}
-                className="text-left mt-2 text-red-400 hover:underline"
-              >
-                Logout
-              </button>
-            </div>
-          ) : (
-            <Link href="/auth" className="hover:underline">
-              Login
-            </Link>
-          )}
-        </div>
-      </aside>
-
-      {/* Top nav (mobile) */}
-      <div className="md:hidden w-full">
-        <nav className="flex items-center justify-between px-4 h-14 border-b border-zinc-800 bg-zinc-900 w-screen">
-          <Link href="/" className="text-lg font-bold">
-            Tixin
-          </Link>
-
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="text-white"
-            aria-label="Toggle menu"
-          >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
-        </nav>
-
-        {mobileOpen && (
-          <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-4">
-            <nav className="flex flex-col gap-3 text-sm">
-              {links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="hover:text-white text-zinc-400"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-
-            <div className="mt-4 border-t border-zinc-800 pt-4 text-sm text-zinc-400">
-              {loading ? (
-                <span>Loading...</span>
-              ) : profile ? (
-                <div className="flex flex-col gap-1">
-                  <span>
-                    {profile.name || profile.email || profile.phone} ·{" "}
-                    {profile.role}
-                  </span>
-                  <button
-                    onClick={() => {
-                      logout();
-                      setMobileOpen(false);
-                    }}
-                    className="text-left mt-2 text-red-400 hover:underline"
-                  >
-                    Logout
-                  </button>
-                </div>
-              ) : (
-                <Link
-                  href="/auth"
-                  className="hover:underline"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Login
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
+        <button
+          aria-label="Notifications"
+          className="text-zinc-400 hover:text-white transition-colors relative"
+        >
+          <Bell size={20} strokeWidth={1.5} />
+          {/* <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" /> */}
+        </button>
       </div>
 
-      {/* <main className="flex-1 p-6">
-      </main> */}
-    </div>
+      {loading ? (
+        <span className="text-zinc-400 text-sm">...</span>
+      ) : profile ? (
+        <button
+          onClick={logout}
+          className="text-xs md:text-sm text-red-400 hover:underline ml-2"
+        >
+          Logout
+        </button>
+      ) : null}
+    </motion.nav>
   );
 }
