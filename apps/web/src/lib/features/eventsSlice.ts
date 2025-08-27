@@ -16,6 +16,8 @@ export type EventSummary = {
   date?: string | null;
   time?: string | null;
   location?: string | null;
+  TicketType?: [] | null;
+  capacity?: string | null;
 };
 
 export type EventDetails = EventSummary & {

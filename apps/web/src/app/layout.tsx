@@ -17,7 +17,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <main className="flex md:flex-row flex-col">
+          <main className="flex flex-col min-h-screen bg-zinc-950 text-white">
             <Navbar />
             {children}
           </main>
