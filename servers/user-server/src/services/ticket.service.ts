@@ -1,5 +1,3 @@
-import crypto from "node:crypto";
-import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { razorpay } from "../lib/razorpay";
@@ -109,98 +107,6 @@ export class TicketService {
       };
     } catch (error) {
       logger.error("Error buying ticket:", error);
-      throw error;
-    }
-  }
-
-  async verifyPayment(
-    razorpayOrderId: string,
-    razorpayPaymentId: string,
-    razorpaySignature: string,
-  ) {
-    try {
-      // Verify signature
-      const body = razorpayOrderId + "|" + razorpayPaymentId;
-      const expectedSignature = crypto
-        .createHmac("sha256", config.RAZORPAY_KEY_SECRET)
-        .update(body.toString())
-        .digest("hex");
-
-      if (expectedSignature !== razorpaySignature) {
-        return { error: "Invalid payment signature" };
-      }
-
-      // Get payment details from Razorpay
-      const payment = await razorpay.payments.fetch(razorpayPaymentId);
-
-      if (payment.status !== "captured") {
-        return { error: "Payment not captured" };
-      }
-
-      // Update ticket status to SUCCESS
-      const ticket = await prisma.ticket.update({
-        where: { ticketId: payment.notes.ticketId },
-        data: { status: "SUCCESS" },
-        include: {
-          ticketType: {
-            include: {
-              event: true,
-            },
-          },
-          user: {
-            select: {
-              name: true,
-              email: true,
-              phone: true,
-            },
-          },
-        },
-      });
-
-      // Update sold count and revenue
-      await prisma.ticketType.update({
-        where: { ticketTypeId: ticket.ticketTypeId },
-        data: {
-          soldCount: {
-            increment: ticket.quantity,
-          },
-        },
-      });
-
-      // Update event analytics
-      await prisma.event.update({
-        where: { eventId: ticket.ticketType.eventId },
-        data: {
-          ticketsSold: {
-            increment: ticket.quantity,
-          },
-          revenue: {
-            increment: ticket.totalPrice,
-          },
-        },
-      });
-
-      // Update event analytics table
-      await prisma.eventAnalytics.upsert({
-        where: { eventId: ticket.ticketType.eventId },
-        update: {
-          ticketsSold: {
-            increment: ticket.quantity,
-          },
-          revenue: {
-            increment: ticket.totalPrice,
-          },
-        },
-        create: {
-          eventId: ticket.ticketType.eventId,
-          ticketsSold: ticket.quantity,
-          revenue: ticket.totalPrice,
-        },
-      });
-
-      return { data: { ticket, payment } };
-    } catch (error) {
-      logger.error("Error verifying payment:", error);
       throw error;
     }
   }
@@ -348,21 +254,6 @@ export class TicketService {
       return { data: tickets };
     } catch (error) {
       logger.error("Error fetching all ticket buyers:", error);
-      throw error;
-    }
-  }
-
-  async handlePaymentFailure(ticketId: string) {
-    try {
-      // Update ticket status to FAILED
-      const ticket = await prisma.ticket.update({
-        where: { ticketId },
-        data: { status: "FAILED" },
-      });
-
-      return { data: ticket };
-    } catch (error) {
-      logger.error("Error handling payment failure:", error);
       throw error;
     }
   }

@@ -9,6 +9,7 @@ import {
   requestRefundSchema,
   verifyPaymentSchema,
 } from "../validators/payment.validator";
+import { handlePaymentFailureSchema } from "../validators/ticket.validator";
 
 export class PaymentController {
   private paymentService: PaymentService;
@@ -22,33 +23,43 @@ export class PaymentController {
       const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
         verifyPaymentSchema.parse(req.body);
 
-      const isValid = await this.paymentService.verifySignature(
+      const result = await this.paymentService.verifyPayment(
         razorpay_order_id,
         razorpay_payment_id,
         razorpay_signature,
       );
 
-      if (!isValid) {
-        return sendError(res, "Invalid payment signature", 400);
+      if (result.error) {
+        return sendError(res, result.error, 400);
       }
 
-      const paymentDetails =
-        await this.paymentService.getPaymentDetails(razorpay_payment_id);
-
-      return sendSuccess(res, "Payment verified successfully", {
-        verified: true,
-        paymentDetails: paymentDetails.data,
-      });
+      return sendSuccess(
+        res,
+        "Payment verified and ticket confirmed",
+        result.data,
+      );
     } catch (error: any) {
       if (error.name === "ZodError") {
-        return sendError(
-          res,
-          error.errors?.[0]?.message || "Validation error",
-          400,
-        );
+        return sendError(res, error.errors?.[0]?.message, 400);
       }
-      logger.error("Error verifying payment:", error);
+      logger("Error verifying payment:", error);
       return sendError(res, "Failed to verify payment", 500);
+    }
+  }
+
+  async handlePaymentFailure(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { ticketId } = handlePaymentFailureSchema.parse(req.body);
+
+      const result = await this.paymentService.handlePaymentFailure(ticketId);
+
+      return sendSuccess(res, "Payment failure handled", result.data);
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        return sendError(res, error.errors?.[0]?.message, 400);
+      }
+      logger("Error handling payment failure:", error);
+      return sendError(res, "Failed to handle payment failure", 500);
     }
   }
 
@@ -93,7 +104,7 @@ export class PaymentController {
           400,
         );
       }
-      logger("Error requesting refund:", error);
+      logger.error("Error requesting refund:", error);
       return sendError(res, "Failed to request refund", 500);
     }
   }
@@ -127,7 +138,7 @@ export class PaymentController {
           400,
         );
       }
-      logger("Error processing refund:", error);
+      logger.error("Error processing refund:", error);
       return sendError(res, "Failed to process refund", 500);
     }
   }
@@ -181,7 +192,7 @@ export class PaymentController {
 
       return sendSuccess(res, "Refunds fetched successfully", result);
     } catch (error) {
-      logger("Error fetching refunds:", error);
+      logger.error("Error fetching refunds:", error);
       return sendError(res, "Failed to fetch refunds", 500);
     }
   }
