@@ -15,6 +15,7 @@ type AuthState = {
   loading: boolean;
   error: string | null;
   otpSent: boolean;
+  hydrated: boolean;
 };
 
 const initialState: AuthState = {
@@ -23,6 +24,7 @@ const initialState: AuthState = {
   loading: false,
   error: null,
   otpSent: false,
+  hydrated: false,
 };
 
 export const requestOtp = createAsyncThunk<
@@ -105,6 +107,7 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.otpSent = false;
+      state.hydrated = true;
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
       }
@@ -112,6 +115,7 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // requestOtp
       .addCase(requestOtp.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -124,6 +128,8 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload || "Failed to send OTP";
       })
+
+      // verifyOtp
       .addCase(verifyOtp.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -133,17 +139,20 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.user = action.payload.user;
         state.otpSent = false;
+        state.hydrated = true;
       })
       .addCase(verifyOtp.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to verify OTP";
       })
+
       .addCase(hydrateSession.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(hydrateSession.fulfilled, (state, action) => {
         state.loading = false;
+        state.hydrated = true;
         if (action.payload) {
           state.token = action.payload.token;
           state.user = action.payload.user;
@@ -151,6 +160,7 @@ const authSlice = createSlice({
       })
       .addCase(hydrateSession.rejected, (state, action) => {
         state.loading = false;
+        state.hydrated = true;
         state.error = action.payload || null;
       });
   },

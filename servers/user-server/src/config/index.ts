@@ -12,8 +12,12 @@ interface Config {
   TWILIO_ACCOUNT_SID: string;
   TWILIO_AUTH_TOKEN: string;
   TWILIO_PHONE_NUMBER: string;
+
   RAZORPAY_KEY_ID: string;
   RAZORPAY_KEY_SECRET: string;
+
+  SMTP_EMAIL_USER: string;
+  SMTP_EMAIL_PASS: string;
 }
 
 export const config: Config = {
@@ -29,4 +33,6 @@ export const config: Config = {
   TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER || "",
   RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || "",
   RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || "",
+  SMTP_EMAIL_USER: process.env.SMTP_EMAIL_USER || "",
+  SMTP_EMAIL_PASS: process.env.SMTP_EMAIL_PASS || "",
 };

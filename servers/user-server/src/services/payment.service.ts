@@ -2,20 +2,148 @@ import crypto from "node:crypto";
 import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { sendEmail } from "../lib/mail";
 import { razorpay } from "../lib/razorpay";
 
 export class PaymentService {
-  async verifySignature(orderId: string, paymentId: string, signature: string) {
+  async verifyPayment(
+    razorpayOrderId: string,
+    razorpayPaymentId: string,
+    razorpaySignature: string,
+  ) {
     try {
-      const body = orderId + "|" + paymentId;
+      // Verify signature
+      const body = razorpayOrderId + "|" + razorpayPaymentId;
       const expectedSignature = crypto
-        .createHmac("sha256", config.RAZORPAY_KEY_SECRET!)
+        .createHmac("sha256", config.RAZORPAY_KEY_SECRET)
         .update(body.toString())
         .digest("hex");
 
-      return expectedSignature === signature;
+      if (expectedSignature !== razorpaySignature) {
+        return { error: "Invalid payment signature" };
+      }
+
+      // Get payment details from Razorpay
+      const payment = await razorpay.payments.fetch(razorpayPaymentId);
+
+      if (payment.status !== "captured") {
+        return { error: "Payment not captured" };
+      }
+
+      // Update ticket status to SUCCESS
+      const ticket = await prisma.ticket.update({
+        where: { ticketId: payment.notes.ticketId },
+        data: { status: "SUCCESS" },
+        include: {
+          ticketType: {
+            include: {
+              event: true,
+            },
+          },
+          user: {
+            select: {
+              name: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
+      });
+
+      // Update sold count and revenue
+      await prisma.ticketType.update({
+        where: { ticketTypeId: ticket.ticketTypeId },
+        data: {
+          soldCount: {
+            increment: ticket.quantity,
+          },
+        },
+      });
+
+      // Update event analytics
+      await prisma.event.update({
+        where: { eventId: ticket.ticketType.eventId },
+        data: {
+          ticketsSold: {
+            increment: ticket.quantity,
+          },
+          revenue: {
+            increment: ticket.totalPrice,
+          },
+        },
+      });
+
+      // Update event analytics table
+      await prisma.eventAnalytics.upsert({
+        where: { eventId: ticket.ticketType.eventId },
+        update: {
+          ticketsSold: {
+            increment: ticket.quantity,
+          },
+          revenue: {
+            increment: ticket.totalPrice,
+          },
+        },
+        create: {
+          eventId: ticket.ticketType.eventId,
+          ticketsSold: ticket.quantity,
+          revenue: ticket.totalPrice,
+        },
+      });
+
+      // Send confirmation email to user
+      try {
+        if (ticket.user.email) {
+          await sendEmail(
+            ticket.user.email,
+            `Your Ticket for ${ticket.ticketType.event.title}`,
+            {
+              type: "ticket",
+              content: {
+                ticket: {
+                  ticketId: ticket.ticketId,
+                  eventName: ticket.ticketType.event.title,
+                  seatNumber: ticket.qrCode, // Using QR code as seat identifier
+                  date: ticket.ticketType.event.date
+                    .toISOString()
+                    .split("T")[0],
+                  venue: ticket.ticketType.event.location,
+                },
+              },
+            },
+            ticket.user.name || "Valued Customer",
+          );
+          logger.info(
+            `Ticket confirmation email sent to ${ticket.user.email} for ticket ${ticket.ticketId}`,
+          );
+        } else {
+          logger.warn(
+            `No email address found for user ${ticket.userId}, skipping email notification`,
+          );
+        }
+      } catch (emailError) {
+        logger.error("Error sending ticket confirmation email:", emailError);
+        // Don't fail the payment verification if email fails
+      }
+
+      return { data: { ticket, payment } };
     } catch (error) {
-      logger.error("Error verifying signature:", error);
+      logger.error("Error verifying payment:", error);
+      throw error;
+    }
+  }
+
+  async handlePaymentFailure(ticketId: string) {
+    try {
+      // Update ticket status to FAILED
+      const ticket = await prisma.ticket.update({
+        where: { ticketId },
+        data: { status: "FAILED" },
+      });
+
+      return { data: ticket };
+    } catch (error) {
+      logger.error("Error handling payment failure:", error);
       throw error;
     }
   }

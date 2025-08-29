@@ -5,9 +5,14 @@ meta {
 }
 
 get {
-  url: {{host}}/event/public
+  url: {{host}}/event/public?page=1&limit=20
   body: none
-  auth: inherit
+  auth: none
+}
+
+params:query {
+  page: 1
+  limit: 20
 }
 
 script:post-response {
