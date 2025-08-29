@@ -1,24 +1,22 @@
 import { Router } from "express";
 import { PaymentController } from "../../controllers/payment.controller";
-import { TicketController } from "../../controllers/ticket.controller";
 import { authMiddleware, requireRole } from "../../middlewares/auth.middleware";
 
 const router = Router();
-const ticketController = new TicketController();
 const paymentController = new PaymentController();
 
 // Verify payment and update ticket status
 router.post(
   "/verify",
   authMiddleware,
-  ticketController.verifyPayment.bind(ticketController),
+  paymentController.verifyPayment.bind(paymentController),
 );
 
 // Handle payment failure
 router.post(
   "/failure",
   authMiddleware,
-  ticketController.handlePaymentFailure.bind(ticketController),
+  paymentController.handlePaymentFailure.bind(paymentController),
 );
 
 // ============ REFUND ROUTES ============

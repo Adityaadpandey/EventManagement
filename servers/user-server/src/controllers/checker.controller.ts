@@ -1,9 +1,9 @@
 import type { Response } from "express";
+import { randomUUID } from "node:crypto";
 import logger from "../config/logger";
 import { CheckerService } from "../services/checker.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
-import { createCheckerSchema } from "../validators/checker.validator";
 
 export class CheckerController {
   private checkerService: CheckerService;
@@ -22,7 +22,8 @@ export class CheckerController {
         return sendError(res, "Event ID is required", 400);
       }
 
-      const { username, password } = createCheckerSchema.parse(req.body);
+      const username = randomUUID().slice(0, 5);
+      const password = randomUUID().slice(0, 8);
 
       const checker = await this.checkerService.createChecker(
         eventId,
@@ -30,7 +31,10 @@ export class CheckerController {
         username,
         password,
       );
-      return sendSuccess(res, "Checker created successfully", checker, 201);
+      const checkerCopy: any = { ...checker };
+
+      checkerCopy.password = password; // Return plain password only on creation
+      return sendSuccess(res, "Checker created successfully", checkerCopy, 201);
     } catch (error: any) {
       if (error.name === "ZodError") {
         return sendError(

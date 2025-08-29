@@ -6,7 +6,7 @@ const router = Router();
 const checkerController = new CheckerController();
 
 // POST /checker/create/:eventId for creating a checker for an event
-router.post(
+router.get(
   "/create/:eventId",
   authMiddleware,
   requireRole(["LISTER"]),

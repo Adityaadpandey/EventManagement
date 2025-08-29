@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Your Ticket</title>
+    <style>
+        body {
+            font-family: Arial;
+        }
+
+        .container {
+            padding: 20px;
+            background: #f4f4f4;
+            border-radius: 5px;
+            max-width: 600px;
+            margin: auto;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        .qr-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .qr-container img {
+            width: 150px;
+            height: 150px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Hello <%= name %>,</h2>
+        <p>Thanks for booking! Here are your ticket details:</p>
+        <ul>
+            <li><strong>Event:</strong>
+                <%= ticket.eventName %>
+            </li>
+            <li><strong>Ticket ID:</strong>
+                <%= ticket.ticketId %>
+            </li>
+            <li><strong>Seat Number:</strong>
+                <%= ticket.seatNumber %>
+            </li>
+            <li><strong>Date:</strong>
+                <%= ticket.date %>
+            </li>
+            <li><strong>Venue:</strong>
+                <%= ticket.venue %>
+            </li>
+        </ul>
+
+        <div class="qr-container">
+  <p>Scan this QR code at the entry gate:</p>
+  <img src="cid:ticketqr@eventify" alt="Ticket QR Code" />
+</div>
+
+        <p>Enjoy the event!</p>
+    </div>
+</body>
+
+</html>
