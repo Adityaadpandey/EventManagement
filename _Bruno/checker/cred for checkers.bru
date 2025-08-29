@@ -4,17 +4,10 @@ meta {
   seq: 10
 }
 
-post {
+get {
   url: {{host}}/checker/create/{{eventId}}
   body: json
   auth: inherit
-}
-
-body:json {
-  {
-    "username":"adp",
-    "password":"adp123"
-  }
 }
 
 settings {
