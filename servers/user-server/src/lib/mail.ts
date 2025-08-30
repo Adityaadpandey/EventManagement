@@ -45,7 +45,7 @@ export const sendEmail = async (
       filename: "ticket-qr.png",
       content: qrImageBuffer,
       encoding: "base64",
-      cid: "ticketqr@eventify",
+      cid: "ticketqr@Tixin",
     });
   } else if (payload.type === "event-update") {
     templateFile = "event-update.ejs";
