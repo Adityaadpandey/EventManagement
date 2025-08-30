@@ -48,19 +48,8 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: "postgresql://postgres:postgress@postgres:5432/event_management"
-      REDIS_URL: "redis://:cantremember@redis:6379"
-      PORT: 7001
-      LOG_LEVEL: info
-      NODE_ENV: DEVELOPMENT
-      JWT_SECRET: supersecretkey
+      - .env
 
-      TWILIO_ACCOUNT_SID: "ACf50823dfd38d3c25f233259e5219e050"
-      TWILIO_AUTH_TOKEN: "dada382dcc9d9b4b57914225a8e32930"
-      TWILIO_PHONE_NUMBER: "+18722175972"
-
-      RAZORPAY_KEY_ID: "rzp_test_PgwgpRUzFvMbAn"
-      RAZORPAY_KEY_SECRET: "rzp_test_PgwgpRUzFvMbAn"
   worker:
     build:
       context: .
@@ -68,21 +57,8 @@ services:
     image: backend-service
     command: ["node", "dist/workers/email.worker.js"]
     environment:
-      DATABASE_URL: "postgresql://postgres:postgress@postgres:5432/event_management"
-      REDIS_URL: "redis://:cantremember@redis:6379"
-      PORT: 7001
-      LOG_LEVEL: info
-      NODE_ENV: DEVELOPMENT
-      JWT_SECRET: supersecretkey
+      - .env
 
-      TWILIO_ACCOUNT_SID: "ACf50823dfd38d3c25f233259e5219e050"
-      TWILIO_AUTH_TOKEN: "dada382dcc9d9b4b57914225a8e32930"
-      TWILIO_PHONE_NUMBER: "+18722175972"
-
-      RAZORPAY_KEY_ID: "rzp_test_PgwgpRUzFvMbAn"
-      RAZORPAY_KEY_SECRET: "rzp_test_PgwgpRUzFvMbAn"
-      SMTP_EMAIL_USER: "adityapandeyadp@gmail.com"
-      SMTP_EMAIL_PASS: "fugx vyeo gmki guiu"
 
 
 
