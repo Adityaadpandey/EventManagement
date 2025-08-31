@@ -50,7 +50,7 @@ export const authMiddleware = async (
         decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
         userId = decoded.userId;
       } catch (_jwtError) {
-        return sendError(res, "Invalid token", 401);
+        return sendError(res, "Invalid Authorization token", 401);
       }
     }
 
