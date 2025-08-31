@@ -43,4 +43,4 @@ RUN pnpm install --prod
 
 EXPOSE 7001
 
-CMD ["node", "dist/.js"]
+CMD ["node", "dist/bin.js"]
