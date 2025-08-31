@@ -1,4 +1,5 @@
 export interface Ticket {
+  ticketQR: string;
   ticketId: string;
   eventName: string;
   seatNumber?: string;

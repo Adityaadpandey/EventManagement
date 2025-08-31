@@ -33,7 +33,7 @@ export const emailWorker = new Worker(
 
     try {
       await transporter.sendMail({
-        from: `"Eventify" <${process.env.EMAIL_USER}>`,
+        from: `"Tixin" <${process.env.EMAIL_USER}>`,
         to,
         subject,
         html,

@@ -30,7 +30,7 @@ export const sendEmail = async (
   if (payload.type === "ticket") {
     templateFile = "ticket.ejs";
 
-    const qrData = payload.content.ticket.ticketId;
+    const qrData = payload.content.ticket.ticketQR;
     const qrCodeBase64 = await QRCode.toDataURL(qrData);
 
     // Strip prefix for Nodemailer attachment
@@ -45,7 +45,7 @@ export const sendEmail = async (
       filename: "ticket-qr.png",
       content: qrImageBuffer,
       encoding: "base64",
-      cid: "ticketqr@eventify",
+      cid: "ticketqr@Tixin",
     });
   } else if (payload.type === "event-update") {
     templateFile = "event-update.ejs";
