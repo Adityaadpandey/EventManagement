@@ -8,7 +8,8 @@
     "start:prod": "node dist/bin.js",
     "dev": "ts-node-dev src/index.ts",
     "dev:bin": "ts-node-dev src/bin.ts",
-    "build": "tsc",
+    "build": "tsc && pnpm run copy-ejs",
+    "copy-ejs": "copyfiles -u 1 \"src/templates/**/*.ejs\" dist/",
     "lint": "eslint --fix",
     "format": "prettier --write 'src/**/*.ts'"
   },
@@ -23,6 +24,7 @@
     "@types/qrcode": "^1.5.5",
     "@typescript-eslint/eslint-plugin": "^8.26.0",
     "@typescript-eslint/parser": "^8.26.0",
+    "copyfiles": "^2.4.1",
     "esbuild": "^0.19.12",
     "eslint": "^9.21.0",
     "eslint-config-prettier": "^10.0.2",

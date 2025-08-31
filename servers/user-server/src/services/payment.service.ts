@@ -101,9 +101,10 @@ export class PaymentService {
               type: "ticket",
               content: {
                 ticket: {
+                  ticketQR: ticket.qrCode,
                   ticketId: ticket.ticketId,
                   eventName: ticket.ticketType.event.title,
-                  seatNumber: ticket.qrCode, // Using QR code as seat identifier
+                  seatNumber: ticket.qrCode,
                   date: ticket.ticketType.event.date
                     .toISOString()
                     .split("T")[0],

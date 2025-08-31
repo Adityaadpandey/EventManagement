@@ -24,7 +24,8 @@ const TicketEmail = async () => {
       type: "ticket",
       content: {
         ticket: {
-          ticketId: "TICKET_1756264289427_i0r8uwlfr6",
+          ticketQR: "TICKET_1756264289427_i0r8uwlfr6",
+          ticketId: "welllllllllllllllllllllllll",
           eventName: "MusicFest 2025",
           seatNumber: "A12",
           date: "2025-08-15",
