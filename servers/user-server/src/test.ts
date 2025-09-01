@@ -37,9 +37,24 @@ const TicketEmail = async () => {
   );
 };
 
+const OtpEmail = async () => {
+  await sendEmail(
+    "adityapandeyadp@gmail.com",
+    "Your OTP for Login",
+    {
+      type: "otp",
+      content: {
+        otp: "123456",
+      },
+    },
+    "Aditya",
+  );
+};
+
 const main = async () => {
   // await EventUpdate();
-  await TicketEmail();
+  // await TicketEmail();
+  await OtpEmail();
 };
 
 main();
