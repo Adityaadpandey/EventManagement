@@ -52,8 +52,8 @@ const OtpEmail = async () => {
 };
 
 const main = async () => {
-  // await EventUpdate();
-  // await TicketEmail();
+  await EventUpdate();
+  await TicketEmail();
   await OtpEmail();
 };
 
