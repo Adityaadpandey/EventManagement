@@ -1,15 +1,45 @@
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { redis } from "../config/redis";
 import { createToken } from "../lib/jwt-token";
+import { sendEmail } from "../lib/mail";
 import { setCachedUser } from "../lib/redis-fn";
 import { sendSMS } from "../lib/twilio-sms";
 
 class AuthService {
-  async requestOtp(phone: string): Promise<{ message: string }> {
+  private isEmail(input: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(input);
+  }
+
+  private isPhone(input: string): boolean {
+    const phone = parsePhoneNumberFromString(input, "IN");
+    return phone?.isValid() || false;
+  }
+
+  private normalizePhone(rawPhone: string): string {
+    const phone = parsePhoneNumberFromString(rawPhone, "IN");
+    if (!phone?.isValid()) throw new Error("Invalid phone number");
+    return phone.number;
+  }
+
+  async requestOtp(identifier: string): Promise<{ message: string }> {
     try {
-      const otpKey = `otp:${phone}`;
-      const countKey = `otp:count:${phone}`;
+      const isEmailType = this.isEmail(identifier);
+      const isPhoneType = this.isPhone(identifier);
+
+      if (!isEmailType && !isPhoneType) {
+        throw new Error("Invalid email or phone number format");
+      }
+
+      // Normalize phone number if it's a phone
+      const normalizedIdentifier = isPhoneType
+        ? this.normalizePhone(identifier)
+        : identifier;
+
+      const otpKey = `otp:${normalizedIdentifier}`;
+      const countKey = `otp:count:${normalizedIdentifier}`;
 
       // Check if the OTP is already active
       const existingOtp = await redis.get(otpKey);
@@ -37,14 +67,28 @@ class AuthService {
       await pipeline.exec();
 
       try {
-        sendSMS(otp, phone).catch((err) =>
-          logger.error("Failed to send SMS:", err),
-        );
-        return { message: "OTP request received. SMS is being sent." };
+        if (isEmailType) {
+          // Send OTP email
+          await sendEmail(
+            normalizedIdentifier,
+            "Your OTP for Login",
+            { type: "otp", content: { otp } },
+            "",
+          );
+          return { message: "OTP request received. Email is being sent." };
+        } else {
+          // Send SMS
+          sendSMS(otp, normalizedIdentifier).catch((err) =>
+            logger.error("Failed to send SMS:", err),
+          );
+          return { message: "OTP request received. SMS is being sent." };
+        }
       } catch (_error) {
-        // Clean up Redis if SMS sending fails
+        // Clean up Redis if sending fails
         await redis.del(otpKey);
-        throw new Error("Failed to send OTP via SMS");
+        throw new Error(
+          `Failed to send OTP via ${isEmailType ? "Email" : "SMS"}`,
+        );
       }
     } catch (error) {
       logger.error("Error in requestOtp:", error);
@@ -52,25 +96,53 @@ class AuthService {
     }
   }
 
-  async verifyOtp(phone: string, otp: string): Promise<any> {
+  async verifyOtp(identifier: string, otp: string): Promise<any> {
     try {
+      const isEmailType = this.isEmail(identifier);
+      const isPhoneType = this.isPhone(identifier);
+
+      if (!isEmailType && !isPhoneType) {
+        throw new Error("Invalid email or phone number format");
+      }
+
+      // Normalize phone number if it's a phone
+      const normalizedIdentifier = isPhoneType
+        ? this.normalizePhone(identifier)
+        : identifier;
+
       const [storedOtp, existingUser] = await Promise.all([
-        redis.get(`otp:${phone}`),
-        prisma.user.findUnique({
-          where: { phone },
-          select: {
-            userId: true,
-            name: true,
-            phone: true,
-            role: true,
-            profileComplete: true,
-            email: true,
-            avatar: true,
-            phoneVerified: true,
-            emailVerified: true,
-            isActive: true,
-          },
-        }),
+        redis.get(`otp:${normalizedIdentifier}`),
+        isEmailType
+          ? prisma.user.findUnique({
+              where: { email: normalizedIdentifier },
+              select: {
+                userId: true,
+                name: true,
+                phone: true,
+                role: true,
+                profileComplete: true,
+                email: true,
+                avatar: true,
+                phoneVerified: true,
+                emailVerified: true,
+                isActive: true,
+              },
+            })
+          : prisma.user.findUnique({
+              where: { phone: normalizedIdentifier },
+              select: {
+                userId: true,
+                name: true,
+                phone: true,
+                role: true,
+                profileComplete: true,
+                email: true,
+                avatar: true,
+                phoneVerified: true,
+                emailVerified: true,
+                isActive: true,
+              },
+            }),
       ]);
 
       // Validate OTP
@@ -86,12 +158,13 @@ class AuthService {
 
       if (!existingUser) {
         // Create new user and delete OTP in parallel
+        const userData = isEmailType
+          ? { email: normalizedIdentifier, emailVerified: true, phone: null }
+          : { phone: normalizedIdentifier, phoneVerified: true, email: null };
+
         const [newUser] = await Promise.all([
           prisma.user.create({
-            data: {
-              phone,
-              phoneVerified: true,
-            },
+            data: userData,
             select: {
               userId: true,
               name: true,
@@ -105,17 +178,27 @@ class AuthService {
               isActive: true,
             },
           }),
-          redis.del(`otp:${phone}`),
+          redis.del(`otp:${normalizedIdentifier}`),
         ]);
         user = newUser;
       } else {
         // Update existing user if not already verified and delete OTP in parallel
-        if (!existingUser.phoneVerified) {
+        const needsUpdate = isEmailType
+          ? !existingUser.emailVerified
+          : !existingUser.phoneVerified;
+
+        if (needsUpdate) {
+          const updateData = isEmailType
+            ? { emailVerified: true }
+            : { phoneVerified: true };
+
           const [, updatedUser] = await Promise.all([
-            redis.del(`otp:${phone}`),
+            redis.del(`otp:${normalizedIdentifier}`),
             prisma.user.update({
-              where: { phone },
-              data: { phoneVerified: true },
+              where: isEmailType
+                ? { email: normalizedIdentifier }
+                : { phone: normalizedIdentifier },
+              data: updateData,
               select: {
                 userId: true,
                 name: true,
@@ -132,7 +215,7 @@ class AuthService {
           ]);
           user = updatedUser;
         } else {
-          await redis.del(`otp:${phone}`);
+          await redis.del(`otp:${normalizedIdentifier}`);
           user = existingUser;
         }
       }

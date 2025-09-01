@@ -19,5 +19,8 @@ export interface EventUpdate {
 export interface EventUpdateEmailContent {
   eventUpdate: EventUpdate;
 }
+export interface OtpEmailContent {
+  otp: string;
+}
 
-export type EmailType = "ticket" | "event-update";
+export type EmailType = "ticket" | "event-update" | "otp";
