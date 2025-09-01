@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login with OTP | TIXIN</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            background-color: #fff8e1;
+            max-width: 500px;
+            margin: 40px auto;
+            padding: 30px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            color: #d17c00;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+
+        p {
+            font-size: 16px;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .otp-box {
+            font-size: 24px;
+            font-weight: 600;
+            background-color: #fff3cd;
+            padding: 15px 20px;
+            border-radius: 8px;
+            text-align: center;
+            color: #d17c00;
+            letter-spacing: 2px;
+            margin: 20px 0;
+        }
+
+        em {
+            color: #888;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 20px;
+                padding: 20px;
+            }
+
+            .otp-box {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Your One-Time Password (OTP)</h2>
+        <p>Use the following OTP to log in to <strong>TIXIN</strong>:</p>
+        <div class="otp-box">
+            <%= otp %>
+        </div>
+        <p><em>This OTP is valid for 10 minutes. Please do not share it with anyone.</em></p>
+    </div>
+</body>
+
+</html>

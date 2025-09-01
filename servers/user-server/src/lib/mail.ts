@@ -4,13 +4,15 @@ import QRCode from "qrcode";
 import logger from "../config/logger";
 import {
   EventUpdateEmailContent,
+  OtpEmailContent,
   TicketEmailContent,
 } from "../types/emailContent";
 import { emailQueue } from "./queues";
 
 type EmailPayload =
   | { type: "ticket"; content: TicketEmailContent }
-  | { type: "event-update"; content: EventUpdateEmailContent };
+  | { type: "event-update"; content: EventUpdateEmailContent }
+  | { type: "otp"; content: OtpEmailContent };
 
 export const sendEmail = async (
   toEmail: string,
@@ -53,6 +55,13 @@ export const sendEmail = async (
     templateData = {
       name,
       eventUpdate: payload.content.eventUpdate,
+    };
+  } else if (payload.type === "otp") {
+    templateFile = "otp.ejs";
+
+    templateData = {
+      name,
+      otp: payload.content.otp,
     };
   } else {
     logger.error("Invalid email type provided");
