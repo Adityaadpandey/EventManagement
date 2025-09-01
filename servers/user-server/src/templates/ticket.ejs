@@ -1,34 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <title>Your Ticket</title>
     <style>
         body {
-            font-family: Arial;
+            font-family: 'Inter', Arial, sans-serif;
+            background-color: #f0f4ff;
+            margin: 0;
+            padding: 0;
         }
 
         .container {
-            padding: 20px;
-            background: #f4f4f4;
-            border-radius: 5px;
+            background-color: #ffffff;
             max-width: 600px;
-            margin: auto;
+            margin: 40px auto;
+            padding: 30px 25px;
+            border-radius: 14px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e0e5ff;
         }
 
         h2 {
-            color: #333;
+            color: #7d6bff;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        p,
+        li {
+            font-size: 16px;
+            color: #2e2e2e;
+            margin: 8px 0;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        strong {
+            color: #000;
         }
 
         .qr-container {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 25px;
         }
 
         .qr-container img {
             width: 150px;
             height: 150px;
+            border: 4px solid #e9e4ff;
+            border-radius: 12px;
+            background-color: #f6f4ff;
+        }
+
+        .qr-container p {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
         }
     </style>
 </head>
@@ -54,12 +90,10 @@
                 <%= ticket.venue %>
             </li>
         </ul>
-
         <div class="qr-container">
-  <p>Scan this QR code at the entry gate:</p>
-  <img src="cid:ticketqr@Tixin" alt="Ticket QR Code" />
-</div>
-
+            <p>Scan this QR code at the entry gate:</p>
+            <img src="cid:ticketqr@Tixin" alt="Ticket QR Code" />
+        </div>
         <p>Enjoy the event!</p>
     </div>
 </body>
