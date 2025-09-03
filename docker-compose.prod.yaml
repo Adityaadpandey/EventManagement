@@ -1,42 +1,7 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:latest
-    container_name: my_postgres
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgress
-      POSTGRES_DB: event_management
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - app-network
-  redis:
-    image: redis/redis-stack:6.2.6-v19
-    container_name: redis
-    environment:
-      REDIS_ARGS: "--requirepass cantremember"
-    ports:
-      - "6379:6379"
-      - "8001:8001"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "cantremember", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - app-network
+
   backend-service:
     build:
       context: .
@@ -60,11 +25,6 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -93,13 +53,6 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      backend-service:
-        condition: service_started
     deploy:
       resources:
         limits:
@@ -137,9 +90,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
   nginx-cache:
     driver: local
