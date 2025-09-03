@@ -1,38 +1,6 @@
+version: '3.8'
+
 services:
-  postgres:
-
-    image: postgres:latest
-    container_name: my_postgres
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgress
-      POSTGRES_DB: event_management
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis/redis-stack:6.2.6-v19
-    container_name: redis
-    environment:
-      REDIS_ARGS: "--requirepass cantremember"
-    ports:
-      - "6379:6379"
-      - "8001:8001"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "cantremember", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   backend-service:
     build:
@@ -41,38 +9,86 @@ services:
     image: backend-service
     ports:
       - "7001:7001"
+    command: ["node", "dist/bin.js"]
+    environment:
+      - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=1536
+      - UV_THREADPOOL_SIZE=16
+      - HOST=0.0.0.0
+      - PORT=7001
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:7001/health || exit 1"]
-      interval: 30s
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://0.0.0.0:7001/health || exit 1"]
+      interval: 15s
       timeout: 10s
       retries: 5
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      start_period: 60s
     env_file:
       - .env
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2.5G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - app-network
 
   worker:
     build:
       context: .
       dockerfile: servers/user-server/Dockerfile
     image: backend-service
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
     command: ["node", "dist/workers/email.worker.js"]
+    environment:
+      - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=512
     env_file:
       - .env
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.2'
+    networks:
+      - app-network
 
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx-cache:/var/cache/nginx
+    depends_on:
+      backend-service:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.3'
+    networks:
+      - app-network
 
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
-  postgres_data:
-    driver: local
-  redis_data:
+  nginx-cache:
     driver: local
