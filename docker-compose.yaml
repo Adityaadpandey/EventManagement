@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:latest
@@ -35,32 +33,57 @@ services:
       timeout: 5s
       retries: 5
 
-  user-service:
-    build:
-      context: .
-      dockerfile: servers/user-server/Dockerfile
-    image: backend-user-service
-    ports:
-      - "7001:7001"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: "postgresql://postgres:postgress@postgres:5432/event_management"
-      REDIS_URL: "redis://:cantremember@redis:6379"
-      PORT: 7001
-      LOG_LEVEL: info
-      NODE_ENV: DEVELOPMENT
-      JWT_SECRET: supersecretkey
+  # user-service:
+  #   build:
+  #     context: .
+  #     dockerfile: servers/user-server/Dockerfile
+  #   image: backend-user-service
+  #   ports:
+  #     - "7001:7001"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   environment:
+  #     DATABASE_URL: "postgresql://postgres:postgress@postgres:5432/event_management"
+  #     REDIS_URL: "redis://:cantremember@redis:6379"
+  #     PORT: 7001
+  #     LOG_LEVEL: info
+  #     NODE_ENV: DEVELOPMENT
+  #     JWT_SECRET: supersecretkey
 
-      TWILIO_ACCOUNT_SID: ""
-      TWILIO_AUTH_TOKEN: ""
-      TWILIO_PHONE_NUMBER: ""
+  #     TWILIO_ACCOUNT_SID: ""
+  #     TWILIO_AUTH_TOKEN: ""
+  #     TWILIO_PHONE_NUMBER: ""
 
-      RAZORPAY_KEY_ID: ""
-      RAZORPAY_KEY_SECRET: ""
+  #     RAZORPAY_KEY_ID: ""
+  #     RAZORPAY_KEY_SECRET: ""
+
+  # worker-service:
+  #   build:
+  #     context: .
+  #     dockerfile: servers/worker-server/Dockerfile
+  #   image: backend-worker-service
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   environment:
+  #     DATABASE_URL: "postgresql://postgres:postgress@postgres:5432/event_management"
+  #     REDIS_URL: "redis://:cantremember@redis:6379"
+  #     LOG_LEVEL: info
+  #     NODE_ENV: DEVELOPMENT
+  #     JWT_SECRET: supersecretkey
+
+  #     TWILIO_ACCOUNT_SID: ""
+  #     TWILIO_AUTH_TOKEN: ""
+  #     TWILIO_PHONE_NUMBER: ""
+
+  #     RAZORPAY_KEY_ID: ""
+  #     RAZORPAY_KEY_SECRET: ""
+
 
 volumes:
   postgres_data:
