@@ -223,8 +223,11 @@ export class EventService {
     }
   }
 
-  async getPublicEvents(page = 1, limit = 20) {
+  async getPublicEvents(page = 1, limit = 10) {
     try {
+      page = Number(page) || 1;
+      limit = Number(limit) || 20;
+
       const offset = (page - 1) * limit;
       console.log(page, limit, offset);
       const cached = await getCachedPublicEvents(page, limit);
