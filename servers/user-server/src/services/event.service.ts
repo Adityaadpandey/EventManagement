@@ -1,6 +1,5 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
-import { getCachedPublicEvents, setCachedPublicEvents } from "../lib/redis-fn";
 
 export interface TicketTypeRequest {
   name: string;
@@ -223,103 +222,62 @@ export class EventService {
     }
   }
 
-  async getPublicEvents(page = 1, limit = 10) {
+  async getPublicEvents(cursor?: string, limit = 10) {
     try {
-      page = Number(page) || 1;
-      limit = Number(limit) || 20;
+      limit = Math.min(Number(limit) || 10, 100); // enforce a max limit
 
-      const offset = (page - 1) * limit;
-      console.log(page, limit, offset);
-      const cached = await getCachedPublicEvents(page, limit);
-      if (cached) {
-        logger.info("Public events fetched from cache");
-        return cached;
-      }
+      const where = { status: "APPROVED" as const };
 
-      const [events, total] = await Promise.all([
-        prisma.event.findMany({
-          where: { status: "APPROVED" },
-          select: {
-            eventId: true,
-            lister: {
-              select: {
-                user: {
-                  select: { name: true, email: true },
-                },
-              },
+      const events = await prisma.event.findMany({
+        where,
+        take: limit + 1, // fetch one extra to check for next page
+        ...(cursor && {
+          cursor: { eventId: cursor },
+          skip: 1, // skip the cursor row itself
+        }),
+        orderBy: { eventId: "asc" }, // use stable unique field for order
+        select: {
+          eventId: true,
+          title: true,
+          description: true,
+          date: true,
+          time: true,
+          location: true,
+          capacity: true,
+          banner_horizontal: true,
+          banner_vertical: true,
+          banner_square: true,
+          TicketType: {
+            select: {
+              name: true,
+              price: true,
+              quantity: true,
             },
-            title: true,
-            description: true,
-            banner_horizontal: true,
-            banner_vertical: true,
-            banner_square: true,
-            date: true,
-            time: true,
-            location: true,
-            capacity: true,
-            TicketType: {
-              select: {
-                name: true,
-                price: true,
-                quantity: true,
+          },
+          lister: {
+            select: {
+              user: {
+                select: { name: true, email: true },
               },
             },
           },
-          orderBy: { date: "asc" },
-          skip: offset,
-          take: limit,
-        }),
-        prisma.event.count({
-          where: { status: "APPROVED" },
-        }),
-      ]);
-      logger.info(`Fetched ${events.length} public events`);
-      logger.info(`Fetched ${events.length} public events`);
-      await setCachedPublicEvents({ events, total }, page, limit);
-      logger.info("Public events cached after DB fetch");
+        },
+      });
 
-      return { events, total };
+      const hasNextPage = events.length > limit;
+      const slicedEvents = hasNextPage ? events.slice(0, -1) : events;
+      const nextCursor = hasNextPage
+        ? slicedEvents[slicedEvents.length - 1].eventId
+        : null;
+
+      return {
+        events: slicedEvents,
+        nextCursor,
+        hasNextPage,
+      };
     } catch (error) {
       logger.error("Error in getPublicEvents:", error);
-
-      const [events, total] = await Promise.all([
-        prisma.event.findMany({
-          where: { status: "APPROVED" },
-          select: {
-            lister: {
-              select: {
-                user: {
-                  select: { name: true, email: true },
-                },
-              },
-            },
-            title: true,
-            description: true,
-            banner_horizontal: true,
-            banner_vertical: true,
-            banner_square: true,
-            date: true,
-            time: true,
-            location: true,
-            capacity: true,
-            TicketType: {
-              select: {
-                name: true,
-                price: true,
-                quantity: true,
-              },
-            },
-          },
-          orderBy: { date: "asc" },
-          skip: (page - 1) * limit,
-          take: limit,
-        }),
-        prisma.event.count({
-          where: { status: "APPROVED" },
-        }),
-      ]);
-
-      return { events, total };
+      throw error;
     }
   }
 

@@ -36,30 +36,17 @@ export class EventController {
   //  all the event details for public view
   async getPublicEvents(req: Request, res: Response) {
     try {
-      const page = parseInt(req.query.page as string, 10) || 1;
+      const cursor = req.query.cursor as string | undefined;
       const limit = parseInt(req.query.limit as string, 10) || 10;
 
-      console.log(page, limit);
+      const { events, nextCursor, hasNextPage } =
+        await this.eventService.getPublicEvents(cursor, limit);
 
-      const { events, total } = await this.eventService.getPublicEvents(
-        page,
+      return sendSuccess(res, "Events fetched", events, 200, {
+        nextCursor,
+        hasNextPage,
         limit,
-      );
-
-      const totalPages = Math.ceil(total / limit);
-
-      return sendSuccess(
-        res,
-        "Public events retrieved successfully",
-        events,
-        200,
-        {
-          page,
-          limit,
-          total,
-          totalPages,
-        },
-      );
+      });
     } catch (error: any) {
       logger.error("Failed to get public events:", error);
       return sendError(res, "Failed to get public events", 500, error.message);
