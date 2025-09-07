@@ -37,7 +37,7 @@ export class EventController {
   async getPublicEvents(req: Request, res: Response) {
     try {
       const page = parseInt(req.query.page as string, 10) || 1;
-      const limit = parseInt(req.query.limit as string, 10);
+      const limit = parseInt(req.query.limit as string, 10) || 10;
 
       console.log(page, limit);
 
