@@ -4,8 +4,8 @@ import logger from "../config/logger";
 import { redis } from "../config/redis";
 import { createToken } from "../lib/jwt-token";
 import { sendEmail } from "../lib/mail";
+import { otpQueue } from "../lib/queues";
 import { setCachedUser } from "../lib/redis-fn";
-import { sendSMS } from "../lib/twilio-sms";
 
 class AuthService {
   private isEmail(input: string): boolean {
@@ -78,9 +78,13 @@ class AuthService {
           return { message: "OTP request received. Email is being sent." };
         } else {
           // Send SMS
-          sendSMS(otp, normalizedIdentifier).catch((err) =>
-            logger.error("Failed to send SMS:", err),
+          // console.log('Adding OTP job to queue:', { to: normalizedIdentifier, otp });
+          await otpQueue.add(
+            "send-otp",
+            { otp: otp, to: normalizedIdentifier },
+            { attempts: 3, backoff: { type: "exponential", delay: 5000 } },
           );
+
           return { message: "OTP request received. SMS is being sent." };
         }
       } catch (_error) {
