@@ -7,10 +7,9 @@ export const reqMiddleware = (
   next: NextFunction,
 ) => {
   const start = process.hrtime();
+  const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
-  logger.info(
-    `Incoming request: ${req.method} ${req.originalUrl} from ${req.ip}`,
-  );
+  logger.info(`Incoming request: ${req.method} ${req.originalUrl} from ${ip}`);
 
   res.on("finish", () => {
     const [seconds, nanoseconds] = process.hrtime(start);

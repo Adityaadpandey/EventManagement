@@ -43,7 +43,7 @@ services:
       context: .
       dockerfile: servers/user-server/Dockerfile
     image: backend-service
-    command: ["node", "dist/workers/email.worker.js"]
+    command: ["node", "dist/workers/index.worker.js"]
     environment:
       - NODE_ENV=production
       - NODE_OPTIONS=--max-old-space-size=512

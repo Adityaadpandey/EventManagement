@@ -31,6 +31,9 @@ export const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 300, // Increased for your dedicated app server (was 100)
   standardHeaders: true,
+  validate: {
+    trustProxy: true,
+  },
   legacyHeaders: false,
   message: {
     error: "Too many requests from this IP, please try again later.",
@@ -63,16 +66,18 @@ export const limiter = rateLimit({
 // Strict rate limiter for authentication routes
 export const authLimiter = rateLimit({
   store: createRedisStore(),
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 auth attempts per 15 minutes
-  skipSuccessfulRequests: true, // Don't count successful requests
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     error: "Too many authentication attempts. Please try again later.",
     retryAfter: "15 minutes",
   },
-  // Use default keyGenerator (req.ip) which automatically handles IPv6 properly
+  validate: {
+    trustProxy: true,
+  },
   handler: (req: Request, res: Response) => {
     logger.warn(`Auth rate limit reached`, {
       ip: req.ip,
@@ -94,6 +99,9 @@ export const heavyOperationLimiter = rateLimit({
   max: 20, // 20 heavy operations per 5 minutes
   standardHeaders: true,
   legacyHeaders: false,
+  validate: {
+    trustProxy: true,
+  },
   // Use default keyGenerator for simplicity and security
   handler: (req: Request, res: Response) => {
     logger.warn(`Heavy operation rate limit reached`, {
@@ -113,6 +121,9 @@ export const burstLimiter = rateLimit({
   store: createRedisStore(),
   windowMs: 60 * 1000, // 1 minute
   max: 100, // 100 requests per minute
+  validate: {
+    trustProxy: true,
+  },
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -132,6 +143,9 @@ export const adminLimiter = rateLimit({
   store: createRedisStore(),
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 50, // 50 admin requests per 15 minutes
+  validate: {
+    trustProxy: true,
+  },
   keyGenerator: (req: Request) => {
     const ip = getClientIP(req);
     const userId = (req as any).user?.id || "anonymous";
