@@ -33,7 +33,7 @@ import { sendError } from "./utils/responseMsg";
 const app = express();
 
 // Trust proxy for accurate IP detection in rate limiting
-app.set("trust proxy", 1);
+app.set("trust proxy", true);
 
 // Security headers
 app.use(
