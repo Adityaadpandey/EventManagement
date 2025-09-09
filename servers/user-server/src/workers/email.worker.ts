@@ -11,6 +11,8 @@ const transporter = nodemailer.createTransport({
     user: config.SMTP_EMAIL_USER,
     pass: config.SMTP_EMAIL_PASS,
   },
+  logger: true, // Log to console
+  debug: true, // Include SMTP traffic in logs
 });
 
 // Email job data interface
@@ -33,7 +35,7 @@ export const emailWorker = new Worker(
 
     try {
       await transporter.sendMail({
-        from: `"Tixin" <${process.env.EMAIL_USER}>`,
+        from: `"Tixin" <${config.SMTP_EMAIL_USER}>`,
         to,
         subject,
         html,
