@@ -1,8 +1,6 @@
-# Default target
 .PHONY: all
 all: setup
 
-# Step 1: Setup Docker and install dependencies
 .PHONY: setup
 setup:
 	docker compose up -d
@@ -10,10 +8,14 @@ setup:
 	pnpm build:packages
 	cd packages/database && npx prisma db push
 
-
+.PHONY: production_up
 production_up:
 	docker compose -f docker-compose.prod.yaml up -d --build
+
+.PHONY: production_down
 production_down:
 	docker compose -f docker-compose.prod.yaml down
+
+.PHONY: production_logs
 production_logs:
 	docker compose -f docker-compose.prod.yaml logs -f
