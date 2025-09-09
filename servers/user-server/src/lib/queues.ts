@@ -21,3 +21,16 @@ export const emailQueue = new Queue("emails", {
     removeOnFail: false,
   },
 });
+
+export const otpQueue = new Queue("otps", {
+  connection: redis,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: {
+      type: "exponential",
+      delay: 1000, // first retry after 1s, then 2s, 4s, etc.
+    },
+    removeOnComplete: true,
+    removeOnFail: false,
+  },
+});
