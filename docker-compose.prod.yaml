@@ -22,14 +22,6 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 2.5G
-          cpus: '2.0'
-        reservations:
-          memory: 1G
-          cpus: '0.5'
     logging:
       driver: "json-file"
       options:
@@ -50,14 +42,6 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 256M
-          cpus: '0.2'
     networks:
       - app-network
 
@@ -74,11 +58,6 @@ services:
       backend-service:
         condition: service_healthy
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.3'
     networks:
       - app-network
 
