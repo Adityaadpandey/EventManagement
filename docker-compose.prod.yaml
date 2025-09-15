@@ -29,6 +29,21 @@ services:
         max-file: "3"
     networks:
       - app-network
+    depends_on:
+      - vector-backend
+
+  vector-backend:
+    image: timberio/vector:latest-alpine
+    depends_on:
+      - backend-service
+    volumes:
+      # Mount docker container logs directory (for container logs)
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      # Mount Vector config file (you will create this next)
+      - ./vector-backend/vector.toml:/etc/vector/vector.toml:ro
+    networks:
+      - app-network
+    restart: unless-stopped
 
   worker:
     build:
@@ -41,6 +56,34 @@ services:
       - NODE_OPTIONS=--max-old-space-size=512
     env_file:
       - .env
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      - vector-worker
+
+  vector-worker:
+    image: timberio/vector:latest-alpine
+    depends_on:
+      - worker
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./vector-worker/vector.toml:/etc/vector/vector.toml:ro
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    container_name: openobserve
+    environment:
+      - ZO_ROOT_USER_EMAIL=admin@example.com
+      - ZO_ROOT_USER_PASSWORD=admin123
+    ports:
+      - "5080:5080"
+      - "5081:5081"
+    volumes:
+      - openobserve-data:/data
     restart: unless-stopped
     networks:
       - app-network
@@ -67,4 +110,6 @@ networks:
 
 volumes:
   nginx-cache:
+    driver: local
+  openobserve-data:
     driver: local

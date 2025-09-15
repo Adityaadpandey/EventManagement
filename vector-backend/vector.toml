@@ -1,0 +1,21 @@
+[sources.docker_logs]
+type = "docker_logs"
+include_containers = ["backend-service"]
+
+[transforms.parse_logs]
+type = "remap"
+inputs = ["docker_logs"]
+source = '''
+  . = parse_json!(.message) ?? { message: .message }
+'''
+
+[sinks.openobserve]
+type = "http"
+inputs = ["parse_logs"]
+uri = "http://openobserve:5080/api/default/_ingest/logs/json"
+encoding.codec = "json"
+healthcheck.enabled = true
+request.timeout_secs = 5
+auth.strategy = "basic"
+auth.user = "admin@example.com"
+auth.password = "admin123"
