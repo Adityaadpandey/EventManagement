@@ -34,8 +34,6 @@ services:
 
   vector-backend:
     image: timberio/vector:latest-alpine
-    depends_on:
-      - backend-service
     volumes:
       # Mount docker container logs directory (for container logs)
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
