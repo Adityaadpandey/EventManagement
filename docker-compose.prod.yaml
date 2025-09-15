@@ -62,8 +62,6 @@ services:
 
   vector-worker:
     image: timberio/vector:latest-alpine
-    depends_on:
-      - worker
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - ./vector-worker/vector.toml:/etc/vector/vector.toml:ro
