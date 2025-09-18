@@ -29,8 +29,6 @@ services:
         max-file: "3"
     networks:
       - app-network
-    depends_on:
-      - vector-backend
 
   worker:
     build:
@@ -46,8 +44,6 @@ services:
     restart: unless-stopped
     networks:
       - app-network
-    depends_on:
-      - vector-worker
 
 
 
@@ -73,6 +69,3 @@ networks:
 
 volumes:
   nginx-cache:
-    driver: local
-  openobserve-data:
-    driver: local
