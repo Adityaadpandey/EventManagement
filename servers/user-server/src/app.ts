@@ -7,6 +7,7 @@ import express, {
 } from "express";
 import helmet from "helmet";
 import { config } from "./config";
+import { prisma } from "./config/db";
 import logger from "./config/logger";
 import { connectRedis } from "./config/redis";
 import { compressionMiddleware } from "./middlewares/compression.middleware";
@@ -84,11 +85,13 @@ app.get("/health", async (_, res: Response) => {
 });
 
 // Metrics endpoint for monitoring
-app.get("/metrics", (req: Request, res: Response) => {
+app.get("/metrics", async (req: Request, res: Response) => {
+  const metrics = await prisma.$metrics.prometheus();
   const memUsage = process.memoryUsage();
   const cpuUsage = process.cpuUsage();
 
   res.json({
+    metrics,
     memory: {
       rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
       heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
