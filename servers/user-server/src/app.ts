@@ -91,7 +91,7 @@ app.get("/metrics", async (req: Request, res: Response) => {
   const cpuUsage = process.cpuUsage();
 
   res.json({
-    metrics,
+    metrics: JSON.parse(metrics),
     memory: {
       rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
       heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
