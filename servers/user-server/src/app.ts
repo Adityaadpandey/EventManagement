@@ -26,6 +26,7 @@ import { paymentRouter } from "./routes/v1/payment.router";
 import { ticketValidationRouter } from "./routes/v1/ticket-validation.router";
 import { ticketRouter } from "./routes/v1/ticket.router";
 import { userRouter } from "./routes/v1/user.router";
+import { getDatabaseMetrics } from "./utils/databseMatrices";
 import { setupGracefulShutdown } from "./utils/gracefullShutdown";
 import { healthCheck } from "./utils/healthCheck";
 import { sendError } from "./utils/responseMsg";
@@ -84,24 +85,9 @@ app.get("/health", async (_, res: Response) => {
 });
 
 // Metrics endpoint for monitoring
-app.get("/metrics", (req: Request, res: Response) => {
-  const memUsage = process.memoryUsage();
-  const cpuUsage = process.cpuUsage();
-
-  res.json({
-    memory: {
-      rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`,
-      heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
-      heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
-      external: `${Math.round(memUsage.external / 1024 / 1024)}MB`,
-    },
-    cpu: {
-      user: cpuUsage.user,
-      system: cpuUsage.system,
-    },
-    uptime: process.uptime(),
-    pid: process.pid,
-    timestamp: new Date().toISOString(),
+app.get("/metrics", async (req: Request, res: Response) => {
+  return res.json({
+    getDatabaseMetrics: await getDatabaseMetrics(),
   });
 });
 
