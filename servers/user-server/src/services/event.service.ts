@@ -1,5 +1,6 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { redis } from "../config/redis";
 
 export interface TicketTypeRequest {
   name: string;
@@ -223,19 +224,27 @@ export class EventService {
   }
 
   async getPublicEvents(cursor?: string, limit = 10) {
-    try {
-      limit = Math.min(Number(limit) || 10, 100); // enforce a max limit
+    limit = Math.min(Number(limit) || 10, 100);
+    const cacheKey = `public-events:${cursor || "first"}:${limit}`;
 
+    try {
+      // 1. Try cache
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+
+      // 2. Fetch from DB
       const where = { status: "APPROVED" as const };
 
       const events = await prisma.event.findMany({
         where,
-        take: limit + 1, // fetch one extra to check for next page
+        take: limit + 1,
         ...(cursor && {
           cursor: { eventId: cursor },
-          skip: 1, // skip the cursor row itself
+          skip: 1,
         }),
-        orderBy: { eventId: "asc" }, // use stable unique field for order
+        orderBy: { eventId: "asc" },
         select: {
           eventId: true,
           title: true,
@@ -270,11 +279,16 @@ export class EventService {
         ? slicedEvents[slicedEvents.length - 1].eventId
         : null;
 
-      return {
+      const result = {
         events: slicedEvents,
         nextCursor,
         hasNextPage,
       };
+
+      // 3. Store in cache (set TTL for staleness tolerance)
+      await redis.set(cacheKey, JSON.stringify(result), "EX", 60); // Cache for 60 seconds
+
+      return result;
     } catch (error) {
       logger.error("Error in getPublicEvents:", error);
       throw error;
