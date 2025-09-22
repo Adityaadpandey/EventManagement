@@ -1,48 +1,37 @@
-name: Auto Changelog Generator
+# .github/workflows/changelog-simple.yml
+name: Simple Changelog Generator
 
 on:
   push:
     branches: [ main, production ]
-  pull_request:
-    branches: [ main, production ]
 
 jobs:
-  generate-changelog:
+  update-changelog:
     runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'  # Prevent infinite loops
     permissions:
       contents: write
-      pull-requests: read
+      pull-requests: write
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Fetch full history for better commit analysis
+        fetch-depth: 2
         token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Set up Git
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-
-    - name: Get commit information
+    - name: Get commit details
       id: commit-info
       run: |
-        # Get the latest commit details
-        COMMIT_SHA=$(git rev-parse HEAD)
+        COMMIT_SHA="${{ github.sha }}"
         COMMIT_MESSAGE=$(git log -1 --pretty=format:"%s")
         COMMIT_AUTHOR=$(git log -1 --pretty=format:"%an")
-        COMMIT_DATE=$(git log -1 --pretty=format:"%ci")
-        BRANCH_NAME=${GITHUB_REF#refs/heads/}
+        COMMIT_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        BRANCH_NAME="${{ github.ref_name }}"
 
         # Get changed files
-        if [ "${{ github.event_name }}" = "push" ]; then
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} || git diff --name-only HEAD~1 HEAD)
-        else
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-        fi
+        CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
 
-        # Save to environment
         echo "COMMIT_SHA=$COMMIT_SHA" >> $GITHUB_ENV
         echo "COMMIT_MESSAGE=$COMMIT_MESSAGE" >> $GITHUB_ENV
         echo "COMMIT_AUTHOR=$COMMIT_AUTHOR" >> $GITHUB_ENV
@@ -52,104 +41,105 @@ jobs:
         echo "$CHANGED_FILES" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
 
-    - name: Generate change entry
+    - name: Create changelog entry
       run: |
+        # Create a unique branch name
+        TIMESTAMP=$(date +%s)
+        CHANGELOG_BRANCH="changelog-update-$TIMESTAMP"
+
+        # Create and switch to new branch
+        git checkout -b $CHANGELOG_BRANCH
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
         # Create changes.md if it doesn't exist
         if [ ! -f changes.md ]; then
-          echo "# Change Log" > changes.md
-          echo "" >> changes.md
-          echo "This file tracks all changes made to the repository." >> changes.md
-          echo "" >> changes.md
+          cat << 'EOF' > changes.md
+        # Change Log
+
+        This file tracks all changes made to the repository.
+
+        EOF
         fi
 
-        # Create temporary file for new entry
-        cat << EOF > temp_change.md
-        ## $(date '+%Y-%m-%d %H:%M:%S UTC') - Branch: $BRANCH_NAME
+        # Create new entry
+        cat << EOF > temp_entry.md
+        ## $COMMIT_DATE - Branch: $BRANCH_NAME
 
-        **Commit:** \`$COMMIT_SHA\`
+        **Commit:** \`${COMMIT_SHA:0:8}\`
         **Author:** $COMMIT_AUTHOR
         **Message:** $COMMIT_MESSAGE
 
         ### Files Changed:
         EOF
 
-        # Add changed files to the entry
+        # Add changed files
         if [ -n "$CHANGED_FILES" ]; then
-          echo "$CHANGED_FILES" | while read -r file; do
+          echo "$CHANGED_FILES" | while IFS= read -r file; do
             if [ -n "$file" ]; then
-              echo "- \`$file\`" >> temp_change.md
+              echo "- \`$file\`" >> temp_entry.md
             fi
           done
         else
-          echo "- No files changed" >> temp_change.md
+          echo "- No files detected" >> temp_entry.md
         fi
 
-        echo "" >> temp_change.md
-        echo "---" >> temp_change.md
-        echo "" >> temp_change.md
+        echo "" >> temp_entry.md
+        echo "---" >> temp_entry.md
+        echo "" >> temp_entry.md
 
-    - name: Update changes.md
-      run: |
-        # Combine new entry with existing changes.md
-        if [ -f changes.md ]; then
-          # Read the header (first 4 lines)
-          head -n 4 changes.md > new_changes.md
-          # Add the new entry
-          cat temp_change.md >> new_changes.md
-          # Add the rest of the old content (skip header)
-          tail -n +5 changes.md >> new_changes.md
-          # Replace the original file
-          mv new_changes.md changes.md
-        else
-          mv temp_change.md changes.md
-        fi
+        # Insert new entry after the header
+        head -n 4 changes.md > new_changes.md
+        cat temp_entry.md >> new_changes.md
+        tail -n +5 changes.md >> new_changes.md
+        mv new_changes.md changes.md
+        rm temp_entry.md
 
-        # Clean up
-        rm -f temp_change.md
-
-    - name: Commit and push changes
-      run: |
+        # Commit the changes
         git add changes.md
+        git commit -m "📝 Update changelog for commit ${COMMIT_SHA:0:8}"
+        git push origin $CHANGELOG_BRANCH
 
-        # Check if there are changes to commit
-        if git diff --staged --quiet; then
-          echo "No changes to commit"
-        else
-          git commit -m "Auto-update changelog for commit $COMMIT_SHA"
-          git push
-        fi
+        echo "CHANGELOG_BRANCH=$CHANGELOG_BRANCH" >> $GITHUB_ENV
 
-    - name: Create pull request comment (for PRs)
-      if: github.event_name == 'pull_request'
+    - name: Create Pull Request
       uses: actions/github-script@v7
       with:
         script: |
-          const fs = require('fs');
+          const { owner, repo } = context.repo;
 
-          // Read the latest entry from changes.md
-          const changesContent = fs.readFileSync('changes.md', 'utf8');
-          const lines = changesContent.split('\n');
+          const pr = await github.rest.pulls.create({
+            owner,
+            repo,
+            title: `📝 Update changelog for ${process.env.COMMIT_SHA.substring(0, 8)}`,
+            head: process.env.CHANGELOG_BRANCH,
+            base: process.env.BRANCH_NAME,
+            body: `## 🤖 Automated Changelog Update
 
-          // Find the first changelog entry (after header)
-          let startIndex = -1;
-          let endIndex = -1;
+          This PR updates the changelog with details from the latest commit.
 
-          for (let i = 0; i < lines.length; i++) {
-            if (lines[i].startsWith('## ') && startIndex === -1) {
-              startIndex = i;
-            } else if (lines[i] === '---' && startIndex !== -1) {
-              endIndex = i;
-              break;
-            }
-          }
+          **Commit:** \`${process.env.COMMIT_SHA.substring(0, 8)}\`
+          **Author:** ${process.env.COMMIT_AUTHOR}
+          **Message:** ${process.env.COMMIT_MESSAGE}
 
-          if (startIndex !== -1 && endIndex !== -1) {
-            const latestEntry = lines.slice(startIndex, endIndex).join('\n');
+          ### Changed Files:
+          ${process.env.CHANGED_FILES.split('\n').filter(f => f.trim()).map(f => `- \`${f}\``).join('\n')}
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## 📝 Changelog Preview\n\nThis PR will add the following entry to changes.md:\n\n${latestEntry}`
+          ---
+
+          *This PR was automatically generated and can be safely merged.*`
+          });
+
+          console.log(\`Created PR #\${pr.data.number}\`);
+
+          // Try to add labels
+          try {
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: pr.data.number,
+              labels: ['documentation', 'changelog', 'automated']
             });
+          } catch (e) {
+            console.log('Could not add labels (they might not exist)');
           }
