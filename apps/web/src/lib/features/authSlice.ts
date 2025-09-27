@@ -1,4 +1,5 @@
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+// src/lib/features/authSlice.ts
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api from "@/lib/api";
 
 type User = {
@@ -27,45 +28,51 @@ const initialState: AuthState = {
   hydrated: false,
 };
 
+// 🔹 Request OTP (works for email OR phone). Sends { identifier } to backend.
 export const requestOtp = createAsyncThunk<
   void,
   string,
   { rejectValue: string }
->("auth/requestOtp", async (phone, { rejectWithValue }) => {
+>("auth/requestOtp", async (identifier, { rejectWithValue }) => {
   try {
-    await api.post("/auth/otp/request", { phone });
+    await api.post("/auth/otp/request", { identifier });
   } catch (err: any) {
     const msg = err?.response?.data?.message || "Failed to send OTP";
     return rejectWithValue(msg);
   }
 });
 
+// 🔹 Verify OTP (works for email OR phone). Sends { identifier, otp } to backend.
 export const verifyOtp = createAsyncThunk<
   { token: string; user: User },
-  { phone: string; otp: string; name?: string; email?: string },
+  { identifier: string; otp: string; name?: string; email?: string },
   { rejectValue: string }
 >("auth/verifyOtp", async (payload, { rejectWithValue }) => {
   try {
     const res = await api.post("/auth/otp/verify", {
-      phone: payload.phone,
+      identifier: payload.identifier,
       otp: payload.otp,
     });
+
     const token = res?.data?.data?.token;
     if (!token) throw new Error("Token missing in response");
 
+    // persist token local
     if (typeof window !== "undefined") {
       localStorage.setItem("token", token);
     }
 
+    // fetch profile
     const profRes = await api.get("/user/profile");
     let user: User = profRes?.data?.data;
 
+    // optionally patch name/email if backend expects that
     const needName = !user?.name && payload.name;
     const needEmail = !user?.email && payload.email;
     if (needName || needEmail) {
       const patchRes = await api.patch("/user/profile", {
-        name: needName ? payload.name : undefined,
-        email: needEmail ? payload.email : undefined,
+        ...(needName ? { name: payload.name } : {}),
+        ...(needEmail ? { email: payload.email } : {}),
       });
       user = patchRes?.data?.data;
     }
@@ -78,6 +85,7 @@ export const verifyOtp = createAsyncThunk<
   }
 });
 
+// 🔹 Hydrate session on page load — reads token from localStorage and fetches profile
 export const hydrateSession = createAsyncThunk<
   { token: string; user: User } | null,
   void,
@@ -88,10 +96,12 @@ export const hydrateSession = createAsyncThunk<
     const token = localStorage.getItem("token");
     if (!token) return null;
 
+    // attempt to fetch profile (your api instance should pick token from localStorage or an interceptor)
     const res = await api.get("/user/profile");
     const user: User = res?.data?.data;
     return { token, user };
   } catch (err: any) {
+    // clear token on failure
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
     }
@@ -111,6 +121,14 @@ const authSlice = createSlice({
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
       }
+    },
+    // optional lightweight sync hydrate action (not required if you use hydrateSession)
+    hydrateSync(state) {
+      if (typeof window !== "undefined") {
+        const token = localStorage.getItem("token");
+        if (token) state.token = token;
+      }
+      state.hydrated = true;
     },
   },
   extraReducers: (builder) => {
@@ -146,6 +164,7 @@ const authSlice = createSlice({
         state.error = action.payload || "Failed to verify OTP";
       })
 
+      // hydrateSession
       .addCase(hydrateSession.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -166,5 +185,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, hydrateSync } = authSlice.actions;
 export default authSlice.reducer;
