@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { fetchPublicEvents } from "@/lib/features/eventsSlice";
-import { p } from "framer-motion/client";
-import { Calendar, Clock, MapPin, Users, Ticket, User } from "lucide-react";
+import EventCard from "./_components/EventCard";
+import NavBar from "./_components/Navbar";
 
 export default function HomePage() {
   const dispatch = useAppDispatch();
@@ -13,167 +13,137 @@ export default function HomePage() {
     (s) => s.events.list,
   );
 
-  const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [showLeftFade, setShowLeftFade] = useState(false);
+  const [showRightFade, setShowRightFade] = useState(false);
+
+  const tagsRef = useRef<HTMLDivElement>(null);
+
+  const filters = ["Tech", "Hackathon", "Cultural", "EDM", "Concert", "NGO"];
 
   useEffect(() => {
     dispatch(fetchPublicEvents({ page: 1, limit: 10 }));
   }, [dispatch]);
 
-  const filteredEvents = items.filter(
-    (ev) =>
-      ev.title?.toLowerCase().includes(search.toLowerCase()) ||
-      ev.location?.toLowerCase().includes(search.toLowerCase()),
-  );
+  useEffect(() => {
+    const el = tagsRef.current;
+    if (!el) return;
+
+    const checkScroll = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      setShowLeftFade(scrollLeft > 0);
+      setShowRightFade(scrollLeft + clientWidth < scrollWidth - 1);
+    };
+
+    checkScroll();
+    el.addEventListener("scroll", checkScroll);
+    window.addEventListener("resize", checkScroll);
+
+    return () => {
+      el.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, []);
+
+  const filteredItems = activeFilter
+    ? items.filter((ev) => ev.category === activeFilter)
+    : items;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 text-white w-full pb-20">
-      <h1 className="text-3xl font-bold mb-6 text-white">Explore Events</h1>
+    <div className="home-page-container">
+      <div className="w-full flex justify-between border-b md:hidden mb-4 pb-4 border-b-[#00000014]">
+        <div className="home-location-box flex">
+          <img src="/svgs/location.svg" className="" alt="" />
+          <p className="home-location-text leading-none">
+            Lovely Professional University
+          </p>
+        </div>
 
-      {/* Search */}
-      <div className="mb-8">
-        <input
-          type="text"
-          placeholder="Search events..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-4 py-2 rounded-md bg-zinc-900 border border-zinc-700 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
-        />
+        <div className="flex gap-4 items-center">
+          <img src="/svgs/notification.svg" alt="" className="w-7" />
+
+          <div className="w-9 h-9 shrink-0 rounded-full overflow-hidden">
+            <img
+              src="https://thumbs.dreamstime.com/b/simple-vector-illustration-showcases-user-profile-placeholder-icon-consists-black-circle-representing-head-351326903.jpg"
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      </div>
+      <h1 className="home-page-heading">Events near you</h1>
+
+      {/* Filter Bar */}
+      <div className="home-filter-bar">
+        <div className="home-filter-tags-wrapper">
+          {showLeftFade && <div className="home-filter-gradient-left" />}
+          <div className="home-filter-tags" ref={tagsRef}>
+            {filters.map((filter, index) => (
+              <h5
+                key={index}
+                className={`home-filter-tag cursor-pointer transition-colors duration-200 ${
+                  activeFilter === filter ? "bg-black text-white" : "bg-white"
+                }`}
+                onClick={() =>
+                  setActiveFilter((prev) => (prev === filter ? null : filter))
+                }
+              >
+                {filter}
+              </h5>
+            ))}
+          </div>
+          {showRightFade && <div className="home-filter-gradient-right" />}
+        </div>
+
+        <div className="home-location-box md:flex hidden">
+          <img src="/svgs/location.svg" className="home-location-icon" alt="" />
+          <p className="home-location-text">Lovely Professional University</p>
+        </div>
       </div>
 
-      {/* Loading Skeleton */}
+      {/* Content */}
       {loading ? (
         <div className="space-y-6">
           {Array.from({ length: 4 }).map((_, idx) => (
-            <div
-              key={idx}
-              className="flex flex-col sm:flex-row items-start gap-4 rounded-lg overflow-hidden shadow-md bg-zinc-900 animate-pulse"
-            >
-              <div className="w-full sm:w-64 h-48 bg-zinc-800" />
+            <div key={idx} className="home-skeleton-card">
+              <div className="home-skeleton-image" />
               <div className="p-4 flex-1 space-y-2">
-                <div className="h-5 w-3/4 bg-zinc-800 rounded" />
-                <div className="h-4 w-1/2 bg-zinc-800 rounded" />
-                <div className="h-4 w-1/3 bg-zinc-800 rounded" />
+                <div className="home-skeleton-text1" />
+                <div className="home-skeleton-text2" />
+                <div className="home-skeleton-text3" />
               </div>
             </div>
           ))}
         </div>
       ) : error ? (
         <div className="p-6 text-center text-red-400 font-medium">{error}</div>
-      ) : filteredEvents.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <div className="p-6 text-center text-zinc-500">No events found.</div>
       ) : (
-        <div className="space-y-6">
-          {filteredEvents.map((ev) => (
+        <div className="home-event-list">
+          {filteredItems.map((ev) => (
             <Link
               key={ev.eventId}
               href={`/event/${ev.eventId}`}
-              className="group flex flex-col sm:flex-row items-stretch gap-6 rounded-xl overflow-hidden border border-zinc-800 hover:border-zinc-700 hover:shadow-md transition-shadow bg-zinc-900"
+              className="group"
             >
-              <div className="w-full sm:w-64 min-h-48 bg-zinc-700 flex-shrink-0 relative">
-                {ev.banner_square || ev.banner_horizontal ? (
-                  <img
-                    src={(ev.banner_square || ev.banner_horizontal)!}
-                    alt={ev.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-zinc-600 text-sm">
-                    No Image
-                  </div>
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="py-5 px-4 sm:pl-0 flex-1 min-w-0 flex flex-col justify-between space-y-4">
-                {/* Header */}
-                <div className="space-y-1.5">
-                  <h3 className="text-white text-lg font-medium leading-snug line-clamp-1">
-                    {ev.title}
-                  </h3>
-
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-zinc-400 font-medium">
-                    {ev.date && (
-                      <div className="flex items-center gap-1.5">
-                        <Calendar size={14} className="text-zinc-500" />
-                        <span>
-                          {new Date(ev.date).toLocaleDateString("en-US", {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </span>
-                      </div>
-                    )}
-                    {ev.time && (
-                      <div className="flex items-center gap-1.5">
-                        <Clock size={14} className="text-zinc-500" />
-                        <span>
-                          {new Date(ev.time).toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                            hour12: true,
-                          })}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {ev.location && (
-                    <div className="flex items-center gap-1.5 text-sm text-zinc-500">
-                      <MapPin size={14} className="text-zinc-500" />
-                      <span className="line-clamp-1">{ev.location}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer */}
-                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 pt-2">
-                  <div className="flex flex-col gap-1">
-                    {ev.capacity && (
-                      <div className="flex items-center gap-1.5 text-sm text-zinc-400">
-                        <Users size={14} className="text-zinc-500" />
-                        <span>{ev.capacity} capacity</span>
-                      </div>
-                    )}
-
-                    {ev.TicketType && ev.TicketType.length > 0 && (
-                      <div className="space-y-1 text-sm text-zinc-400">
-                        {ev.TicketType.slice(0, 2).map((ticket, idx) => (
-                          <div key={idx} className="flex items-center gap-1.5">
-                            <Ticket size={14} className="text-zinc-500" />
-                            <span className="truncate">
-                              {ticket.name} – ${ticket.price}
-                            </span>
-                          </div>
-                        ))}
-                        {ev.TicketType.length > 2 && (
-                          <span className="text-xs text-zinc-500 italic">
-                            + {ev.TicketType.length - 2} more
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Lister */}
-                  {ev.lister?.user?.name && (
-                    <div className="flex items-center gap-1.5 text-xs text-zinc-500 italic">
-                      <User size={12} className="text-zinc-500" />
-                      <span>Listed by {ev.lister.user.name}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <EventCard
+                imageUrl={ev.banner_horizontal}
+                title={ev.title}
+                location={ev.location}
+                date={ev.date}
+                price={ev.TicketType[0].price}
+              />
             </Link>
           ))}
+
+          <NavBar />
         </div>
       )}
 
       {!loading && !error && (
-        <div className="flex items-center justify-center pt-10">
-          <span className="text-sm text-zinc-500">
+        <div className="home-pagination">
+          <span>
             Page {page} of {totalPages}
           </span>
         </div>
