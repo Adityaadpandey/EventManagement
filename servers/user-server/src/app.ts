@@ -58,11 +58,17 @@ app.use(express.json({ limit: "10mb" })); // Reduced from 50mb for better perfor
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // CORS
+// app.use(
+//   cors({
+//     origin: config.CORS_ORIGIN || "http://localhost:3000",
+//     credentials: true,
+//     optionsSuccessStatus: 200,
+//   }),
+// );
+
 app.use(
   cors({
-    origin: config.CORS_ORIGIN || "http://localhost:3000",
-    credentials: true,
-    optionsSuccessStatus: 200,
+    origin: "*",
   }),
 );
 
