@@ -1,6 +1,6 @@
 // src/lib/features/authSlice.ts
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api from "@/lib/api";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 type User = {
   userId: string;
