@@ -1,16 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import Modal from "@/app/_components/Modal";
 import api from "@/lib/api";
-import { fetchEventDetails } from "@/lib/features/eventsSlice";
-import { useAppSelector, useAppDispatch } from "@/lib/hooks";
 import {
+  hydrateSession,
   requestOtp,
   verifyOtp,
-  hydrateSession,
 } from "@/lib/features/authSlice";
-import Modal from "@/app/_components/Modal";
+import { fetchEventDetails } from "@/lib/features/eventsSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type TicketType = {
   ticketTypeId: string;
@@ -61,7 +61,7 @@ export default function EventPage() {
     loadingId,
     error: eventsError,
   } = useAppSelector((s) => s.events.details);
-  const ev = byId[eventId] as EventPublic | undefined;
+  const ev = byId[eventId] as EventPublic | undefined | any;
   const loadingEvent = loadingId === eventId;
 
   // booking UI state (outside modal)
@@ -137,7 +137,8 @@ export default function EventPage() {
 
   const selectedTicket = useMemo(
     () =>
-      ev?.TicketType?.find((t) => t.ticketTypeId === selectedTicketId) ?? null,
+      ev?.TicketType?.find((t: any) => t.ticketTypeId === selectedTicketId) ??
+      null,
     [ev, selectedTicketId],
   );
 
