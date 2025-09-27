@@ -120,8 +120,3 @@ networks:
 volumes:
   nginx-cache:
     driver: local
-    driver_opts:
-      # For better performance, you can mount this to SSD storage
-      type: none
-      o: bind
-      device: /opt/nginx-cache  # Create this directory on host SSD
