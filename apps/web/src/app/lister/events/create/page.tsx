@@ -343,7 +343,7 @@ export default function CreateEventPage() {
             Banners & images (required)
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {(
               [
                 { key: "banner_horizontal", label: "Horizontal" },
@@ -409,7 +409,7 @@ export default function CreateEventPage() {
             })}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
             <div className="space-y-2">
               <div className="text-xs text-zinc-400">
                 Sample Poster (optional)
@@ -480,7 +480,7 @@ export default function CreateEventPage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="text-xs text-zinc-400">Date *</label>
             <input
@@ -536,22 +536,22 @@ export default function CreateEventPage() {
           {tickets.map((t, i) => (
             <div
               key={i}
-              className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center border-b border-zinc-800 pb-3"
+              className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center border-b border-zinc-800 pb-3"
             >
               <input
-                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 sm:col-span-3"
+                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 md:col-span-3"
                 placeholder="Name *"
                 value={t.name}
                 onChange={(e) => updateTicket(i, "name", e.target.value)}
               />
               <input
-                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 sm:col-span-3"
+                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 md:col-span-3"
                 placeholder="Short description"
                 value={t.description}
                 onChange={(e) => updateTicket(i, "description", e.target.value)}
               />
               <input
-                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 sm:col-span-1"
+                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 md:col-span-1"
                 placeholder="Price"
                 type="number"
                 min={0}
@@ -565,7 +565,7 @@ export default function CreateEventPage() {
                 }
               />
               <input
-                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 sm:col-span-1"
+                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 md:col-span-1"
                 placeholder="Qty"
                 type="number"
                 min={1}
@@ -578,7 +578,7 @@ export default function CreateEventPage() {
                   )
                 }
               />
-              <div className="sm:col-span-3">
+              <div className="md:col-span-3">
                 <label className="text-xs text-zinc-400">
                   Sales cutoff (optional)
                 </label>
@@ -591,7 +591,7 @@ export default function CreateEventPage() {
                   }
                 />
               </div>
-              <div className="flex items-center gap-2 sm:col-span-1">
+              <div className="flex items-center gap-2 md:col-span-1">
                 <button
                   type="button"
                   onClick={() => removeTicket(i)}
@@ -621,16 +621,16 @@ export default function CreateEventPage() {
           {customFields.map((c, i) => (
             <div
               key={i}
-              className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center"
+              className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center"
             >
               <input
-                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 sm:col-span-4"
+                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 md:col-span-4"
                 placeholder="Label"
                 value={c.label}
                 onChange={(e) => updateCustom(i, "label", e.target.value)}
               />
               <select
-                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 sm:col-span-3"
+                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 md:col-span-3"
                 value={c.fieldType}
                 onChange={(e) => updateCustom(i, "fieldType", e.target.value)}
               >
@@ -640,12 +640,12 @@ export default function CreateEventPage() {
                 <option value="dropdown">Dropdown</option>
               </select>
               <input
-                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 sm:col-span-3"
+                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 md:col-span-3"
                 placeholder="Options (comma or JSON)"
                 value={c.options || ""}
                 onChange={(e) => updateCustom(i, "options", e.target.value)}
               />
-              <label className="flex items-center gap-2 text-xs sm:col-span-1">
+              <label className="flex items-center gap-2 text-xs md:col-span-1">
                 <input
                   type="checkbox"
                   checked={c.required}
@@ -658,7 +658,7 @@ export default function CreateEventPage() {
               <button
                 type="button"
                 onClick={() => removeCustom(i)}
-                className="text-red-400 hover:text-red-500 text-xs sm:col-span-1"
+                className="text-red-400 hover:text-red-500 text-xs md:col-span-1"
               >
                 delete
               </button>
@@ -668,7 +668,7 @@ export default function CreateEventPage() {
 
         <section className="space-y-2">
           <h2 className="text-sm font-semibold text-zinc-100">Admin details</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input
               className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100"
               placeholder="Requested Venue"

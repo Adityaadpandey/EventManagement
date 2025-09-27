@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "./_components/Navbar";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
@@ -17,8 +16,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <main className="flex flex-col min-h-screen bg-zinc-950 text-white">
-            <Navbar />
+          <main className="flex flex-col h-screen relative overflow-auto">
             {children}
           </main>
         </Providers>
