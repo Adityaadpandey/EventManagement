@@ -3,7 +3,7 @@ import { cpus } from "node:os";
 import { startServer } from "./app";
 import logger from "./config/logger";
 
-const numCPUs = Math.min(cpus().length); // Limit to 2 for your server
+const numCPUs = Math.min(cpus().length);
 
 if (cluster.isPrimary) {
   logger.info(`Primary process ${process.pid} is running`);
