@@ -1,6 +1,7 @@
 "use client";
 
 import Modal from "@/app/_components/Modal";
+import ReadMore from "@/app/_components/ReadMore";
 import api from "@/lib/api";
 import {
   hydrateSession,
@@ -416,18 +417,17 @@ export default function EventPage() {
           },
           handler: async (resp: any) => {
             try {
-              // backend verify requires auth middleware (so include token)
               await api.post(
                 "/payment/verify",
                 {
-                  razorpay_order_id: resp?.razorpay_order_id,
-                  razorpay_payment_id: resp?.razorpay_payment_id,
-                  razorpay_signature: resp?.razorpay_signature,
+                  razorpay_order_id: resp.razorpay_order_id,
+                  razorpay_payment_id: resp.razorpay_payment_id,
+                  razorpay_signature: resp.razorpay_signature,
+                  ticketId,
                 },
                 serverConfig,
               );
 
-              // success navigation
               const gotoId = ticketId || data?.ticket?.id || data?.ticketId;
               if (gotoId) {
                 router.push(`/ticket/${gotoId}`);
@@ -435,7 +435,6 @@ export default function EventPage() {
                 router.push("/tickets/my-tickets");
               }
             } catch (verifyErr: any) {
-              // try to mark payment failure for the created ticket
               if (ticketId) {
                 try {
                   await api.post(
@@ -452,6 +451,7 @@ export default function EventPage() {
               );
             }
           },
+
           modal: {
             ondismiss: async () => {
               try {
@@ -513,11 +513,11 @@ export default function EventPage() {
 
   // main page render
   return (
-    <div className="max-w-6xl md:w-[80vw] mx-auto px-4 py-8">
-      <div className="flex gap-6">
+    <div className="max-w-6xl md:w-[80vw] mx-auto px-4 py-8 pb-48">
+      <div className="flex gap-6 md:flex-row flex-col">
         {/* Left: event details */}
         <div className="space-y-5">
-          <div className="relative w-[36.319vw] h-[36.319vw] rounded-[1.3888888vw] overflow-hidden bg-zinc-800">
+          <div className="relative md:w-[36.319vw] md:h-[36.319vw] w-[91.794vw] h-[91.794vw] md:rounded-[1.3888888vw] rounded-[5.128vw] overflow-hidden bg-zinc-800">
             {ev.banner_square || ev.banner_horizontal ? (
               <img
                 src={ev.banner_square || ev.banner_horizontal!}
@@ -531,8 +531,6 @@ export default function EventPage() {
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
           </div>
-
-          <div>About organiser</div>
         </div>
 
         {/* Right: booking summary + open modal */}
@@ -540,7 +538,7 @@ export default function EventPage() {
           <div className="flex flex-col gap-4 bg-white rounded-[1.3888888vw] py-5 px-4">
             <h1 className="text-3xl font-semibold leading-none">{ev.title}</h1>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <div className="bg-[#EBF9FF] rounded-full text-[12px] py-1 px-2">
                 Car show
               </div>
@@ -560,18 +558,7 @@ export default function EventPage() {
 
             <div className="px-6 py-5 bg-[#F5F5F5] rounded-[0.833333vw]">
               <div className="flex gap-2 items-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="19"
-                  height="20"
-                  viewBox="0 0 19 20"
-                  fill="none"
-                >
-                  <path
-                    d="M9.33332 2.2222C5.04776 2.2222 1.55554 5.71442 1.55554 9.99998C1.55554 14.2855 5.04776 17.7778 9.33332 17.7778C13.6189 17.7778 17.1111 14.2855 17.1111 9.99998C17.1111 5.71442 13.6189 2.2222 9.33332 2.2222ZM12.7167 12.7766C12.6078 12.9633 12.4133 13.0644 12.2111 13.0644C12.11 13.0644 12.0089 13.0411 11.9155 12.9789L9.50443 11.54C8.90554 11.1822 8.46221 10.3966 8.46221 9.70442V6.51553C8.46221 6.19664 8.72665 5.9322 9.04554 5.9322C9.36443 5.9322 9.62888 6.19664 9.62888 6.51553V9.70442C9.62888 9.98442 9.86221 10.3966 10.1033 10.5366L12.5144 11.9755C12.7944 12.1389 12.8878 12.4966 12.7167 12.7766Z"
-                    fill="#1E1E1E"
-                  />
-                </svg>
+                <img src="/svgs/clock.svg" alt="" />
 
                 <h6>5:00PM to 7:00PM</h6>
               </div>
@@ -581,26 +568,29 @@ export default function EventPage() {
           <div className="space-y-4 bg-white px-5 py-4 rounded-[1.3888888vw]">
             <h6>About Event</h6>
 
-            <p className="text-[#8B8B8B]">{ev.description}</p>
-          </div>
-
-          <div className="flex items-center gap-3 p-1 pl-4 rounded-full bg-white">
-            <div className="flex flex-col gap-1 w-15">
-              <span className="text-[#8B8B8B] shrink-0">Starts at</span>
-
-              <h2 className="shrink-0">₹{ev.TicketType[0].price}</h2>
-            </div>
-            <button
-              onClick={openModal}
-              className="bg-[#FFE348] py-7 rounded-full w-full border-b-2 border-[#FFDA0A]"
-            >
-              <div className="flex justify-center items-center gap-2">
-                <img src="/svgs/ticket.svg" alt="" />
-                <h3>Book Ticket</h3>
-              </div>
-            </button>
+            <ReadMore text={ev.description} maxLength={2240} />
           </div>
         </aside>
+      </div>
+
+      <div className="mt-4">About organiser</div>
+
+      <div className="flex items-center gap-6 md:p-1 md:pl-8 rounded-full md:bg-white fixed bottom-7 md:w-full md:max-w-[524px] max-w-[358px] w-[92vw] -translate-x-[50%] left-[50%]">
+        <div className="md:flex hidden flex-col gap-1 w-15">
+          <span className="text-[#8B8B8B] shrink-0">Starts at</span>
+
+          <h2 className="shrink-0">₹{ev.TicketType[0].price}</h2>
+        </div>
+        <button
+          onClick={openModal}
+          className="bg-[#FFE348] md:py-7 py-5 rounded-full w-full border-b-3 border-[#FFDA0A] cursor-pointer"
+          style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
+        >
+          <div className="flex justify-center items-center gap-2">
+            <img src="/svgs/ticket.svg" alt="" />
+            <h2>Book Ticket</h2>
+          </div>
+        </button>
       </div>
 
       {/* modal */}
