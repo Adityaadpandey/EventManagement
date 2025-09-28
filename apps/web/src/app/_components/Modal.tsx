@@ -1,31 +1,12 @@
 import React from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { StepBreadcrumb } from "./StepBreadcrumb";
 
-// UI pieces: greyscale styles only
-const StepBreadcrumb = ({ step }: { step: number }) => {
-  const labels = ["Ticket Types", "Details", "Checkout"];
-  return (
-    <div className="flex items-center gap-3 mb-4 text-xs text-zinc-400">
-      {labels.map((l, i) => (
-        <div key={l} className="flex items-center gap-2">
-          <div
-            className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] ${
-              i === step
-                ? "bg-zinc-300 text-zinc-900"
-                : i < step
-                  ? "bg-zinc-600 text-zinc-100"
-                  : "bg-zinc-800 text-zinc-400"
-            }`}
-          >
-            {i + 1}
-          </div>
-          <div className={`${i === step ? "text-zinc-100" : "text-zinc-400"}`}>
-            {l}
-          </div>
-          {i < labels.length - 1 && <div className="mx-2 text-zinc-700">/</div>}
-        </div>
-      ))}
-    </div>
-  );
+const stepVariants = {
+  initial: { opacity: 0, y: 40, x: 40 },
+  animate: { opacity: 1, y: 0, x: 0 },
+  exit: { opacity: 0, y: -40, x: -40 },
+  transition: { duration: 0.4, ease: "easeOut" },
 };
 
 interface ModalProps {
@@ -42,7 +23,7 @@ interface ModalProps {
   selectTicketType: (id: string) => void;
   fmtCurrency: (amount: number) => string;
   localAuthMsg: string | null;
-  setLocalAuthMsg: (msg: string | null) => void; // Added this
+  setLocalAuthMsg: (msg: string | null) => void;
   authForm: any;
   onAuthChange: (
     key: string,
@@ -79,7 +60,7 @@ const Modal: React.FC<ModalProps> = ({
   selectTicketType,
   fmtCurrency,
   localAuthMsg,
-  setLocalAuthMsg, // Added this parameter
+  setLocalAuthMsg,
   authForm,
   onAuthChange,
   isAuthenticated,
@@ -102,340 +83,408 @@ const Modal: React.FC<ModalProps> = ({
   if (!modalOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-white/60 backdrop-blur-xl">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60" onClick={closeModal} />
+      <div className="absolute inset-0" onClick={closeModal} />
 
-      <div
+      {/* Modal */}
+      <motion.div
         role="dialog"
         aria-modal="true"
-        className="relative max-w-2xl w-full bg-zinc-900 border border-zinc-700 rounded-lg p-6 z-10"
+        className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[8.9vw] sm:pt-9 pt-2 z-10 overflow-hidden"
+        style={{
+          boxShadow: "0 0 54px 10px rgba(0, 0, 0, 0.08)",
+          touchAction: "none", // Prevents scroll conflict while dragging
+        }}
         onClick={(e) => e.stopPropagation()}
+        layout
+        initial={{
+          y:
+            typeof window !== "undefined" && window.innerWidth < 768
+              ? "100%"
+              : 0,
+          opacity: 0,
+        }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        drag={
+          typeof window !== "undefined" && window.innerWidth < 768 ? "y" : false
+        }
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.2}
+        onDragEnd={(event, info) => {
+          if (info.point.y > 100) {
+            closeModal();
+          }
+        }}
       >
-        {/* Header */}
-        <div className="flex justify-between items-start">
-          <h3 className="text-lg font-semibold text-zinc-100">Book tickets</h3>
-          <button
-            aria-label="Close"
-            onClick={closeModal}
-            className="text-zinc-400 hover:text-zinc-200"
-          >
-            ✕
-          </button>
+        <div className="w-full flex md:flex-row flex-col justify-center items-center md:pt-4 gap-6">
+          <img src="/svgs/DraswerDash.svg" alt="" className="md:hidden" />
+          <StepBreadcrumb step={modalStep} />
         </div>
 
-        <StepBreadcrumb step={modalStep} />
-
-        {/* Step 0: Ticket selection */}
-        {modalStep === 0 && (
-          <div className="space-y-4">
-            <div className="text-sm text-zinc-300">Choose ticket type</div>
-            <div className="space-y-3">
-              {ev.TicketType.map((t: any) => {
-                const active = t.ticketTypeId === selectedTicketId;
-                return (
-                  <div
-                    key={t.ticketTypeId}
-                    className={`flex items-center justify-between gap-4 p-3 rounded border ${
-                      active ? "border-zinc-500 bg-zinc-800" : "border-zinc-700"
-                    }`}
-                  >
-                    <div>
-                      <div className="font-medium text-zinc-100">{t.name}</div>
-                      <div className="text-xs text-zinc-400">
-                        ₹{t.price} • {t.quantity} available
+        <AnimatePresence mode="wait" initial={false}>
+          {modalStep === 0 && (
+            <motion.div
+              key="step-0"
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              variants={stepVariants}
+              transition={stepVariants.transition}
+              className="space-y-4 md:pt-0 pt-6"
+              layout
+            >
+              <div className="text-sm">Choose ticket type</div>
+              <div className="space-y-3 md:max-h-[300px] overflow-y-auto">
+                {ev.TicketType.map((t: any) => {
+                  const active = t.ticketTypeId === selectedTicketId;
+                  return (
+                    <div
+                      key={t.ticketTypeId}
+                      className={`flex items-center justify-between gap-4 p-3 rounded-2xl ${
+                        active ? "bg-[#FFF2AB]" : "bg-[#FFF2AB]"
+                      }`}
+                    >
+                      <div>
+                        <div className="font-medium">{t.name}</div>
+                        <div className="text-xs">₹{t.price}</div>
+                      </div>
+                      <div className="flex items-center gap-2 bg-black text-white rounded-xl py-1">
+                        {active ? (
+                          <div className="flex items-center">
+                            <button
+                              onClick={decQty}
+                              className="px-3 cursor-pointer"
+                            >
+                              −
+                            </button>
+                            <h6 className="text-center bg-white text-black rounded-lg w-[43px] h-[40px] font-semibold flex items-center justify-center">
+                              {selectedQuantity}
+                            </h6>
+                            <button
+                              onClick={incQty}
+                              className="px-3 cursor-pointer"
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => selectTicketType(t.ticketTypeId)}
+                            className="px-4 py-2 rounded-xl bg-black text-white cursor-pointer"
+                          >
+                            ADD
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {active ? (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={decQty}
-                            className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-zinc-200"
-                            aria-label="Decrease"
-                          >
-                            −
-                          </button>
-                          <div className="w-10 text-center text-zinc-100">
-                            {selectedQuantity}
-                          </div>
-                          <button
-                            onClick={incQty}
-                            className="px-2 py-1 bg-zinc-800 border border-zinc-700 rounded text-zinc-200"
-                            aria-label="Increase"
-                          >
-                            +
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => selectTicketType(t.ticketTypeId)}
-                          className="px-3 py-1 bg-zinc-700 border border-zinc-700 rounded text-zinc-100"
-                        >
-                          Add
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {localAuthMsg && (
-              <div className="text-xs text-zinc-300">{localAuthMsg}</div>
-            )}
-
-            <div className="flex justify-between items-center pt-4">
-              <div className="text-sm text-zinc-400">
-                Total:{" "}
-                <span className="text-zinc-100">
-                  {fmtCurrency(
-                    (selectedTicket?.price ?? 0) * selectedQuantity * 100,
-                  )}
-                </span>
+                  );
+                })}
               </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={closeModal}
-                  className="px-4 py-2 rounded text-sm bg-zinc-800 border border-zinc-700 text-zinc-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={proceedFromTypes}
-                  className="px-4 py-2 rounded text-sm bg-zinc-700 border border-zinc-700 text-zinc-100"
-                >
-                  Proceed
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Step 1: Attendee details */}
-        {modalStep === 1 && (
-          <div className="space-y-4">
-            <div className="text-sm text-zinc-300">Enter attendee details</div>
+              {localAuthMsg && (
+                <div className="text-xs text-zinc-300">{localAuthMsg}</div>
+              )}
 
-            {isAuthenticated ? (
-              <div className="space-y-2">
-                <div className="text-xs text-zinc-400">Name</div>
-                <input
-                  value={authForm.name}
-                  onChange={onAuthChange("name")}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100"
-                  placeholder="Full name"
-                />
-                <div className="text-xs text-zinc-400">Email</div>
-                <input
-                  value={authForm.identifier}
-                  onChange={onAuthChange("identifier")}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100"
-                  placeholder="Email"
-                />
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div>
-                  <div className="text-xs text-zinc-400">Name</div>
-                  <input
-                    value={authForm.name}
-                    onChange={onAuthChange("name")}
-                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100"
-                    placeholder="Full name"
-                  />
-                </div>
-                <div>
-                  <div className="text-xs text-zinc-400">Email</div>
-                  <div className="flex gap-2">
+              <button
+                onClick={proceedFromTypes}
+                className="px-4 sm:py-7 py-6 rounded-full text-2xl bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer flex gap-3 justify-center"
+                style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
+              >
+                Proceed <img src="/svgs/arrowRight.svg" alt="" />
+              </button>
+            </motion.div>
+          )}
+
+          {modalStep === 1 && (
+            <motion.div
+              key="step-1"
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              variants={stepVariants}
+              transition={stepVariants.transition}
+              className="space-y-4 h-full w-full md:w-[796px] md:py-14 py-7 md:px-4 sm:px-0 mx-auto"
+              layout
+            >
+              <div className="space-y-4 w-full max-w-[523px] mx-auto h-[56vh] overflow-y-auto">
+                <h1>Ticket Details</h1>
+
+                <p className="text-[#8B8B8B]">
+                  You will recieve your tickets and any update about the event
+                  through these credentials, please double check them once
+                </p>
+
+                {isAuthenticated ? (
+                  <div className="space-y-2">
+                    <div className="text-base">Your Name</div>
+                    <input
+                      value={authForm.name}
+                      onChange={onAuthChange("name")}
+                      className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                      placeholder="Full name"
+                    />
+                    <div className="text-base">Email address</div>
                     <input
                       value={authForm.identifier}
                       onChange={onAuthChange("identifier")}
-                      className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100"
-                      placeholder="you@example.com"
-                      type="email"
+                      className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                      placeholder="Email"
                     />
-                    {!otpSent ? (
-                      <button
-                        onClick={sendOtp}
-                        disabled={authLoading}
-                        className="px-3 py-2 bg-zinc-700 border border-zinc-700 rounded text-zinc-100"
-                      >
-                        {authLoading ? "Sending..." : "Send OTP"}
-                      </button>
-                    ) : (
-                      <div className="px-3 py-2 text-xs text-zinc-300">
-                        OTP sent
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-base">Name</div>
+                      <input
+                        value={authForm.name}
+                        onChange={onAuthChange("name")}
+                        className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                        placeholder="Full name"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-base">Email</div>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          value={authForm.identifier}
+                          onChange={onAuthChange("identifier")}
+                          className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                          placeholder="you@example.com"
+                          type="email"
+                        />
+                        {!otpSent ? (
+                          <button
+                            onClick={sendOtp}
+                            disabled={authLoading}
+                            className="w-full sm:w-auto p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] shrink-0 text-nowrap"
+                          >
+                            {authLoading ? "Sending..." : "Send OTP"}
+                          </button>
+                        ) : (
+                          <div className="px-3 py-2 text-xs text-zinc-300 shrink-0 text-nowrap text-center flex items-center">
+                            OTP sent
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {otpSent && (
+                      <div className="space-y-2">
+                        <div className="text-xs">Enter OTP</div>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input
+                            value={authForm.otp}
+                            onChange={onAuthChange("otp")}
+                            className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                            placeholder="123456"
+                          />
+                          <button
+                            onClick={verifyEmailOtp}
+                            disabled={isVerifying}
+                            className="p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                          >
+                            {isVerifying ? "Verifying..." : "Verify"}
+                          </button>
+                        </div>
+                        <button
+                          onClick={resendOtp}
+                          disabled={resendTimer > 0 || authLoading}
+                          className={`w-full px-3 py-2 rounded text-sm text-white ${
+                            resendTimer > 0 ? "bg-zinc-400" : "bg-zinc-600"
+                          }`}
+                        >
+                          {resendTimer > 0
+                            ? `Resend in ${resendTimer}s`
+                            : "Resend OTP"}
+                        </button>
                       </div>
                     )}
                   </div>
-                </div>
+                )}
 
-                {otpSent && (
-                  <div className="space-y-2">
-                    <div className="text-xs text-zinc-400">Enter OTP</div>
-                    <div className="flex gap-2">
-                      <input
-                        value={authForm.otp}
-                        onChange={onAuthChange("otp")}
-                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100"
-                        placeholder="123456"
+                {ev.CustomField?.length > 0 && (
+                  <div className="mt-3 space-y-3">
+                    <div className="text-base">Attendee info</div>
+                    {ev.CustomField.map((cf: any, idx: number) => (
+                      <div key={cf.label + idx} className="space-y-3">
+                        <div className="text-base">
+                          {cf.label}{" "}
+                          {cf.required && (
+                            <span className="text-zinc-300">*</span>
+                          )}
+                        </div>
+                        <input
+                          value={attendee[cf.label] ?? ""}
+                          onChange={(e) =>
+                            handleAttendeeChange(cf.label, e.target.value)
+                          }
+                          placeholder={cf.fieldType}
+                          className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {localAuthMsg && (
+                  <div className="text-xs text-zinc-300">{localAuthMsg}</div>
+                )}
+                {buyError && (
+                  <div className="text-xs text-red-500">{buyError}</div>
+                )}
+              </div>
+
+              <div className="w-full flex justify-center items-center">
+                <button
+                  onClick={() => {
+                    if (!isAuthenticated && !token) {
+                      setLocalAuthMsg(
+                        "Please verify email (OTP) before proceeding.",
+                      );
+                      return;
+                    }
+                    setModalStep(2);
+                  }}
+                  className="px-6 sm:py-7 py-6 rounded-full md:text-2xl text-lg bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer max-w-[300px]"
+                  style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
+                >
+                  Continue to Checkout
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {modalStep === 2 && (
+            <motion.div
+              key="step-2"
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              variants={stepVariants}
+              transition={stepVariants.transition}
+              className="space-y-4 min-h-[80vh] md:w-[796px] md:pt-14 pt-7"
+              layout
+            >
+              <div className="space-y-4 md:w-[523px] mx-auto h-[55vh] overflow-y-auto">
+                <div className="flex flex-col md:flex-row gap-6 md:items-center bg-[#F7F7F7] p-2 rounded-[28px]">
+                  <div className="md:w-[221px] w-full h-[221px] bg-zinc-800 rounded-2xl overflow-hidden flex-shrink-0">
+                    {ev.banner_square || ev.banner_horizontal ? (
+                      <img
+                        src={ev.banner_square || ev.banner_horizontal}
+                        alt={ev.title}
+                        className="w-full h-full object-cover"
                       />
-                      <button
-                        onClick={verifyEmailOtp}
-                        disabled={isVerifying}
-                        className="px-3 py-2 bg-zinc-700 border border-zinc-700 rounded text-zinc-100"
-                      >
-                        {isVerifying ? "Verifying..." : "Verify"}
-                      </button>
-                    </div>
-                    <button
-                      onClick={resendOtp}
-                      disabled={resendTimer > 0 || authLoading}
-                      className={`w-full px-3 py-2 rounded text-sm ${
-                        resendTimer > 0
-                          ? "bg-zinc-800 text-zinc-400"
-                          : "bg-zinc-700 text-zinc-100"
-                      }`}
-                    >
-                      {resendTimer > 0
-                        ? `Resend in ${resendTimer}s`
-                        : "Resend OTP"}
-                    </button>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-zinc-500">
+                        No image
+                      </div>
+                    )}
                   </div>
+                  <div className="flex flex-col gap-12">
+                    <h1 className="font-medium">{ev.title}</h1>
+
+                    <div>
+                      <div className="flex items-center gap-2 pb-6">
+                        <img src="/svgs/calendar.svg" alt="" />
+                        <h6 className="">
+                          {ev.date &&
+                            new Date(ev.date).toLocaleDateString(undefined, {
+                              month: "long",
+                              day: "numeric",
+                            })}{" "}
+                        </h6>
+                      </div>
+
+                      <div className="flex items-center gap-2 pb-6">
+                        <img src="/svgs/clock.svg" alt="" />
+                        <h6 className="">
+                          {ev.time &&
+                            `${new Date(ev.time).toLocaleTimeString(undefined, {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })}`}
+                        </h6>
+                      </div>
+
+                      <div className="flex items-center gap-2 w-4 pb-6">
+                        <img src="/svgs/location.svg" alt="" />
+                        <h6 className="">{ev.location}</h6>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col">
+                  <div className="flex justify-between items-start mt-8 border-t pt-6">
+                    {/* Left: Name, Email, Ticket details */}
+                    <div className="flex flex-col gap-2 max-w-[60%]">
+                      <div>
+                        <strong>Name:</strong>{" "}
+                        {authForm.name || me?.name || "N/A"}
+                      </div>
+                      <div>
+                        <strong>Email:</strong>{" "}
+                        {authForm.identifier || me?.email || "N/A"}
+                      </div>
+                      <div>
+                        <strong>Ticket details:</strong> {selectedTicket?.name}{" "}
+                        ₹{selectedTicket?.price} x {selectedQuantity}
+                      </div>
+                    </div>
+
+                    {/* Right: Subtotal, GST, Total */}
+                    <div className="flex flex-col gap-2 text-right max-w-[35%]">
+                      <div>
+                        <span className="text-zinc-500">Subtotal:</span>{" "}
+                        <span>₹{selectedTicket?.price * selectedQuantity}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500">GST (18%):</span>{" "}
+                        <span>
+                          ₹ 0
+                          {/* {(
+                            (selectedTicket?.price ?? 0) *
+                            selectedQuantity *
+                            0.18
+                          ).toFixed(2)} */}
+                        </span>
+                      </div>
+                      <div className="font-semibold text-lg">
+                        <span>Total:</span>{" "}
+                        <span>
+                          ₹
+                          {(
+                            (selectedTicket?.price ?? 0) * selectedQuantity
+                          ).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {buyError && (
+                  <div className="text-sm text-red-500 mt-2">{buyError}</div>
                 )}
               </div>
-            )}
 
-            {ev.CustomField?.length > 0 && (
-              <div className="mt-3 space-y-3">
-                <div className="text-xs text-zinc-400 font-medium">
-                  Attendee info
-                </div>
-                {ev.CustomField.map((cf: any, idx: number) => (
-                  <div key={cf.label + idx}>
-                    <div className="text-xs text-zinc-400 mb-1">
-                      {cf.label}{" "}
-                      {cf.required && <span className="text-zinc-300">*</span>}
-                    </div>
-                    <input
-                      value={attendee[cf.label] ?? ""}
-                      onChange={(e) =>
-                        handleAttendeeChange(cf.label, e.target.value)
-                      }
-                      placeholder={cf.fieldType}
-                      className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {localAuthMsg && (
-              <div className="text-xs text-zinc-300">{localAuthMsg}</div>
-            )}
-            {buyError && <div className="text-xs text-red-500">{buyError}</div>}
-
-            <div className="flex justify-between items-center pt-4">
-              <button
-                onClick={() => setModalStep(0)}
-                className="px-4 py-2 rounded text-sm bg-zinc-800 border border-zinc-700 text-zinc-200"
-              >
-                Back
-              </button>
-              <button
-                onClick={() => {
-                  if (!isAuthenticated && !token) {
-                    setLocalAuthMsg(
-                      "Please verify email (OTP) before proceeding.",
-                    );
-                    return;
-                  }
-                  setModalStep(2);
-                }}
-                className="px-4 py-2 rounded text-sm bg-zinc-700 border border-zinc-700 text-zinc-100"
-              >
-                Continue to Checkout
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Checkout */}
-        {modalStep === 2 && (
-          <div className="space-y-4">
-            <div className="text-sm text-zinc-300">Review & Checkout</div>
-            <div className="flex gap-4">
-              <div className="w-28 h-28 bg-zinc-800 rounded overflow-hidden flex-shrink-0">
-                {ev.banner_square || ev.banner_horizontal ? (
-                  <img
-                    src={ev.banner_square || ev.banner_horizontal}
-                    alt={ev.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-zinc-500">
-                    No image
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <div className="font-medium text-zinc-100">{ev.title}</div>
-                <div className="text-xs text-zinc-400">
-                  {ev.date && new Date(ev.date).toLocaleDateString()}{" "}
-                  {ev.time && `• ${new Date(ev.time).toLocaleTimeString()}`}
-                </div>
-                <div className="mt-3">
-                  <div className="text-xs text-zinc-400">Ticket</div>
-                  <div className="flex justify-between mt-1">
-                    <div className="text-zinc-100">{selectedTicket?.name}</div>
-                    <div className="text-zinc-100">
-                      {fmtCurrency(
-                        (selectedTicket?.price ?? 0) * selectedQuantity * 100,
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-xs text-zinc-400 mt-1">
-                    Quantity: {selectedQuantity}
-                  </div>
-                  <div className="text-xs text-zinc-400 mt-2">
-                    Attendee: {me?.name ?? authForm.name} —{" "}
-                    {me?.email ?? authForm.identifier}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {buyError && (
-              <div className="text-sm text-red-500 mt-2">{buyError}</div>
-            )}
-
-            <div className="flex justify-between items-center pt-4">
-              <button
-                onClick={() => setModalStep(1)}
-                className="px-4 py-2 rounded text-sm bg-zinc-800 border border-zinc-700 text-zinc-200"
-              >
-                Back
-              </button>
-              <div className="flex items-center gap-3">
-                <div className="text-sm text-zinc-400">Total</div>
-                <div className="font-semibold text-zinc-100">
-                  {fmtCurrency(
-                    (selectedTicket?.price ?? 0) * selectedQuantity * 100,
-                  )}
-                </div>
+              <div className="w-full flex justify-center">
                 <button
                   onClick={onBuy}
                   disabled={buying}
-                  className="px-4 py-2 rounded text-sm bg-zinc-700 border border-zinc-700 text-zinc-100"
+                  className="px-4 sm:py-7 py-6 rounded-full text-xl bg-[#FFE348] w-[300px] border-b-3 border-[#FFDA0A] cursor-pointer mx-auto"
+                  style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
                 >
-                  {buying ? "Processing..." : "Checkout"}
+                  {buying ? "Processing..." : "Proceed to Payment"}
                 </button>
               </div>
-            </div>
-          </div>
-        )}
-      </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 };
