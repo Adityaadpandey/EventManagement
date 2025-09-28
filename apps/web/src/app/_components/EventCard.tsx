@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 
 interface EventCardProps {
@@ -57,7 +59,7 @@ const EventCard: React.FC<EventCardProps> = ({
         <div className="flex flex-col gap-1">
           <h1>{title}</h1>
           <h6 className="text-[#8B8B8B]">
-            {location} . {formattedDate}
+            {location} • {formattedDate}
           </h6>
         </div>
 

@@ -67,7 +67,6 @@ h5 {
 
 h6 {
   font-feature-settings: "liga" off;
-  font-weight: 500;
   letter-spacing: -2%;
   line-height: 100%;
   @apply md:text-sm text-xs leading-none;
