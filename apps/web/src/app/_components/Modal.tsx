@@ -94,7 +94,7 @@ const Modal: React.FC<ModalProps> = ({
         className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[8.9vw] sm:pt-9 pt-2 z-10 overflow-hidden"
         style={{
           boxShadow: "0 0 54px 10px rgba(0, 0, 0, 0.08)",
-          touchAction: "none", // Prevents scroll conflict while dragging
+          touchAction: "none",
         }}
         onClick={(e) => e.stopPropagation()}
         layout
@@ -112,7 +112,7 @@ const Modal: React.FC<ModalProps> = ({
           typeof window !== "undefined" && window.innerWidth < 768 ? "y" : false
         }
         dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.2}
+        dragElastic={0.3}
         onDragEnd={(event, info) => {
           if (info.point.y > 100) {
             closeModal();
@@ -328,16 +328,17 @@ const Modal: React.FC<ModalProps> = ({
                     ))}
                   </div>
                 )}
+              </div>
 
+              <div className="w-full flex flex-col gap-2 justify-center items-center">
                 {localAuthMsg && (
-                  <div className="text-xs text-zinc-300">{localAuthMsg}</div>
+                  <div className="text-xs text-red-500">{localAuthMsg}</div>
                 )}
+
                 {buyError && (
                   <div className="text-xs text-red-500">{buyError}</div>
                 )}
-              </div>
 
-              <div className="w-full flex justify-center items-center">
                 <button
                   onClick={() => {
                     if (!isAuthenticated && !token) {
@@ -348,7 +349,7 @@ const Modal: React.FC<ModalProps> = ({
                     }
                     setModalStep(2);
                   }}
-                  className="px-6 sm:py-7 py-6 rounded-full md:text-2xl text-lg bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer max-w-[300px]"
+                  className="px-6 sm:py-7 py-6 rounded-full md:text-xl text-base bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer max-w-[300px]"
                   style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
                 >
                   Continue to Checkout
