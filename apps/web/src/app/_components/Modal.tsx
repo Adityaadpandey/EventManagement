@@ -85,7 +85,12 @@ const Modal: React.FC<ModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-white/60 backdrop-blur-xl">
       {/* Backdrop */}
-      <div className="absolute inset-0" onClick={closeModal} />
+      <div
+        className="absolute inset-0"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) closeModal();
+        }}
+      />
 
       {/* Modal */}
       <motion.div
@@ -114,7 +119,7 @@ const Modal: React.FC<ModalProps> = ({
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={0.3}
         onDragEnd={(event, info) => {
-          if (info.point.y > 100) {
+          if (info.offset.y > 100) {
             closeModal();
           }
         }}
