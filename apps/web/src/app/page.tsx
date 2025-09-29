@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { fetchPublicEvents } from "@/lib/features/eventsSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import EventCard from "./_components/EventCard";
 import NavBar from "./_components/Navbar";
 import Footer from "./_components/Footer";
