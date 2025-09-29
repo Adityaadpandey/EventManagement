@@ -16,6 +16,7 @@
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
     "lucide-react": "^0.541.0",
+    "lucide-react\n": "link:@types/lucide-react\n",
     "next": "15.4.6",
     "qrcode.react": "^4.2.0",
     "react": "19.1.0",
