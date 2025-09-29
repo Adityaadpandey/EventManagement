@@ -1,32 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import QRCode from "react-qr-code";
 import api from "@/lib/api";
 
 type Ticket = {
   ticketId: string;
-  status: string;
-  event: {
-    eventId: string;
-    title: string;
-    date?: string | null;
-    location?: string | null;
-  };
+  qrCode: string;
   totalPrice?: number;
   createdAt?: string;
+  ticketType?: {
+    event?: {
+      title?: string;
+      location?: string;
+      date?: string;
+      banner_square?: string;
+    };
+  };
 };
 
 export default function MyTicketsPage() {
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
       try {
-        setLoading(true);
         const res = await api.get("/ticket/my-tickets");
         if (!cancelled) setTickets(res.data?.data || []);
       } catch (e: any) {
@@ -36,43 +40,64 @@ export default function MyTicketsPage() {
         if (!cancelled) setLoading(false);
       }
     })();
+
     return () => {
       cancelled = true;
     };
   }, []);
 
-  if (loading) return <div className="p-6">Loading tickets...</div>;
-  if (err) return <div className="p-6 text-red-600">{err}</div>;
-
+  if (loading)
+    return (
+      <div className="p-6 text-center text-gray-600">Loading tickets...</div>
+    );
+  if (err) return <div className="p-6 text-center text-red-500">{err}</div>;
   if (!tickets.length)
-    return <div className="p-6">You have no tickets yet.</div>;
+    return (
+      <div className="p-6 text-center text-gray-600">
+        You have no tickets yet.
+      </div>
+    );
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-4">
-      <h1 className="text-xl font-semibold">My Tickets</h1>
-      <div className="grid gap-4">
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6 pb-48">
+      <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
+        🎫 My Tickets
+      </h1>
+
+      <div className="flex flex-col gap-6">
         {tickets.map((t) => (
           <div
             key={t.ticketId}
-            className="border rounded p-4 flex justify-between items-center"
+            className="flex flex-col sm:flex-row justify-between items-center bg-white border border-gray-200 rounded-xl shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition"
+            onClick={() => router.push(`/tickets/${t.ticketId}`)}
           >
-            <div>
-              <div className="font-medium">{t.event.title}</div>
-              <div className="text-sm opacity-80">
-                {t.event.location} · {t.event.date}
-              </div>
-              <div className="text-sm opacity-70 mt-1">
-                Status: <strong>{t.status}</strong>
-              </div>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <div className="text-sm">₹{(t.totalPrice ?? 0) / 100}</div>
-              <Link
-                href={`/ticket/${t.ticketId}`}
-                className="px-3 py-1 border rounded text-sm"
-              >
-                View
-              </Link>
+            {/* Left: Event Banner */}
+            {t.ticketType?.event?.banner_square && (
+              <div
+                className="w-full sm:w-32 h-32 sm:h-32 flex-shrink-0 bg-center bg-cover"
+                style={{
+                  backgroundImage: `url(${t.ticketType.event.banner_square})`,
+                }}
+              ></div>
+            )}
+
+            {/* Middle: Ticket info */}
+            <div className="flex-1 p-4 sm:px-6 space-y-1">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
+                {t.ticketType?.event?.title || "Unknown Event"}
+              </h2>
+              <p className="text-sm text-gray-500">
+                {t.ticketType?.event?.location || "Unknown Location"}
+              </p>
+              {t.ticketType?.event?.date && (
+                <p className="text-sm text-gray-500">
+                  Date: {new Date(t.ticketType.event.date).toLocaleDateString()}
+                </p>
+              )}
+              <p className="text-sm text-gray-500">
+                Price: ₹{t.totalPrice ?? 0} | Booked:{" "}
+                {t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "-"}
+              </p>
             </div>
           </div>
         ))}
