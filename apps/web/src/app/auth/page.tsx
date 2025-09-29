@@ -1,385 +1,235 @@
-// "use client";
+"use client";
 
-// import { useEffect, useMemo, useState } from "react";
-// import { useRouter } from "next/navigation";
-// import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-// import {
-//   hydrateSession,
-//   logout,
-//   requestOtp,
-//   verifyOtp,
-// } from "@/lib/features/authSlice";
-// import api from "@/lib/api";
+import { useState, useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import {
+  requestOtp,
+  verifyOtp,
+  hydrateSession,
+} from "@/lib/features/authSlice";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 
-// function Label({ children }: { children: React.ReactNode }) {
-//   return (
-//     <label className="block text-sm font-medium text-zinc-300">
-//       {children}
-//     </label>
-//   );
-// }
-// function TextInput({
-//   name,
-//   value,
-//   onChange,
-//   type = "text",
-//   placeholder,
-//   disabled,
-// }: {
-//   name: string;
-//   value: string;
-//   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-//   type?: string;
-//   placeholder?: string;
-//   disabled?: boolean;
-// }) {
-//   return (
-//     <input
-//       name={name}
-//       value={value}
-//       onChange={onChange}
-//       type={type}
-//       placeholder={placeholder}
-//       disabled={disabled}
-//       className={`w-full rounded-lg border p-3 text-sm focus:outline-none focus:ring-2 transition-all
-//         ${disabled ? "bg-zinc-800 text-zinc-500" : "bg-zinc-900 text-white focus:ring-zinc-500"}
-//         border-zinc-700 placeholder-zinc-500`}
-//     />
-//   );
-// }
-// function Button({
-//   children,
-//   onClick,
-//   disabled,
-//   variant = "primary",
-//   type = "button",
-// }: {
-//   children: React.ReactNode;
-//   onClick?: () => void;
-//   disabled?: boolean;
-//   variant?: "primary" | "neutral" | "danger" | "ghost";
-//   type?: "button" | "submit";
-// }) {
-//   const base =
-//     "w-full rounded-lg font-semibold p-3 transition duration-200 focus:ring-4";
-//   const palette =
-//     variant === "primary"
-//       ? "bg-zinc-700 hover:bg-zinc-600 text-white focus:ring-zinc-500"
-//       : variant === "neutral"
-//         ? "bg-zinc-800 hover:bg-zinc-700 text-white focus:ring-zinc-600"
-//         : variant === "danger"
-//           ? "bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-zinc-200 focus:ring-zinc-700"
-//           : "bg-transparent hover:bg-zinc-800 text-zinc-300";
-//   return (
-//     <button
-//       type={type}
-//       onClick={onClick}
-//       disabled={disabled}
-//       className={`${base} ${palette} disabled:opacity-60`}
-//     >
-//       {children}
-//     </button>
-//   );
-// }
-// function Divider() {
-//   return <div className="h-px bg-zinc-800 my-4" />;
-// }
-// function SkeletonBlock({ h = "h-10" }: { h?: string }) {
-//   return <div className={`w-full ${h} rounded-lg bg-zinc-800 animate-pulse`} />;
-// }
-
-// export default function Auth() {
-//   const dispatch = useAppDispatch();
-//   const router = useRouter();
-
-//   const { user, token, loading, error, otpSent, hydrated } = useAppSelector(
-//     (s) => s.auth,
-//   );
-
-//   const [form, setForm] = useState({ phone: "", otp: "", name: "", email: "" });
-//   const [showSignup, setShowSignup] = useState(false);
-//   const [resendTimer, setResendTimer] = useState(0);
-//   const [savingProfile, setSavingProfile] = useState(false);
-
-//   useEffect(() => {
-//     dispatch(hydrateSession());
-//   }, [dispatch]);
-
-//   useEffect(() => {
-//     if (user) {
-//       setForm((f) => ({
-//         ...f,
-//         phone: user.phone || f.phone,
-//         name: user.name || "",
-//         email: user.email || "",
-//       }));
-//     }
-//   }, [user]);
-
-//   useEffect(() => {
-//     if (resendTimer <= 0) return;
-//     const t = setInterval(() => {
-//       setResendTimer((v) => (v > 0 ? v - 1 : 0));
-//     }, 1000);
-//     return () => clearInterval(t);
-//   }, [resendTimer]);
-
-//   // after we’re hydrated, decide whether to redirect
-//   const shouldRedirectHome = useMemo(
-//     () => Boolean(hydrated && token && user && user.name && user.email),
-//     [hydrated, token, user],
-//   );
-//   useEffect(() => {
-//     if (shouldRedirectHome) {
-//       router.replace("/");
-//     }
-//   }, [shouldRedirectHome, router]);
-
-//   const needsProfile = useMemo(
-//     () => Boolean(hydrated && token && user && (!user?.name || !user?.email)),
-//     [hydrated, token, user],
-//   );
-
-//   const onChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-//     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
-
-//   const sendOtp = () => {
-//     if (!form.phone.trim()) return alert("Phone number is required");
-//     dispatch(requestOtp(form.phone));
-//     setResendTimer(45);
-//   };
-
-//   const verify = async () => {
-//     if (!form.phone.trim() || !form.otp.trim())
-//       return alert("Phone and OTP are required");
-//     await dispatch(
-//       verifyOtp({
-//         phone: form.phone.trim(),
-//         otp: form.otp.trim(),
-//         name: showSignup && form.name.trim() ? form.name.trim() : undefined,
-//         email: showSignup && form.email.trim() ? form.email.trim() : undefined,
-//       }),
-//     );
-//   };
-
-//   const saveProfile = async () => {
-//     if (!form.name.trim() || !form.email.trim())
-//       return alert("Name and Email are required");
-//     try {
-//       setSavingProfile(true);
-//       await api.patch("/user/profile", {
-//         name: form.name.trim(),
-//         email: form.email.trim(),
-//       });
-//       await dispatch(hydrateSession());
-//     } catch (e: any) {
-//       alert(
-//         e?.response?.data?.message || e?.message || "Failed to save profile",
-//       );
-//     } finally {
-//       setSavingProfile(false);
-//     }
-//   };
-
-//   if (!hydrated && !token) {
-//     return (
-//       <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white px-4">
-//         <div className="w-full max-w-md bg-zinc-900 rounded-xl border border-zinc-800 p-8 space-y-4">
-//           <SkeletonBlock h="h-8" />
-//           <Divider />
-//           <SkeletonBlock />
-//           <SkeletonBlock />
-//           <SkeletonBlock />
-//           <Divider />
-//           <SkeletonBlock />
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   if (shouldRedirectHome) {
-//     return (
-//       <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-white px-4">
-//         <div className="w-full max-w-md bg-zinc-900 rounded-xl border border-zinc-800 p-8 space-y-4">
-//           <SkeletonBlock h="h-6" />
-//           <SkeletonBlock />
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="min-h-screen w-full flex items-center justify-center bg-zinc-950 text-white px-4">
-//       <div className="w-full max-w-md bg-zinc-900 rounded-xl shadow-xl p-4 border border-zinc-800 space-y-6">
-//         <div className="text-center space-y-1">
-//           <h1 className="text-2xl font-bold text-zinc-100">
-//             {token ? "Welcome" : "Sign in with Phone"}
-//           </h1>
-//           <p className="text-xs text-zinc-400">
-//             {token
-//               ? needsProfile
-//                 ? "Finish your profile to continue"
-//                 : "You are signed in"
-//               : "We’ll text you a one-time code to verify"}
-//           </p>
-//         </div>
-
-//         {!token && (
-//           <div className="space-y-4">
-//             <div className="space-y-2">
-//               <Label>Phone</Label>
-//               <div className="flex flex-col gap-2">
-//                 <TextInput
-//                   name="phone"
-//                   value={form.phone}
-//                   onChange={onChange}
-//                   type="tel"
-//                   placeholder="+91 98XXXXXXXX"
-//                 />
-//                 <Button
-//                   onClick={sendOtp}
-//                   disabled={loading || !form.phone.trim()}
-//                 >
-//                   {otpSent ? "Code Sent" : loading ? "Sending..." : "Get Code"}
-//                 </Button>
-//               </div>
-//               {otpSent && (
-//                 <p className="text-xs text-zinc-500">
-//                   We’ve sent a code to your phone.{" "}
-//                   {resendTimer > 0 ? `Resend in ${resendTimer}s` : ""}
-//                 </p>
-//               )}
-//             </div>
-
-//             {otpSent && (
-//               <div className="space-y-2">
-//                 <Label>Verification Code</Label>
-//                 <div className="flex gap-2">
-//                   <TextInput
-//                     name="otp"
-//                     value={form.otp}
-//                     onChange={onChange}
-//                     placeholder="Enter OTP"
-//                   />
-//                   <Button
-//                     onClick={verify}
-//                     disabled={loading || !form.otp.trim()}
-//                   >
-//                     {loading ? "Verifying..." : "Verify"}
-//                   </Button>
-//                 </div>
-//                 <div className="flex gap-2">
-//                   <Button
-//                     variant="neutral"
-//                     onClick={sendOtp}
-//                     disabled={loading || resendTimer > 0}
-//                   >
-//                     {resendTimer > 0
-//                       ? `Resend in ${resendTimer}s`
-//                       : "Resend OTP"}
-//                   </Button>
-//                   <Button
-//                     variant="ghost"
-//                     onClick={() => setShowSignup((s) => !s)}
-//                   >
-//                     {showSignup ? "Hide name & email" : "Add name & email"}
-//                   </Button>
-//                 </div>
-//               </div>
-//             )}
-
-//             {showSignup && (
-//               <>
-//                 <Divider />
-//                 <div className="space-y-3">
-//                   <div className="space-y-2">
-//                     <Label>Full Name</Label>
-//                     <TextInput
-//                       name="name"
-//                       value={form.name}
-//                       onChange={onChange}
-//                       placeholder="Your name"
-//                     />
-//                   </div>
-//                   <div className="space-y-2">
-//                     <Label>Email</Label>
-//                     <TextInput
-//                       name="email"
-//                       value={form.email}
-//                       onChange={onChange}
-//                       type="email"
-//                       placeholder="you@example.com"
-//                     />
-//                   </div>
-//                   <p className="text-xs text-zinc-500">
-//                     If your profile doesn’t have these yet, we’ll save them
-//                     after you verify.
-//                   </p>
-//                 </div>
-//               </>
-//             )}
-//           </div>
-//         )}
-
-//         {/* Logged in but missing profile → completion form */}
-//         {token && needsProfile && (
-//           <div className="space-y-4">
-//             <Divider />
-//             <div className="space-y-3">
-//               <div className="space-y-2">
-//                 <Label>Full Name</Label>
-//                 <TextInput
-//                   name="name"
-//                   value={form.name}
-//                   onChange={onChange}
-//                   placeholder="Your name"
-//                 />
-//               </div>
-//               <div className="space-y-2">
-//                 <Label>Email</Label>
-//                 <TextInput
-//                   name="email"
-//                   value={form.email}
-//                   onChange={onChange}
-//                   type="email"
-//                   placeholder="you@example.com"
-//                 />
-//               </div>
-//               <Button
-//                 onClick={saveProfile}
-//                 disabled={
-//                   savingProfile || !form.name.trim() || !form.email.trim()
-//                 }
-//               >
-//                 {savingProfile ? "Saving..." : "Save & Continue"}
-//               </Button>
-//               <p className="text-xs text-zinc-500">
-//                 We’ll only ask this once. You can edit later in your profile.
-//               </p>
-//             </div>
-//           </div>
-//         )}
-
-//         {token && !needsProfile && (
-//           <div className="space-y-3">
-//             <Button variant="danger" onClick={() => dispatch(logout())}>
-//               Sign Out
-//             </Button>
-//           </div>
-//         )}
-
-//         {error && (
-//           <div className="bg-zinc-950 text-zinc-200 border border-zinc-800 rounded p-3 text-sm">
-//             {error}
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
-
-const page = () => {
-  return <div>page</div>;
+const stepVariants = {
+  initial: { opacity: 0, y: 40, x: 40 },
+  animate: { opacity: 1, y: 0, x: 0 },
+  exit: { opacity: 0, y: -40, x: -40 },
+  transition: { duration: 0.4, ease: "easeOut" },
 };
 
-export default page;
+export default function AuthModal() {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+
+  const { user, token, otpSent, loading, error, hydrated } = useAppSelector(
+    (s) => s.auth,
+  );
+
+  const [form, setForm] = useState({ name: "", email: "", otp: "" });
+  const [localMsg, setLocalMsg] = useState<string | null>(null);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [step, setStep] = useState(0); // modal steps
+
+  // If user is already logged in → go home
+  useEffect(() => {
+    if (hydrated && token && user?.name && user?.email) {
+      router.replace("/");
+    }
+  }, [hydrated, token, user, router]);
+
+  // hydrate session on first load
+  useEffect(() => {
+    if (!hydrated) dispatch(hydrateSession());
+  }, [hydrated, dispatch]);
+
+  // resend timer
+  useEffect(() => {
+    if (!otpSent || resendTimer <= 0) return;
+    const id = setInterval(() => {
+      setResendTimer((t) => {
+        if (t <= 1) {
+          clearInterval(id);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [otpSent, resendTimer]);
+
+  const onChange =
+    (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setForm((s) => ({ ...s, [k]: e.target.value }));
+      setLocalMsg(null);
+    };
+
+  const sendOtp = async () => {
+    if (!form.email.trim() || !form.name.trim()) {
+      setLocalMsg("Name and Email are required.");
+      return;
+    }
+    try {
+      await dispatch(requestOtp(form.email)).unwrap();
+      setLocalMsg("OTP sent to your email.");
+      setResendTimer(60);
+      setStep(1);
+    } catch (err: any) {
+      setLocalMsg(err?.message || "Failed to send OTP.");
+    }
+  };
+
+  const verify = async () => {
+    if (!form.email.trim() || !form.otp.trim()) {
+      setLocalMsg("Email and OTP are required.");
+      return;
+    }
+    try {
+      await dispatch(
+        verifyOtp({
+          identifier: form.email,
+          otp: form.otp,
+          name: form.name,
+          email: form.email,
+        }),
+      ).unwrap();
+      setLocalMsg(null);
+      router.replace("/");
+    } catch (err: any) {
+      setLocalMsg(err?.message || "Invalid OTP.");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-white/60 backdrop-blur-xl">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) router.replace("/");
+        }}
+      />
+
+      {/* Modal */}
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[8.9vw] sm:pt-9 pt-2 z-10 overflow-hidden"
+        style={{ boxShadow: "0 0 54px 10px rgba(0, 0, 0, 0.08)" }}
+        layout
+        initial={{
+          y:
+            typeof window !== "undefined" && window.innerWidth < 768
+              ? "100%"
+              : 0,
+          opacity: 0,
+        }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: "100%", opacity: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        drag={
+          typeof window !== "undefined" && window.innerWidth < 768 ? "y" : false
+        }
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.3}
+        onDragEnd={(event, info) => {
+          if (info.offset.y > 100) router.replace("/");
+        }}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          {step === 0 && (
+            <motion.div
+              key="step-0"
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              variants={stepVariants}
+              transition={stepVariants.transition}
+              className="space-y-6 md:pt-0 pt-6"
+              layout
+            >
+              <h1 className="text-xl font-medium">Welcome to TIXIN</h1>
+              <p className="text-sm text-zinc-500">
+                Enter your name & email to continue
+              </p>
+
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={onChange("name")}
+                  placeholder="Full name"
+                  className="w-full p-4 text-base border border-zinc-300 rounded-2xl bg-zinc-100"
+                />
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={onChange("email")}
+                  placeholder="you@example.com"
+                  className="w-full p-4 text-base border border-zinc-300 rounded-2xl bg-zinc-100"
+                />
+              </div>
+
+              {localMsg && <p className="text-sm text-zinc-500">{localMsg}</p>}
+              {error && <p className="text-sm text-red-500">{error}</p>}
+
+              <button
+                onClick={sendOtp}
+                disabled={loading}
+                className="w-full py-4 bg-yellow-400 rounded-full text-black font-medium disabled:opacity-50"
+              >
+                {loading ? "Sending..." : "Send OTP"}
+              </button>
+            </motion.div>
+          )}
+
+          {step === 1 && (
+            <motion.div
+              key="step-1"
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              variants={stepVariants}
+              transition={stepVariants.transition}
+              className="space-y-6 md:pt-0 pt-6"
+              layout
+            >
+              <h1 className="text-xl font-medium">Verify OTP</h1>
+              <p className="text-sm text-zinc-500">
+                We’ve sent a code to <strong>{form.email}</strong>
+              </p>
+
+              <input
+                type="text"
+                value={form.otp}
+                onChange={onChange("otp")}
+                placeholder="Enter OTP"
+                className="w-full p-4 text-base border border-zinc-300 rounded-2xl bg-zinc-100"
+              />
+
+              {localMsg && <p className="text-sm text-zinc-500">{localMsg}</p>}
+              {error && <p className="text-sm text-red-500">{error}</p>}
+
+              <button
+                onClick={verify}
+                disabled={loading}
+                className="w-full py-4 bg-yellow-400 rounded-full text-black font-medium disabled:opacity-50"
+              >
+                {loading ? "Verifying..." : "Verify OTP"}
+              </button>
+
+              <button
+                onClick={sendOtp}
+                disabled={resendTimer > 0}
+                className="w-full py-3 border border-zinc-300 rounded-full text-zinc-600 disabled:opacity-50"
+              >
+                {resendTimer > 0
+                  ? `Resend OTP in ${resendTimer}s`
+                  : "Resend OTP"}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </div>
+  );
+}
