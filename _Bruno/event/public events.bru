@@ -5,14 +5,14 @@ meta {
 }
 
 get {
-  url: {{host}}/event/public?limit=2&cursor=21a6928a-7bbf-4df7-a591-2f11079bae3c
+  url: {{host}}/event/public?limit=2
   body: none
   auth: none
 }
 
 params:query {
   limit: 2
-  cursor: 21a6928a-7bbf-4df7-a591-2f11079bae3c
+  ~cursor: 21a6928a-7bbf-4df7-a591-2f11079bae3c
 }
 
 script:post-response {
