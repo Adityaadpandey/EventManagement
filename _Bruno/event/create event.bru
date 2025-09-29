@@ -12,27 +12,36 @@ post {
 
 body:json {
   {
-    "title": "Concert Night",
-    "description": "Amazing live music event",
-    "banner_horizontal": "https://xyx.com",
-    "banner_vertical": "https://xyx.com", 
-    "banner_square": "https://xyx.com",
-    "date": "2026-12-25",
-    "time": "2024-12-25T19:00:00Z",
-    "location": "Main Stadium",
-    "capacity": 1000,
+    "title": "Coldplay: Music of the Spheres World Tour",
+    "description": "Experience Coldplay live in concert with stunning visuals, pyrotechnics, and their greatest hits.",
+    "banner_horizontal": "https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2",
+    "banner_vertical": "https://images.unsplash.com/photo-1518972559570-7cc1309f3229",
+    "banner_square": "https://images.unsplash.com/photo-1489515217757-5fd1be406fef",
+    "date": "2025-12-25",
+    "time": "2025-12-25T19:30:00Z",
+    "location": "Wembley Stadium, London",
+    "capacity": 90000,
     "ticketTypes": [
       {
         "name": "General Admission",
-        "description": "Standard entry ticket",
-        "price": 50.00,
-        "quantity": 500,
-        "salesCutoff": "2024-12-24T23:59:59Z"
+        "description": "Standing area with standard entry",
+        "price": 85.00,
+        "quantity": 40000,
+        "salesCutoff": "2025-12-24T23:59:59Z"
+      },
+      {
+        "name": "Seated",
+        "description": "Reserved seating with a great view of the stage",
+        "price": 120.00,
+        "quantity": 30000,
+        "salesCutoff": "2025-12-24T23:59:59Z"
       },
       {
         "name": "VIP",
-        "price": 150.00,
-        "quantity": 50
+        "description": "VIP entry, premium seats, exclusive lounge access, and complimentary drinks",
+        "price": 250.00,
+        "quantity": 5000,
+        "salesCutoff": "2025-12-23T23:59:59Z"
       }
     ],
     "customFields": [
@@ -40,15 +49,21 @@ body:json {
         "label": "Dietary Requirements",
         "fieldType": "dropdown",
         "required": false,
-        "options": "Vegetarian,Vegan,No Restrictions"
+        "options": "Vegetarian,Vegan,Halal,Kosher,Gluten-Free,No Restrictions"
       },
       {
-        "label": "Emergency Contact",
+        "label": "Emergency Contact Name",
+        "fieldType": "text",
+        "required": true
+      },
+      {
+        "label": "Emergency Contact Number",
         "fieldType": "text",
         "required": true
       }
     ]
   }
+  
 }
 
 settings {
