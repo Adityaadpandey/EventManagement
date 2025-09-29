@@ -124,7 +124,7 @@ span {
 
 /* Home css */
 .home-page-container {
-  @apply mx-auto py-8 md:w-[74vw] md:max-w-[1068px] pb-20 max-w-screen w-full overflow-x-hidden md:px-0 px-[5.1282vw];
+  @apply mx-auto pt-8 md:w-[74vw] md:max-w-[1068px] max-w-screen w-full overflow-x-hidden md:px-0 px-[5.1282vw];
 }
 
 .home-page-heading {
@@ -182,7 +182,7 @@ span {
 }
 
 .home-pagination {
-  @apply flex items-center justify-center pt-10 text-sm text-zinc-500;
+  @apply flex items-center justify-center pt-24 text-sm text-zinc-500;
 }
 
 .home-skeleton-card {
