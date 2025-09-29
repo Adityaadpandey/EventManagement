@@ -5,6 +5,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import EventCard from "./_components/EventCard";
+import NavBar from "./_components/Navbar";
+import Footer from "./_components/Footer";
 
 export default function HomePage() {
   const dispatch = useAppDispatch();
@@ -139,12 +141,14 @@ export default function HomePage() {
       )}
 
       {!loading && !error && (
-        <div className="home-pagination">
+        <div className="home-pagination pb-40">
           <span>
             Page {page} of {totalPages}
           </span>
         </div>
       )}
+
+      <Footer />
     </div>
   );
 }
