@@ -40,7 +40,7 @@ const EventCard: React.FC<EventCardProps> = ({
     const month = parsedDate.toLocaleString("en-US", { month: "short" });
     const weekday = parsedDate.toLocaleString("en-US", { weekday: "short" });
 
-    return `${dayWithSuffix} ${month} . ${weekday}`;
+    return `${dayWithSuffix} ${month} • ${weekday}`;
   };
 
   const formattedDate = formatDate(date);
@@ -55,7 +55,7 @@ const EventCard: React.FC<EventCardProps> = ({
         />
       </div>
 
-      <div className="px-3 py-2 flex justify-between">
+      <div className="px-3 py-2 flex justify-between gap-5">
         <div className="flex flex-col gap-1">
           <h1>{title}</h1>
           <h6 className="text-[#8B8B8B]">
@@ -64,9 +64,9 @@ const EventCard: React.FC<EventCardProps> = ({
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-[#8B8B8B]">Starts at</span>
+          <span className="text-[#8B8B8B] shrink-0 text-nowrap">Starts at</span>
 
-          <h2>₹{price}</h2>
+          <h2 className="">₹{price}</h2>
         </div>
       </div>
     </div>

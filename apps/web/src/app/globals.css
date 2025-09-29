@@ -38,6 +38,36 @@ body {
   display: none; /* Chrome, Safari, Opera */
 }
 
+/* Tailwind-compatible custom scrollable class */
+.scrollable-with-scrollbar {
+  overflow-y: scroll;
+  scrollbar-width: auto; /* Firefox */
+  scrollbar-color: #FFF4B4 #f1f1f1;
+  padding-right: 20px;
+}
+
+
+/* WebKit browsers (Chrome, Safari, Edge) */
+.scrollable-with-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollable-with-scrollbar::-webkit-scrollbar-track {
+  background: #FFF4B4;
+}
+
+.scrollable-with-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #FFF4B4;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.scrollable-with-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #FFF4B4;
+}
+
+
 h1 {
   font-size: 24px;
   color: var(--color-neutral-dark2);
@@ -45,14 +75,14 @@ h1 {
   font-family: var(--primary-font);
   font-weight: 600;
   line-height: 100%;
-  letter-spacing: -2%;
+  letter-spacing: -1%;
 }
 
 h2 {
   color: var(--color-neutral-dark2);
   font-feature-settings: "liga" off;
   font-family: var(--primary-font);
-  letter-spacing: -2%;
+  letter-spacing: -1%;
   line-height: none;
   @apply md:text-2xl text-xl leading-none;
 }

@@ -136,8 +136,6 @@ export default function HomePage() {
               />
             </Link>
           ))}
-
-          <NavBar />
         </div>
       )}
 
