@@ -1,6 +1,8 @@
+// src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "./providers";
+import ClientLayout from "./_components/ClientLayout";
 
 export const metadata: Metadata = {
   title: "Tixin",
@@ -16,9 +18,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <main className="flex flex-col h-screen relative overflow-auto">
-            {children}
-          </main>
+          <ClientLayout>{children}</ClientLayout>
         </Providers>
       </body>
     </html>
