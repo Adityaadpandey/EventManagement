@@ -18,9 +18,6 @@ type CustomFieldForm = {
   options?: string;
 };
 
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD || "";
-const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_PRESET || "";
-
 export default function CreateEventPage() {
   const router = useRouter();
 
@@ -68,15 +65,15 @@ export default function CreateEventPage() {
 
   const uploadToCloudinary = (file: File, key: UploadKey) =>
     new Promise<string>(async (resolve, reject) => {
+      const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD;
+      const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_PRESET;
+
       if (!CLOUD_NAME || !UPLOAD_PRESET) {
         const msg =
           "Cloudinary not configured. Set NEXT_PUBLIC_CLOUDINARY_* envs.";
         setUploadError((e) => ({ ...e, [key]: msg }));
         return reject(new Error(msg));
       }
-
-      setUploadError((e) => ({ ...e, [key]: "" }));
-      setUploadProgress((p) => ({ ...p, [key]: 1 }));
 
       const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
       const fd = new FormData();

@@ -85,7 +85,12 @@ const Modal: React.FC<ModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-white/60 backdrop-blur-xl">
       {/* Backdrop */}
-      <div className="absolute inset-0" onClick={closeModal} />
+      <div
+        className="absolute inset-0"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) closeModal();
+        }}
+      />
 
       {/* Modal */}
       <motion.div
@@ -94,7 +99,7 @@ const Modal: React.FC<ModalProps> = ({
         className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[8.9vw] sm:pt-9 pt-2 z-10 overflow-hidden"
         style={{
           boxShadow: "0 0 54px 10px rgba(0, 0, 0, 0.08)",
-          touchAction: "none", // Prevents scroll conflict while dragging
+          touchAction: "none",
         }}
         onClick={(e) => e.stopPropagation()}
         layout
@@ -112,9 +117,9 @@ const Modal: React.FC<ModalProps> = ({
           typeof window !== "undefined" && window.innerWidth < 768 ? "y" : false
         }
         dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.2}
+        dragElastic={0.3}
         onDragEnd={(event, info) => {
-          if (info.point.y > 100) {
+          if (info.offset.y > 100) {
             closeModal();
           }
         }}
@@ -209,7 +214,7 @@ const Modal: React.FC<ModalProps> = ({
               className="space-y-4 h-full w-full md:w-[796px] md:py-14 py-7 md:px-4 sm:px-0 mx-auto"
               layout
             >
-              <div className="space-y-4 w-full max-w-[523px] mx-auto h-[56vh] overflow-y-auto">
+              <div className="space-y-4 w-full max-w-[523px] mx-auto h-[56vh] overflow-y-auto scrollable-with-scrollbar">
                 <h1>Ticket Details</h1>
 
                 <p className="text-[#8B8B8B]">
@@ -313,7 +318,7 @@ const Modal: React.FC<ModalProps> = ({
                         <div className="text-base">
                           {cf.label}{" "}
                           {cf.required && (
-                            <span className="text-zinc-300">*</span>
+                            <span className="text-red-600 text-2xl">*</span>
                           )}
                         </div>
                         <input
@@ -328,16 +333,17 @@ const Modal: React.FC<ModalProps> = ({
                     ))}
                   </div>
                 )}
+              </div>
 
+              <div className="w-full flex flex-col gap-2 justify-center items-center">
                 {localAuthMsg && (
-                  <div className="text-xs text-zinc-300">{localAuthMsg}</div>
+                  <div className="text-xs text-red-500">{localAuthMsg}</div>
                 )}
+
                 {buyError && (
                   <div className="text-xs text-red-500">{buyError}</div>
                 )}
-              </div>
 
-              <div className="w-full flex justify-center items-center">
                 <button
                   onClick={() => {
                     if (!isAuthenticated && !token) {
@@ -348,7 +354,7 @@ const Modal: React.FC<ModalProps> = ({
                     }
                     setModalStep(2);
                   }}
-                  className="px-6 sm:py-7 py-6 rounded-full md:text-2xl text-lg bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer max-w-[300px]"
+                  className="px-6 sm:py-7 py-6 rounded-full md:text-xl text-base bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer max-w-[300px]"
                   style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
                 >
                   Continue to Checkout
@@ -368,7 +374,7 @@ const Modal: React.FC<ModalProps> = ({
               className="space-y-4 min-h-[80vh] md:w-[796px] md:pt-14 pt-7"
               layout
             >
-              <div className="space-y-4 md:w-[523px] mx-auto h-[55vh] overflow-y-auto">
+              <div className="space-y-4 md:w-[523px] mx-auto h-[55vh] overflow-y-auto scrollable-with-scrollbar">
                 <div className="flex flex-col md:flex-row gap-6 md:items-center bg-[#F7F7F7] p-2 rounded-[28px]">
                   <div className="md:w-[221px] w-full h-[221px] bg-zinc-800 rounded-2xl overflow-hidden flex-shrink-0">
                     {ev.banner_square || ev.banner_horizontal ? (
@@ -383,11 +389,11 @@ const Modal: React.FC<ModalProps> = ({
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col gap-12">
+                  <div className="flex flex-col justify-between h-full gap-5">
                     <h1 className="font-medium">{ev.title}</h1>
 
                     <div>
-                      <div className="flex items-center gap-2 pb-6">
+                      <div className="flex items-center gap-2 pb-5">
                         <img src="/svgs/calendar.svg" alt="" />
                         <h6 className="">
                           {ev.date &&
@@ -398,7 +404,7 @@ const Modal: React.FC<ModalProps> = ({
                         </h6>
                       </div>
 
-                      <div className="flex items-center gap-2 pb-6">
+                      <div className="flex items-center gap-2 pb-5">
                         <img src="/svgs/clock.svg" alt="" />
                         <h6 className="">
                           {ev.time &&
@@ -410,7 +416,7 @@ const Modal: React.FC<ModalProps> = ({
                         </h6>
                       </div>
 
-                      <div className="flex items-center gap-2 w-4 pb-6">
+                      <div className="flex items-center gap-2">
                         <img src="/svgs/location.svg" alt="" />
                         <h6 className="">{ev.location}</h6>
                       </div>
@@ -419,33 +425,46 @@ const Modal: React.FC<ModalProps> = ({
                 </div>
 
                 <div className="flex flex-col">
-                  <div className="flex justify-between items-start mt-8 border-t pt-6">
-                    {/* Left: Name, Email, Ticket details */}
-                    <div className="flex flex-col gap-2 max-w-[60%]">
+                  <div className="mt-8 border-t pt-6 flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                    {/* Left: User Details */}
+                    <div className="flex flex-col gap-2 w-full md:max-w-[60%]">
                       <div>
-                        <strong>Name:</strong>{" "}
-                        {authForm.name || me?.name || "N/A"}
+                        <span className="font-medium text-zinc-700">Name:</span>{" "}
+                        <span className="text-zinc-900 break-words">
+                          {authForm.name || me?.name || "N/A"}
+                        </span>
                       </div>
                       <div>
-                        <strong>Email:</strong>{" "}
-                        {authForm.identifier || me?.email || "N/A"}
+                        <span className="font-medium text-zinc-700">
+                          Email:
+                        </span>{" "}
+                        <span className="text-zinc-900 break-words">
+                          {authForm.identifier || me?.email || "N/A"}
+                        </span>
                       </div>
                       <div>
-                        <strong>Ticket details:</strong> {selectedTicket?.name}{" "}
-                        ₹{selectedTicket?.price} x {selectedQuantity}
+                        <span className="font-medium text-zinc-700">
+                          Ticket Details:
+                        </span>{" "}
+                        <span className="text-zinc-900">
+                          {selectedTicket?.name || "N/A"} – ₹
+                          {selectedTicket?.price || 0} × {selectedQuantity}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Right: Subtotal, GST, Total */}
-                    <div className="flex flex-col gap-2 text-right max-w-[35%]">
+                    {/* Right: Pricing Summary */}
+                    <div className="flex flex-col gap-2 text-right w-full md:max-w-[35%]">
                       <div>
                         <span className="text-zinc-500">Subtotal:</span>{" "}
-                        <span>₹{selectedTicket?.price * selectedQuantity}</span>
+                        <span className="text-zinc-900 font-medium">
+                          ₹{(selectedTicket?.price ?? 0) * selectedQuantity}
+                        </span>
                       </div>
                       <div>
                         <span className="text-zinc-500">GST (18%):</span>{" "}
-                        <span>
-                          ₹ 0
+                        <span className="text-zinc-900 font-medium">
+                          ₹0
                           {/* {(
                             (selectedTicket?.price ?? 0) *
                             selectedQuantity *
@@ -453,7 +472,7 @@ const Modal: React.FC<ModalProps> = ({
                           ).toFixed(2)} */}
                         </span>
                       </div>
-                      <div className="font-semibold text-lg">
+                      <div className="font-semibold text-lg text-zinc-800 border-t pt-2">
                         <span>Total:</span>{" "}
                         <span>
                           ₹
@@ -465,12 +484,12 @@ const Modal: React.FC<ModalProps> = ({
                     </div>
                   </div>
                 </div>
-
-                {buyError && (
-                  <div className="text-sm text-red-500 mt-2">{buyError}</div>
-                )}
               </div>
-
+              {buyError && (
+                <div className="text-sm text-red-500 mt-2 flex w-full justify-center">
+                  {buyError}
+                </div>
+              )}
               <div className="w-full flex justify-center">
                 <button
                   onClick={onBuy}
