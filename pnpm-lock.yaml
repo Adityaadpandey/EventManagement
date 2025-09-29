@@ -138,6 +138,11 @@ importers:
       lucide-react:
         specifier: ^0.541.0
         version: 0.541.0(react@19.1.0)
+      "lucide-react\n":
+        specifier: |
+          link:@types/lucide-react
+        version: |
+          link:@types/lucide-react
       next:
         specifier: 15.4.6
         version: 15.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
