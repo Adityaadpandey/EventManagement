@@ -430,7 +430,7 @@ export default function EventPage() {
 
               const gotoId = ticketId || data?.ticket?.id || data?.ticketId;
               if (gotoId) {
-                router.push(`/ticket/${gotoId}`);
+                router.push(`/tickets/${gotoId}`);
               } else {
                 router.push("/tickets/my-tickets");
               }
@@ -535,7 +535,7 @@ export default function EventPage() {
 
         {/* Right: booking summary + open modal */}
         <aside className="w-full space-y-4">
-          <div className="flex flex-col gap-4 bg-white rounded-[1.3888888vw] py-5 px-4">
+          <div className="flex flex-col gap-4 bg-white md:rounded-[1.3888888vw] rounded-[20px] py-5 px-4">
             <h1 className="text-3xl font-semibold leading-none">{ev.title}</h1>
 
             <div className="flex gap-2 flex-wrap">
@@ -556,11 +556,27 @@ export default function EventPage() {
               </div>
             </div>
 
-            <div className="px-6 py-5 bg-[#F5F5F5] rounded-[0.833333vw]">
-              <div className="flex gap-2 items-center">
+            <div className="px-6 py-5 bg-[#F5F5F5] md:rounded-[0.833333vw] rounded-xl flex flex-wrap w-full shrink-0 gap-4 justify-between">
+              <div className="flex items-center gap-2 shrink-0">
+                <img src="/svgs/calendar.svg" alt="" />
+                <h6 className="">
+                  {ev.date &&
+                    new Date(ev.date).toLocaleDateString(undefined, {
+                      month: "long",
+                      day: "numeric",
+                    })}{" "}
+                </h6>
+              </div>
+
+              <div className="flex gap-2 items-center shrink-0">
                 <img src="/svgs/clock.svg" alt="" />
 
                 <h6>5:00PM to 7:00PM</h6>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <img src="/svgs/location.svg" alt="" />
+                <h6 className="">{ev.location}</h6>
               </div>
             </div>
           </div>
