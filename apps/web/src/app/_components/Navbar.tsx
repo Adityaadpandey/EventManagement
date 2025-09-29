@@ -115,7 +115,7 @@ export default function NavBar() {
                 className={`
             relative z-10 flex items-center gap-3
             justify-center text-center
-            px-5 py-4 rounded-full
+            md:px-5 px-7 py-4 rounded-full
              transition-colors duration-200
             ${isActive ? "text-black font-semibold" : "text-zinc-600"}
           `}
