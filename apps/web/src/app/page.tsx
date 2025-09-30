@@ -20,7 +20,15 @@ export default function HomePage() {
 
   const tagsRef = useRef<HTMLDivElement>(null);
 
-  const filters = ["Tech", "Hackathon", "Cultural", "EDM", "Concert", "NGO"];
+  const filters = [
+    "All",
+    "Tech",
+    "Hackathon",
+    "Cultural",
+    "EDM",
+    "Concert",
+    "NGO",
+  ];
 
   useEffect(() => {
     dispatch(fetchPublicEvents({ page: 1, limit: 10 }));
@@ -75,10 +83,10 @@ export default function HomePage() {
           </Link>
         </div>
       </div>
-      <h1 className="home-page-heading">Events near you</h1>
+      <h1 className="home-page-heading mb-7">Events near you</h1>
 
       {/* Filter Bar */}
-      <div className="home-filter-bar">
+      {/* <div className="home-filter-bar">
         <div className="home-filter-tags-wrapper">
           {showLeftFade && <div className="home-filter-gradient-left" />}
           <div className="home-filter-tags" ref={tagsRef}>
@@ -103,7 +111,7 @@ export default function HomePage() {
           <img src="/svgs/location.svg" className="home-location-icon" alt="" />
           <p className="home-location-text">Lovely Professional University</p>
         </div>
-      </div>
+      </div> */}
 
       {/* Content */}
       {loading ? (
