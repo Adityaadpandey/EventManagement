@@ -10,17 +10,20 @@ export class PaymentService {
     razorpayOrderId: string,
     razorpayPaymentId: string,
     razorpaySignature: string,
+    skipSignatureVerification = false, // For webhook calls
   ) {
     try {
-      // Verify signature
-      const body = razorpayOrderId + "|" + razorpayPaymentId;
-      const expectedSignature = crypto
-        .createHmac("sha256", config.RAZORPAY_KEY_SECRET)
-        .update(body.toString())
-        .digest("hex");
+      // Verify signature (skip for webhook as it's already verified)
+      if (!skipSignatureVerification) {
+        const body = razorpayOrderId + "|" + razorpayPaymentId;
+        const expectedSignature = crypto
+          .createHmac("sha256", config.RAZORPAY_KEY_SECRET)
+          .update(body.toString())
+          .digest("hex");
 
-      if (expectedSignature !== razorpaySignature) {
-        return { error: "Invalid payment signature" };
+        if (expectedSignature !== razorpaySignature) {
+          return { error: "Invalid payment signature" };
+        }
       }
 
       // Get payment details from Razorpay
@@ -28,6 +31,24 @@ export class PaymentService {
 
       if (payment.status !== "captured") {
         return { error: "Payment not captured" };
+      }
+
+      // Check if ticket exists and get current status
+      const existingTicket = await prisma.ticket.findUnique({
+        where: { ticketId: payment.notes.ticketId },
+        select: { status: true },
+      });
+
+      // If ticket is already SUCCESS, don't process again (idempotency)
+      if (existingTicket?.status === "SUCCESS") {
+        logger.info(`Ticket ${payment.notes.ticketId} already processed`);
+        return {
+          data: {
+            ticket: existingTicket,
+            payment,
+            alreadyProcessed: true,
+          },
+        };
       }
 
       // Update ticket status to SUCCESS
@@ -131,6 +152,19 @@ export class PaymentService {
     } catch (error) {
       logger.error("Error verifying payment:", error);
       throw error;
+    }
+  }
+
+  async getTicketStatus(ticketId: string) {
+    try {
+      const ticket = await prisma.ticket.findUnique({
+        where: { ticketId },
+        select: { status: true, ticketId: true },
+      });
+      return ticket;
+    } catch (error) {
+      logger.error("Error fetching ticket status:", error);
+      return null;
     }
   }
 
