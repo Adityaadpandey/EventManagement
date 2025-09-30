@@ -63,13 +63,16 @@ export default function HomePage() {
         <div className="flex gap-4 items-center">
           <img src="/svgs/notification.svg" alt="" className="w-7" />
 
-          <div className="w-9 h-9 shrink-0 rounded-full overflow-hidden">
+          <Link
+            href="/profile"
+            className="w-9 h-9 shrink-0 rounded-full overflow-hidden"
+          >
             <img
               src="https://thumbs.dreamstime.com/b/simple-vector-illustration-showcases-user-profile-placeholder-icon-consists-black-circle-representing-head-351326903.jpg"
               alt=""
               className="w-full h-full object-cover"
             />
-          </div>
+          </Link>
         </div>
       </div>
       <h1 className="home-page-heading">Events near you</h1>
