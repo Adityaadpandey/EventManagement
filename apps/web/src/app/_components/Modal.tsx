@@ -105,7 +105,7 @@ const Modal: React.FC<ModalProps> = ({
       <motion.div
         role="dialog"
         aria-modal="true"
-        className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[8.9vw] sm:pt-9 pt-2 z-10 overflow-hidden"
+        className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[5vw] sm:pt-9 pt-2 z-10 overflow-hidden"
         style={{
           boxShadow: "0 0 54px 10px rgba(0, 0, 0, 0.08)",
           touchAction: "none",
@@ -136,7 +136,7 @@ const Modal: React.FC<ModalProps> = ({
       >
         <div className="w-full flex md:flex-row flex-col justify-center items-center md:pt-4 gap-6">
           <img src="/svgs/DraswerDash.svg" alt="" className="md:hidden" />
-          <StepBreadcrumb step={modalStep} />
+          <StepBreadcrumb step={modalStep} setStep={setModalStep} />
         </div>
 
         <AnimatePresence mode="wait" initial={false}>
@@ -384,7 +384,7 @@ const Modal: React.FC<ModalProps> = ({
               className="space-y-4 min-h-[80vh] md:w-[796px] md:pt-14 pt-7"
               layout
             >
-              <div className="space-y-4 md:w-[523px] mx-auto h-[55vh] overflow-y-auto scrollable-with-scrollbar">
+              <div className="space-y-4 md:w-[574px] mx-auto h-[55vh] overflow-y-auto scrollable-with-scrollbar">
                 <div className="flex flex-col md:flex-row gap-6 md:items-center bg-[#F7F7F7] p-2 rounded-[28px]">
                   <div className="md:w-[221px] w-full h-[221px] bg-zinc-800 rounded-2xl overflow-hidden flex-shrink-0">
                     {ev.banner_square || ev.banner_horizontal ? (
@@ -394,7 +394,7 @@ const Modal: React.FC<ModalProps> = ({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="flex items-center justify-center h-full text-zinc-500">
+                      <div className="flex items-center justify-center h-full text-[#8B8B8B]">
                         No image
                       </div>
                     )}
@@ -427,69 +427,65 @@ const Modal: React.FC<ModalProps> = ({
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <img src="/svgs/location.svg" alt="" />
+                        <img src="/svgs/location.svg" alt="" width={16} />
                         <h6 className="">{ev.location}</h6>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col">
-                  <div className="mt-8 border-t pt-6 flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                <div className="flex flex-col px-2">
+                  <div className="pt-6 flex flex-col md:flex-row md:justify-between md:items-end gap-8">
                     {/* Left: User Details */}
-                    <div className="flex flex-col gap-2 w-full md:max-w-[60%]">
-                      <div>
-                        <span className="font-medium text-zinc-700">Name:</span>{" "}
-                        <span className="text-zinc-900 break-words">
+                    <div className="flex flex-col gap-5 w-full md:max-w-[50%] px-3">
+                      <div className="space-y-1">
+                        <p className="text-[#8B8B8B]">Name</p>{" "}
+                        <p className="text-zinc-900 break-words">
                           {authForm.name || me?.name || "N/A"}
-                        </span>
+                        </p>
                       </div>
-                      <div>
-                        <span className="font-medium text-zinc-700">
-                          Email:
-                        </span>{" "}
-                        <span className="text-zinc-900 break-words">
+                      <div className="space-y-1">
+                        <p className="text-[#8B8B8B]">Email:</p>{" "}
+                        <p className="text-zinc-900 break-words">
                           {authForm.identifier || me?.email || "N/A"}
-                        </span>
+                        </p>
                       </div>
-                      <div>
-                        <span className="font-medium text-zinc-700">
-                          Ticket Details:
-                        </span>{" "}
-                        <span className="text-zinc-900">
+                      <div className="space-y-1">
+                        <p className="text-[#8B8B8B]">Ticket Details:</p>{" "}
+                        <p className="text-zinc-900">
                           {selectedTicket?.name || "N/A"} – ₹
                           {selectedTicket?.price || 0} × {selectedQuantity}
-                        </span>
+                        </p>
                       </div>
                     </div>
 
                     {/* Right: Pricing Summary */}
-                    <div className="flex flex-col gap-2 text-right w-full md:max-w-[35%]">
-                      <div>
-                        <span className="text-zinc-500">Subtotal:</span>{" "}
-                        <span className="text-zinc-900 font-medium">
+                    <div className="flex flex-col gap-3 text-right md:w-[246px]">
+                      <div className="flex justify-between px-2">
+                        <p className="text-[#8B8B8B]">SUB TOTAL</p>{" "}
+                        <p className="text-zinc-900">
                           ₹{(selectedTicket?.price ?? 0) * selectedQuantity}
-                        </span>
+                        </p>
                       </div>
-                      <div>
-                        <span className="text-zinc-500">GST (18%):</span>{" "}
-                        <span className="text-zinc-900 font-medium">
+                      <div className="flex justify-between px-2">
+                        <p className="text-[#8B8B8B]">GST</p>{" "}
+                        <p className="text-zinc-900">
                           ₹0
                           {/* {(
                             (selectedTicket?.price ?? 0) *
                             selectedQuantity *
                             0.18
                           ).toFixed(2)} */}
-                        </span>
+                        </p>
                       </div>
-                      <div className="font-semibold text-lg text-zinc-800 border-t pt-2">
-                        <span>Total:</span>{" "}
-                        <span>
+                      <div className="flex justify-between bg-[#F5F5F5] py-3 px-2 rounded-md m-0">
+                        <h5 className="text-[#8B8B8B]">TOTAL</h5>{" "}
+                        <h5>
                           ₹
                           {(
                             (selectedTicket?.price ?? 0) * selectedQuantity
                           ).toFixed(2)}
-                        </span>
+                        </h5>
                       </div>
                     </div>
                   </div>

@@ -10,6 +10,7 @@ import {
 } from "@/lib/features/authSlice";
 import { fetchEventDetails } from "@/lib/features/eventsSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -522,6 +523,32 @@ export default function EventPage() {
   // main page render
   return (
     <div className="max-w-6xl md:w-[80vw] mx-auto px-4 py-8 pb-48">
+      <div className="md:flex gap-2 items-center pb-4 px-1 hidden">
+        <Link href="/" className="text-sm text-[#8B8B8B]">
+          Home
+        </Link>{" "}
+        <span className="text-[#8B8B8B]">{">"}</span> <p>Event page</p>
+      </div>
+
+      <Link
+        href="/"
+        className="text-sm text-[#8B8B8B] flex gap-2 items-center pb-4 md:hidden"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="12"
+          height="13"
+          viewBox="0 0 12 13"
+          fill="none"
+        >
+          <path
+            opacity="0.3"
+            d="M5.44023 12.5L0 6.5L5.44023 0.5L6.4898 1.64469L2.84548 5.66399H12V7.33601H2.84548L6.4898 11.3489L5.44023 12.5Z"
+            fill="#1E1E1E"
+          />
+        </svg>
+        Event Details
+      </Link>
       <div className="flex gap-6 md:flex-row flex-col">
         {/* Left: event details */}
         <div className="space-y-5">
@@ -564,7 +591,7 @@ export default function EventPage() {
               </div>
             </div>
 
-            <div className="px-6 py-5 bg-[#F5F5F5] md:rounded-[0.833333vw] rounded-xl flex flex-wrap w-full shrink-0 gap-4 justify-between">
+            <div className="px-6 py-5 bg-[#F5F5F5] md:rounded-[0.833333vw] rounded-xl flex flex-wrap w-full shrink-0 gap-5 justify-between">
               <div className="flex items-center gap-2 shrink-0">
                 <img src="/svgs/calendar.svg" alt="" />
                 <h6 className="">
@@ -583,13 +610,13 @@ export default function EventPage() {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <img src="/svgs/location.svg" alt="" />
+                <img src="/svgs/location.svg" alt="" width={16} />
                 <h6 className="">{ev.location}</h6>
               </div>
             </div>
           </div>
 
-          <div className="space-y-4 bg-white px-5 py-4 rounded-[1.3888888vw]">
+          <div className="space-y-4 bg-white px-5 py-4 md:rounded-[1.3888888vw] rounded-xl">
             <h6>About Event</h6>
 
             <ReadMore text={ev.description} maxLength={2240} />
