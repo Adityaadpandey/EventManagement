@@ -496,14 +496,36 @@ const Modal: React.FC<ModalProps> = ({
                   {buyError}
                 </div>
               )}
-              <div className="w-full flex justify-center">
+              <div className="w-full flex justify-center overflow-hidden">
                 <button
                   onClick={onBuy}
                   disabled={buying}
-                  className="px-4 sm:py-7 py-6 rounded-full text-xl bg-[#FFE348] w-[300px] border-b-3 border-[#FFDA0A] cursor-pointer mx-auto"
+                  className="px-4 sm:py-7 py-6 relative rounded-full overflow-hidden text-xl bg-[#FFE348] w-[300px] border-b-3 border-[#FFDA0A] cursor-pointer mx-auto"
                   style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
                 >
-                  {buying ? "Processing..." : "Proceed to Payment"}
+                  {/* Shine animation using Framer Motion */}
+                  <motion.div
+                    className="absolute top-0 h-full w-full pointer-events-none overflow-hidden rounded-full"
+                    initial={{ x: "-100%", y: "-40" }}
+                    animate={{ x: "120%", y: "0" }}
+                    transition={{
+                      delay: 0.5,
+                      duration: 3.7,
+                      ease: "backInOut",
+                      repeat: Infinity,
+                    }}
+                  >
+                    <img
+                      src="/svgs/shine.svg"
+                      alt="shine"
+                      className="h-full object-cover opacity-60 rounded-full"
+                    />
+                  </motion.div>
+
+                  {/* Button Text */}
+                  <div className="z-10 relative">
+                    {buying ? "Processing..." : "Proceed to Payment"}
+                  </div>
                 </button>
               </div>
             </motion.div>
