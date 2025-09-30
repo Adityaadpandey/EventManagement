@@ -333,6 +333,7 @@ export class EventService {
               user: {
                 select: { name: true, email: true },
               },
+              bio: true,
             },
           },
           title: true,

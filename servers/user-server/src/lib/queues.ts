@@ -12,7 +12,7 @@ export const analyticsQueue = new Queue("analytics", {
 export const emailQueue = new Queue("emails", {
   connection: redis,
   defaultJobOptions: {
-    attempts: 5,
+    attempts: 3,
     backoff: {
       type: "exponential",
       delay: 1000, // first retry after 1s, then 2s, 4s, etc.
