@@ -241,13 +241,13 @@ export default function ProfilePage() {
     );
 
   return (
-    <div className="min-h-screen bg-[#FBFBFC] p-6">
+    <div className="bg-[#FBFBFC] p-6 pb-32">
       <div className="mx-auto max-w-4xl">
         {/* Profile Card */}
         <div className="bg-white rounded-3xl shadow-md overflow-hidden mb-6">
           <div className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-6">
             {/* Avatar */}
-            <div>
+            <div className="flex flex-col items-center">
               <div className="relative w-28 h-28 md:w-32 md:h-32 flex-shrink-0 rounded-full overflow-hidden border border-zinc-200 group">
                 {form.avatar ? (
                   <img

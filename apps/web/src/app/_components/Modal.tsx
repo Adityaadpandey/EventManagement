@@ -82,6 +82,15 @@ const Modal: React.FC<ModalProps> = ({
 }) => {
   if (!modalOpen) return null;
 
+  const backdropClick = (e: React.MouseEvent) => {
+    if (e.target !== e.currentTarget) return;
+    if (modalStep === 3) {
+      // while processing, ignore backdrop clicks
+      return;
+    }
+    closeModal();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-white/60 backdrop-blur-xl">
       {/* Backdrop */}
@@ -96,7 +105,7 @@ const Modal: React.FC<ModalProps> = ({
       <motion.div
         role="dialog"
         aria-modal="true"
-        className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[8.9vw] sm:pt-9 pt-2 z-10 overflow-hidden"
+        className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[5vw] sm:pt-9 pt-2 z-10 overflow-hidden"
         style={{
           boxShadow: "0 0 54px 10px rgba(0, 0, 0, 0.08)",
           touchAction: "none",
@@ -119,6 +128,7 @@ const Modal: React.FC<ModalProps> = ({
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={0.3}
         onDragEnd={(event, info) => {
+          if (modalStep === 3) return;
           if (info.offset.y > 100) {
             closeModal();
           }
@@ -126,7 +136,7 @@ const Modal: React.FC<ModalProps> = ({
       >
         <div className="w-full flex md:flex-row flex-col justify-center items-center md:pt-4 gap-6">
           <img src="/svgs/DraswerDash.svg" alt="" className="md:hidden" />
-          <StepBreadcrumb step={modalStep} />
+          <StepBreadcrumb step={modalStep} setStep={setModalStep} />
         </div>
 
         <AnimatePresence mode="wait" initial={false}>
@@ -374,7 +384,7 @@ const Modal: React.FC<ModalProps> = ({
               className="space-y-4 min-h-[80vh] md:w-[796px] md:pt-14 pt-7"
               layout
             >
-              <div className="space-y-4 md:w-[523px] mx-auto h-[55vh] overflow-y-auto scrollable-with-scrollbar">
+              <div className="space-y-4 md:w-[574px] mx-auto h-[55vh] overflow-y-auto scrollable-with-scrollbar">
                 <div className="flex flex-col md:flex-row gap-6 md:items-center bg-[#F7F7F7] p-2 rounded-[28px]">
                   <div className="md:w-[221px] w-full h-[221px] bg-zinc-800 rounded-2xl overflow-hidden flex-shrink-0">
                     {ev.banner_square || ev.banner_horizontal ? (
@@ -384,7 +394,7 @@ const Modal: React.FC<ModalProps> = ({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="flex items-center justify-center h-full text-zinc-500">
+                      <div className="flex items-center justify-center h-full text-[#8B8B8B]">
                         No image
                       </div>
                     )}
@@ -417,69 +427,65 @@ const Modal: React.FC<ModalProps> = ({
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <img src="/svgs/location.svg" alt="" />
+                        <img src="/svgs/location.svg" alt="" width={16} />
                         <h6 className="">{ev.location}</h6>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col">
-                  <div className="mt-8 border-t pt-6 flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                <div className="flex flex-col px-2">
+                  <div className="pt-6 flex flex-col md:flex-row md:justify-between md:items-end gap-8">
                     {/* Left: User Details */}
-                    <div className="flex flex-col gap-2 w-full md:max-w-[60%]">
-                      <div>
-                        <span className="font-medium text-zinc-700">Name:</span>{" "}
-                        <span className="text-zinc-900 break-words">
+                    <div className="flex flex-col gap-5 w-full md:max-w-[50%] px-3">
+                      <div className="space-y-1">
+                        <p className="text-[#8B8B8B]">Name</p>{" "}
+                        <p className="text-zinc-900 break-words">
                           {authForm.name || me?.name || "N/A"}
-                        </span>
+                        </p>
                       </div>
-                      <div>
-                        <span className="font-medium text-zinc-700">
-                          Email:
-                        </span>{" "}
-                        <span className="text-zinc-900 break-words">
+                      <div className="space-y-1">
+                        <p className="text-[#8B8B8B]">Email:</p>{" "}
+                        <p className="text-zinc-900 break-words">
                           {authForm.identifier || me?.email || "N/A"}
-                        </span>
+                        </p>
                       </div>
-                      <div>
-                        <span className="font-medium text-zinc-700">
-                          Ticket Details:
-                        </span>{" "}
-                        <span className="text-zinc-900">
+                      <div className="space-y-1">
+                        <p className="text-[#8B8B8B]">Ticket Details:</p>{" "}
+                        <p className="text-zinc-900">
                           {selectedTicket?.name || "N/A"} – ₹
                           {selectedTicket?.price || 0} × {selectedQuantity}
-                        </span>
+                        </p>
                       </div>
                     </div>
 
                     {/* Right: Pricing Summary */}
-                    <div className="flex flex-col gap-2 text-right w-full md:max-w-[35%]">
-                      <div>
-                        <span className="text-zinc-500">Subtotal:</span>{" "}
-                        <span className="text-zinc-900 font-medium">
+                    <div className="flex flex-col gap-3 text-right md:w-[246px]">
+                      <div className="flex justify-between px-2">
+                        <p className="text-[#8B8B8B]">SUB TOTAL</p>{" "}
+                        <p className="text-zinc-900">
                           ₹{(selectedTicket?.price ?? 0) * selectedQuantity}
-                        </span>
+                        </p>
                       </div>
-                      <div>
-                        <span className="text-zinc-500">GST (18%):</span>{" "}
-                        <span className="text-zinc-900 font-medium">
+                      <div className="flex justify-between px-2">
+                        <p className="text-[#8B8B8B]">GST</p>{" "}
+                        <p className="text-zinc-900">
                           ₹0
                           {/* {(
                             (selectedTicket?.price ?? 0) *
                             selectedQuantity *
                             0.18
                           ).toFixed(2)} */}
-                        </span>
+                        </p>
                       </div>
-                      <div className="font-semibold text-lg text-zinc-800 border-t pt-2">
-                        <span>Total:</span>{" "}
-                        <span>
+                      <div className="flex justify-between bg-[#F5F5F5] py-3 px-2 rounded-md m-0">
+                        <h5 className="text-[#8B8B8B]">TOTAL</h5>{" "}
+                        <h5>
                           ₹
                           {(
                             (selectedTicket?.price ?? 0) * selectedQuantity
                           ).toFixed(2)}
-                        </span>
+                        </h5>
                       </div>
                     </div>
                   </div>
@@ -490,15 +496,105 @@ const Modal: React.FC<ModalProps> = ({
                   {buyError}
                 </div>
               )}
-              <div className="w-full flex justify-center">
+              <div className="w-full flex justify-center overflow-hidden">
                 <button
                   onClick={onBuy}
                   disabled={buying}
-                  className="px-4 sm:py-7 py-6 rounded-full text-xl bg-[#FFE348] w-[300px] border-b-3 border-[#FFDA0A] cursor-pointer mx-auto"
+                  className="px-4 sm:py-7 py-6 relative rounded-full overflow-hidden text-xl bg-[#FFE348] w-[300px] border-b-3 border-[#FFDA0A] cursor-pointer mx-auto"
                   style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
                 >
-                  {buying ? "Processing..." : "Proceed to Payment"}
+                  {/* Shine animation using Framer Motion */}
+                  <motion.div
+                    className="absolute top-0 h-full w-full pointer-events-none overflow-hidden rounded-full"
+                    initial={{ x: "-100%", y: "-40" }}
+                    animate={{ x: "120%", y: "0" }}
+                    transition={{
+                      delay: 0.5,
+                      duration: 3.7,
+                      ease: "backInOut",
+                      repeat: Infinity,
+                    }}
+                  >
+                    <img
+                      src="/svgs/shine.svg"
+                      alt="shine"
+                      className="h-full object-cover opacity-60 rounded-full"
+                    />
+                  </motion.div>
+
+                  {/* Button Text */}
+                  <div className="z-10 relative">
+                    {buying ? "Processing..." : "Proceed to Payment"}
+                  </div>
                 </button>
+              </div>
+            </motion.div>
+          )}
+
+          {modalStep === 3 && (
+            <motion.div
+              key="step-3"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.35 }}
+              className="w-full flex flex-col items-center justify-center p-8"
+            >
+              <div className="flex flex-col items-center gap-6 text-center">
+                {/* Animated Loader Ring */}
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 1.5,
+                    ease: "linear",
+                  }}
+                  className="w-24 h-24 rounded-full border-[6px] border-t-yellow-400 border-r-yellow-300 border-b-transparent border-l-transparent shadow-lg"
+                >
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-yellow-300/20 backdrop-blur-sm flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-full bg-yellow-400" />
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Title */}
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Processing your payment…
+                </h3>
+                <p className="text-sm text-gray-600 max-w-[400px] leading-relaxed">
+                  We’re verifying your payment and generating your ticket. This
+                  may take a few seconds — please don’t close or refresh.
+                </p>
+
+                {/* Progress Bar with shimmer */}
+                <div className="mt-4 w-full max-w-[420px]">
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <motion.div
+                      initial={{ width: "0%" }}
+                      animate={{ width: "80%" }}
+                      transition={{
+                        duration: 2,
+                        ease: "easeInOut",
+                        repeat: Infinity,
+                        repeatType: "reverse",
+                      }}
+                      className="h-2 bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Helper text */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1 }}
+                  className="text-xs text-gray-500 mt-3"
+                >
+                  If this takes more than{" "}
+                  <span className="font-medium">30 seconds</span>, check your
+                  email or My Bookings.
+                </motion.div>
               </div>
             </motion.div>
           )}

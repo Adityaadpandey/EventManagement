@@ -20,7 +20,15 @@ export default function HomePage() {
 
   const tagsRef = useRef<HTMLDivElement>(null);
 
-  const filters = ["Tech", "Hackathon", "Cultural", "EDM", "Concert", "NGO"];
+  const filters = [
+    "All",
+    "Tech",
+    "Hackathon",
+    "Cultural",
+    "EDM",
+    "Concert",
+    "NGO",
+  ];
 
   useEffect(() => {
     dispatch(fetchPublicEvents({ page: 1, limit: 10 }));
@@ -63,19 +71,22 @@ export default function HomePage() {
         <div className="flex gap-4 items-center">
           <img src="/svgs/notification.svg" alt="" className="w-7" />
 
-          <div className="w-9 h-9 shrink-0 rounded-full overflow-hidden">
+          <Link
+            href="/profile"
+            className="w-9 h-9 shrink-0 rounded-full overflow-hidden"
+          >
             <img
               src="https://thumbs.dreamstime.com/b/simple-vector-illustration-showcases-user-profile-placeholder-icon-consists-black-circle-representing-head-351326903.jpg"
               alt=""
               className="w-full h-full object-cover"
             />
-          </div>
+          </Link>
         </div>
       </div>
-      <h1 className="home-page-heading">Events near you</h1>
+      <h1 className="home-page-heading mb-7">Events near you</h1>
 
       {/* Filter Bar */}
-      <div className="home-filter-bar">
+      {/* <div className="home-filter-bar">
         <div className="home-filter-tags-wrapper">
           {showLeftFade && <div className="home-filter-gradient-left" />}
           <div className="home-filter-tags" ref={tagsRef}>
@@ -100,7 +111,7 @@ export default function HomePage() {
           <img src="/svgs/location.svg" className="home-location-icon" alt="" />
           <p className="home-location-text">Lovely Professional University</p>
         </div>
-      </div>
+      </div> */}
 
       {/* Content */}
       {loading ? (
