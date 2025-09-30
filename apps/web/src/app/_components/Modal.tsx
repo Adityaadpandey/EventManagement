@@ -82,6 +82,15 @@ const Modal: React.FC<ModalProps> = ({
 }) => {
   if (!modalOpen) return null;
 
+  const backdropClick = (e: React.MouseEvent) => {
+    if (e.target !== e.currentTarget) return;
+    if (modalStep === 3) {
+      // while processing, ignore backdrop clicks
+      return;
+    }
+    closeModal();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-white/60 backdrop-blur-xl">
       {/* Backdrop */}
@@ -119,6 +128,7 @@ const Modal: React.FC<ModalProps> = ({
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={0.3}
         onDragEnd={(event, info) => {
+          if (modalStep === 3) return;
           if (info.offset.y > 100) {
             closeModal();
           }
@@ -499,6 +509,74 @@ const Modal: React.FC<ModalProps> = ({
                 >
                   {buying ? "Processing..." : "Proceed to Payment"}
                 </button>
+              </div>
+            </motion.div>
+          )}
+
+          {modalStep === 3 && (
+            <motion.div
+              key="step-3"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.35 }}
+              className="w-full flex flex-col items-center justify-center p-8"
+            >
+              <div className="flex flex-col items-center gap-6 text-center">
+                {/* Animated Loader Ring */}
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 1.5,
+                    ease: "linear",
+                  }}
+                  className="w-24 h-24 rounded-full border-[6px] border-t-yellow-400 border-r-yellow-300 border-b-transparent border-l-transparent shadow-lg"
+                >
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-yellow-300/20 backdrop-blur-sm flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-full bg-yellow-400" />
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Title */}
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Processing your payment…
+                </h3>
+                <p className="text-sm text-gray-600 max-w-[400px] leading-relaxed">
+                  We’re verifying your payment and generating your ticket. This
+                  may take a few seconds — please don’t close or refresh.
+                </p>
+
+                {/* Progress Bar with shimmer */}
+                <div className="mt-4 w-full max-w-[420px]">
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <motion.div
+                      initial={{ width: "0%" }}
+                      animate={{ width: "80%" }}
+                      transition={{
+                        duration: 2,
+                        ease: "easeInOut",
+                        repeat: Infinity,
+                        repeatType: "reverse",
+                      }}
+                      className="h-2 bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Helper text */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1 }}
+                  className="text-xs text-gray-500 mt-3"
+                >
+                  If this takes more than{" "}
+                  <span className="font-medium">30 seconds</span>, check your
+                  email or My Bookings.
+                </motion.div>
               </div>
             </motion.div>
           )}

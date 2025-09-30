@@ -417,6 +417,9 @@ export default function EventPage() {
           },
           handler: async (resp: any) => {
             try {
+              // show processing UI inside the modal
+              setModalStep(3);
+
               await api.post(
                 "/payment/verify",
                 {
@@ -465,6 +468,10 @@ export default function EventPage() {
                   );
                 }
               } catch {}
+
+              // revert UI to checkout so user can retry/cancel
+              setModalStep(2);
+              setBuying(false);
             },
           },
         };
@@ -473,6 +480,7 @@ export default function EventPage() {
         rzp.open();
       } else if (data?.paymentUrl) {
         // fallback redirect
+        setModalStep(3);
         window.location.href = data.paymentUrl;
       } else {
         const gotoId = ticketId || data?.ticket?.ticketId || data?.ticketId;
@@ -480,7 +488,7 @@ export default function EventPage() {
           router.push(`/ticket/${gotoId}`);
         } else {
           setBuyError(
-            "Purchase succeeded but server response unexpected. Check My Tickets.",
+            "Purchase succeeded but server response unexpected. Check My Bookings.",
           );
           router.push("/tickets/my-tickets");
         }
