@@ -49,6 +49,7 @@ services:
       - .env
     restart: unless-stopped
     deploy:
+      replicas: 4
       resources:
         limits:
           memory: 2G    # Allocate memory for worker
