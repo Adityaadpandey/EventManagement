@@ -86,7 +86,7 @@ export default function Footer() {
               </svg>
             </a>
             <a
-              href="https://instagram.com/tixin"
+              href=""
               className="text-gray-500 hover:text-[#cdae00] transition-colors duration-300"
               target="_blank"
               rel="noopener noreferrer"
