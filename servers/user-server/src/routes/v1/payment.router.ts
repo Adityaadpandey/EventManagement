@@ -1,9 +1,16 @@
 import { Router } from "express";
 import { PaymentController } from "../../controllers/payment.controller";
+import { WebhookController } from "../../controllers/webhook.controller";
 import { authMiddleware, requireRole } from "../../middlewares/auth.middleware";
 
 const router = Router();
 const paymentController = new PaymentController();
+const webhookController = new WebhookController();
+
+router.post(
+  "/webhook",
+  webhookController.handlePaymentWebhook.bind(webhookController),
+);
 
 // Verify payment and update ticket status
 router.post(
