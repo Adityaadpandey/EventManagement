@@ -21,9 +21,9 @@ export const createEventSchema = z.object({
   banner_vertical: z.string().url("Invalid banner_vertical URL"),
   banner_square: z.string().url("Invalid banner_square URL"),
   date: z.string().min(1, "Date is required"),
+  tags: z.array(z.string()).optional().nullable(),
   time: z.string().min(1, "Time is required"),
   location: z.string().min(1, "Location is required"),
-
   capacity: z
     .union([z.string(), z.number()])
     .transform((val) => Number(val))

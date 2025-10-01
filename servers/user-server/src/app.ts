@@ -162,7 +162,6 @@ export const startServer = async () => {
       logger.info(`Worker process: ${process.pid}`);
     });
 
-    // Server optimizations
     server.keepAliveTimeout = 65000; // Slightly higher than typical load balancer timeout
     server.headersTimeout = 66000; // Should be higher than keepAliveTimeout
 
