@@ -252,6 +252,7 @@ export class EventService {
           description: true,
           date: true,
           time: true,
+          tags: true,
           location: true,
           capacity: true,
           banner_horizontal: true,
@@ -344,6 +345,7 @@ export class EventService {
           banner_square: true,
           date: true,
           time: true,
+          tags: true,
           location: true,
           capacity: true,
           TicketType: {
