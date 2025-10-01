@@ -178,7 +178,7 @@ span {
 }
 
 .home-event-list {
-  @apply w-full flex gap-3 md:gap-6 max-w-[1068px] flex-wrap;
+  @apply w-full flex gap-3 md:gap-[1.5vw] max-w-[1068px] flex-wrap md:flex-nowrap;
 }
 
 .home-pagination {

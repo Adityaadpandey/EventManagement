@@ -105,7 +105,7 @@ const Modal: React.FC<ModalProps> = ({
       <motion.div
         role="dialog"
         aria-modal="true"
-        className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[5vw] sm:pt-9 pt-2 z-10 overflow-hidden"
+        className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[5vw] sm:pt-9 pt-2 z-10 overflow-y-auto overflow-x-hidden"
         style={{
           boxShadow: "0 0 54px 10px rgba(0, 0, 0, 0.08)",
           touchAction: "none",
@@ -205,7 +205,7 @@ const Modal: React.FC<ModalProps> = ({
 
               <button
                 onClick={proceedFromTypes}
-                className="px-4 sm:py-7 py-6 rounded-full text-2xl bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer flex gap-3 justify-center"
+                className="px-4 md:py-7 py-6 rounded-full text-2xl bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer flex gap-3 justify-center"
                 style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
               >
                 Proceed <img src="/svgs/arrowRight.svg" alt="" />
@@ -256,7 +256,7 @@ const Modal: React.FC<ModalProps> = ({
                       <input
                         value={authForm.name}
                         onChange={onAuthChange("name")}
-                        className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                        className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
                         placeholder="Full name"
                       />
                     </div>
@@ -266,7 +266,7 @@ const Modal: React.FC<ModalProps> = ({
                         <input
                           value={authForm.identifier}
                           onChange={onAuthChange("identifier")}
-                          className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                          className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
                           placeholder="you@example.com"
                           type="email"
                         />
@@ -274,7 +274,7 @@ const Modal: React.FC<ModalProps> = ({
                           <button
                             onClick={sendOtp}
                             disabled={authLoading}
-                            className="w-full sm:w-auto p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] shrink-0 text-nowrap"
+                            className="w-full sm:w-auto p-6 text-base border border-[#E5E5E5] text-[#ffffff] rounded-2xl bg-black shrink-0 text-nowrap cursor-pointer"
                           >
                             {authLoading ? "Sending..." : "Send OTP"}
                           </button>
@@ -299,7 +299,7 @@ const Modal: React.FC<ModalProps> = ({
                           <button
                             onClick={verifyEmailOtp}
                             disabled={isVerifying}
-                            className="p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                            className="p-6 text-base border border-[#E5E5E5] text-[#ffffff] rounded-2xl bg-black cursor-pointer"
                           >
                             {isVerifying ? "Verifying..." : "Verify"}
                           </button>
@@ -307,7 +307,7 @@ const Modal: React.FC<ModalProps> = ({
                         <button
                           onClick={resendOtp}
                           disabled={resendTimer > 0 || authLoading}
-                          className={`w-full px-3 py-2 rounded text-sm text-white ${
+                          className={`w-full px-3 py-2 rounded-lg text-sm text-white ${
                             resendTimer > 0 ? "bg-zinc-400" : "bg-zinc-600"
                           }`}
                         >
@@ -337,7 +337,7 @@ const Modal: React.FC<ModalProps> = ({
                             handleAttendeeChange(cf.label, e.target.value)
                           }
                           placeholder={cf.fieldType}
-                          className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                          className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
                         />
                       </div>
                     ))}
@@ -381,7 +381,7 @@ const Modal: React.FC<ModalProps> = ({
               exit="exit"
               variants={stepVariants}
               transition={stepVariants.transition}
-              className="space-y-4 min-h-[80vh] md:w-[796px] md:pt-14 pt-7"
+              className="space-y-4 md:w-[796px] md:pt-14 pt-7"
               layout
             >
               <div className="space-y-4 md:w-[574px] mx-auto h-[55vh] overflow-y-auto scrollable-with-scrollbar">

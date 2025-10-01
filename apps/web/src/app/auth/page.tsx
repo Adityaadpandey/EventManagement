@@ -113,7 +113,7 @@ export default function AuthModal() {
       <motion.div
         role="dialog"
         aria-modal="true"
-        className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[8.9vw] sm:pt-9 pt-2 z-10 overflow-hidden"
+        className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[8.9vw] sm:pb-32 md:pb-9 pb-32 sm:pt-9 pt-2 z-10 overflow-hidden"
         style={{ boxShadow: "0 0 54px 10px rgba(0, 0, 0, 0.08)" }}
         layout
         initial={{
