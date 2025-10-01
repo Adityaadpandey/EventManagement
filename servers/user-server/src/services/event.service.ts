@@ -25,6 +25,7 @@ export interface CreateEventRequest {
   banner_square: string;
   date: string; // ISO date string
   time: string; // ISO time string
+  tags: string[];
   location: string;
   capacity?: number;
   samplePoster?: string;
@@ -128,7 +129,7 @@ export class EventService {
             location: eventData.location,
             capacity: eventData.capacity,
             status: "NOT_VIEWED",
-
+            tags: eventData.tags,
             // Optional admin-only details
             samplePoster: eventData.samplePoster,
             socialMediaGraphic: eventData.socialMediaGraphic,

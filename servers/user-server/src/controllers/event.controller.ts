@@ -22,7 +22,10 @@ export class EventController {
 
       const validatedData = createEventSchema.parse(req.body);
 
-      const result = await this.eventService.createEvent(userId, validatedData);
+      const result = await this.eventService.createEvent(userId, {
+        ...validatedData,
+        tags: validatedData.tags || [],
+      });
       return sendSuccess(res, result.message, result.data, 201);
     } catch (error: any) {
       if (error.name === "ZodError") {
