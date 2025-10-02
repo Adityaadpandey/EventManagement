@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 import QRCode from "react-qr-code";
 import api from "@/lib/api";
+import { RootState } from "@/lib/store"; // adjust path to your store
 
 type Ticket = {
   ticketId: string;
@@ -26,12 +28,25 @@ export default function MyTicketsPage() {
   const [err, setErr] = useState<string | null>(null);
   const router = useRouter();
 
+  // 👇 Get auth state from Redux
+  const { user, token } = useSelector((state: RootState) => state.auth);
+
+  // 🔒 Redirect if not logged in
   useEffect(() => {
+    if (!token) {
+      router.replace("/auth");
+    }
+  }, [token, router]);
+
+  useEffect(() => {
+    if (!token) return; // don’t fetch if not logged in
     let cancelled = false;
 
     (async () => {
       try {
-        const res = await api.get("/ticket/my-tickets");
+        const res = await api.get("/ticket/my-tickets", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (!cancelled) setTickets(res.data?.data || []);
       } catch (e: any) {
         if (!cancelled)
@@ -44,7 +59,9 @@ export default function MyTicketsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [token]);
+
+  if (!token) return null; // avoid flicker while redirecting
 
   if (loading)
     return (
@@ -71,17 +88,17 @@ export default function MyTicketsPage() {
             className="flex flex-col sm:flex-row justify-between items-center bg-white border border-gray-200 rounded-xl shadow-md overflow-hidden cursor-pointer hover:shadow-lg transition"
             onClick={() => router.push(`/tickets/${t.ticketId}`)}
           >
-            {/* Left: Event Banner */}
+            {/* Event Banner */}
             {t.ticketType?.event?.banner_square && (
               <div
                 className="w-full sm:w-32 h-32 sm:h-32 flex-shrink-0 bg-center bg-cover"
                 style={{
                   backgroundImage: `url(${t.ticketType.event.banner_square})`,
                 }}
-              ></div>
+              />
             )}
 
-            {/* Middle: Ticket info */}
+            {/* Ticket info */}
             <div className="flex-1 p-4 sm:px-6 space-y-1">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
                 {t.ticketType?.event?.title || "Unknown Event"}
