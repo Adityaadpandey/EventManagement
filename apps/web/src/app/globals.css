@@ -70,16 +70,16 @@ body {
 
 h1 {
   font-size: 24px;
-  color: var(--color-neutral-dark2);
+  color: var(--color-neutral-dark3);
   font-feature-settings: "liga" off;
   font-family: var(--primary-font);
-  font-weight: 600;
+  font-weight: 700;
   line-height: 100%;
   letter-spacing: -1%;
 }
 
 h2 {
-  color: var(--color-neutral-dark2);
+  color: var(--color-neutral-dark3);
   font-feature-settings: "liga" off;
   font-family: var(--primary-font);
   letter-spacing: -1%;
@@ -178,7 +178,7 @@ span {
 }
 
 .home-event-list {
-  @apply w-full flex gap-3 md:gap-6 max-w-[1068px] flex-wrap;
+  @apply w-full flex gap-3 md:gap-[1.5vw] max-w-[1068px] flex-wrap md:flex-nowrap;
 }
 
 .home-pagination {

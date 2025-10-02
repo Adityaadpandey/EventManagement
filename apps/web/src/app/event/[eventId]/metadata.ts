@@ -1,7 +1,4 @@
-"use server";
-
 import type { Metadata } from "next";
-import EventClient from "@/app/_components/EventClient";
 import { getEventDetails } from "@/lib/api/getEventDetails";
 
 export async function generateMetadata({
@@ -9,7 +6,6 @@ export async function generateMetadata({
 }: {
   params: { eventId: string };
 }): Promise<Metadata> {
-  // Wait for event details first
   const event = await getEventDetails(params.eventId);
 
   const titleParts = [
@@ -24,7 +20,7 @@ export async function generateMetadata({
     "Discover and book tickets for events near you with Tixin — India’s event discovery platform.";
 
   const rawDescription = event?.description || "";
-  const cleanDescription = rawDescription.replace(/<\/?[^>]+(>|$)/g, "");
+  const cleanDescription = rawDescription.replace(/<\/?[^>]+(>|$)/g, ""); // strip HTML
   const trimmedDescription =
     cleanDescription.length > 150
       ? `${cleanDescription.slice(0, 150).trim()}...`
@@ -34,11 +30,11 @@ export async function generateMetadata({
     ? `${trimmedDescription} Book your tickets now on Tixin.`
     : fallbackDescription;
 
-  const categories = Array.isArray(event?.category)
-    ? event.category
-    : event?.category
-      ? [event.category]
-      : [];
+  //   const categories = Array.isArray(event?.category)
+  //     ? event.category
+  //     : event?.category
+  //     ? [event.category]
+  //     : [];
 
   const keywords = [
     event?.title,
@@ -61,13 +57,13 @@ export async function generateMetadata({
     event?.banner_horizontal ||
     "/logos/logoOnBlack.png";
 
-  // Only use params.eventId here, after async/await
   const eventUrl = `https://www.tixin.in/event/${params.eventId}`;
 
   return {
     title,
     description,
     keywords,
+    metadataBase: new URL("https://www.tixin.in"),
     openGraph: {
       title,
       description,
@@ -89,7 +85,6 @@ export async function generateMetadata({
       description,
       images: [imageUrl],
     },
-    metadataBase: new URL("https://www.tixin.in"),
     alternates: {
       canonical: eventUrl,
     },
@@ -98,18 +93,4 @@ export async function generateMetadata({
       follow: true,
     },
   };
-}
-
-export default async function EventPage({
-  params,
-}: {
-  params: { eventId: string };
-}) {
-  const event = await getEventDetails(params.eventId);
-
-  if (!event) {
-    return <div className="p-6 text-zinc-400">Event not found</div>;
-  }
-
-  return <EventClient />;
 }
