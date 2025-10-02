@@ -175,7 +175,7 @@ export default function HomePage() {
                 title={ev.title}
                 location={ev.location}
                 date={ev.date}
-                price={ev.TicketType[0].price}
+                price={Math.min(...ev.TicketType.map((t) => t.price))}
               />
             </Link>
           ))}

@@ -61,7 +61,7 @@ export default function MyTicketsPage() {
     };
   }, [token]);
 
-  if (!token) return null; // avoid flicker while redirecting
+  if (!token) return null;
 
   if (loading)
     return (
