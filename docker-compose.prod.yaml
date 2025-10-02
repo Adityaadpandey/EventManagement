@@ -1,15 +1,17 @@
+version: "3.8"
+
 services:
   backend-service:
     build:
       context: .
       dockerfile: servers/user-server/Dockerfile
-    image: backend-service
+    image: backend-service:latest
     ports:
       - "7001:7001"
     command: ["node", "dist/bin.js"]
     environment:
       - NODE_ENV=production
-      - NODE_OPTIONS=--max-old-space-size=2048  # Increased for 16GB server
+      - NODE_OPTIONS=--max-old-space-size=2048
       - UV_THREADPOOL_SIZE=16
       - HOST=0.0.0.0
       - PORT=7001
@@ -26,13 +28,12 @@ services:
       driver: "json-file"
       options:
         max-size: "10m"
-        max-file: "5"  # Increased log retention
-    # Resource limits for better container management
+        max-file: "5"
     deploy:
       resources:
         limits:
-          memory: 4G  # Allocate more memory for main service
-          cpus: '2.5'   # Use 2.5 cores for backend
+          memory: 4G
+          cpus: '2.5'
     networks:
       - app-network
 
@@ -40,11 +41,11 @@ services:
     build:
       context: .
       dockerfile: servers/user-server/Dockerfile
-    image: backend-service
+    image: backend-service:latest
     command: ["node", "dist/workers/index.worker.js"]
     environment:
       - NODE_ENV=production
-      - NODE_OPTIONS=--max-old-space-size=1024  # Increased worker memory
+      - NODE_OPTIONS=--max-old-space-size=1024
     env_file:
       - .env
     restart: unless-stopped
@@ -52,8 +53,8 @@ services:
       replicas: 4
       resources:
         limits:
-          memory: 2G    # Allocate memory for worker
-          cpus: '1'     # Use 1 core for worker
+          memory: 2G
+          cpus: '1'
     networks:
       - app-network
 
@@ -66,19 +67,18 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - nginx-cache:/var/cache/nginx
-      # Let's Encrypt SSL certificates
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      # expose logs for promtail & fail2ban
+      - ./logs/nginx:/var/log/nginx:rw
     depends_on:
       backend-service:
         condition: service_healthy
     restart: unless-stopped
-    # Resource allocation for nginx
     deploy:
       resources:
         limits:
-          memory: 512M  # Sufficient for nginx with caching
-          cpus: '0.5'   # Use 0.5 core for nginx
-    # Health check for nginx
+          memory: 512M
+          cpus: '0.5'
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/nginx-health || exit 1"]
       interval: 30s
@@ -88,7 +88,6 @@ services:
     networks:
       - app-network
 
-  # Optional: Add a monitoring service
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
@@ -107,10 +106,117 @@ services:
     networks:
       - app-network
 
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    pid: "host"
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev)($|/)'
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    networks:
+      - app-network
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    volumes:
+      - ./monitoring/alertmanager/config.yml:/etc/alertmanager/config.yml:ro
+      - alertmanager-data:/alertmanager
+    ports:
+      - "9093:9093"
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - prometheus
+      - loki
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=changeme   # change this in production!
+      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/
+      - GF_LOG_LEVEL=info
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  loki:
+    image: grafana/loki:2.8.0
+    container_name: loki
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./monitoring/loki/local-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  promtail:
+    image: grafana/promtail:2.8.0
+    container_name: promtail
+    volumes:
+      - ./monitoring/promtail/config.yml:/etc/promtail/config.yml:ro
+      - ./logs/nginx:/var/log/nginx:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/log:/var/log:ro
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  fail2ban:
+    image: crazymax/fail2ban:latest
+    container_name: fail2ban
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./monitoring/fail2ban/jail.local:/data/jail.d/jail.local:ro
+      - ./monitoring/fail2ban/fail2ban.conf:/data/fail2ban.conf:ro
+      - ./logs/nginx:/var/log/nginx:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=Asia/Kolkata
+    restart: unless-stopped
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge
-    # Enhanced network configuration
     driver_opts:
       com.docker.network.driver.mtu: 1500
     ipam:
@@ -120,4 +226,12 @@ networks:
 
 volumes:
   nginx-cache:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  alertmanager-data:
+    driver: local
+  loki-data:
     driver: local
