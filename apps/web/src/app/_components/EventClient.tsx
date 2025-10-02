@@ -684,7 +684,7 @@ export default function EventClient() {
         <div className="md:flex hidden flex-col gap-1 w-15">
           <span className="text-[#8B8B8B] shrink-0">Starts at</span>
 
-          <h2 className="shrink-0">₹{ev.TicketType[0].price}</h2>
+          <h2>₹{Math.min(...ev.TicketType.map((t) => t.price))}</h2>
         </div>
         <button
           onClick={openModal}
