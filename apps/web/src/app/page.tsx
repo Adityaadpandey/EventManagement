@@ -1,165 +1,120 @@
-"use client";
+import type { Metadata } from "next";
+import HomeClient from "@/app/_components/HomeClient";
+import { fetchPublicEventsSSR } from "@/lib/api/fetchPublicEvents";
 
-import { fetchPublicEvents } from "@/lib/features/eventsSlice";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import EventCard from "./_components/EventCard";
-import NavBar from "./_components/Navbar";
-import Footer from "./_components/Footer";
+export const dynamic = "force-dynamic";
 
-export default function HomePage() {
-  const dispatch = useAppDispatch();
-  const { items, loading, error, page, totalPages } = useAppSelector(
-    (s) => s.events.list,
-  );
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: "Find Events Near You | Tixin - India's Event Booking Platform",
+    description:
+      "Discover and book tickets for cultural fests, tech events, hackathons, concerts, and more across India with Tixin. — your go-to event discovery and ticketing platform.",
+    metadataBase: new URL("https://www.tixin.in"),
+    alternates: {
+      canonical: "https://www.tixin.in",
+      languages: {
+        "en-IN": "https://www.tixin.in",
+      },
+    },
+    keywords: [
+      "Tixin",
+      "events India",
+      "book event tickets",
+      "Lovely Professional University events",
+      "cultural fests",
+      "tech events",
+      "hackathons",
+      "concerts",
+      "event booking platform",
+      "university events",
+      "ticket booking",
+      "edm",
+      "DJ Night",
+      "workshops",
+      "live music",
+      "Jalandhar",
+      "Punjab",
+      "Ludhiana",
+      "free events",
+    ],
+    openGraph: {
+      title: "Find Events Near You | Tixin - India's Event Booking Platform",
+      description:
+        "Discover and book tickets for cultural fests, tech events, hackathons, concerts, and more across India with Tixin. — your go-to event discovery and ticketing platform.",
+      url: "https://www.tixin.in",
+      siteName: "Tixin",
+      images: [
+        {
+          url: "/logos/logoOnBlack.png",
+          width: 1200,
+          height: 630,
+          alt: "Tixin - Discover and Book Events in India",
+        },
+      ],
+      type: "website",
+      locale: "en_IN",
+      countryName: "India",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Find Events Near You | Tixin",
+      description:
+        "Book tickets for cultural fests, tech events, concerts, and more on Tixin, India's leading event booking platform. — your go-to event discovery and ticketing platform.",
+      images: [
+        {
+          url: "/logos/logoOnBlack.png",
+          alt: "Tixin - Event Booking Platform",
+        },
+      ],
+      site: "@tixinHQ",
+      creator: "@tixinHQ",
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-snippet": -1,
+        "max-image-preview": "large",
+        "max-video-preview": -1,
+      },
+    },
+    other: {
+      "application/ld+json": JSON.stringify([
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Tixin",
+          url: "https://www.tixin.in",
+          potentialAction: {
+            "@type": "SearchAction",
+            target: {
+              "@type": "EntryPoint",
+              urlTemplate: "https://www.tixin.in/search?q={search_term_string}",
+            },
+            "query-input": "required name=search_term_string",
+          },
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Tixin Events",
+          url: "https://www.tixin.in",
+          description:
+            "A collection of events including cultural fests, tech events, hackathons, and concerts available for booking on Tixin. — your go-to event discovery and ticketing platform.",
+          hasPart: [],
+        },
+      ]),
+    },
+    verification: {
+      google:
+        "google-site-verification=BNY6wgxrGFUkTXiKyJWJ-SekyawGaeoFxs5BoirrS80",
+    },
+  };
+}
 
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [showLeftFade, setShowLeftFade] = useState(false);
-  const [showRightFade, setShowRightFade] = useState(false);
-
-  const tagsRef = useRef<HTMLDivElement>(null);
-
-  const filters = [
-    "All",
-    "Tech",
-    "Hackathon",
-    "Cultural",
-    "EDM",
-    "Concert",
-    "NGO",
-  ];
-
-  useEffect(() => {
-    dispatch(fetchPublicEvents({ page: 1, limit: 10 }));
-  }, [dispatch]);
-
-  useEffect(() => {
-    const el = tagsRef.current;
-    if (!el) return;
-
-    const checkScroll = () => {
-      const { scrollLeft, scrollWidth, clientWidth } = el;
-      setShowLeftFade(scrollLeft > 0);
-      setShowRightFade(scrollLeft + clientWidth < scrollWidth - 1);
-    };
-
-    checkScroll();
-    el.addEventListener("scroll", checkScroll);
-    window.addEventListener("resize", checkScroll);
-
-    return () => {
-      el.removeEventListener("scroll", checkScroll);
-      window.removeEventListener("resize", checkScroll);
-    };
-  }, []);
-
-  const filteredItems = activeFilter
-    ? items.filter((ev) => ev.category === activeFilter)
-    : items;
-
-  return (
-    <div className="home-page-container">
-      <div className="w-full flex justify-between border-b md:hidden mb-4 pb-4 border-b-[#00000014]">
-        <div className="home-location-box flex">
-          <img src="/svgs/location.svg" className="" alt="" />
-          <p className="home-location-text leading-none">
-            Lovely Professional University
-          </p>
-        </div>
-
-        <div className="flex gap-4 items-center">
-          <img src="/svgs/notification.svg" alt="" className="w-7" />
-
-          <Link
-            href="/profile"
-            className="w-9 h-9 shrink-0 rounded-full overflow-hidden"
-          >
-            <img
-              src="https://thumbs.dreamstime.com/b/simple-vector-illustration-showcases-user-profile-placeholder-icon-consists-black-circle-representing-head-351326903.jpg"
-              alt=""
-              className="w-full h-full object-cover"
-            />
-          </Link>
-        </div>
-      </div>
-      <h1 className="home-page-heading mb-7">Events near you</h1>
-
-      {/* Filter Bar */}
-      {/* <div className="home-filter-bar">
-        <div className="home-filter-tags-wrapper">
-          {showLeftFade && <div className="home-filter-gradient-left" />}
-          <div className="home-filter-tags" ref={tagsRef}>
-            {filters.map((filter, index) => (
-              <h5
-                key={index}
-                className={`home-filter-tag cursor-pointer transition-colors duration-200 ${
-                  activeFilter === filter ? "bg-black text-white" : "bg-white"
-                }`}
-                onClick={() =>
-                  setActiveFilter((prev) => (prev === filter ? null : filter))
-                }
-              >
-                {filter}
-              </h5>
-            ))}
-          </div>
-          {showRightFade && <div className="home-filter-gradient-right" />}
-        </div>
-
-        <div className="home-location-box md:flex hidden">
-          <img src="/svgs/location.svg" className="home-location-icon" alt="" />
-          <p className="home-location-text">Lovely Professional University</p>
-        </div>
-      </div> */}
-
-      {/* Content */}
-      {loading ? (
-        <div className="space-y-6">
-          {Array.from({ length: 4 }).map((_, idx) => (
-            <div key={idx} className="home-skeleton-card">
-              <div className="home-skeleton-image" />
-              <div className="p-4 flex-1 space-y-2">
-                <div className="home-skeleton-text1" />
-                <div className="home-skeleton-text2" />
-                <div className="home-skeleton-text3" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : error ? (
-        <div className="p-6 text-center text-red-400 font-medium">{error}</div>
-      ) : filteredItems.length === 0 ? (
-        <div className="p-6 text-center text-zinc-500">No events found.</div>
-      ) : (
-        <div className="home-event-list">
-          {filteredItems.map((ev) => (
-            <Link
-              key={ev.eventId}
-              href={`/event/${ev.eventId}`}
-              className="group"
-            >
-              <EventCard
-                imageUrl={ev.banner_horizontal}
-                title={ev.title}
-                location={ev.location}
-                date={ev.date}
-                price={ev.TicketType[0].price}
-              />
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {!loading && !error && (
-        <div className="home-pagination pb-40">
-          <span>
-            Page {page} of {totalPages}
-          </span>
-        </div>
-      )}
-
-      <Footer />
-    </div>
-  );
+export default async function HomePage() {
+  const eventData = await fetchPublicEventsSSR({ page: 1, limit: 10 });
+  return <HomeClient />;
 }
