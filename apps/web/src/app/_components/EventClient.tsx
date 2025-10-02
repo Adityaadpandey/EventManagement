@@ -675,7 +675,7 @@ export default function EventClient() {
         </aside>
       </div>
 
-      <div className="mt-4 w-[523px] space-y-2">
+      <div className="mt-4 md:w-[523px] space-y-2 overflow-x-hidden">
         <h5>About Organiser</h5>
         <ReadMore text={ev.lister.bio} maxLength={328} />
       </div>
