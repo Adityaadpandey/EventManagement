@@ -9,6 +9,11 @@ export const detectAttackPatterns = (
   next: NextFunction,
 ) => {
   try {
+    // Skip OPTIONS requests (CORS preflight)
+    if (req.method === "OPTIONS") {
+      return next();
+    }
+
     const userAgent = req.get("User-Agent") || "";
     const referer = req.get("Referer") || "";
     const url = (req.url || "").toLowerCase();
