@@ -13,10 +13,12 @@ import { compressionMiddleware } from "./middlewares/compression.middleware";
 import {
   adminLimiter,
   authLimiter,
+  blockSuspiciousIPs,
   combinedLimiter,
   heavyOperationLimiter,
 } from "./middlewares/rate-limit.middleware";
 import { reqMiddleware } from "./middlewares/req.middleware";
+import { securityMiddleware } from "./middlewares/security.middleware";
 import { adminRouter } from "./routes/v1/admin.router";
 import { authRouter } from "./routes/v1/auth.router";
 import { checkerRouter } from "./routes/v1/checker.router";
@@ -53,26 +55,27 @@ app.use(
 // Apply compression early in the middleware chain
 app.use(compressionMiddleware);
 
-// Body parsing with optimized limits
-app.use(express.json({ limit: "10mb" })); // Reduced from 50mb for better performance
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// Body parsing with strict limits for DDoS protection
+app.use(express.json({ limit: "5mb" })); // Reduced from 10mb
+app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 
-// CORS
-// app.use(
-//   cors({
-//     origin: config.CORS_ORIGIN || "http://localhost:3000",
-//     credentials: true,
-//     optionsSuccessStatus: 200,
-//   }),
-// );
-
+// CORS with proper configuration
 app.use(
   cors({
-    origin: "*",
+    origin: config.CORS_ORIGIN || "*",
+    credentials: true,
+    optionsSuccessStatus: 200,
+    maxAge: 86400, // Cache preflight for 24 hours
   }),
 );
 
-// Apply general rate limiting
+// DDoS Protection Layer 1: Block known suspicious IPs
+app.use(blockSuspiciousIPs);
+
+// DDoS Protection Layer 2: Security middleware (attack pattern detection)
+app.use(securityMiddleware);
+
+// DDoS Protection Layer 3: Rate limiting
 app.use(combinedLimiter);
 
 // Request middleware
