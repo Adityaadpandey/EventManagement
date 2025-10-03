@@ -62,12 +62,19 @@ app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 // CORS with proper configuration
 app.use(
   cors({
-    origin: ["https://www.tixin.in", "http://localhost:3000"], // Adjust as needed
+    origin: ["https://www.tixin.in", "http://localhost:3000"],
     credentials: true,
     optionsSuccessStatus: 200,
     maxAge: 86400, // Cache preflight for 24 hours
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   }),
 );
+
+// Handle OPTIONS requests early (before security middleware)
+app.options("*", (req, res) => {
+  res.status(200).end();
+});
 
 // DDoS Protection Layer 1: Block known suspicious IPs
 app.use(blockSuspiciousIPs);
