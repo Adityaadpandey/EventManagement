@@ -24,7 +24,7 @@ interface Config {
 export const config: Config = {
   SERVICE_NAME: require("../../package.json").name || "user-server",
   PORT: Number.parseInt(process.env.PORT || "7001", 10),
-  CORS_ORIGIN: process.env.CORS_ORIGIN || "http://localhost:3000",
+  CORS_ORIGIN: process.env.CORS_ORIGIN || "https://www.tixin.in",
   LOG_LEVEL: process.env.LOG_LEVEL || "info",
   NODE_ENV: process.env.NODE_ENV || "development",
   REDIS_URL: process.env.REDIS_URL || "",
