@@ -5,7 +5,6 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import EventCard from "@/app/_components/EventCard";
-import NavBar from "@/app/_components/Navbar";
 import Footer from "@/app/_components/Footer";
 
 export default function HomePage() {
