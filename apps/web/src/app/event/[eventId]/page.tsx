@@ -1,16 +1,18 @@
-"use server";
-
 import type { Metadata } from "next";
 import EventClient from "@/app/_components/EventClient";
 import { getEventDetails } from "@/lib/api/getEventDetails";
 
+// Enable ISR with 60 second revalidation
+export const revalidate = 60;
+
 export async function generateMetadata({
   params,
 }: {
-  params: { eventId: string };
+  params: Promise<{ eventId: string }>;
 }): Promise<Metadata> {
-  // Wait for event details first
-  const event = await getEventDetails(params.eventId);
+  // Await params first
+  const { eventId } = await params;
+  const event = await getEventDetails(eventId);
 
   const titleParts = [
     event?.title,
@@ -61,8 +63,7 @@ export async function generateMetadata({
     event?.banner_horizontal ||
     "/logos/logoOnBlack.png";
 
-  // Only use params.eventId here, after async/await
-  const eventUrl = `https://www.tixin.in/event/${params.eventId}`;
+  const eventUrl = `https://www.tixin.in/event/${eventId}`;
 
   return {
     title,
@@ -103,13 +104,15 @@ export async function generateMetadata({
 export default async function EventPage({
   params,
 }: {
-  params: { eventId: string };
+  params: Promise<{ eventId: string }>;
 }) {
-  const event = await getEventDetails(params.eventId);
+  const { eventId } = await params;
+  const event = await getEventDetails(eventId);
 
   if (!event) {
     return <div className="p-6 text-zinc-400">Event not found</div>;
   }
 
-  return <EventClient />;
+  // Pass the server-fetched event data to the client component
+  return <EventClient eventId={eventId} initialEvent={event} />;
 }

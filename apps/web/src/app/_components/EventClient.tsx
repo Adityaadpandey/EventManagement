@@ -43,8 +43,15 @@ type EventPublic = {
   CustomField: CustomField[];
 };
 
-export default function EventClient() {
-  const { eventId } = useParams() as { eventId: string };
+type EventClientProps = {
+  eventId: string;
+  initialEvent: EventPublic;
+};
+
+export default function EventClient({
+  eventId,
+  initialEvent,
+}: EventClientProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
 
@@ -58,14 +65,14 @@ export default function EventClient() {
     hydrated,
   } = useAppSelector((s) => s.auth);
 
-  // event state
+  // event state - use initialEvent as fallback
   const {
     byId,
     loadingId,
     error: eventsError,
   } = useAppSelector((s) => s.events.details);
-  const ev = byId[eventId] as EventPublic | undefined | any;
-  const loadingEvent = loadingId === eventId;
+  const ev = (byId[eventId] as EventPublic | undefined | any) || initialEvent;
+  const loadingEvent = loadingId === eventId && !initialEvent;
 
   // booking UI state (outside modal)
   const [modalOpen, setModalOpen] = useState(false);
@@ -89,11 +96,13 @@ export default function EventClient() {
   const isAuthenticated = Boolean(token && me);
   const showAuthBlock = hydrated && !isAuthenticated;
 
+  // Store initial event in Redux if not already there
   useEffect(() => {
-    if (!ev) {
+    if (initialEvent && !byId[eventId]) {
+      // Optionally dispatch to store the initial event in Redux
       dispatch(fetchEventDetails({ eventId }));
     }
-  }, [dispatch, eventId, ev]);
+  }, [dispatch, eventId, initialEvent, byId]);
 
   useEffect(() => {
     if (!hydrated) {
@@ -504,68 +513,7 @@ export default function EventClient() {
     }
   };
 
-  // Render skeletons & errors
-  if (loadingEvent) {
-    return (
-      <div className="max-w-6xl md:w-[80vw] mx-auto px-4 py-8 animate-pulse">
-        <div className="flex gap-6 md:flex-row flex-col">
-          {/* Left: event image skeleton */}
-          <div className="space-y-5">
-            <div className="relative md:w-[36.319vw] md:h-[36.319vw] w-[91.794vw] h-[91.794vw] md:rounded-[1.3888888vw] rounded-[5.128vw] overflow-hidden bg-zinc-300" />
-          </div>
-
-          {/* Right: event content skeleton */}
-          <aside className="md:w-full max-w-[92vw] space-y-4 overflow-hidden">
-            {/* Title & tags skeleton */}
-            <div className="flex flex-col gap-4 bg-white md:rounded-[1.3888888vw] rounded-[20px] py-5 px-4">
-              <div className="h-10 bg-zinc-300 rounded-md md:w-[464px] w-[80%]" />
-
-              {/* Tags */}
-              <div className="flex gap-2 flex-wrap">
-                {Array.from({ length: 4 }).map((_, idx) => (
-                  <div
-                    key={idx}
-                    className="h-6 w-20 bg-zinc-300 rounded-full"
-                  />
-                ))}
-              </div>
-
-              {/* Event details row (date, time, location) */}
-              <div className="px-6 py-5 bg-[#F5F5F5] md:rounded-[0.833333vw] rounded-xl flex flex-wrap w-full shrink-0 gap-5 justify-between">
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="w-5 h-5 bg-zinc-300 rounded-full" />
-                  <div className="h-4 w-24 bg-zinc-300 rounded" />
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="w-5 h-5 bg-zinc-300 rounded-full" />
-                  <div className="h-4 w-28 bg-zinc-300 rounded" />
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="w-5 h-5 bg-zinc-300 rounded-full" />
-                  <div className="h-4 w-32 bg-zinc-300 rounded" />
-                </div>
-              </div>
-            </div>
-
-            {/* Description skeleton */}
-            <div className="space-y-4 bg-white px-5 py-4 md:rounded-[1.3888888vw] rounded-xl">
-              <div className="h-5 w-32 bg-zinc-300 rounded" />
-              <div className="space-y-2">
-                <div className="h-4 w-full bg-zinc-300 rounded" />
-                <div className="h-4 w-[90%] bg-zinc-300 rounded" />
-                <div className="h-4 w-[85%] bg-zinc-300 rounded" />
-                <div className="h-4 w-[80%] bg-zinc-300 rounded" />
-                <div className="h-4 w-[75%] bg-zinc-300 rounded" />
-              </div>
-            </div>
-          </aside>
-        </div>
-      </div>
-    );
-  }
-
+  // Render errors only (loading is handled by loading.tsx)
   if (eventsError) return <div className="p-6 text-red-500">{eventsError}</div>;
   if (!ev) return <div className="p-6 text-zinc-400">Event not found</div>;
 
@@ -675,7 +623,7 @@ export default function EventClient() {
         </aside>
       </div>
 
-      <div className="mt-4 md:w-[523px] space-y-2 overflow-x-hidden">
+      <div className="mt-4 w-[523px] space-y-2">
         <h5>About Organiser</h5>
         <ReadMore text={ev.lister.bio} maxLength={328} />
       </div>
@@ -731,7 +679,7 @@ export default function EventClient() {
         selectTicketType={selectTicketType}
         fmtCurrency={fmtCurrency}
         localAuthMsg={localAuthMsg}
-        setLocalAuthMsg={setLocalAuthMsg} // Add this line
+        setLocalAuthMsg={setLocalAuthMsg}
         authForm={authForm}
         onAuthChange={onAuthChange}
         isAuthenticated={isAuthenticated}
