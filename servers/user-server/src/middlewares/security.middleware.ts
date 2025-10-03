@@ -1,5 +1,5 @@
 // middlewares/security.middleware.ts - Advanced DDoS/DoS Protection
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 import logger from "../config/logger";
 
 // Detect and block common attack patterns
@@ -204,7 +204,9 @@ export const validateJSON = (
     if (
       req.method === "POST" ||
       req.method === "PUT" ||
-      req.method === "PATCH"
+      req.method === "PATCH" ||
+      req.method === "DELETE" ||
+      req.method === "OPTIONS"
     ) {
       const contentType = req.get("Content-Type") || "";
 
