@@ -72,8 +72,12 @@ app.use(
 );
 
 // Handle OPTIONS requests early (before security middleware)
-app.options("*", (req, res) => {
-  res.status(200).end();
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    res.status(200).end();
+    return;
+  }
+  next();
 });
 
 // DDoS Protection Layer 1: Block known suspicious IPs
