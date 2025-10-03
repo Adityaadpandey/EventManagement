@@ -117,7 +117,7 @@ export default function NavBar() {
             justify-center text-center
             md:px-5 px-7 py-4 rounded-full
              transition-colors duration-200
-            ${isActive ? "text-black font-semibold" : "text-zinc-600"}
+            ${isActive ? "text-[#1E1E1E] font-semibold" : "text-zinc-600"}
           `}
               >
                 <img src={icon} alt="" />
@@ -132,7 +132,7 @@ export default function NavBar() {
       <div className="md:flex items-center gap-4 bg-white p-[0.347vw] pl-[1vw] pr-1  rounded-full hidden">
         <button
           aria-label="Notifications"
-          className="text-zinc-400 hover:text-black transition-colors relative"
+          className="text-zinc-400 hover:text-[#1E1E1E] transition-colors relative"
         >
           <Bell size={20} strokeWidth={1.5} />
         </button>
@@ -163,7 +163,7 @@ export default function NavBar() {
                 key={href}
                 href={href}
                 className={`group flex flex-col md:flex-row items-center md:gap-2 text-xs md:text-sm transition-all duration-200 ${
-                  isActive ? "text-black font-medium" : "text-zinc-600"
+                  isActive ? "text-[#1E1E1E] font-medium" : "text-zinc-600"
                 }`}
               >
                 <Icon size={20} strokeWidth={1.5} />

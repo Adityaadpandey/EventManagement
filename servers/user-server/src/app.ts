@@ -62,7 +62,7 @@ app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 // CORS with proper configuration
 app.use(
   cors({
-    origin: config.CORS_ORIGIN || "*",
+    origin: ["https://www.tixin.in", "http://localhost:3000"], // Adjust as needed
     credentials: true,
     optionsSuccessStatus: 200,
     maxAge: 86400, // Cache preflight for 24 hours
