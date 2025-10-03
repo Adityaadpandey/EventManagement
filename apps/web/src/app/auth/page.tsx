@@ -30,7 +30,7 @@ export default function AuthModal() {
   const [resendTimer, setResendTimer] = useState(0);
   const [step, setStep] = useState(0); // modal steps
 
-  // If user is already logged in → go home
+  // If user is already logged in → redirect
   useEffect(() => {
     if (hydrated && token && user?.name && user?.email) {
       router.replace("/");
@@ -42,7 +42,7 @@ export default function AuthModal() {
     if (!hydrated) dispatch(hydrateSession());
   }, [hydrated, dispatch]);
 
-  // resend timer
+  // resend timer countdown
   useEffect(() => {
     if (!otpSent || resendTimer <= 0) return;
     const id = setInterval(() => {
@@ -86,7 +86,7 @@ export default function AuthModal() {
     try {
       await dispatch(
         verifyOtp({
-          identifier: form.email,
+          phone: form.email, // ✅ matches updated thunk
           otp: form.otp,
           name: form.name,
           email: form.email,
