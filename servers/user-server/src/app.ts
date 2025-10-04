@@ -67,7 +67,12 @@ app.use(
     optionsSuccessStatus: 200,
     maxAge: 86400, // Cache preflight for 24 hours
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Checker-Auth",
+    ],
   }),
 );
 
