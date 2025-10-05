@@ -8,6 +8,7 @@ export class TicketService {
     ticketTypeId: string,
     quantity = 1,
     attendeeData?: any[],
+    discountCode?: string,
   ) {
     try {
       // Fetch ticket type and event details
@@ -42,67 +43,161 @@ export class TicketService {
         return { error: "Ticket sales have ended" };
       }
 
-      const totalPrice = ticketType.price * quantity;
+      // Calculate base price
+      let basePrice = ticketType.price * quantity;
+      let finalPrice = basePrice;
+      let discountCodeId: string | null = null;
+      let discountPercentage = 0;
+      let discountAmount = 0;
+
+      // Validate and apply discount code if provided
+      if (discountCode && discountCode.trim() !== "") {
+        const discount = await prisma.discountCode.findFirst({
+          where: {
+            code: discountCode.toUpperCase(),
+            eventId: ticketType.eventId,
+          },
+        });
+
+        if (!discount) {
+          return { error: "Invalid discount code" };
+        }
+
+        const now = new Date();
+
+        // Check if discount is active
+        if (now < discount.validFrom) {
+          return { error: "This discount code is not yet active" };
+        }
+
+        if (now > discount.validTo) {
+          return { error: "This discount code has expired" };
+        }
+
+        // Check max uses
+        if (
+          discount.maxUses !== null &&
+          discount.usesCount >= discount.maxUses
+        ) {
+          return {
+            error: "This discount code has reached its maximum usage limit",
+          };
+        }
+
+        // Apply discount
+        discountCodeId = discount.codeId;
+        discountPercentage = discount.discountPct;
+        discountAmount = (basePrice * discountPercentage) / 100;
+        finalPrice = Math.max(0, basePrice - discountAmount);
+      }
+
       const qrCode = this.generateQRCode();
 
       // Determine payment status
-      const isFree = totalPrice === 0;
+      const isFree = finalPrice === 0;
       const ticketStatus = isFree ? "SUCCESS" : "PENDING";
 
-      // Create ticket
-      const ticket = await prisma.ticket.create({
-        data: {
-          ticketTypeId,
-          userId,
-          quantity,
-          totalPrice,
-          qrCode,
-          status: ticketStatus,
-          eventEventId: ticketType.eventId,
-        },
-      });
-
-      // Store attendee custom field responses if provided
-      if (attendeeData && attendeeData.length > 0) {
-        const responses = attendeeData.map((response) => ({
-          ticketId: ticket.ticketId,
-          fieldId: response.fieldId,
-          value: response.value,
-        }));
-
-        await prisma.attendeeFieldResponse.createMany({
-          data: responses,
+      // Use transaction to ensure atomicity
+      const result = await prisma.$transaction(async (tx) => {
+        // Create ticket
+        const ticket = await tx.ticket.create({
+          data: {
+            ticketTypeId,
+            userId,
+            quantity,
+            totalPrice: finalPrice,
+            qrCode,
+            status: ticketStatus,
+            eventEventId: ticketType.eventId,
+          },
         });
-      }
+
+        // Store attendee custom field responses if provided
+        if (attendeeData && attendeeData.length > 0) {
+          const responses = attendeeData.map((response) => ({
+            ticketId: ticket.ticketId,
+            fieldId: response.fieldId,
+            value: response.value,
+          }));
+          await tx.attendeeFieldResponse.createMany({
+            data: responses,
+          });
+        }
+
+        // Increment discount code usage if applied
+        if (discountCodeId) {
+          await tx.discountCode.update({
+            where: { codeId: discountCodeId },
+            data: {
+              usesCount: { increment: 1 },
+            },
+          });
+        }
+
+        // Update ticket type sold count
+        await tx.ticketType.update({
+          where: { ticketTypeId },
+          data: {
+            soldCount: { increment: quantity },
+          },
+        });
+
+        // If free ticket, also update event analytics
+        if (isFree) {
+          await tx.event.update({
+            where: { eventId: ticketType.eventId },
+            data: {
+              ticketsSold: { increment: quantity },
+              revenue: { increment: 0 },
+            },
+          });
+        }
+
+        return ticket;
+      });
 
       // If ticket is free, return success directly
       if (isFree) {
         return {
           data: {
-            ticket,
+            ticket: result,
             event: ticketType.event,
             message: "Free ticket issued successfully",
+            pricing: {
+              basePrice,
+              discountApplied: discountPercentage,
+              discountAmount,
+              finalPrice,
+            },
           },
         };
       }
 
-      // Else, create Razorpay order
+      // Create Razorpay order for paid tickets
       const razorpayOrder = await razorpay.orders.create({
-        amount: totalPrice * 100, // in paise
+        amount: Math.round(finalPrice * 100), // in paise, rounded to avoid decimal issues
         currency: "INR",
-        receipt: ticket.ticketId,
+        receipt: result.ticketId,
         notes: {
-          ticketId: ticket.ticketId,
+          ticketId: result.ticketId,
           eventId: ticketType.eventId,
           userId,
+          discountCode: discountCode || null,
+          discountApplied: discountPercentage,
         },
       });
 
       return {
         data: {
-          ticket,
+          ticket: result,
           razorpayOrder,
           event: ticketType.event,
+          pricing: {
+            basePrice,
+            discountApplied: discountPercentage,
+            discountAmount,
+            finalPrice,
+          },
         },
       };
     } catch (error) {

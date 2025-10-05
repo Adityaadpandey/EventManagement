@@ -42,7 +42,7 @@ export class PaymentController {
       if (error.name === "ZodError") {
         return sendError(res, error.errors?.[0]?.message, 400);
       }
-      logger("Error verifying payment:", error);
+      logger.error("Error verifying payment:", error);
       return sendError(res, "Failed to verify payment", 500);
     }
   }
@@ -58,7 +58,7 @@ export class PaymentController {
       if (error.name === "ZodError") {
         return sendError(res, error.errors?.[0]?.message, 400);
       }
-      logger("Error handling payment failure:", error);
+      logger.error("Error handling payment failure:", error);
       return sendError(res, "Failed to handle payment failure", 500);
     }
   }
