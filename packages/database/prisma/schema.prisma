@@ -99,9 +99,12 @@ model Event {
     date              DateTime
     time              DateTime
     location          String
+    longitude         Float?
+    latitude          Float?
     capacity          Int?
     tags              String[] // e.g., ["music", "workshop"]
-
+    chips             String[] // e.g., ["Free Parking", "Wheelchair Accessible"]
+    restrictions      String?
 
     // Admin workflow
     status            Status  @default(NOT_VIEWED)

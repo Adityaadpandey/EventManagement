@@ -500,7 +500,7 @@ export default function EventClient({
       } else {
         const gotoId = ticketId || data?.ticket?.ticketId || data?.ticketId;
         if (gotoId) {
-          router.push(`/ticket/${gotoId}`);
+          router.push(`/tickets/${gotoId}`);
         } else {
           setBuyError(
             "Purchase succeeded but server response unexpected. Check My Bookings.",
