@@ -17,15 +17,15 @@ export class TicketController {
       const userId = req.user?.userId;
       if (!userId) return sendError(res, "User ID is required", 400);
 
-      const { ticketTypeId, quantity, attendeeData } = buyTicketSchema.parse(
-        req.body,
-      );
+      const { ticketTypeId, quantity, attendeeData, discountCode } =
+        buyTicketSchema.parse(req.body);
 
       const result = await this.ticketService.buyTicket(
         userId,
         ticketTypeId,
         quantity,
         attendeeData,
+        discountCode || undefined,
       );
 
       if (result.error) {

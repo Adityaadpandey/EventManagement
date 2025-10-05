@@ -4,6 +4,7 @@ export const buyTicketSchema = z.object({
   ticketTypeId: z.string().min(1, "Ticket type ID is required"),
   quantity: z.number().min(1, "Quantity must be at least 1").default(1),
   attendeeData: z.any().optional(),
+  discountCode: z.string().optional().nullable(),
 });
 
 export const verifyPaymentSchema = z.object({
