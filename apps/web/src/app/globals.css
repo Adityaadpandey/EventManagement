@@ -71,7 +71,7 @@ h1 {
   color: var(--color-neutral-dark3);
   font-feature-settings: "liga" off;
   line-height: 100%;
-  letter-spacing: -1%;
+  letter-spacing: -0.96px;
 }
 
 h2 {
@@ -123,16 +123,16 @@ span {
 }
 
 .home-page-heading {
-  @apply md:w-[290px] w-[200px] leading-none tracking-[-3.2px] text-5xl md:text-[64px] font-extrabold pb-7;
+  @apply md:w-[290px] w-[200px] leading-none tracking-[-3.2px] text-5xl md:text-[64px] font-extrabold md:pb-7 pb-3;
   font-family: var(--primary-font);
 }
 
 .home-filter-bar {
-  @apply flex justify-between items-end mb-4 md:mb-6 w-full overflow-x-auto;
+  @apply flex justify-between items-end mb-4 md:mb-6 w-full;
 }
 
 .home-filter-tags {
-  @apply flex gap-[0.6944vw] md:w-[40vw] max-w-[592px] overflow-auto;
+  @apply flex gap-[0.6944vw] md:w-[40vw] w-[90vw] max-w-[592px] overflow-auto;
   position: relative;
 }
 
@@ -145,9 +145,9 @@ span {
 }
 
 .home-filter-tags {
-  @apply flex gap-[0.6944vw];
+  @apply flex md:gap-[0.6944vw] gap-2;
   overflow-x: auto;
-  padding: 8px 16px; /* give breathing space for gradients */
+  padding: 8px 8px 8px 0px; /* give breathing space for gradients */
   scroll-behavior: smooth;
 }
 

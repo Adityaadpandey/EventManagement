@@ -11,8 +11,8 @@ const transporter = nodemailer.createTransport({
     user: config.SMTP_EMAIL_USER,
     pass: config.SMTP_EMAIL_PASS,
   },
-  logger: true, // Log to console
-  debug: true, // Include SMTP traffic in logs
+  // logger: true, // Log to console
+  // debug: true, // Include SMTP traffic in logs
 });
 
 // Email job data interface

@@ -198,26 +198,30 @@ export default function EventClient({
       setLocalAuthMsg(err?.message || "Failed to send OTP");
     }
   };
-
-  const verifyEmailOtp = async () => {
+  // previous: const verifyEmailOtp = async () => { ... }
+  const verifyEmailOtp = async (otpParam?: string) => {
     setLocalAuthMsg(null);
-    if (!authForm.identifier.trim() || !authForm.otp.trim()) {
+
+    const otpToUse = (otpParam ?? authForm.otp ?? "").toString();
+
+    if (!authForm.identifier?.trim() || !otpToUse.trim()) {
       setLocalAuthMsg("Email and OTP are required.");
       return;
     }
+
     try {
       setIsVerifying(true);
-      // dispatch verifyOtp with identifier + otp + optional name/email so profile can be patched
+
       await dispatch(
         verifyOtp({
           identifier: authForm.identifier,
-          otp: authForm.otp,
+          otp: otpToUse,
           name: authForm.name,
           email: authForm.identifier,
         }),
       ).unwrap();
 
-      // success: auth slice should populate token & user
+      // success: clear otp in UI state
       setAuthForm((s) => ({ ...s, otp: "" }));
       setLocalAuthMsg(null);
     } catch (err: any) {
@@ -519,7 +523,7 @@ export default function EventClient({
 
   // main page render
   return (
-    <div className="max-w-6xl md:w-[80vw] mx-auto px-4 py-8 pb-48">
+    <div className="max-w-6xl md:w-[80vw] mx-auto px-4 py-8 pb-48 w-[100vw] overflow-x-hidden">
       <div className="md:flex gap-2 items-center pb-4 px-1 hidden">
         <Link href="/" className="text-sm text-[#8B8B8B]">
           Home
@@ -546,7 +550,7 @@ export default function EventClient({
         </svg>
         Event Details
       </Link>
-      <div className="flex gap-6 md:flex-row flex-col">
+      <div className="flex gap-6 md:flex-row flex-col w-fit">
         {/* Left: event details */}
         <div className="space-y-5">
           <div className="relative md:w-[36.319vw] md:h-[36.319vw] w-[91.794vw] h-[91.794vw] md:rounded-[1.3888888vw] rounded-[5.128vw] overflow-hidden bg-zinc-300">
@@ -623,7 +627,7 @@ export default function EventClient({
         </aside>
       </div>
 
-      <div className="mt-4 w-[523px] space-y-2">
+      <div className="mt-4 md:w-[523px] space-y-2">
         <h5>About Organiser</h5>
         <ReadMore text={ev.lister.bio} maxLength={328} />
       </div>

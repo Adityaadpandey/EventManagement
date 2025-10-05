@@ -92,30 +92,37 @@ export default function HomePage() {
 
       {/* Filter Bar */}
       <div className="home-filter-bar">
-        <div className="home-filter-tags-wrapper">
-          {showLeftFade && <div className="home-filter-gradient-left" />}
-          <div className="home-filter-tags" ref={tagsRef}>
-            {filters.map((filter, index) => (
-              <h5
-                key={index}
-                className={`home-filter-tag cursor-pointer transition-colors duration-200 ${
-                  activeFilter === filter ? "bg-black text-white" : "bg-white"
-                }`}
-                onClick={() => {
-                  if (filter === "All") {
-                    setActiveFilter("All");
-                  } else {
-                    setActiveFilter((prev) =>
-                      prev === filter ? "All" : filter,
-                    );
-                  }
-                }}
-              >
-                {filter}
-              </h5>
-            ))}
+        <div className="flex items-center gap-4">
+          <img
+            src="/svgs/searchIcon.svg"
+            alt=""
+            className="h-[52px] w-[52px] p-4 bg-white rounded-full md:block hidden"
+          />
+          <div className="home-filter-tags-wrapper">
+            {showLeftFade && <div className="home-filter-gradient-left" />}
+            <div className="home-filter-tags" ref={tagsRef}>
+              {filters.map((filter, index) => (
+                <h5
+                  key={index}
+                  className={`home-filter-tag cursor-pointer transition-colors duration-200 ${
+                    activeFilter === filter ? "bg-black text-white" : "bg-white"
+                  }`}
+                  onClick={() => {
+                    if (filter === "All") {
+                      setActiveFilter("All");
+                    } else {
+                      setActiveFilter((prev) =>
+                        prev === filter ? "All" : filter,
+                      );
+                    }
+                  }}
+                >
+                  {filter}
+                </h5>
+              ))}
+            </div>
+            {showRightFade && <div className="home-filter-gradient-right" />}
           </div>
-          {showRightFade && <div className="home-filter-gradient-right" />}
         </div>
 
         <div className="home-location-box md:flex hidden">
