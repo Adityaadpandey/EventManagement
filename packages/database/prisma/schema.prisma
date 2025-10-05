@@ -132,6 +132,7 @@ model Event {
     CustomField    CustomField[]
     TicketChecker  TicketChecker[] // checkers assigned specific to this event (nullable relation also stored on checker)
     Ticket         Ticket[]
+    DiscountCode   DiscountCode[]
     TicketScanLog  TicketScanLog[]
     EventAnalytics EventAnalytics?
     Refund         Refund[]
@@ -173,6 +174,7 @@ model Ticket {
     ticketId     String     @id @default(uuid())
     ticketTypeId String
     ticketType   TicketType @relation(fields: [ticketTypeId], references: [ticketTypeId])
+
 
     userId String
     user   User   @relation(fields: [userId], references: [userId])
@@ -256,6 +258,23 @@ model TicketScanLog {
     ipAddress    String?
     Event        Event?  @relation(fields: [eventEventId], references: [eventId])
     eventEventId String?
+}
+
+model DiscountCode {
+    codeId   String @id @default(uuid())
+    eventId  String
+    event    Event  @relation(fields: [eventId], references: [eventId])
+
+    code        String @unique
+    description String?
+    discountPct Float  // e.g., 10 for 10% off
+    maxUses     Int?
+    usesCount   Int     @default(0)
+    validFrom   DateTime
+    validTo     DateTime
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 model EventAnalytics {
