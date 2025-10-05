@@ -309,7 +309,7 @@ export default function AuthPage() {
                       value={form.otp[idx] || ""}
                       onChange={(e) => handleOtpChange(e.target.value, idx)}
                       onKeyDown={(e) => handleOtpKeyDown(e, idx)}
-                      className="md:h-16 h-[12.3076vw] md:p-8 w-full text-center text-base border md:rounded-2xl rounded-[4.102vw] border-[#E5E5E5] focus:outline-none"
+                      className="md:h-16 h-[12.3076vw] w-full text-center text-base border md:rounded-2xl rounded-[4.102vw] border-[#E5E5E5] focus:outline-none text-black"
                       aria-label={`OTP digit ${idx + 1}`}
                     />
                   ))}

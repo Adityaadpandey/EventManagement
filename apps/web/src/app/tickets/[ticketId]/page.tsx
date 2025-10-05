@@ -410,7 +410,7 @@ export default function TicketDetailsPage() {
             />
           )}
 
-          <div className="space-y-6 max-w-[382px]">
+          <div className="space-y-6 max-w-[382px] w-full">
             <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800">
               {event?.title || "Event"}
             </h1>
