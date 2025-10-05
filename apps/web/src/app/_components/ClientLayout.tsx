@@ -13,7 +13,7 @@ export default function ClientLayout({
   const pathname = usePathname();
 
   // Add more routes to this array if needed
-  const hideNavOnRoutes = ["/event"];
+  const hideNavOnRoutes = ["/event", "/checker"];
   const shouldHideNav = hideNavOnRoutes.some((path) =>
     pathname.startsWith(path),
   );

@@ -88,7 +88,7 @@ export default function HomePage() {
           </Link>
         </div>
       </div>
-      <h1 className="home-page-heading">Events near you</h1>
+      <h1 className="home-page-heading">Events for you</h1>
 
       {/* Filter Bar */}
       <div className="home-filter-bar">
