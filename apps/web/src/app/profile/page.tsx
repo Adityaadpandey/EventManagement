@@ -241,7 +241,7 @@ export default function ProfilePage() {
     );
 
   return (
-    <div className="bg-[#FBFBFC] p-6 pb-32">
+    <div className="bg-[#FBFBFC] p-6 pb-32 min-h-screen">
       <div className="mx-auto max-w-4xl">
         {/* Profile Card */}
         <div className="bg-white rounded-3xl shadow-md overflow-hidden mb-6">
