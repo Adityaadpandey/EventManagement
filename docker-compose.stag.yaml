@@ -1,0 +1,29 @@
+services:
+  backend-service:
+    build:
+      context: .
+      dockerfile: servers/user-server/Dockerfile
+    image: backend-service
+    ports:
+      - "7001:7001"
+    command: ["node", "dist/bin.js"]
+    environment:
+      - NODE_ENV=production
+      - NODE_OPTIONS=--max-old-space-size=2048
+      - UV_THREADPOOL_SIZE=16
+      - HOST=0.0.0.0
+      - PORT=7001
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://0.0.0.0:7001/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    env_file:
+      - .env
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"

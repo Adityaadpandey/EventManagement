@@ -31,8 +31,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3G  # Reduced to leave more for nginx cache
-          cpus: '2.5'
+          memory: 5G  # Reduced to leave more for nginx cache
+          cpus: '3'
         reservations:
           memory: 2G
           cpus: '1.5'
@@ -123,25 +123,6 @@ services:
       - net.core.somaxconn=4096
       - net.ipv4.tcp_max_syn_backlog=8192
       - net.ipv4.ip_local_port_range=1024 65535
-    networks:
-      - app-network
-
-  # Optional: Add a monitoring service
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
-    container_name: cadvisor
-    ports:
-      - "8080:8080"
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
-    privileged: true
-    devices:
-      - /dev/kmsg
-    restart: unless-stopped
     networks:
       - app-network
 
