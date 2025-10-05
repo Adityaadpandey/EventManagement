@@ -1,6 +1,7 @@
-import React, { useRef, useEffect } from "react";
+import React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { StepBreadcrumb } from "./StepBreadcrumb";
+import OtpInput from "./OtpInput";
 
 const stepVariants = {
   initial: { opacity: 0, y: 40, x: 40 },
@@ -80,90 +81,20 @@ const Modal: React.FC<ModalProps> = ({
   me,
   proceedFromTypes,
 }) => {
-  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  useEffect(() => {
-    if (otpSent && modalStep === 1 && otpInputRefs.current[0]) {
-      setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
-    }
-  }, [otpSent, modalStep]);
-
   if (!modalOpen) return null;
 
-  const handleOtpChange = (idx: number, value: string) => {
-    // Only take the last digit entered
-    const digit = value.replace(/\D/g, "").slice(-1);
-
-    // Build new OTP string
-    const currentOtp = (authForm.otp || "").padEnd(6, " ");
-    const otpArray = currentOtp.split("");
-    otpArray[idx] = digit || " ";
-    const newOtp = otpArray.join("").replace(/\s+$/, ""); // Remove trailing spaces only
-
-    // Update state
-    onAuthChange("otp")({ target: { value: newOtp } } as any);
-
-    // Auto-advance to next input
-    if (digit && idx < 5) {
-      setTimeout(() => otpInputRefs.current[idx + 1]?.focus(), 0);
+  const backdropClick = (e: React.MouseEvent) => {
+    if (e.target !== e.currentTarget) return;
+    if (modalStep === 3) {
+      // while processing, ignore backdrop clicks
+      return;
     }
-
-    // Auto-submit when all 6 digits filled (no spaces)
-    const cleanOtp = newOtp.replace(/\s/g, "");
-    if (cleanOtp.length === 6) {
-      setTimeout(() => verifyEmailOtp(), 400);
-    }
-  };
-
-  const handleOtpKeyDown = (idx: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace") {
-      const currentOtp = authForm.otp || "";
-      const currentValue = currentOtp[idx];
-
-      if (!currentValue && idx > 0) {
-        // If current box is empty, move to previous box
-        e.preventDefault();
-        setTimeout(() => otpInputRefs.current[idx - 1]?.focus(), 0);
-      } else if (currentValue) {
-        // Clear current box
-        const otpArray = currentOtp.padEnd(6, " ").split("");
-        otpArray[idx] = " ";
-        const newOtp = otpArray.join("").replace(/\s+$/, "");
-        onAuthChange("otp")({ target: { value: newOtp } } as any);
-      }
-    } else if (e.key === "ArrowLeft" && idx > 0) {
-      e.preventDefault();
-      setTimeout(() => otpInputRefs.current[idx - 1]?.focus(), 0);
-    } else if (e.key === "ArrowRight" && idx < 5) {
-      e.preventDefault();
-      setTimeout(() => otpInputRefs.current[idx + 1]?.focus(), 0);
-    }
-  };
-
-  const handleOtpPaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData
-      .getData("text")
-      .replace(/\D/g, "")
-      .slice(0, 6);
-
-    if (pastedData) {
-      // Set the OTP value
-      onAuthChange("otp")({ target: { value: pastedData } } as any);
-
-      // Focus the last filled box or the next empty one
-      const focusIdx = Math.min(pastedData.length - 1, 5);
-      setTimeout(() => otpInputRefs.current[focusIdx]?.focus(), 0);
-
-      // Auto-submit if 6 digits pasted
-      if (pastedData.length === 6) {
-        setTimeout(() => verifyEmailOtp(), 400);
-      }
-    }
+    closeModal();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-white/60 backdrop-blur-xl">
+      {/* Backdrop */}
       <div
         className="absolute inset-0"
         onClick={(e) => {
@@ -171,6 +102,7 @@ const Modal: React.FC<ModalProps> = ({
         }}
       />
 
+      {/* Modal */}
       <motion.div
         role="dialog"
         aria-modal="true"
@@ -269,7 +201,7 @@ const Modal: React.FC<ModalProps> = ({
               </div>
 
               {localAuthMsg && (
-                <div className="text-xs text-red-500">{localAuthMsg}</div>
+                <div className="text-xs text-zinc-300">{localAuthMsg}</div>
               )}
 
               <button
@@ -290,10 +222,10 @@ const Modal: React.FC<ModalProps> = ({
               exit="exit"
               variants={stepVariants}
               transition={stepVariants.transition}
-              className="space-y-4 h-full w-full md:w-[796px] md:py-14 py-7 md:px-4 sm:px-0 mx-auto"
+              className="space-y-4 h-full w-full md:w-[796px] md:py-14 py-7 md:px-4 sm:px-0 mx-auto overflow-x-hidden"
               layout
             >
-              <div className="space-y-4 w-full max-w-[523px] mx-auto h-[56vh] overflow-y-auto scrollable-with-scrollbar">
+              <div className="space-y-4 w-full max-w-[523px] mx-auto h-[56vh] overflow-y-auto overflow-x-hidden scrollable-with-scrollbar">
                 <h1>Ticket Details</h1>
 
                 <p className="text-[#8B8B8B]">
@@ -348,48 +280,22 @@ const Modal: React.FC<ModalProps> = ({
                             {authLoading ? "Sending..." : "Send OTP"}
                           </button>
                         ) : (
-                          <div className="px-3 py-2 text-xs text-green-600 shrink-0 text-nowrap text-center flex items-center font-medium">
-                            ✓ OTP sent
+                          <div className="px-3 py-2 text-xs text-zinc-300 shrink-0 text-nowrap text-center flex items-center">
+                            OTP sent
                           </div>
                         )}
                       </div>
                     </div>
 
                     {otpSent && (
-                      <div className="space-y-3">
-                        <div className="text-base">Enter OTP</div>
-                        <div className="flex gap-2 justify-center">
-                          {[0, 1, 2, 3, 4, 5].map((idx) => (
-                            <input
-                              key={idx}
-                              ref={(el) => (otpInputRefs.current[idx] = el)}
-                              type="text"
-                              inputMode="numeric"
-                              maxLength={1}
-                              value={(authForm.otp || "")[idx] || ""}
-                              onChange={(e) =>
-                                handleOtpChange(idx, e.target.value)
-                              }
-                              onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                              onPaste={idx === 0 ? handleOtpPaste : undefined}
-                              disabled={isVerifying}
-                              className="w-12 h-12 text-center text-lg font-semibold border border-[#E5E5E5] rounded-xl bg-[#F5F5F5] focus:outline-none focus:border-black transition-colors"
-                              autoComplete="off"
-                            />
-                          ))}
-                        </div>
-                        <button
-                          onClick={resendOtp}
-                          disabled={resendTimer > 0 || authLoading}
-                          className={`w-full px-3 py-2 rounded-lg text-sm text-white ${
-                            resendTimer > 0 ? "bg-zinc-400" : "bg-zinc-600"
-                          }`}
-                        >
-                          {resendTimer > 0
-                            ? `Resend in ${resendTimer}s`
-                            : "Resend OTP"}
-                        </button>
-                      </div>
+                      <OtpInput
+                        otpLength={6}
+                        verifyEmailOtp={verifyEmailOtp}
+                        resendOtp={resendOtp}
+                        resendTimer={resendTimer}
+                        isVerifying={isVerifying}
+                        authLoading={authLoading}
+                      />
                     )}
                   </div>
                 )}
@@ -438,11 +344,10 @@ const Modal: React.FC<ModalProps> = ({
                     }
                     setModalStep(2);
                   }}
-                  disabled={isVerifying}
-                  className="px-6 sm:py-7 py-6 rounded-full md:text-xl text-base bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer max-w-[300px] disabled:opacity-50"
+                  className="px-6 sm:py-7 py-6 rounded-full md:text-xl text-base bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer max-w-[300px]"
                   style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
                 >
-                  {isVerifying ? "Verifying..." : "Continue to Checkout"}
+                  Continue to Checkout
                 </button>
               </div>
             </motion.div>
@@ -511,6 +416,7 @@ const Modal: React.FC<ModalProps> = ({
 
                 <div className="flex flex-col px-2">
                   <div className="pt-6 flex flex-col md:flex-row md:justify-between md:items-end gap-8">
+                    {/* Left: User Details */}
                     <div className="flex flex-col gap-5 w-full md:max-w-[50%] px-3">
                       <div className="space-y-1">
                         <p className="text-[#8B8B8B]">Name</p>{" "}
@@ -533,6 +439,7 @@ const Modal: React.FC<ModalProps> = ({
                       </div>
                     </div>
 
+                    {/* Right: Pricing Summary */}
                     <div className="flex flex-col gap-3 text-right md:w-[246px]">
                       <div className="flex justify-between px-2">
                         <p className="text-[#8B8B8B]">SUB TOTAL</p>{" "}
@@ -542,7 +449,14 @@ const Modal: React.FC<ModalProps> = ({
                       </div>
                       <div className="flex justify-between px-2">
                         <p className="text-[#8B8B8B]">GST</p>{" "}
-                        <p className="text-zinc-900">₹0</p>
+                        <p className="text-zinc-900">
+                          ₹0
+                          {/* {(
+                            (selectedTicket?.price ?? 0) *
+                            selectedQuantity *
+                            0.18
+                          ).toFixed(2)} */}
+                        </p>
                       </div>
                       <div className="flex justify-between bg-[#F5F5F5] py-3 px-2 rounded-md m-0">
                         <h5 className="text-[#8B8B8B]">TOTAL</h5>{" "}
@@ -569,6 +483,7 @@ const Modal: React.FC<ModalProps> = ({
                   className="px-4 sm:py-7 py-6 relative rounded-full overflow-hidden text-xl bg-[#FFE348] w-[300px] border-b-3 border-[#FFDA0A] cursor-pointer mx-auto"
                   style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
                 >
+                  {/* Shine animation using Framer Motion */}
                   <motion.div
                     className="absolute top-0 h-full w-full pointer-events-none overflow-hidden rounded-full"
                     initial={{ x: "-100%", y: "-40" }}
@@ -587,6 +502,7 @@ const Modal: React.FC<ModalProps> = ({
                     />
                   </motion.div>
 
+                  {/* Button Text */}
                   <div className="z-10 relative">
                     {buying ? "Processing..." : "Proceed to Payment"}
                   </div>
@@ -605,6 +521,7 @@ const Modal: React.FC<ModalProps> = ({
               className="w-full flex flex-col items-center justify-center p-8"
             >
               <div className="flex flex-col items-center gap-6 text-center">
+                {/* Animated Loader Ring */}
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{
@@ -621,14 +538,16 @@ const Modal: React.FC<ModalProps> = ({
                   </div>
                 </motion.div>
 
+                {/* Title */}
                 <h3 className="text-xl font-semibold text-gray-900">
                   Processing your payment…
                 </h3>
                 <p className="text-sm text-gray-600 max-w-[400px] leading-relaxed">
-                  We're verifying your payment and generating your ticket. This
-                  may take a few seconds — please don't close or refresh.
+                  We’re verifying your payment and generating your ticket. This
+                  may take a few seconds — please don’t close or refresh.
                 </p>
 
+                {/* Progress Bar with shimmer */}
                 <div className="mt-4 w-full max-w-[420px]">
                   <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                     <motion.div
@@ -645,6 +564,7 @@ const Modal: React.FC<ModalProps> = ({
                   </div>
                 </div>
 
+                {/* Helper text */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
