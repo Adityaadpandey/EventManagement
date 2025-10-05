@@ -350,7 +350,7 @@ export default function MyTicketsPage() {
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-white h-screen overflow-y-auto pb-20">
       <div className="max-w-6xl mx-auto p-4 sm:p-6 md:p-8 pb-20">
         <h1 className="text-5xl text-[#3D3D3D] home-page-heading">
           My Tickets
