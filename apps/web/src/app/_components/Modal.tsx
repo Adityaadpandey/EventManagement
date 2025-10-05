@@ -106,7 +106,7 @@ const Modal: React.FC<ModalProps> = ({
       <motion.div
         role="dialog"
         aria-modal="true"
-        className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[5vw] sm:pt-9 pt-2 z-10 overflow-y-auto overflow-x-hidden"
+        className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[5vw] sm:pt-9 pt-2 z-10 overflow-hidden"
         style={{
           boxShadow: "0 0 54px 10px rgba(0, 0, 0, 0.08)",
           touchAction: "none",
@@ -154,50 +154,96 @@ const Modal: React.FC<ModalProps> = ({
             >
               <div className="text-sm">Choose ticket type</div>
               <div className="space-y-3 md:max-h-[300px] overflow-y-auto">
-                {ev.TicketType.map((t: any) => {
-                  const active = t.ticketTypeId === selectedTicketId;
-                  return (
-                    <div
-                      key={t.ticketTypeId}
-                      className={`flex items-center justify-between gap-4 p-3 rounded-2xl ${
-                        active ? "bg-[#FFF2AB]" : "bg-[#FFF2AB]"
-                      }`}
-                    >
-                      <div>
-                        <div className="font-medium">{t.name}</div>
-                        <div className="text-xs">₹{t.price}</div>
-                      </div>
-                      <div className="flex items-center gap-2 bg-black text-white rounded-xl py-1">
-                        {active ? (
-                          <div className="flex items-center">
+                {[...ev.TicketType]
+                  .sort((a: any, b: any) => b.price - a.price)
+                  .map((t: any, index: number) => {
+                    const active = t.ticketTypeId === selectedTicketId;
+
+                    // Defaults
+                    let isGradient = false;
+                    let innerClass =
+                      "flex items-center justify-between gap-4 p-3 rounded-2xl";
+                    let wrapperClass = "rounded-2xl";
+                    let wrapperStyle: React.CSSProperties | undefined =
+                      undefined;
+                    let innerStyle: React.CSSProperties | undefined = undefined;
+
+                    // Handle special styles for top 2 ticket types
+                    if (ev.TicketType.length >= 3) {
+                      if (index === 0) {
+                        isGradient = true;
+
+                        // Gradient border using wrapper
+                        wrapperClass += " p-[2px]";
+                        wrapperStyle = {
+                          backgroundImage:
+                            "linear-gradient(90deg, #FFC670 0%, #83F180 50%, #1BB3F3 100%)",
+                        };
+
+                        // Gradient bg with white translucent overlay
+                        innerStyle = {
+                          backgroundImage:
+                            "linear-gradient(0deg, rgba(255,255,255,0.6), rgba(255,255,255,0.6)), linear-gradient(90deg, #FFC670, #83F180, #1BB3F3)",
+                        };
+                      } else if (index === 1) {
+                        innerClass += " bg-[#FFF2AB]";
+                      } else {
+                        innerClass += " bg-[#F5F5F5]";
+                      }
+                    } else {
+                      innerClass += " bg-[#F5F5F5]";
+                    }
+
+                    const TicketBox = (
+                      <div className={innerClass} style={innerStyle}>
+                        <div>
+                          <div className="font-medium">{t.name}</div>
+                          <div className="text-xs">₹{t.price}</div>
+                        </div>
+                        <div className="flex items-center gap-2 bg-black text-white rounded-xl py-1">
+                          {active ? (
+                            <div className="flex items-center">
+                              <button
+                                onClick={decQty}
+                                className="px-3 cursor-pointer"
+                              >
+                                −
+                              </button>
+                              <h6 className="text-center bg-white text-black rounded-lg w-[43px] h-[40px] font-semibold flex items-center justify-center">
+                                {selectedQuantity}
+                              </h6>
+                              <button
+                                onClick={incQty}
+                                className="px-3 cursor-pointer"
+                              >
+                                +
+                              </button>
+                            </div>
+                          ) : (
                             <button
-                              onClick={decQty}
-                              className="px-3 cursor-pointer"
+                              onClick={() => selectTicketType(t.ticketTypeId)}
+                              className="px-4 py-2 rounded-xl bg-black text-white cursor-pointer"
                             >
-                              −
+                              ADD
                             </button>
-                            <h6 className="text-center bg-white text-black rounded-lg w-[43px] h-[40px] font-semibold flex items-center justify-center">
-                              {selectedQuantity}
-                            </h6>
-                            <button
-                              onClick={incQty}
-                              className="px-3 cursor-pointer"
-                            >
-                              +
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => selectTicketType(t.ticketTypeId)}
-                            className="px-4 py-2 rounded-xl bg-black text-white cursor-pointer"
-                          >
-                            ADD
-                          </button>
-                        )}
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+
+                    // Only wrap with gradient border if it's the highest price ticket
+                    return isGradient ? (
+                      <div
+                        key={t.ticketTypeId}
+                        className={wrapperClass}
+                        style={wrapperStyle}
+                      >
+                        {TicketBox}
+                      </div>
+                    ) : (
+                      <div key={t.ticketTypeId}>{TicketBox}</div>
+                    );
+                  })}
               </div>
 
               {localAuthMsg && (
@@ -225,7 +271,7 @@ const Modal: React.FC<ModalProps> = ({
               className="space-y-4 h-full w-full md:w-[796px] md:py-14 py-7 md:px-4 sm:px-0 mx-auto overflow-x-hidden"
               layout
             >
-              <div className="space-y-4 w-full max-w-[523px] mx-auto h-[56vh] overflow-y-auto overflow-x-hidden scrollable-with-scrollbar">
+              <div className="space-y-4 w-full max-w-[523px] mx-auto h-[56vh] overflow-y-auto overflow-hidden scrollable-with-scrollbar">
                 <h1>Ticket Details</h1>
 
                 <p className="text-[#8B8B8B]">
