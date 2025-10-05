@@ -302,7 +302,7 @@ const Modal: React.FC<ModalProps> = ({
 
                 {ev.CustomField?.length > 0 && (
                   <div className="mt-3 space-y-3">
-                    <div className="text-base">Attendee info</div>
+                    <div className="text-base">Additional info</div>
                     {ev.CustomField.map((cf: any, idx: number) => (
                       <div key={cf.label + idx} className="space-y-3">
                         <div className="text-base">
