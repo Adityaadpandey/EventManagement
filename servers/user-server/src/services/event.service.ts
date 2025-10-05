@@ -26,7 +26,11 @@ export interface CreateEventRequest {
   date: string; // ISO date string
   time: string; // ISO time string
   tags: string[];
+  chips: string[];
+  restrictions?: string;
   location: string;
+  longitude?: number;
+  latitude?: number;
   capacity?: number;
   samplePoster?: string;
   socialMediaGraphic?: string;
@@ -125,7 +129,11 @@ export class EventService {
             banner_vertical: eventData.banner_vertical,
             banner_square: eventData.banner_square,
             date: eventDate,
+            chips: eventData.chips,
+            restrictions: eventData.restrictions,
             time: eventTime,
+            longitude: eventData.longitude,
+            latitude: eventData.latitude,
             location: eventData.location,
             capacity: eventData.capacity,
             status: "NOT_VIEWED",

@@ -21,7 +21,11 @@ export const createEventSchema = z.object({
   banner_vertical: z.string().url("Invalid banner_vertical URL"),
   banner_square: z.string().url("Invalid banner_square URL"),
   date: z.string().min(1, "Date is required"),
+  longitude: z.number().optional(),
+  latitude: z.number().optional(),
   tags: z.array(z.string()).optional().nullable(),
+  chips: z.array(z.string()).optional().nullable(),
+  restrictions: z.string().optional(),
   time: z.string().min(1, "Time is required"),
   location: z.string().min(1, "Location is required"),
   capacity: z

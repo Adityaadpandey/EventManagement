@@ -25,6 +25,7 @@ export class EventController {
       const result = await this.eventService.createEvent(userId, {
         ...validatedData,
         tags: validatedData.tags || [],
+        chips: validatedData.chips || [],
       });
       return sendSuccess(res, result.message, result.data, 201);
     } catch (error: any) {
