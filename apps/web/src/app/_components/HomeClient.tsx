@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import EventCard from "@/app/_components/EventCard";
 import Footer from "@/app/_components/Footer";
-import { Bell } from "lucide-react";
+import { Bell, X } from "lucide-react";
 
 export default function HomePage() {
   const dispatch = useAppDispatch();
@@ -19,6 +19,8 @@ export default function HomePage() {
   const [showLeftFade, setShowLeftFade] = useState(false);
   const [showRightFade, setShowRightFade] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const tagsRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -101,14 +103,35 @@ export default function HomePage() {
     };
   }, []);
 
+  // Apply search filter first
+  const searchFiltered = searchQuery
+    ? items.filter(
+        (ev) =>
+          ev.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          ev.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          ev.tags?.some((tag) =>
+            tag.toLowerCase().includes(searchQuery.toLowerCase()),
+          ),
+      )
+    : items;
+
+  // Then apply category filter
   const filteredItems =
     activeFilter === "All"
-      ? items
-      : items.filter((ev) =>
+      ? searchFiltered
+      : searchFiltered.filter((ev) =>
           ev.tags?.some(
             (tag) => tag.toLowerCase() === activeFilter.toLowerCase(),
           ),
         );
+
+  const toggleSearch = () => {
+    const newSearchOpen = !searchOpen;
+    setSearchOpen(newSearchOpen);
+    if (!newSearchOpen) {
+      setSearchQuery(""); // Clear search query on close
+    }
+  };
 
   return (
     <div className="home-page-container">
@@ -134,11 +157,16 @@ export default function HomePage() {
           <AnimatePresence>
             {notificationOpen && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="absolute top-12 right-0 max-w-sm w-[80.256vw] p-4 bg-white/70 backdrop-blur-2xl rounded-2xl shadow-lg z-50 space-y-4"
+                initial={{ opacity: 0, scale: 0.8, y: -20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: -20 }}
+                transition={{
+                  duration: 0.35,
+                  ease: [0.16, 1, 0.3, 1], // Apple-like "springy ease"
+                }}
+                className="absolute top-12 right-0 max-w-sm w-[80.256vw] p-4 
+                 bg-white/70 backdrop-blur-2xl rounded-2xl shadow-lg 
+                 z-50 space-y-4 origin-top"
               >
                 <h3 className="font-semibold text-2xl text-gray-900 bricolage-grotesque leading-none">
                   Notifications
@@ -148,9 +176,8 @@ export default function HomePage() {
                     notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`px-3 py-2 hover:bg-gray-50 transition-colors cursor-pointer bg-white rounded-xl ${
-                          !notification.read ? "" : ""
-                        }`}
+                        className="px-3 py-2 hover:bg-gray-50 transition-colors 
+                         cursor-pointer bg-white rounded-xl"
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1 pr-2">
@@ -190,13 +217,19 @@ export default function HomePage() {
       <h1 className="home-page-heading">Events for you</h1>
 
       {/* Filter Bar */}
-      <div className="home-filter-bar">
+      <div className="home-filter-bar relative">
         <div className="flex items-center gap-4">
-          <img
-            src="/svgs/searchIcon.svg"
-            alt=""
-            className="h-[52px] w-[52px] p-4 bg-white rounded-full md:block hidden"
-          />
+          <button
+            onClick={toggleSearch}
+            className="h-[52px] w-[52px] p-4 bg-white rounded-full md:block hidden relative z-50 cursor-pointer flex items-center justify-center"
+          >
+            {searchOpen ? (
+              <X size={20} className="text-gray-600" />
+            ) : (
+              <img src="/svgs/searchIcon.svg" alt="Search" />
+            )}
+          </button>
+
           <div className="home-filter-tags-wrapper">
             {showLeftFade && <div className="home-filter-gradient-left" />}
             <div className="home-filter-tags" ref={tagsRef}>
@@ -228,6 +261,57 @@ export default function HomePage() {
           <img src="/svgs/location.svg" className="home-location-icon" alt="" />
           <p className="home-location-text">Lovely Professional University</p>
         </div>
+
+        <AnimatePresence>
+          {searchOpen && (
+            <motion.div
+              className="absolute left-0 top-0 h-[52px] bg-white shadow-lg z-40 flex items-center md:block hidden"
+              initial={{
+                width: 52,
+                height: 52,
+                borderRadius: "50%",
+                scaleY: 0.9,
+                y: 0,
+                opacity: 0,
+              }}
+              animate={{
+                width: "300px",
+                height: 52,
+                borderRadius: "9999px",
+                scaleY: [0.9, 1.05, 1],
+                y: 70,
+                opacity: 1,
+              }}
+              exit={{
+                width: 52,
+                height: 52,
+                borderRadius: "50%",
+                scaleY: 0.9,
+                opacity: 0,
+                y: 0,
+              }}
+              transition={{
+                duration: 0.5,
+                ease: [0.22, 1, 0.36, 1], // cubic-bezier like water droplet
+              }}
+              style={{ transformOrigin: "top center" }}
+            >
+              <motion.input
+                type="text"
+                placeholder="Search events, tags, or locations..."
+                className="w-full h-full bg-transparent outline-none px-4 text-base placeholder:text-gray-500 opacity-0"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") toggleSearch();
+                }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Content */}
@@ -266,7 +350,11 @@ export default function HomePage() {
       ) : error ? (
         <div className="p-6 text-center text-red-400 font-medium">{error}</div>
       ) : filteredItems.length === 0 ? (
-        <div className="p-6 text-center text-zinc-500">No events found.</div>
+        <div className="p-6 text-center text-zinc-500">
+          {searchQuery || activeFilter !== "All"
+            ? "No events found matching your search or filter."
+            : "No events found."}
+        </div>
       ) : (
         <div className="home-event-list">
           {filteredItems.map((ev) => (
