@@ -260,6 +260,10 @@ export class EventService {
           description: true,
           date: true,
           time: true,
+          chips: true,
+          restrictions: true,
+          longitude: true,
+          latitude: true,
           tags: true,
           location: true,
           capacity: true,
@@ -353,6 +357,10 @@ export class EventService {
           banner_square: true,
           date: true,
           time: true,
+          chips: true,
+          restrictions: true,
+          longitude: true,
+          latitude: true,
           tags: true,
           location: true,
           capacity: true,
@@ -370,6 +378,11 @@ export class EventService {
               fieldType: true,
               required: true,
               options: true,
+            },
+          },
+          _count: {
+            select: {
+              DiscountCode: true, // This adds the count of discount codes
             },
           },
         },
@@ -399,6 +412,12 @@ export class EventService {
               },
             },
           },
+          DiscountCode: {
+            select: {
+              code: true,
+              description: true,
+            },
+          },
           TicketType: true,
           CustomField: true,
           EventAnalytics: true,
@@ -419,6 +438,7 @@ export class EventService {
       throw error;
     }
   }
+
   async patchEvent(userId: string, eventId: string, updateData: any) {
     try {
       const updatedEvent = await prisma.event.update({
