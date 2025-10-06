@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Home,
   PlusSquare,
@@ -11,6 +11,7 @@ import {
   Bell,
   ShieldCheck,
   TicketIcon,
+  X,
 } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { AppDispatch, RootState } from "@/lib/store";
@@ -21,8 +22,12 @@ import {
 
 export default function NavBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Ref for the notification container to handle hover
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   const dispatch = useDispatch<AppDispatch>();
   const {
@@ -37,11 +42,57 @@ export default function NavBar() {
     }
   }, [hydrated, dispatch]);
 
+  // Close notification when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target as Node)
+      ) {
+        setNotificationOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const logout = () => {
     dispatch(logoutAction());
     router.refresh();
     router.push("/");
   };
+
+  const notifications = [
+    {
+      id: 1,
+      title: "Event Approved",
+      text: "Your event has been approved!",
+      read: false,
+    },
+    {
+      id: 2,
+      title: "New Booking",
+      text: "New booking received for Summer Festival",
+      read: false,
+    },
+    {
+      id: 3,
+      title: "Reminder",
+      text: "Event reminder: Tech Conference starts tomorrow",
+      read: true,
+    },
+    {
+      id: 4,
+      title: "Payment Received",
+      text: "Payment received for $150",
+      read: true,
+    },
+  ];
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Icons and links
   const navItems = {
@@ -129,14 +180,87 @@ export default function NavBar() {
       </div>
 
       {/* Group 2: Notification + Profile */}
-      <div className="md:flex items-center gap-4 bg-white p-[0.347vw] pl-[1vw] pr-1  rounded-full hidden">
-        <button
-          aria-label="Notifications"
-          className="text-zinc-400 hover:text-[#1E1E1E] transition-colors relative"
+      <div className="md:flex items-center gap-4 bg-white p-[0.347vw] pl-[1vw] pr-1 rounded-full hidden">
+        {/* Notification Bell with Dropdown */}
+        <div
+          ref={notificationRef}
+          className="relative"
+          onMouseEnter={() => setNotificationOpen(true)}
+          onMouseLeave={() => setNotificationOpen(false)}
         >
-          <Bell size={20} strokeWidth={1.5} />
-        </button>
+          <button
+            aria-label="Notifications"
+            className="text-zinc-400 hover:text-[#1E1E1E] transition-colors relative p-2 rounded-full hover:bg-gray-100"
+          >
+            <Bell size={20} strokeWidth={1.5} />
+            {/* {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )} */}
+          </button>
 
+          {/* Notification Dropdown */}
+          <AnimatePresence>
+            {notificationOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="absolute bottom-5 left-1/2 -translate-x-1/2 mb-3 w-fit p-6 pb-8 rounded-2xl overflow-hidden z-50 backdrop-blur-xl"
+              >
+                <div className="w-[398px] p-4 space-y-4 bg-[#ffffffd4] backdrop-blur-3xl rounded-[20px] backdropBlur">
+                  {/* Header */}
+                  <h3 className="font-semibold text-2xl text-gray-900 bricolage-grotesque leading-none">
+                    Notifications
+                  </h3>
+
+                  {/* Notifications List */}
+                  <div className="max-h-[364px] space-y-4 overflow-y-auto">
+                    {notifications.length > 0 ? (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className={`px-3 py-2 hover:bg-gray-50 transition-colors cursor-pointer bg-white rounded-xl ${
+                            !notification.read ? "" : ""
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 pr-2">
+                              <p className="font-medium">
+                                {notification.title}
+                              </p>
+                              <span className="text-[#8B8B8B] mt-1">
+                                {notification.text}
+                              </span>
+                            </div>
+                            {/* {!notification.read && (
+                              <span className="w-2 h-2 rounded-full flex-shrink-0 mt-1 bg-blue-500" />
+                            )} */}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center text-gray-500">
+                        <Bell
+                          size={32}
+                          className="mx-auto mb-2 text-gray-300"
+                        />
+                        <p>No notifications yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Arrow pointing to bell */}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-r border-b border-gray-200 transform rotate-45 -mt-2" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Profile Link */}
         {navItems.group2.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
           return (
