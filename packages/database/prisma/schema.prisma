@@ -45,7 +45,7 @@ model User {
     userId   String  @id @default(uuid())
     phone    String?  @unique
     email    String? @unique
-    password String? // Null if OAuth (store hashed)
+    password String?
     name     String?
     avatar   String?
 
@@ -62,9 +62,16 @@ model User {
     // Relations
     Lister        Lister?
     Ticket        Ticket[]
-    TicketScanLog TicketScanLog[] // scans performed by this user (if used as checker)
+    TicketScanLog TicketScanLog[]
     Refund        Refund[]
+
+    // INDEXES
+    @@index([role]) // Filter users by role
+    @@index([isActive]) // Find active/inactive users
+    @@index([createdAt]) // Sort by registration date
+    @@index([role, isActive]) // Composite: active users by role
 }
+
 
 model Lister {
     listerId String @id @default(uuid())
@@ -81,8 +88,13 @@ model Lister {
 
     // Relations
     Event           Event[]
-    TicketChecker   TicketChecker[] // checkers created by this lister
+    TicketChecker   TicketChecker[]
     ListerAnalytics ListerAnalytics?
+
+    // INDEXES
+    @@index([status]) // Filter by approval status
+    @@index([createdAt]) // Sort by registration date
+    @@index([status, createdAt]) // Composite: pending listers sorted by date
 }
 
 model Event {
@@ -102,8 +114,8 @@ model Event {
     longitude         Float?
     latitude          Float?
     capacity          Int?
-    tags              String[] // e.g., ["music", "workshop"]
-    chips             String[] // e.g., ["Free Parking", "Wheelchair Accessible"]
+    tags              String[]
+    chips             String[]
     restrictions      String?
 
     // Admin workflow
@@ -114,7 +126,7 @@ model Event {
     // Admin-only details
     samplePoster       String?
     socialMediaGraphic String?
-    eventFormat        String? // text or PDF link
+    eventFormat        String?
     requestedVenue     String?
     termsConditions    String?
     rulesRegulations   String?
@@ -124,7 +136,7 @@ model Event {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    // Basic aggregated analytics (fast reads)
+    // Basic aggregated analytics
     viewsCount     Int   @default(0)
     ctaClicksCount Int   @default(0)
     ticketsSold    Int   @default(0)
@@ -133,12 +145,23 @@ model Event {
     // Relations
     TicketType     TicketType[]
     CustomField    CustomField[]
-    TicketChecker  TicketChecker[] // checkers assigned specific to this event (nullable relation also stored on checker)
+    TicketChecker  TicketChecker[]
     Ticket         Ticket[]
     DiscountCode   DiscountCode[]
     TicketScanLog  TicketScanLog[]
     EventAnalytics EventAnalytics?
     Refund         Refund[]
+
+    // INDEXES - Most critical for performance
+    @@index([status]) // Filter by status (APPROVED, PENDING, etc)
+    @@index([latitude, longitude]) // Location-based bounding box queries
+    @@index([date]) // Sort/filter by event date
+    @@index([listerId]) // Query events by specific lister
+    @@index([createdAt]) // Recent events, admin dashboard
+    @@index([status, date]) // Composite: approved events sorted by date
+    @@index([status, latitude, longitude]) // Composite: location queries on approved events
+    @@index([listerId, status]) // Composite: lister's events by status
+    @@index([date, status]) // Composite: upcoming approved events
 }
 
 model CustomField {
@@ -146,10 +169,14 @@ model CustomField {
     eventId               String
     event                 Event                   @relation(fields: [eventId], references: [eventId])
     label                 String
-    fieldType             String // e.g., text, number, dropdown, email
+    fieldType             String
     required              Boolean                 @default(false)
-    options               String? // JSON or comma-separated for dropdown options
+    options               String?
     AttendeeFieldResponse AttendeeFieldResponse[]
+
+    // INDEXES
+    @@index([eventId]) // Query fields for specific event
+    @@index([required]) // Find required fields
 }
 
 model TicketType {
@@ -166,23 +193,27 @@ model TicketType {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    // basic counters
     soldCount Int @default(0)
 
     // Relations
     Ticket Ticket[]
+
+    // INDEXES
+    @@index([eventId]) // Query ticket types for event
+    @@index([salesCutoff]) // Find expiring ticket types
+    @@index([eventId, price]) // Composite: ticket types sorted by price
 }
+
 
 model Ticket {
     ticketId     String     @id @default(uuid())
     ticketTypeId String
     ticketType   TicketType @relation(fields: [ticketTypeId], references: [ticketTypeId])
 
-
     userId String
     user   User   @relation(fields: [userId], references: [userId])
 
-    status     TicketPaymentStatus  @default(PENDING) // PENDING, APPROVED, REJECTED, CANCELLED
+    status     TicketPaymentStatus  @default(PENDING)
     quantity   Int
     totalPrice Float
     qrCode     String  @unique
@@ -191,15 +222,26 @@ model Ticket {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    // store how custom fields were answered for this ticket (attendee details)
+    // Relations
     AttendeeFieldResponse AttendeeFieldResponse[]
+    Event                 Event?                  @relation(fields: [eventEventId], references: [eventId])
+    eventEventId          String?
+    TicketScanLog         TicketScanLog[]
+    Refund                Refund[]
 
-    // relation to refunds
-    Event         Event?          @relation(fields: [eventEventId], references: [eventId])
-    eventEventId  String?
-    TicketScanLog TicketScanLog[]
-    Refund        Refund[]
+    // INDEXES - Critical for ticket operations
+    @@index([userId]) // User's tickets
+    @@index([ticketTypeId]) // Tickets by type
+    @@index([eventEventId]) // All tickets for an event
+    @@index([status]) // Filter by payment status
+    @@index([checkedIn]) // Find unchecked tickets
+    @@index([createdAt]) // Recent purchases
+    @@index([userId, status]) // Composite: user's tickets by status
+    @@index([eventEventId, status]) // Composite: event tickets by status
+    @@index([eventEventId, checkedIn]) // Composite: event check-in status
+    @@index([qrCode]) // Fast QR code lookup (already unique, but explicit index helps)
 }
+
 
 model AttendeeFieldResponse {
     responseId String      @id @default(uuid())
@@ -209,36 +251,42 @@ model AttendeeFieldResponse {
     field      CustomField @relation(fields: [fieldId], references: [fieldId])
     value      String
     createdAt  DateTime    @default(now())
+
+    // INDEXES
+    @@index([ticketId]) // Get all responses for a ticket
+    @@index([fieldId]) // Analytics on field responses
 }
+
 
 model TicketChecker {
     checkerId String @id @default(uuid())
 
-    // Who created this checker credential
     listerId String
     lister   Lister @relation(fields: [listerId], references: [listerId])
 
-    // Optional: assign to a specific event. If null, checker can be assigned to multiple events via EventCheckerAssignment
     eventId String?
     event   Event?  @relation(fields: [eventId], references: [eventId])
 
-    // Credentials (store hashed passwords in production)
     username String
     password String
 
-    // lifecycle
-    active     Boolean   @default(true) // quick enable/disable
-    deprecated Boolean   @default(false) // intentionally deprecated
-    expiresAt  DateTime? // when this credential auto-expires
+    active     Boolean   @default(true)
+    deprecated Boolean   @default(false)
+    expiresAt  DateTime?
     revokedAt  DateTime?
 
     createdAt     DateTime        @default(now())
-    createdBy     String? // optional admin/userId who created it
+    createdBy     String?
     TicketScanLog TicketScanLog[]
 
-    // ensure uniqueness per event+username (if eventId present)
     @@unique([eventId, username])
     @@index([listerId])
+
+    // INDEXES
+    @@index([active]) // Find active checkers
+    @@index([eventId]) // Checkers for specific event
+    @@index([expiresAt]) // Find expiring credentials
+    @@index([listerId, active]) // Composite: lister's active checkers
 }
 
 model TicketScanLog {
@@ -246,14 +294,14 @@ model TicketScanLog {
     ticketId String
     ticket   Ticket @relation(fields: [ticketId], references: [ticketId])
 
-    checkerId String? // null if unknown/manual
+    checkerId String?
     checker   TicketChecker? @relation(fields: [checkerId], references: [checkerId])
 
-    performedByUserId String? // optional: user id of checker if they are a registered user
+    performedByUserId String?
     performedByUser   User?   @relation(fields: [performedByUserId], references: [userId])
 
     scannedAt DateTime @default(now())
-    action    String // SCAN / RESET / OVERRIDE
+    action    String
     success   Boolean
     note      String?
 
@@ -261,7 +309,18 @@ model TicketScanLog {
     ipAddress    String?
     Event        Event?  @relation(fields: [eventEventId], references: [eventId])
     eventEventId String?
+
+    // INDEXES - Critical for audit trails and analytics
+    @@index([ticketId]) // All scans for a ticket
+    @@index([eventEventId]) // All scans for an event
+    @@index([checkerId]) // Scans by specific checker
+    @@index([scannedAt]) // Time-based queries
+    @@index([success]) // Filter successful/failed scans
+    @@index([eventEventId, scannedAt]) // Composite: event scans over time
+    @@index([ticketId, scannedAt]) // Composite: ticket scan history
+    @@index([performedByUserId]) // Scans by user
 }
+
 
 model DiscountCode {
     codeId   String @id @default(uuid())
@@ -270,7 +329,7 @@ model DiscountCode {
 
     code        String @unique
     description String?
-    discountPct Float  // e.g., 10 for 10% off
+    discountPct Float
     maxUses     Int?
     usesCount   Int     @default(0)
     validFrom   DateTime
@@ -278,21 +337,32 @@ model DiscountCode {
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    // INDEXES
+    @@index([eventId]) // Codes for specific event
+    @@index([validFrom, validTo]) // Find active codes
+    @@index([code]) // Fast code lookup (already unique, but explicit helps)
+    @@index([eventId, validFrom, validTo]) // Composite: active codes for event
 }
+
 
 model EventAnalytics {
     analyticsId String @id @default(uuid())
     eventId     String @unique
     event       Event  @relation(fields: [eventId], references: [eventId])
 
-    // cumulative metrics (can be expanded to daily snapshots)
     views          Int   @default(0)
     clicks         Int   @default(0)
     ticketsSold    Int   @default(0)
     revenue        Float @default(0)
-    conversionRate Float @default(0) // optional cached metric
+    conversionRate Float @default(0)
 
     lastUpdated DateTime @default(now()) @updatedAt
+
+    // INDEXES
+    @@index([lastUpdated]) // Recently updated analytics
+    @@index([revenue]) // Top revenue events
+    @@index([ticketsSold]) // Most popular events
 }
 
 model ListerAnalytics {
@@ -305,6 +375,11 @@ model ListerAnalytics {
     totalTicketsSold Int   @default(0)
 
     lastUpdated DateTime @default(now()) @updatedAt
+
+    // INDEXES
+    @@index([totalRevenue]) // Top revenue listers
+    @@index([totalTicketsSold]) // Most tickets sold
+    @@index([lastUpdated]) // Recently active listers
 }
 
 model Refund {
@@ -315,7 +390,7 @@ model Refund {
     amount      Float
     reason      String?
     status      RefundStatus @default(PENDING)
-    processedBy String? // admin userId who processed
+    processedBy String?
     processedAt DateTime?
 
     createdAt    DateTime @default(now())
@@ -324,4 +399,13 @@ model Refund {
     userUserId   String?
     Event        Event?   @relation(fields: [eventEventId], references: [eventId])
     eventEventId String?
+
+    // INDEXES
+    @@index([ticketId]) // Refunds for specific ticket
+    @@index([status]) // Filter by refund status
+    @@index([eventEventId]) // Refunds for specific event
+    @@index([userUserId]) // User's refund history
+    @@index([createdAt]) // Recent refund requests
+    @@index([status, createdAt]) // Composite: pending refunds sorted by date
+    @@index([processedBy]) // Refunds processed by admin
 }
