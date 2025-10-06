@@ -117,6 +117,12 @@ span {
   font-variation-settings: "wdth" 100;
 }
 
+.backdropBlur {
+  -webkit-backdrop-filter: blur(56px);
+  backdrop-filter: blur(56px);
+}
+
+
 /* Home css */
 .home-page-container {
   @apply mx-auto pt-10 md:w-[74vw] md:max-w-[1068px] max-w-screen w-full overflow-x-hidden md:px-0 px-[5.1282vw] flex-wrap;
