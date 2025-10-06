@@ -232,9 +232,20 @@ export class EventService {
     }
   }
 
-  async getPublicEvents(cursor?: string, limit = 10) {
+  async getPublicEvents(
+    cursor?: string,
+    limit = 10,
+    longitude?: number,
+    latitude?: number,
+  ) {
     limit = Math.min(Number(limit) || 10, 100);
-    const cacheKey = `public-events:${cursor || "first"}:${limit}`;
+
+    // Include location params in cache key for location-specific caching
+    const locationKey =
+      longitude !== undefined && latitude !== undefined
+        ? `${latitude.toFixed(2)}_${longitude.toFixed(2)}`
+        : "all";
+    const cacheKey = `public-events:${locationKey}:${cursor || "first"}:${limit}`;
 
     try {
       // 1. Try cache
@@ -243,12 +254,36 @@ export class EventService {
         return JSON.parse(cached);
       }
 
-      // 2. Fetch from DB
-      const where = { status: "APPROVED" as const };
+      // 2. Fetch from DB with location filtering
+      const where: any = { status: "APPROVED" as const };
+
+      // Calculate bounding box for 300km radius (optimization before precise calculation)
+      // 1 degree latitude ≈ 111km
+      // 1 degree longitude varies by latitude: ≈ 111km * cos(latitude)
+      let boundingBoxFilter = {};
+      if (longitude !== undefined && latitude !== undefined) {
+        const radiusKm = 300;
+        const latDelta = radiusKm / 111; // degrees latitude
+        const lonDelta =
+          radiusKm / (111 * Math.cos((latitude * Math.PI) / 180)); // degrees longitude
+
+        boundingBoxFilter = {
+          latitude: {
+            gte: latitude - latDelta,
+            lte: latitude + latDelta,
+          },
+          longitude: {
+            gte: longitude - lonDelta,
+            lte: longitude + lonDelta,
+          },
+        };
+
+        Object.assign(where, boundingBoxFilter);
+      }
 
       const events = await prisma.event.findMany({
         where,
-        take: limit + 1,
+        take: limit * 3, // Fetch more since we'll filter by precise distance
         ...(cursor && {
           cursor: { eventId: cursor },
           skip: 1,
@@ -287,11 +322,30 @@ export class EventService {
         },
       });
 
-      const hasNextPage = events.length > limit;
-      const slicedEvents = hasNextPage ? events.slice(0, -1) : events;
-      const nextCursor = hasNextPage
-        ? slicedEvents[slicedEvents.length - 1].eventId
-        : null;
+      // 3. Filter by precise distance using Haversine formula
+      let filteredEvents = events;
+      if (longitude !== undefined && latitude !== undefined) {
+        filteredEvents = events.filter((event) => {
+          if (event.latitude === null || event.longitude === null) return false;
+          const distance = this.calculateDistance(
+            latitude,
+            longitude,
+            event.latitude,
+            event.longitude,
+          );
+          return distance <= 300; // 300km radius
+        });
+      }
+
+      // 4. Apply pagination after filtering
+      const hasNextPage = filteredEvents.length > limit;
+      const slicedEvents = hasNextPage
+        ? filteredEvents.slice(0, limit)
+        : filteredEvents;
+      const nextCursor =
+        hasNextPage && slicedEvents.length > 0
+          ? slicedEvents[slicedEvents.length - 1].eventId
+          : null;
 
       const result = {
         events: slicedEvents,
@@ -299,8 +353,10 @@ export class EventService {
         hasNextPage,
       };
 
-      // 3. Store in cache (set TTL for staleness tolerance)
-      await redis.set(cacheKey, JSON.stringify(result), "EX", 60); // Cache for 60 seconds
+      // 5. Store in cache with appropriate TTL
+      // Shorter TTL for location-specific queries (30s), longer for general (60s)
+      const ttl = longitude !== undefined && latitude !== undefined ? 30 : 60;
+      await redis.set(cacheKey, JSON.stringify(result), "EX", ttl);
 
       return result;
     } catch (error) {
@@ -468,5 +524,32 @@ export class EventService {
       logger.error("Error in patchEvent:", error);
       throw error;
     }
+  }
+
+  private calculateDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = this.toRadians(lat2 - lat1);
+    const dLon = this.toRadians(lon2 - lon1);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRadians(lat1)) *
+        Math.cos(this.toRadians(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+
+    return distance;
+  }
+
+  private toRadians(degrees: number): number {
+    return degrees * (Math.PI / 180);
   }
 }

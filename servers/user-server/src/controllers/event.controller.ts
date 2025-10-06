@@ -42,9 +42,24 @@ export class EventController {
     try {
       const cursor = req.query.cursor as string | undefined;
       const limit = parseInt(req.query.limit as string, 10) || 10;
+      const longitude = req.query.longitude
+        ? parseFloat(req.query.longitude as string)
+        : undefined;
+      const latitude = req.query.latitude
+        ? parseFloat(req.query.latitude as string)
+        : undefined;
+
+      if (limit <= 0) {
+        return sendError(res, "Limit must be a positive integer", 400);
+      }
 
       const { events, nextCursor, hasNextPage } =
-        await this.eventService.getPublicEvents(cursor, limit);
+        await this.eventService.getPublicEvents(
+          cursor,
+          limit,
+          longitude,
+          latitude,
+        );
 
       return sendSuccess(res, "Events fetched", events, 200, {
         nextCursor,
