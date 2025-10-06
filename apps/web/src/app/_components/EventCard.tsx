@@ -64,9 +64,15 @@ const EventCard: React.FC<EventCardProps> = ({
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-[#8B8B8B] shrink-0 text-nowrap">Starts at</span>
+          {price !== 0 && (
+            <span className="text-[#8B8B8B] shrink-0 text-nowrap">
+              Starts at
+            </span>
+          )}
 
-          <h2 className="">₹{price}</h2>
+          <h2 className={price === 0 ? "!text-green-600" : ""}>
+            {price === 0 ? "Free" : `₹${price}`}
+          </h2>
         </div>
       </div>
     </div>
