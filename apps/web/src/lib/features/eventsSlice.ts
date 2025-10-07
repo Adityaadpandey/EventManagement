@@ -12,27 +12,28 @@ export type EventSummary = {
   eventId: string;
   title: string;
   banner_horizontal?: string | null;
+  banner_vertical?: string | null;
   banner_square?: string | null;
   date?: string | null;
   time?: string | null;
   location?: string | null;
-  TicketType?: [] | null;
+  tags?: string[] | null;
+  TicketType?: TicketType[] | null;
   capacity?: string | null;
 };
 
 export type EventDetails = EventSummary & {
   description?: string | null;
-  banner_vertical?: string | null;
   ticketTypes?: TicketType[];
 };
 
 type ListState = {
   items: EventSummary[];
-  page: number;
+  nextCursor: string | null;
+  hasNextPage: boolean;
   limit: number;
-  total: number;
-  totalPages: number;
   loading: boolean;
+  loadingMore: boolean;
   error: string | null;
 };
 
@@ -57,11 +58,11 @@ type EventsState = {
 const initialState: EventsState = {
   list: {
     items: [],
-    page: 1,
-    limit: 20,
-    total: 0,
-    totalPages: 0,
+    nextCursor: null,
+    hasNextPage: false,
+    limit: 10,
     loading: false,
+    loadingMore: false,
     error: null,
   },
   details: {
@@ -78,30 +79,35 @@ const initialState: EventsState = {
 
 // ----------------- THUNKS -----------------
 
-// GET /event/public?page=&limit=
+// GET /event/public?cursor=&limit=&location=
 export const fetchPublicEvents = createAsyncThunk<
   {
-    items: EventSummary[];
-    page: number;
+    events: EventSummary[];
+    nextCursor: string | null;
+    hasNextPage: boolean;
     limit: number;
-    total: number;
-    totalPages: number;
   },
-  { page?: number; limit?: number },
+  { cursor?: string; limit?: number; location?: string; append?: boolean },
   { rejectValue: string }
 >(
   "events/fetchPublic",
-  async ({ page = 1, limit = 10 }, { rejectWithValue }) => {
+  async ({ cursor, limit = 10, location }, { rejectWithValue }) => {
     try {
-      const res = await api.get(`/event/public?page=${page}&limit=${limit}`);
+      const params = new URLSearchParams();
+      if (cursor) params.append("cursor", cursor);
+      params.append("limit", limit.toString());
+      console.log(location);
+      if (location) params.append("location", location);
+
+      const res = await api.get(`/event/public?${params.toString()}`);
       const data = res.data?.data ?? [];
       const meta = res.data?.meta ?? {};
+
       return {
-        items: data,
-        page: meta.page ?? page,
+        events: data,
+        nextCursor: meta.nextCursor ?? null,
+        hasNextPage: meta.hasNextPage ?? false,
         limit: meta.limit ?? limit,
-        total: meta.total ?? data.length,
-        totalPages: meta.totalPages ?? 1,
       };
     } catch (err: any) {
       return rejectWithValue(
@@ -169,23 +175,40 @@ export const createEvent = createAsyncThunk<
 const eventsSlice = createSlice({
   name: "events",
   initialState,
-  reducers: {},
+  reducers: {
+    resetEventsList: (state) => {
+      state.list = initialState.list;
+    },
+  },
   extraReducers: (b) => {
     // ---- Public events list ----
-    b.addCase(fetchPublicEvents.pending, (s) => {
-      s.list.loading = true;
+    b.addCase(fetchPublicEvents.pending, (s, a) => {
+      if (a.meta.arg.append) {
+        s.list.loadingMore = true;
+      } else {
+        s.list.loading = true;
+      }
       s.list.error = null;
     });
     b.addCase(fetchPublicEvents.fulfilled, (s, a) => {
       s.list.loading = false;
-      s.list.items = a.payload.items;
-      s.list.page = a.payload.page;
+      s.list.loadingMore = false;
+
+      if (a.meta.arg.append) {
+        // Append new events for infinite scroll
+        s.list.items = [...s.list.items, ...a.payload.events];
+      } else {
+        // Replace events for initial load or refresh
+        s.list.items = a.payload.events;
+      }
+
+      s.list.nextCursor = a.payload.nextCursor;
+      s.list.hasNextPage = a.payload.hasNextPage;
       s.list.limit = a.payload.limit;
-      s.list.total = a.payload.total;
-      s.list.totalPages = a.payload.totalPages;
     });
     b.addCase(fetchPublicEvents.rejected, (s, a) => {
       s.list.loading = false;
+      s.list.loadingMore = false;
       s.list.error = a.payload || "Failed to fetch events";
     });
 
@@ -212,7 +235,7 @@ const eventsSlice = createSlice({
     b.addCase(createEvent.fulfilled, (s, a) => {
       s.create.loading = false;
       s.create.lastCreated = a.payload;
-      s.list.items.unshift(a.payload); // optional: show immediately in list
+      s.list.items.unshift(a.payload);
     });
     b.addCase(createEvent.rejected, (s, a) => {
       s.create.loading = false;
@@ -221,4 +244,5 @@ const eventsSlice = createSlice({
   },
 });
 
+export const { resetEventsList } = eventsSlice.actions;
 export default eventsSlice.reducer;
