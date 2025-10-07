@@ -45,6 +45,8 @@ interface ModalProps {
   onBuy: () => void;
   me: any;
   proceedFromTypes: () => void;
+  discountCode: string;
+  setDiscountCode: (code: string) => void;
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -80,13 +82,14 @@ const Modal: React.FC<ModalProps> = ({
   onBuy,
   me,
   proceedFromTypes,
+  discountCode,
+  setDiscountCode,
 }) => {
   if (!modalOpen) return null;
 
   const backdropClick = (e: React.MouseEvent) => {
     if (e.target !== e.currentTarget) return;
     if (modalStep === 3) {
-      // while processing, ignore backdrop clicks
       return;
     }
     closeModal();
@@ -94,7 +97,6 @@ const Modal: React.FC<ModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-white/60 backdrop-blur-xl">
-      {/* Backdrop */}
       <div
         className="absolute inset-0"
         onClick={(e) => {
@@ -102,7 +104,6 @@ const Modal: React.FC<ModalProps> = ({
         }}
       />
 
-      {/* Modal */}
       <motion.div
         role="dialog"
         aria-modal="true"
@@ -159,7 +160,6 @@ const Modal: React.FC<ModalProps> = ({
                   .map((t: any, index: number) => {
                     const active = t.ticketTypeId === selectedTicketId;
 
-                    // Defaults
                     let isGradient = false;
                     let innerClass =
                       "flex items-center justify-between gap-4 p-3 rounded-2xl";
@@ -168,19 +168,14 @@ const Modal: React.FC<ModalProps> = ({
                       undefined;
                     let innerStyle: React.CSSProperties | undefined = undefined;
 
-                    // Handle special styles for top 2 ticket types
                     if (ev.TicketType.length >= 3) {
                       if (index === 0) {
                         isGradient = true;
-
-                        // Gradient border using wrapper
                         wrapperClass += " p-[2px]";
                         wrapperStyle = {
                           backgroundImage:
                             "linear-gradient(90deg, #FFC670 0%, #83F180 50%, #1BB3F3 100%)",
                         };
-
-                        // Gradient bg with white translucent overlay
                         innerStyle = {
                           backgroundImage:
                             "linear-gradient(0deg, rgba(255,255,255,0.6), rgba(255,255,255,0.6)), linear-gradient(90deg, #FFC670, #83F180, #1BB3F3)",
@@ -231,7 +226,6 @@ const Modal: React.FC<ModalProps> = ({
                       </div>
                     );
 
-                    // Only wrap with gradient border if it's the highest price ticket
                     return isGradient ? (
                       <div
                         key={t.ticketTypeId}
@@ -295,6 +289,14 @@ const Modal: React.FC<ModalProps> = ({
                       className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
                       placeholder="Email"
                     />
+                    <div className="text-base">Phone number</div>
+                    <input
+                      value={authForm.phone}
+                      onChange={onAuthChange("phone")}
+                      className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                      placeholder="Phone number"
+                      type="tel"
+                    />
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -343,6 +345,17 @@ const Modal: React.FC<ModalProps> = ({
                         authLoading={authLoading}
                       />
                     )}
+
+                    <div>
+                      <div className="text-base">Phone number</div>
+                      <input
+                        value={authForm.phone}
+                        onChange={onAuthChange("phone")}
+                        className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
+                        placeholder="Phone number"
+                        type="tel"
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -367,6 +380,18 @@ const Modal: React.FC<ModalProps> = ({
                         />
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {ev._count.DiscountCode && (
+                  <div className="mt-3 space-y-2">
+                    <div className="text-base">Discount Code (Optional)</div>
+                    <input
+                      value={discountCode}
+                      onChange={(e) => setDiscountCode(e.target.value)}
+                      placeholder="Enter discount code"
+                      className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
+                    />
                   </div>
                 )}
               </div>
@@ -462,7 +487,6 @@ const Modal: React.FC<ModalProps> = ({
 
                 <div className="flex flex-col px-2">
                   <div className="pt-6 flex flex-col md:flex-row md:justify-between md:items-end gap-8">
-                    {/* Left: User Details */}
                     <div className="flex flex-col gap-5 w-full md:max-w-[50%] px-3">
                       <div className="space-y-1">
                         <p className="text-[#8B8B8B]">Name</p>{" "}
@@ -477,15 +501,26 @@ const Modal: React.FC<ModalProps> = ({
                         </p>
                       </div>
                       <div className="space-y-1">
+                        <p className="text-[#8B8B8B]">Phone:</p>{" "}
+                        <p className="text-zinc-900 break-words">
+                          {authForm.phone || me?.phone || "N/A"}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
                         <p className="text-[#8B8B8B]">Ticket Details:</p>{" "}
                         <p className="text-zinc-900">
                           {selectedTicket?.name || "N/A"} – ₹
                           {selectedTicket?.price || 0} × {selectedQuantity}
                         </p>
                       </div>
+                      {discountCode && (
+                        <div className="space-y-1">
+                          <p className="text-[#8B8B8B]">Discount Code:</p>{" "}
+                          <p className="text-zinc-900">{discountCode}</p>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Right: Pricing Summary */}
                     <div className="flex flex-col gap-3 text-right md:w-[246px]">
                       <div className="flex justify-between px-2">
                         <p className="text-[#8B8B8B]">SUB TOTAL</p>{" "}
@@ -495,14 +530,7 @@ const Modal: React.FC<ModalProps> = ({
                       </div>
                       <div className="flex justify-between px-2">
                         <p className="text-[#8B8B8B]">GST</p>{" "}
-                        <p className="text-zinc-900">
-                          ₹0
-                          {/* {(
-                            (selectedTicket?.price ?? 0) *
-                            selectedQuantity *
-                            0.18
-                          ).toFixed(2)} */}
-                        </p>
+                        <p className="text-zinc-900">₹0</p>
                       </div>
                       <div className="flex justify-between bg-[#F5F5F5] py-3 px-2 rounded-md m-0">
                         <h5 className="text-[#8B8B8B]">TOTAL</h5>{" "}
@@ -529,7 +557,6 @@ const Modal: React.FC<ModalProps> = ({
                   className="px-4 sm:py-7 py-6 relative rounded-full overflow-hidden text-xl bg-[#FFE348] w-[300px] border-b-3 border-[#FFDA0A] cursor-pointer mx-auto"
                   style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
                 >
-                  {/* Shine animation using Framer Motion */}
                   <motion.div
                     className="absolute top-0 h-full w-full pointer-events-none overflow-hidden rounded-full"
                     initial={{ x: "-100%", y: "-40" }}
@@ -548,7 +575,6 @@ const Modal: React.FC<ModalProps> = ({
                     />
                   </motion.div>
 
-                  {/* Button Text */}
                   <div className="z-10 relative">
                     {buying ? "Processing..." : "Proceed to Payment"}
                   </div>
@@ -567,7 +593,6 @@ const Modal: React.FC<ModalProps> = ({
               className="w-full flex flex-col items-center justify-center p-8"
             >
               <div className="flex flex-col items-center gap-6 text-center">
-                {/* Animated Loader Ring */}
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{
@@ -584,16 +609,14 @@ const Modal: React.FC<ModalProps> = ({
                   </div>
                 </motion.div>
 
-                {/* Title */}
                 <h3 className="text-xl font-semibold text-gray-900">
                   Processing your payment…
                 </h3>
                 <p className="text-sm text-gray-600 max-w-[400px] leading-relaxed">
-                  We’re verifying your payment and generating your ticket. This
-                  may take a few seconds — please don’t close or refresh.
+                  We're verifying your payment and generating your ticket. This
+                  may take a few seconds — please don't close or refresh.
                 </p>
 
-                {/* Progress Bar with shimmer */}
                 <div className="mt-4 w-full max-w-[420px]">
                   <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                     <motion.div
@@ -610,7 +633,6 @@ const Modal: React.FC<ModalProps> = ({
                   </div>
                 </div>
 
-                {/* Helper text */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}

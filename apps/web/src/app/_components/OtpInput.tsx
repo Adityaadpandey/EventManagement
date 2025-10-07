@@ -74,7 +74,7 @@ const OtpInput: React.FC<OtpInputProps> = ({
             onChange={(e) => handleChange(e.target.value, idx)}
             onKeyDown={(e) => handleKeyDown(e, idx)}
             onPaste={handlePaste}
-            className="md:h-16 h-[12.3076vw] md:p-8 w-full text-center text-base border md:rounded-2xl rounded-[4.102vw] border-[#E5E5E5] focus:outline-none"
+            className="md:h-16 h-[12.3076vw] w-full text-center text-base border md:rounded-2xl rounded-[4.102vw] border-[#E5E5E5] focus:outline-none"
           />
         ))}
       </div>

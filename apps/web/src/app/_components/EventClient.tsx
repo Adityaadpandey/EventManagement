@@ -39,6 +39,7 @@ type EventPublic = {
   time?: string | null;
   location?: string | null;
   capacity?: number | null;
+  discount?: boolean;
   TicketType: TicketType[];
   CustomField: CustomField[];
 };
@@ -82,11 +83,15 @@ export default function EventClient({
   const [attendee, setAttendee] = useState<Record<string, any>>({});
   const [buying, setBuying] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
+  const [discountCode, setDiscountCode] = useState<string>(""); // New state for discount code
+
+  const chipColors = ["#EBF9FF", "#FFF7CC", "#FFF1EB", "#FFF1EB"];
 
   // local auth form for details step (identifier = email)
   const [authForm, setAuthForm] = useState({
     name: "",
     identifier: "",
+    phone: "",
     otp: "",
   });
   const [localAuthMsg, setLocalAuthMsg] = useState<string | null>(null);
@@ -99,7 +104,6 @@ export default function EventClient({
   // Store initial event in Redux if not already there
   useEffect(() => {
     if (initialEvent && !byId[eventId]) {
-      // Optionally dispatch to store the initial event in Redux
       dispatch(fetchEventDetails({ eventId }));
     }
   }, [dispatch, eventId, initialEvent, byId]);
@@ -184,21 +188,19 @@ export default function EventClient({
 
   const sendOtp = async () => {
     setLocalAuthMsg(null);
-    // require identifier (email) and name for sending OTP per your new flow
     if (!authForm.identifier.trim() || !authForm.name.trim()) {
       setLocalAuthMsg("Name and email are required to request OTP.");
       return;
     }
     try {
-      // dispatch requestOtp with identifier (backend autodetects email)
       await dispatch(requestOtp(authForm.identifier));
       setLocalAuthMsg("OTP sent to your email. Check inbox/spam.");
-      setResendTimer(300); // 5 minutes cooldown shown to user
+      setResendTimer(300);
     } catch (err: any) {
       setLocalAuthMsg(err?.message || "Failed to send OTP");
     }
   };
-  // previous: const verifyEmailOtp = async () => { ... }
+
   const verifyEmailOtp = async (otpParam?: string) => {
     setLocalAuthMsg(null);
 
@@ -218,10 +220,10 @@ export default function EventClient({
           otp: otpToUse,
           name: authForm.name,
           email: authForm.identifier,
+          phone: authForm.phone,
         }),
       ).unwrap();
 
-      // success: clear otp in UI state
       setAuthForm((s) => ({ ...s, otp: "" }));
       setLocalAuthMsg(null);
     } catch (err: any) {
@@ -265,6 +267,7 @@ export default function EventClient({
     setSelectedQuantity(1);
     setBuyError(null);
     setLocalAuthMsg(null);
+    setDiscountCode("");
   };
 
   const selectTicketType = (ticketTypeId: string) => {
@@ -294,17 +297,17 @@ export default function EventClient({
     setLocalAuthMsg(null);
   };
 
-  // ensure profile complete before checkout: if missing name/email, patch via API
+  // ensure profile complete before checkout
   const ensureProfileComplete = async () => {
     if (!token) return;
-    // if backend already returned user with name/email, nothing to do
-    if (me?.name && me?.email) return;
+    if (me?.name && me?.email && me?.phone) return;
 
     try {
       const payload: any = {};
       if (!me?.name && authForm.name) payload.name = authForm.name;
       if (!me?.email && authForm.identifier)
         payload.email = authForm.identifier;
+      if (!me?.phone && authForm.phone) payload.phone = authForm.phone;
 
       if (Object.keys(payload).length === 0) return;
 
@@ -312,10 +315,8 @@ export default function EventClient({
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // refresh profile in client (simple approach: hydrate session)
       await dispatch(hydrateSession());
     } catch (err) {
-      // we don't fatal — but surface error
       console.error("Failed to patch profile:", err);
       throw new Error("Failed to save profile details");
     }
@@ -338,11 +339,13 @@ export default function EventClient({
       setBuyError("Quantity must be at least 1.");
       return;
     }
+
+    // Validate required custom fields
     if (ev?.CustomField) {
       for (const f of ev.CustomField) {
         if (f.required && !attendee[f.label]) {
           setBuyError(`Please fill ${f.label}`);
-          setModalStep(1); // send them back to details
+          setModalStep(1);
           return;
         }
       }
@@ -351,26 +354,39 @@ export default function EventClient({
     setBuying(true);
 
     try {
-      // ensure profile complete (server expects name/email sometimes)
       await ensureProfileComplete();
 
-      const finalAttendee = {
-        ...(attendee || {}),
+      // Build complete attendeeData including custom fields
+      const finalAttendee: Record<string, any> = {
         name: me?.name ?? authForm.name,
         email: me?.email ?? authForm.identifier,
-        phone: me?.phone ?? undefined,
+        phone: me?.phone ?? authForm.phone ?? undefined,
       };
 
-      const payload = {
+      // Add all custom field values to attendeeData
+      if (ev?.CustomField) {
+        for (const cf of ev.CustomField) {
+          if (attendee[cf.label]) {
+            finalAttendee[cf.label] = attendee[cf.label];
+          }
+        }
+      }
+
+      // Build payload
+      const payload: any = {
         ticketTypeId: selectedTicketId,
         quantity: selectedQuantity,
         attendeeData: finalAttendee,
       };
 
-      // include auth header when creating ticket
+      if (discountCode && discountCode.trim() !== "") {
+        payload.discountCode = discountCode.trim();
+      }
+
       const config = token
         ? { headers: { Authorization: `Bearer ${token}` } }
         : undefined;
+
       const res = await api.post("/ticket/buy", payload, config);
 
       const data = res.data?.data || res.data;
@@ -413,7 +429,6 @@ export default function EventClient({
 
         await loadRazorpay();
 
-        // config for server-verification calls
         const serverConfig = token
           ? { headers: { Authorization: `Bearer ${token}` } }
           : undefined;
@@ -432,7 +447,6 @@ export default function EventClient({
           },
           handler: async (resp: any) => {
             try {
-              // show processing UI inside the modal
               setModalStep(3);
 
               await api.post(
@@ -484,7 +498,6 @@ export default function EventClient({
                 }
               } catch {}
 
-              // revert UI to checkout so user can retry/cancel
               setModalStep(2);
               setBuying(false);
             },
@@ -494,7 +507,6 @@ export default function EventClient({
         const rzp = new (window as any).Razorpay(options);
         rzp.open();
       } else if (data?.paymentUrl) {
-        // fallback redirect
         setModalStep(3);
         window.location.href = data.paymentUrl;
       } else {
@@ -517,11 +529,9 @@ export default function EventClient({
     }
   };
 
-  // Render errors only (loading is handled by loading.tsx)
   if (eventsError) return <div className="p-6 text-red-500">{eventsError}</div>;
   if (!ev) return <div className="p-6 text-zinc-400">Event not found</div>;
 
-  // main page render
   return (
     <div className="max-w-6xl md:w-[80vw] mx-auto px-4 py-8 pb-48 w-[100vw] overflow-x-hidden">
       <div className="md:flex gap-2 items-center pb-4 px-1 hidden">
@@ -550,8 +560,8 @@ export default function EventClient({
         </svg>
         Event Details
       </Link>
+
       <div className="flex gap-6 md:flex-row flex-col w-fit">
-        {/* Left: event details */}
         <div className="space-y-5">
           <div className="relative md:w-[36.319vw] md:h-[36.319vw] w-[91.794vw] h-[91.794vw] md:rounded-[1.3888888vw] rounded-[5.128vw] overflow-hidden bg-zinc-300">
             {ev.banner_square || ev.banner_horizontal ? (
@@ -569,7 +579,6 @@ export default function EventClient({
           </div>
         </div>
 
-        {/* Right: booking summary + open modal */}
         <aside className="md:w-full max-w-[92vw] space-y-4 overflow-hidden">
           <div className="flex flex-col gap-4 bg-white md:rounded-[1.3888888vw] rounded-[20px] py-5 px-4">
             <h1 className="text-3xl font-semibold leading-none md:max-w-[464px] w-[80%]">
@@ -577,21 +586,17 @@ export default function EventClient({
             </h1>
 
             <div className="flex gap-2 flex-wrap">
-              <div className="bg-[#EBF9FF] rounded-full text-[12px] py-1 px-2">
-                Car show
-              </div>
-
-              <div className="bg-[#FFF7CC] rounded-full text-[12px] py-1 px-2">
-                Concert
-              </div>
-
-              <div className="bg-[#FFF1EB] rounded-full text-[12px] py-1 px-2">
-                Fashion show
-              </div>
-
-              <div className="bg-[#FFF1EB] rounded-full text-[12px] py-1 px-2">
-                Talent hunt
-              </div>
+              {ev.chips.map((chip, index) => (
+                <div
+                  key={index}
+                  className="rounded-full text-[12px] py-1 px-2"
+                  style={{
+                    backgroundColor: chipColors[index % chipColors.length],
+                  }}
+                >
+                  {chip}
+                </div>
+              ))}
             </div>
 
             <div className="px-6 py-5 bg-[#F5F5F5] md:rounded-[0.833333vw] rounded-xl flex flex-wrap w-full shrink-0 gap-5 justify-between">
@@ -608,7 +613,6 @@ export default function EventClient({
 
               <div className="flex gap-2 items-center shrink-0">
                 <img src="/svgs/clock.svg" alt="" />
-
                 <h6>5:00PM to 7:00PM</h6>
               </div>
 
@@ -621,7 +625,6 @@ export default function EventClient({
 
           <div className="space-y-4 bg-white px-5 py-4 md:rounded-[1.3888888vw] rounded-xl">
             <h6>About Event</h6>
-
             <ReadMore text={ev.description} maxLength={2240} />
           </div>
         </aside>
@@ -635,7 +638,6 @@ export default function EventClient({
       <div className="flex items-center gap-6 md:p-1 md:pl-8 rounded-full md:bg-white fixed bottom-7 md:w-full md:max-w-[524px] max-w-[358px] w-[92vw] -translate-x-[50%] left-[50%]">
         <div className="md:flex hidden flex-col gap-1 w-15">
           <span className="text-[#8B8B8B] shrink-0">Starts at</span>
-
           <h2>₹{Math.min(...ev.TicketType.map((t) => t.price))}</h2>
         </div>
         <button
@@ -643,7 +645,6 @@ export default function EventClient({
           className="bg-[#FFE348] md:py-7 py-5 rounded-full w-full border-b-3 border-[#FFDA0A] cursor-pointer relative overflow-hidden"
           style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
         >
-          {/* Shine animation using Framer Motion */}
           <motion.div
             className="absolute top-0 h-full w-full pointer-events-none overflow-hidden rounded-full"
             initial={{ x: "-50%", y: "-5%" }}
@@ -668,10 +669,9 @@ export default function EventClient({
         </button>
       </div>
 
-      {/* modal */}
       <Modal
         modalOpen={modalOpen}
-        closeModal={() => setModalOpen(false)}
+        closeModal={closeModal}
         modalStep={modalStep}
         setModalStep={setModalStep}
         ev={ev}
@@ -702,6 +702,8 @@ export default function EventClient({
         onBuy={onBuy}
         me={me}
         proceedFromTypes={proceedFromTypes}
+        discountCode={discountCode}
+        setDiscountCode={setDiscountCode}
       />
     </div>
   );
