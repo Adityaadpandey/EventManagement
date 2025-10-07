@@ -43,9 +43,16 @@ export const requestOtp = createAsyncThunk<
 });
 
 // 🔹 Verify OTP (works for email OR phone). Sends { identifier, otp } to backend.
+// inside src/lib/features/authSlice.ts
 export const verifyOtp = createAsyncThunk<
   { token: string; user: User },
-  { identifier: string; otp: string; name?: string; email?: string },
+  {
+    identifier: string;
+    otp: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+  },
   { rejectValue: string }
 >("auth/verifyOtp", async (payload, { rejectWithValue }) => {
   try {
@@ -66,15 +73,36 @@ export const verifyOtp = createAsyncThunk<
     const profRes = await api.get("/user/profile");
     let user: User = profRes?.data?.data;
 
-    // optionally patch name/email if backend expects that
+    // decide what we need to patch
     const needName = !user?.name && payload.name;
     const needEmail = !user?.email && payload.email;
+    const needPhone = !user?.phone && payload.phone;
+
+    // Try patching name/email first (treat as important)
     if (needName || needEmail) {
       const patchRes = await api.patch("/user/profile", {
         ...(needName ? { name: payload.name } : {}),
         ...(needEmail ? { email: payload.email } : {}),
       });
       user = patchRes?.data?.data;
+    }
+
+    // Try patching phone separately — if this fails, swallow the error
+    // so OTP verification doesn't fail; log the problem for diagnostics.
+    if (needPhone) {
+      try {
+        const patchPhoneRes = await api.patch("/user/profile", {
+          phone: payload.phone,
+        });
+        user = patchPhoneRes?.data?.data;
+      } catch (phoneErr: any) {
+        // don't reject the entire flow because of phone patch failure
+        /* eslint-disable no-console */
+        console.warn(
+          "Non-fatal: failed to patch phone during verifyOtp. Continuing without phone. error:",
+          phoneErr?.response?.data || phoneErr?.message || phoneErr,
+        );
+      }
     }
 
     return { token, user };
