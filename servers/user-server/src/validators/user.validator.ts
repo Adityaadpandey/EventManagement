@@ -5,7 +5,9 @@ export const updateUserProfileSchema = z
     name: z.string().min(1, "Name cannot be empty").optional(),
     email: z.string().email("Invalid email address").optional(),
     avatar: z.string().url("Invalid avatar URL").optional(),
+    phone: z.string().min(13, "Invalid phone number").optional(),
   })
+
   .refine((data) => data.name || data.email || data.avatar, {
     message: "At least one field (name, email, avatar) is required to update",
   });
