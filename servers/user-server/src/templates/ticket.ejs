@@ -2,12 +2,13 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Your Ticket</title>
     <style>
         body {
             font-family: 'Inter', Arial, sans-serif;
-            background-color: #f0f4ff;
+            background-color: #fff8cc;
+            /* light warm yellow background */
             margin: 0;
             padding: 0;
         }
@@ -17,13 +18,40 @@
             max-width: 600px;
             margin: 40px auto;
             padding: 30px 25px;
-            border-radius: 14px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e0e5ff;
+            border-radius: 16px;
+            border: 2px dashed #ffda0a;
+            box-shadow: 0 6px 20px rgba(255, 211, 0, 0.3);
+            position: relative;
+            overflow: visible;
+        }
+
+        /* Create "cut" circles on left and right edges */
+        .container::before,
+        .container::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            background: #fff8cc;
+            /* same as page bg */
+            border-radius: 50%;
+            box-shadow: 0 0 0 2px #ffda0a;
+            z-index: 10;
+        }
+
+        .container::before {
+            left: -15px;
+        }
+
+        .container::after {
+            right: -15px;
         }
 
         h2 {
-            color: #7d6bff;
+            color: #b68700;
+            /* warm dark yellow */
             font-size: 24px;
             margin-bottom: 15px;
         }
@@ -56,9 +84,11 @@
         .qr-container img {
             width: 150px;
             height: 150px;
-            border: 4px solid #e9e4ff;
-            border-radius: 12px;
-            background-color: #f6f4ff;
+            border: 4px solid #FFE348;
+            /* bright yellow border */
+            border-radius: 16px;
+            background-color: #fff8cc;
+            box-shadow: 0 0 12px rgba(255, 211, 0, 0.3);
         }
 
         .qr-container p {
