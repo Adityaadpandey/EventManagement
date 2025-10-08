@@ -6,10 +6,12 @@ import { redis } from "../config/redis";
 
 // Configure transporter
 const transporter = nodemailer.createTransport({
-  service: "gmail", // or another provider
+  host: config.SMTP_HOST,
+  port: Number(config.SMTP_PORT),
+  secure: false,
   auth: {
-    user: config.SMTP_EMAIL_USER,
-    pass: config.SMTP_EMAIL_PASS,
+    user: config.SMTP_USER,
+    pass: config.SMTP_PASS,
   },
   // logger: true, // Log to console
   // debug: true, // Include SMTP traffic in logs
@@ -35,7 +37,7 @@ export const emailWorker = new Worker(
 
     try {
       await transporter.sendMail({
-        from: `"Tixin" <${config.SMTP_EMAIL_USER}>`,
+        from: `"Tixin" <noreply@tixin.in>`,
         to,
         subject,
         html,
@@ -48,7 +50,13 @@ export const emailWorker = new Worker(
       throw err; // For retry
     }
   },
-  { connection: redis },
+  {
+    connection: redis,
+    limiter: {
+      max: 12, // Max 15 jobs
+      duration: 1000, // Per 1000ms = 1 sec
+    },
+  },
 );
 
 emailWorker.on("failed", (job: any, err) => {

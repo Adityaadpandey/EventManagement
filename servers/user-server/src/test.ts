@@ -1,8 +1,9 @@
 import { sendEmail } from "./lib/mail";
 
+const email = "alpha16omega6@gmail.com";
 const EventUpdate = async () => {
   await sendEmail(
-    "adityapandeyadp@gmail.com",
+    email,
     "Important Update: MusicFest 2025",
     {
       type: "event-update",
@@ -18,7 +19,7 @@ const EventUpdate = async () => {
 };
 const TicketEmail = async () => {
   await sendEmail(
-    "adityapandeyadp@gmail.com",
+    email,
     "Your Ticket for MusicFest 2025",
     {
       type: "ticket",
@@ -39,7 +40,7 @@ const TicketEmail = async () => {
 
 const OtpEmail = async () => {
   await sendEmail(
-    "adityapandeyadp@gmail.com",
+    email,
     "Your OTP for Login",
     {
       type: "otp",
