@@ -168,7 +168,7 @@ span {
 }
 
 .home-location-box {
-  @apply gap-2 items-center md:bg-white md:w-[249px] rounded-3xl md:p-4;
+  @apply gap-2 items-center md:bg-white md:w-[249px] rounded-2xl md:p-4 cursor-pointer hover:bg-gray-50 px-2 py-1 transition-colors disabled:cursor-not-allowed;
 }
 
 .home-location-icon {
@@ -176,7 +176,7 @@ span {
 }
 
 .home-location-text {
-  @apply md:w-44 w-32 font-medium;
+  @apply md:max-w-44 max-w-32 font-medium;
 }
 
 .home-event-list {
