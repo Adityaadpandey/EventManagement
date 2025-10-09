@@ -125,7 +125,7 @@ span {
 
 /* Home css */
 .home-page-container {
-  @apply mx-auto pt-10 md:w-[74vw] md:max-w-[1068px] max-w-screen w-full overflow-x-hidden md:px-0 px-[5.1282vw] flex-wrap;
+  @apply mx-auto pt-10 md:w-[74vw] md:max-w-[1068px] max-w-screen w-full overflow-hidden md:px-0 px-[5.1282vw] flex-wrap pb-60;
 }
 
 .home-page-heading {
