@@ -2,13 +2,17 @@
 
 import Modal from "@/app/_components/Modal";
 import ReadMore from "@/app/_components/ReadMore";
+import EventCard from "@/app/_components/EventCard";
 import api from "@/lib/api";
 import {
   hydrateSession,
   requestOtp,
   verifyOtp,
 } from "@/lib/features/authSlice";
-import { fetchEventDetails } from "@/lib/features/eventsSlice";
+import {
+  fetchEventDetails,
+  fetchPublicEvents,
+} from "@/lib/features/eventsSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -42,6 +46,8 @@ type EventPublic = {
   discount?: boolean;
   TicketType: TicketType[];
   CustomField: CustomField[];
+  chips: string[];
+  tags?: string[];
 };
 
 type EventClientProps = {
@@ -75,15 +81,19 @@ export default function EventClient({
   const ev = (byId[eventId] as EventPublic | undefined | any) || initialEvent;
   const loadingEvent = loadingId === eventId && !initialEvent;
 
-  // booking UI state (outside modal)
+  // list state for recommendations
+  const { items: allEvents, loading: listLoading } = useAppSelector(
+    (s) => s.events.list,
+  );
+
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalStep, setModalStep] = useState<number>(0); // 0: types, 1: details, 2: checkout
+  const [modalStep, setModalStep] = useState<number>(0);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
   const [attendee, setAttendee] = useState<Record<string, any>>({});
   const [buying, setBuying] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
-  const [discountCode, setDiscountCode] = useState<string>(""); // New state for discount code
+  const [discountCode, setDiscountCode] = useState<string>("");
 
   const chipColors = ["#EBF9FF", "#FFF7CC", "#FFF1EB", "#FFF1EB"];
 
@@ -101,12 +111,76 @@ export default function EventClient({
   const isAuthenticated = Boolean(token && me);
   const showAuthBlock = hydrated && !isAuthenticated;
 
+  // Helper to get unique words from text
+  const getWords = (text: string | null | undefined): string[] => {
+    if (!text) return [];
+    return [
+      ...new Set(
+        text
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((w) => w.length > 2),
+      ),
+    ]; // Ignore short words
+  };
+
+  // Jaccard similarity function for sets of strings
+  const jaccardSimilarity = (setA: Set<string>, setB: Set<string>): number => {
+    if (setA.size === 0 && setB.size === 0) return 0;
+    const intersection = new Set([...setA].filter((x) => setB.has(x)));
+    const unionSize = setA.size + setB.size - intersection.size;
+    return unionSize === 0 ? 0 : intersection.size / unionSize;
+  };
+
+  const similarEvents = useMemo(() => {
+    if (!ev || !allEvents || allEvents.length === 0) return [];
+
+    const currentTags = [...(ev.chips || []), ...(ev.tags || [])];
+    const currentTitleWords = getWords(ev.title);
+    const currentDescWords = getWords(ev.description);
+
+    const currentTagSet = new Set(currentTags.map((t) => t.toLowerCase()));
+    const currentTitleSet = new Set(currentTitleWords);
+    const currentDescSet = new Set(currentDescWords);
+
+    return allEvents
+      .filter((event: any) => event.eventId !== eventId)
+      .map((event: any) => {
+        const eventTags = [...(event.chips || []), ...(event.tags || [])];
+        const eventTitleWords = getWords(event.title);
+        const eventDescWords = getWords(event.description);
+
+        const eventTagSet = new Set(eventTags.map((t) => t.toLowerCase()));
+        const eventTitleSet = new Set(eventTitleWords);
+        const eventDescSet = new Set(eventDescWords);
+
+        const tagScore = jaccardSimilarity(currentTagSet, eventTagSet);
+        const titleScore = jaccardSimilarity(currentTitleSet, eventTitleSet);
+        const descScore = jaccardSimilarity(currentDescSet, eventDescSet);
+
+        // Combined score: weighted average (more weight to tags, then desc, then title)
+        const score = 0.5 * tagScore + 0.3 * descScore + 0.2 * titleScore;
+
+        return { event, score };
+      })
+      .filter(({ score }) => score > 0.1) // Threshold to avoid weak matches
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map(({ event }) => event);
+  }, [ev, allEvents, eventId]);
+
   // Store initial event in Redux if not already there
   useEffect(() => {
     if (initialEvent && !byId[eventId]) {
       dispatch(fetchEventDetails({ eventId }));
     }
   }, [dispatch, eventId, initialEvent, byId]);
+
+  // Fetch public events for recommendations
+  useEffect(() => {
+    if (!ev) return;
+    dispatch(fetchPublicEvents({ page: 1, limit: 20 }));
+  }, [dispatch, ev]);
 
   useEffect(() => {
     if (!hydrated) {
@@ -634,6 +708,34 @@ export default function EventClient({
         <h5>About Organiser</h5>
         <ReadMore text={ev.lister.bio} maxLength={328} />
       </div>
+
+      {/* Recommendations Section */}
+      {similarEvents.length > 0 && (
+        <div className="mt-8 space-y-4">
+          <h1 className="bricolage-grotesque font-semibold">
+            Events you may like
+          </h1>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {similarEvents.map((recEvent: any) => (
+              <Link
+                key={recEvent.eventId}
+                href={`/event/${recEvent.eventId}`}
+                className="group"
+              >
+                <EventCard
+                  imageUrl={recEvent.banner_horizontal}
+                  title={recEvent.title}
+                  location={recEvent.location}
+                  date={recEvent.date}
+                  price={Math.min(
+                    ...recEvent.TicketType.map((t: any) => t.price),
+                  )}
+                />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-6 md:p-1 md:pl-8 rounded-full md:bg-white fixed bottom-7 md:w-full md:max-w-[524px] max-w-[358px] w-[92vw] -translate-x-[50%] left-[50%]">
         <div className="md:flex hidden flex-col gap-1 w-15">
