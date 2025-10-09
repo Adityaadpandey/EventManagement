@@ -86,14 +86,15 @@ export default function EventClient({
     (s) => s.events.list,
   );
 
+  // booking UI state (outside modal)
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalStep, setModalStep] = useState<number>(0);
+  const [modalStep, setModalStep] = useState<number>(0); // 0: types, 1: details, 2: checkout
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
   const [attendee, setAttendee] = useState<Record<string, any>>({});
   const [buying, setBuying] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
-  const [discountCode, setDiscountCode] = useState<string>("");
+  const [discountCode, setDiscountCode] = useState<string>(""); // New state for discount code
 
   const chipColors = ["#EBF9FF", "#FFF7CC", "#FFF1EB", "#FFF1EB"];
 
@@ -188,28 +189,55 @@ export default function EventClient({
     }
   }, [hydrated, dispatch]);
 
-  // prefill auth form and attendee when user exists
+  // FIX 1: Auto-fill phone number when modal opens and user is authenticated
   useEffect(() => {
-    if (me && !attendee.name && !attendee.email) {
+    if (modalOpen && me && isAuthenticated) {
+      let phoneNumber = "";
+
+      if (me.phone) {
+        phoneNumber = me.phone;
+
+        // Remove + if present
+        if (phoneNumber.startsWith("+")) {
+          phoneNumber = phoneNumber.substring(1);
+        }
+
+        // Remove country code if present (assuming 91 for India)
+        if (phoneNumber.startsWith("91") && phoneNumber.length > 10) {
+          phoneNumber = phoneNumber.substring(2);
+        }
+
+        // Take last 10 digits if longer
+        if (phoneNumber.length > 10) {
+          phoneNumber = phoneNumber.substring(phoneNumber.length - 10);
+        }
+      }
+
       setAuthForm({
-        name: me.name ?? "",
-        identifier: me.email ?? me.phone ?? "",
+        name: me.name || "",
+        identifier: me.email || "",
+        phone: phoneNumber,
         otp: "",
       });
-      setAttendee({
-        name: me.name ?? "",
-        email: me.email ?? me.phone ?? "",
-        phone: me.phone ?? "",
-      });
     }
-  }, [me]);
+  }, [modalOpen, me, isAuthenticated]);
 
+  // FIX 2: Auto-select the most expensive ticket when modal opens
   useEffect(() => {
-    if (!selectedTicketId && ev?.TicketType?.length) {
-      setSelectedTicketId(ev.TicketType[0].ticketTypeId);
-      setSelectedQuantity(1);
+    if (modalOpen && ev?.TicketType && ev.TicketType.length > 0) {
+      // Only auto-select if no ticket is currently selected
+      if (!selectedTicketId) {
+        const sortedTickets = [...ev.TicketType].sort(
+          (a: any, b: any) => b.price - a.price,
+        );
+        const topTicket = sortedTickets[0];
+        if (topTicket) {
+          setSelectedTicketId(topTicket.ticketTypeId);
+          setSelectedQuantity(1);
+        }
+      }
     }
-  }, [ev, selectedTicketId]);
+  }, [modalOpen, ev?.TicketType, selectedTicketId]);
 
   useEffect(() => {
     if (!otpSent || resendTimer <= 0) return;
@@ -333,7 +361,9 @@ export default function EventClient({
     setModalStep(0);
     setBuyError(null);
     setLocalAuthMsg(null);
+    // Don't reset selectedTicketId here - let useEffect handle it
   };
+
   const closeModal = () => {
     setModalOpen(false);
     setModalStep(0);
@@ -371,7 +401,7 @@ export default function EventClient({
     setLocalAuthMsg(null);
   };
 
-  // ensure profile complete before checkout
+  // FIX 3: Ensure profile complete with phone in +91xxxxxxxxxx format
   const ensureProfileComplete = async () => {
     if (!token) return;
     if (me?.name && me?.email && me?.phone) return;
@@ -381,7 +411,12 @@ export default function EventClient({
       if (!me?.name && authForm.name) payload.name = authForm.name;
       if (!me?.email && authForm.identifier)
         payload.email = authForm.identifier;
-      if (!me?.phone && authForm.phone) payload.phone = authForm.phone;
+
+      // IMPORTANT: Send phone with country code in format +91xxxxxxxxxx
+      if (!me?.phone && authForm.phone) {
+        const phoneNumber = authForm.phone.replace(/\D/g, ""); // Remove non-digits
+        payload.phone = `+91${phoneNumber}`; // Add country code
+      }
 
       if (Object.keys(payload).length === 0) return;
 
@@ -431,10 +466,14 @@ export default function EventClient({
       await ensureProfileComplete();
 
       // Build complete attendeeData including custom fields
+      // Use phone with country code format
+      const phoneNumber = authForm.phone.replace(/\D/g, "");
+      const fullPhone = `+91${phoneNumber}`;
+
       const finalAttendee: Record<string, any> = {
         name: me?.name ?? authForm.name,
         email: me?.email ?? authForm.identifier,
-        phone: me?.phone ?? authForm.phone ?? undefined,
+        phone: me?.phone ?? fullPhone,
       };
 
       // Add all custom field values to attendeeData
@@ -517,7 +556,7 @@ export default function EventClient({
           prefill: {
             name: me?.name ?? authForm.name ?? undefined,
             email: me?.email ?? authForm.identifier ?? undefined,
-            contact: me?.phone ?? undefined,
+            contact: me?.phone ?? fullPhone ?? undefined,
           },
           handler: async (resp: any) => {
             try {
