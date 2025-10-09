@@ -49,23 +49,55 @@ export class EventController {
         ? parseFloat(req.query.latitude as string)
         : undefined;
 
+      // New parameter to control whether to include global events
+      const includeGlobalEvents = req.query.includeGlobal !== "false"; // Default true
+
       if (limit <= 0) {
         return sendError(res, "Limit must be a positive integer", 400);
       }
 
-      const { events, nextCursor, hasNextPage } =
-        await this.eventService.getPublicEvents(
-          cursor,
-          limit,
-          longitude,
-          latitude,
+      // Validate coordinates if provided
+      if (
+        (longitude !== undefined || latitude !== undefined) &&
+        (longitude === undefined || latitude === undefined)
+      ) {
+        return sendError(
+          res,
+          "Both longitude and latitude must be provided together",
+          400,
         );
+      }
 
-      return sendSuccess(res, "Events fetched", events, 200, {
-        nextCursor,
-        hasNextPage,
+      if (longitude !== undefined && (longitude < -180 || longitude > 180)) {
+        return sendError(res, "Longitude must be between -180 and 180", 400);
+      }
+
+      if (latitude !== undefined && (latitude < -90 || latitude > 90)) {
+        return sendError(res, "Latitude must be between -90 and 90", 400);
+      }
+
+      const result = await this.eventService.getPublicEvents(
+        cursor,
         limit,
-      });
+        longitude,
+        latitude,
+        includeGlobalEvents,
+      );
+
+      return sendSuccess(
+        res,
+        "Events fetched successfully",
+        result.events,
+        200,
+        {
+          pagination: {
+            nextCursor: result.nextCursor,
+            hasNextPage: result.hasNextPage,
+            limit,
+          },
+          metadata: result.metadata,
+        },
+      );
     } catch (error: any) {
       logger.error("Failed to get public events:", error);
       return sendError(res, "Failed to get public events", 500, error.message);

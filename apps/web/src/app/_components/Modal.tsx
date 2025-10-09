@@ -85,6 +85,53 @@ const Modal: React.FC<ModalProps> = ({
   discountCode,
   setDiscountCode,
 }) => {
+  const [countryCode, setCountryCode] = React.useState("91");
+
+  // Auto-fill phone number from me object on mount
+  React.useEffect(() => {
+    if (me?.phone && isAuthenticated) {
+      let phoneNumber = me.phone;
+      let extractedCountryCode = "91";
+
+      // If phone starts with +, extract country code and number
+      if (phoneNumber.startsWith("+")) {
+        // Remove the + sign
+        phoneNumber = phoneNumber.substring(1);
+
+        // Extract country code (assuming 1-3 digits)
+        // For Indian numbers, it's 91 (2 digits)
+        if (phoneNumber.startsWith("91") && phoneNumber.length === 12) {
+          extractedCountryCode = "91";
+          phoneNumber = phoneNumber.substring(2);
+        } else if (phoneNumber.startsWith("1") && phoneNumber.length === 11) {
+          extractedCountryCode = "1";
+          phoneNumber = phoneNumber.substring(1);
+        } else {
+          // Try to extract first 1-3 digits as country code
+          const match = phoneNumber.match(/^(\d{1,3})(\d{10})$/);
+          if (match) {
+            extractedCountryCode = match[1];
+            phoneNumber = match[2];
+          }
+        }
+      } else if (phoneNumber.length > 10) {
+        // If no + but longer than 10 digits, assume first 2 are country code
+        extractedCountryCode = phoneNumber.substring(
+          0,
+          phoneNumber.length - 10,
+        );
+        phoneNumber = phoneNumber.substring(phoneNumber.length - 10);
+      }
+
+      setCountryCode(extractedCountryCode);
+
+      // Always update phone from me object when authenticated
+      onAuthChange("phone")({
+        target: { value: phoneNumber },
+      } as React.ChangeEvent<HTMLInputElement>);
+    }
+  }, [me?.phone, isAuthenticated]);
+
   if (!modalOpen) return null;
 
   const backdropClick = (e: React.MouseEvent) => {
@@ -93,6 +140,74 @@ const Modal: React.FC<ModalProps> = ({
       return;
     }
     closeModal();
+  };
+
+  // Helper function to get full phone number
+  const getFullPhoneNumber = () => {
+    return `+${countryCode}${authForm.phone}`;
+  };
+
+  // Helper function to format phone for display
+  const getDisplayPhone = () => {
+    if (me?.phone) {
+      // If phone already has country code, display as is
+      if (me.phone.startsWith("+")) return me.phone;
+      // Otherwise add the current country code
+      return `+${countryCode}${me.phone}`;
+    }
+    if (authForm.phone) {
+      return `+${countryCode}${authForm.phone}`;
+    }
+    return "N/A";
+  };
+
+  // Validation function for step 1
+  const validateStep1 = (): { valid: boolean; message: string } => {
+    // Check name
+    if (!authForm.name || authForm.name.trim().length === 0) {
+      return { valid: false, message: "Please enter your name" };
+    }
+
+    // Check email
+    if (!authForm.identifier || authForm.identifier.trim().length === 0) {
+      return { valid: false, message: "Please enter your email" };
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(authForm.identifier)) {
+      return { valid: false, message: "Please enter a valid email address" };
+    }
+
+    // Check if OTP is verified for non-authenticated users
+    if (!isAuthenticated && !token) {
+      return { valid: false, message: "Please verify your email with OTP" };
+    }
+
+    // Check phone number
+    if (!authForm.phone || authForm.phone.trim().length === 0) {
+      return { valid: false, message: "Please enter your phone number" };
+    }
+
+    // Validate phone number length (should be 10 digits for Indian numbers)
+    const phoneDigits = authForm.phone.replace(/\D/g, "");
+    if (phoneDigits.length !== 10) {
+      return { valid: false, message: "Phone number must be 10 digits" };
+    }
+
+    // Check custom required fields
+    if (ev.CustomField?.length > 0) {
+      for (const cf of ev.CustomField) {
+        if (cf.required) {
+          const value = attendee[cf.label];
+          if (!value || value.trim().length === 0) {
+            return { valid: false, message: `Please fill in ${cf.label}` };
+          }
+        }
+      }
+    }
+
+    return { valid: true, message: "" };
   };
 
   return (
@@ -282,20 +397,36 @@ const Modal: React.FC<ModalProps> = ({
                       className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
                       placeholder="Full name"
                     />
+                    <div className="text-base">Phone number</div>
+                    <div className="flex gap-3">
+                      <input
+                        type="text"
+                        value={`+${countryCode}`}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, "");
+                          if (val.length <= 3) {
+                            setCountryCode(val);
+                          }
+                        }}
+                        className="w-[72px] text-center text-black text-base border border-[#E5E5E5] rounded-2xl bg-[#F5F5F5]"
+                        placeholder="+91"
+                        maxLength={4}
+                      />
+                      <input
+                        value={authForm.phone}
+                        onChange={onAuthChange("phone")}
+                        className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                        placeholder="Phone number"
+                        type="tel"
+                        maxLength={15}
+                      />
+                    </div>
                     <div className="text-base">Email address</div>
                     <input
                       value={authForm.identifier}
                       onChange={onAuthChange("identifier")}
                       className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
                       placeholder="Email"
-                    />
-                    <div className="text-base">Phone number</div>
-                    <input
-                      value={authForm.phone}
-                      onChange={onAuthChange("phone")}
-                      className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
-                      placeholder="Phone number"
-                      type="tel"
                     />
                   </div>
                 ) : (
@@ -348,13 +479,36 @@ const Modal: React.FC<ModalProps> = ({
 
                     <div>
                       <div className="text-base">Phone number</div>
-                      <input
-                        value={authForm.phone}
-                        onChange={onAuthChange("phone")}
-                        className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
-                        placeholder="Phone number"
-                        type="tel"
-                      />
+                      <div className="flex gap-3">
+                        <input
+                          type="text"
+                          value={`+${countryCode}`}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, "");
+                            if (val.length <= 3) {
+                              setCountryCode(val);
+                            }
+                          }}
+                          className="w-[72px] text-center text-black text-base border border-[#E5E5E5] rounded-2xl bg-[#F5F5F5] outline-0"
+                          placeholder="+91"
+                          maxLength={4}
+                        />
+                        <input
+                          value={authForm.phone}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, "");
+                            if (value.length <= 10) {
+                              onAuthChange("phone")({
+                                target: { value },
+                              } as React.ChangeEvent<HTMLInputElement>);
+                            }
+                          }}
+                          className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
+                          placeholder="Phone number"
+                          type="tel"
+                          maxLength={10}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -407,12 +561,12 @@ const Modal: React.FC<ModalProps> = ({
 
                 <button
                   onClick={() => {
-                    if (!isAuthenticated && !token) {
-                      setLocalAuthMsg(
-                        "Please verify email (OTP) before proceeding.",
-                      );
+                    const validation = validateStep1();
+                    if (!validation.valid) {
+                      setLocalAuthMsg(validation.message);
                       return;
                     }
+                    setLocalAuthMsg(null);
                     setModalStep(2);
                   }}
                   className="px-6 sm:py-7 py-6 rounded-full md:text-xl text-base bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer max-w-[300px]"
@@ -503,7 +657,7 @@ const Modal: React.FC<ModalProps> = ({
                       <div className="space-y-1">
                         <p className="text-[#8B8B8B]">Phone:</p>{" "}
                         <p className="text-zinc-900 break-words">
-                          {authForm.phone || me?.phone || "N/A"}
+                          {getDisplayPhone()}
                         </p>
                       </div>
                       <div className="space-y-1">

@@ -20,7 +20,7 @@ router.get(
 );
 
 router.get(
-  "/:code",
+  "/:codeId",
   authMiddleware,
   discountController.getCodeInfoById.bind(discountController),
 );
