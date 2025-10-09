@@ -237,6 +237,7 @@ export class EventService {
     limit = 10,
     longitude?: number,
     latitude?: number,
+    includeGlobalEvents = true, // New parameter to control global events
   ) {
     limit = Math.min(Number(limit) || 10, 100);
 
@@ -251,143 +252,225 @@ export class EventService {
       longitude >= -180 &&
       longitude <= 180;
 
-    // Include location params in cache key for location-specific caching
+    // Enhanced cache key with global events flag
     const locationKey = hasValidLocation
-      ? `${latitude!.toFixed(2)}_${longitude!.toFixed(2)}`
+      ? `${latitude!.toFixed(3)}_${longitude!.toFixed(3)}_${includeGlobalEvents}`
       : "all";
-    const cacheKey = `public-events:${locationKey}:${cursor || "first"}:${limit}`;
+    const cacheKey = `public-events:v2:${locationKey}:${cursor || "first"}:${limit}`;
 
     try {
-      // 1. Try cache
+      // 1. Try cache first
       const cached = await redis.get(cacheKey);
       if (cached) {
-        console.log(`Cache hit for key: ${cacheKey}`);
+        logger.info(`Cache hit for key: ${cacheKey}`);
         return JSON.parse(cached);
       }
 
-      console.log(`Cache miss for key: ${cacheKey}`);
+      logger.info(`Cache miss for key: ${cacheKey}`);
 
-      // 2. Fetch from DB with location filtering
-      const where: any = { status: "APPROVED" as const };
+      // 2. Build query conditions
+      const baseWhere = {
+        status: "APPROVED" as const,
+        date: {
+          gte: new Date(), // Only future events
+        },
+      };
 
-      // Calculate bounding box for 300km radius (optimization before precise calculation)
+      let locationEvents: any[] = [];
+      let globalEvents: any[] = [];
+
+      // 3. Fetch location-based events if location is provided
       if (hasValidLocation) {
         const radiusKm = 300;
         const latDelta = radiusKm / 111; // degrees latitude
         const lonDelta =
           radiusKm / (111 * Math.cos((latitude! * Math.PI) / 180)); // degrees longitude
 
-        const boundingBoxFilter = {
+        const locationWhere = {
+          ...baseWhere,
           latitude: {
             gte: latitude! - latDelta,
             lte: latitude! + latDelta,
+            not: null,
           },
           longitude: {
             gte: longitude! - lonDelta,
             lte: longitude! + lonDelta,
-          },
-          // Ensure events have coordinates
-          NOT: {
-            OR: [{ latitude: null }, { longitude: null }],
+            not: null,
           },
         };
 
-        Object.assign(where, boundingBoxFilter);
-        console.log(
-          `Filtering events within 300km of (${latitude}, ${longitude})`,
+        locationEvents = await prisma.event.findMany({
+          where: locationWhere,
+          take: limit * 2, // Fetch more for distance filtering
+          ...(cursor && {
+            cursor: { eventId: cursor },
+            skip: 1,
+          }),
+          orderBy: [
+            { date: "asc" }, // Prioritize upcoming events
+            { eventId: "asc" },
+          ],
+          select: this.getEventSelectFields(),
+        });
+
+        // Filter by precise distance and add distance field
+        locationEvents = locationEvents
+          .map((event) => {
+            const distance = this.calculateDistance(
+              latitude!,
+              longitude!,
+              event.latitude!,
+              event.longitude!,
+            );
+            return { ...event, distance };
+          })
+          .filter((event) => event.distance <= radiusKm)
+          .sort((a, b) => a.distance - b.distance); // Sort by distance
+
+        logger.info(
+          `Found ${locationEvents.length} location-based events within ${radiusKm}km`,
         );
-      } else {
-        console.log("No location filter applied - returning all events");
       }
 
-      const events = await prisma.event.findMany({
-        where,
-        take: limit * 3, // Fetch more since we'll filter by precise distance
-        ...(cursor && {
-          cursor: { eventId: cursor },
-          skip: 1,
-        }),
-        orderBy: { eventId: "asc" },
-        select: {
-          eventId: true,
-          title: true,
-          description: true,
-          date: true,
-          time: true,
-          chips: true,
-          restrictions: true,
-          longitude: true,
-          latitude: true,
-          tags: true,
-          location: true,
-          capacity: true,
-          banner_horizontal: true,
-          banner_vertical: true,
-          banner_square: true,
-          TicketType: {
-            select: {
-              name: true,
-              price: true,
-              quantity: true,
-            },
-          },
-          lister: {
-            select: {
-              user: {
-                select: { name: true, email: true },
-              },
-            },
-          },
-        },
+      // 4. Fetch global events (events without coordinates) if requested
+      if (includeGlobalEvents) {
+        const globalWhere = {
+          ...baseWhere,
+          OR: [{ latitude: null }, { longitude: null }],
+        };
+
+        globalEvents = await prisma.event.findMany({
+          where: globalWhere,
+          take: hasValidLocation ? Math.ceil(limit / 3) : limit, // Fewer global events if location-based search
+          orderBy: [{ date: "asc" }, { eventId: "asc" }],
+          select: this.getEventSelectFields(),
+        });
+
+        // Add distance field for consistency (null for global events)
+        globalEvents = globalEvents.map((event) => ({
+          ...event,
+          distance: null,
+        }));
+
+        logger.info(`Found ${globalEvents.length} global events`);
+      }
+
+      // 5. Combine and sort events
+      let allEvents = [...locationEvents, ...globalEvents];
+
+      // Sort combined events: location-based first (by distance), then global (by date)
+      allEvents.sort((a, b) => {
+        // Location events come first, sorted by distance
+        if (a.distance !== null && b.distance !== null) {
+          return a.distance - b.distance;
+        }
+        if (a.distance !== null && b.distance === null) {
+          return -1; // Location events before global
+        }
+        if (a.distance === null && b.distance !== null) {
+          return 1; // Global events after location
+        }
+        // Both are global events, sort by date
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
       });
 
-      console.log(`Found ${events.length} events from database`);
-
-      // 3. Filter by precise distance using Haversine formula
-      let filteredEvents = events;
-      if (hasValidLocation) {
-        filteredEvents = events.filter((event) => {
-          if (event.latitude === null || event.longitude === null) return false;
-          const distance = this.calculateDistance(
-            latitude!,
-            longitude!,
-            event.latitude,
-            event.longitude,
-          );
-          console.log(
-            `Event "${event.title}" distance: ${distance.toFixed(2)}km`,
-          );
-          return distance <= 300; // 300km radius
-        });
-        console.log(`${filteredEvents.length} events within 300km radius`);
-      }
-
-      // 4. Apply pagination after filtering
-      const hasNextPage = filteredEvents.length > limit;
-      const slicedEvents = hasNextPage
-        ? filteredEvents.slice(0, limit)
-        : filteredEvents;
+      // 6. Apply pagination
+      const hasNextPage = allEvents.length > limit;
+      const paginatedEvents = allEvents.slice(0, limit);
       const nextCursor =
-        hasNextPage && slicedEvents.length > 0
-          ? slicedEvents[slicedEvents.length - 1].eventId
+        hasNextPage && paginatedEvents.length > 0
+          ? paginatedEvents[paginatedEvents.length - 1].eventId
           : null;
 
+      // 7. Enhance events with additional computed fields
+      const enhancedEvents = paginatedEvents.map((event) => ({
+        ...event,
+        // Remove distance from final response (used only for sorting)
+        distance: undefined,
+        // Add computed fields
+        isGlobalEvent: event.latitude === null || event.longitude === null,
+        minPrice: Math.min(...event.TicketType.map((t: any) => t.price)),
+        maxPrice: Math.max(...event.TicketType.map((t: any) => t.price)),
+        totalTickets: event.TicketType.reduce(
+          (sum: number, t: any) => sum + t.quantity,
+          0,
+        ),
+        // Format date for better UX
+        formattedDate: new Date(event.date).toLocaleDateString(),
+        formattedTime: new Date(event.time).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      }));
+
       const result = {
-        events: slicedEvents,
+        events: enhancedEvents,
         nextCursor,
         hasNextPage,
+        metadata: {
+          totalReturned: enhancedEvents.length,
+          locationBasedCount: locationEvents.length,
+          globalEventsCount: globalEvents.length,
+          searchLocation: hasValidLocation ? { latitude, longitude } : null,
+          radiusKm: hasValidLocation ? 300 : null,
+        },
       };
 
-      // 5. Store in cache with appropriate TTL
-      // Shorter TTL for location-specific queries (30s), longer for general (60s)
-      const ttl = hasValidLocation ? 30 : 60;
+      // 8. Cache with appropriate TTL
+      const ttl = hasValidLocation ? 60 : 120; // Longer cache for location searches
       await redis.set(cacheKey, JSON.stringify(result), "EX", ttl);
 
+      logger.info(
+        `Returning ${result.events.length} events (${locationEvents.length} local, ${globalEvents.length} global)`,
+      );
       return result;
     } catch (error) {
       logger.error("Error in getPublicEvents:", error);
       throw error;
     }
+  }
+
+  // Helper method to get consistent select fields
+  private getEventSelectFields() {
+    return {
+      eventId: true,
+      title: true,
+      description: true,
+      date: true,
+      time: true,
+      chips: true,
+      restrictions: true,
+      longitude: true,
+      latitude: true,
+      tags: true,
+      location: true,
+      capacity: true,
+      banner_horizontal: true,
+      banner_vertical: true,
+      banner_square: true,
+      TicketType: {
+        select: {
+          ticketTypeId: true,
+          name: true,
+          price: true,
+          quantity: true,
+          salesCutoff: true,
+        },
+      },
+      lister: {
+        select: {
+          listerId: true,
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+          bio: true,
+        },
+      },
+    };
   }
 
   async getListerEvents(userId: string) {
