@@ -99,7 +99,7 @@ export const fetchPublicEvents = createAsyncThunk<
 >(
   "events/fetchPublic",
   async (
-    { cursor, limit = 10, latitude, longitude, includeGlobal = false },
+    { cursor, limit = 10, latitude, longitude, includeGlobal = true },
     { rejectWithValue },
   ) => {
     try {
