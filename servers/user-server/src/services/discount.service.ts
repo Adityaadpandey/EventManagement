@@ -39,10 +39,10 @@ export class DiscountService {
     }
   }
 
-  async getCodeInfoById(codeId: string) {
+  async getCodeInfoById(code: string, eventId: string) {
     try {
       const codeInfo = await prisma.discountCode.findUnique({
-        where: { codeId },
+        where: { code, eventId },
       });
       if (!codeInfo) {
         return { error: "Discount code not found" };
