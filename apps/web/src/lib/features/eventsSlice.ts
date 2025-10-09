@@ -79,7 +79,7 @@ const initialState: EventsState = {
 
 // ----------------- THUNKS -----------------
 
-// GET /event/public?cursor=&limit=&location=
+// GET /event/public?cursor=&limit=&latitude=&longitude=&includeGlobal=
 export const fetchPublicEvents = createAsyncThunk<
   {
     events: EventSummary[];
@@ -87,17 +87,36 @@ export const fetchPublicEvents = createAsyncThunk<
     hasNextPage: boolean;
     limit: number;
   },
-  { cursor?: string; limit?: number; location?: string; append?: boolean },
+  {
+    cursor?: string;
+    limit?: number;
+    latitude?: number;
+    longitude?: number;
+    includeGlobal?: boolean;
+    append?: boolean;
+  },
   { rejectValue: string }
 >(
   "events/fetchPublic",
-  async ({ cursor, limit = 10, location }, { rejectWithValue }) => {
+  async (
+    { cursor, limit = 10, latitude, longitude, includeGlobal = false },
+    { rejectWithValue },
+  ) => {
     try {
       const params = new URLSearchParams();
       if (cursor) params.append("cursor", cursor);
       params.append("limit", limit.toString());
-      console.log(location);
-      if (location) params.append("location", location);
+
+      // Add latitude and longitude if provided
+      if (latitude !== undefined && longitude !== undefined) {
+        params.append("latitude", latitude.toString());
+        params.append("longitude", longitude.toString());
+      }
+
+      // Add includeGlobal parameter
+      params.append("includeGlobal", includeGlobal.toString());
+
+      console.log("Fetching events with params:", params.toString());
 
       const res = await api.get(`/event/public?${params.toString()}`);
       const data = res.data?.data ?? [];

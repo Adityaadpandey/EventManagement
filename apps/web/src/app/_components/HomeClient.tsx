@@ -3,7 +3,7 @@
 import { fetchPublicEvents, resetEventsList } from "@/lib/features/eventsSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import EventCard from "@/app/_components/EventCard";
 import Footer from "@/app/_components/Footer";
@@ -29,11 +29,67 @@ const MAJOR_CITIES = [
   "Jaipur",
 ];
 
+const FILTERS = [
+  "All",
+  "Fest",
+  "Tech",
+  "Hackathon",
+  "Cultural",
+  "EDM",
+  "Concert",
+  "NGO",
+];
+
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+const GEOCODING_TIMEOUT = 5000;
+const GEOLOCATION_TIMEOUT = 10000;
+const GEOLOCATION_MAX_AGE = 300000; // 5 minutes
+
+interface Coordinates {
+  latitude: number;
+  longitude: number;
+}
+
+interface Notification {
+  id: number;
+  title: string;
+  text: string;
+  read: boolean;
+}
+
+const MOCK_NOTIFICATIONS: Notification[] = [
+  {
+    id: 1,
+    title: "Event Approved",
+    text: "Your event has been approved!",
+    read: false,
+  },
+  {
+    id: 2,
+    title: "New Booking",
+    text: "New booking received for Summer Festival",
+    read: false,
+  },
+  {
+    id: 3,
+    title: "Reminder",
+    text: "Event reminder: Tech Conference starts tomorrow",
+    read: true,
+  },
+  {
+    id: 4,
+    title: "Payment Received",
+    text: "Payment received for $150",
+    read: true,
+  },
+];
+
 export default function HomePage() {
   const dispatch = useAppDispatch();
   const { items, loading, loadingMore, error, nextCursor, hasNextPage } =
     useAppSelector((s) => s.events.list);
 
+  // State management
   const [activeFilter, setActiveFilter] = useState<string>("All");
   const [showLeftFade, setShowLeftFade] = useState(false);
   const [showRightFade, setShowRightFade] = useState(false);
@@ -41,11 +97,15 @@ export default function HomePage() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [userLocation, setUserLocation] = useState<string>("");
+  const [userCoordinates, setUserCoordinates] = useState<Coordinates | null>(
+    null,
+  );
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
   const [isAutoDetected, setIsAutoDetected] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
+  // Refs
   const tagsRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const locationRef = useRef<HTMLDivElement>(null);
@@ -53,95 +113,207 @@ export default function HomePage() {
   const hasLoadedOnce = useRef(false);
   const locationAttempted = useRef(false);
 
-  // Function to request location permission
-  const requestLocationPermission = async () => {
-    if (locationLoading) return;
+  // Geocode city name to coordinates
+  const geocodeCityToCoordinates = useCallback(
+    async (cityName: string): Promise<Coordinates | null> => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)},India&format=json&limit=1`,
+          { signal: AbortSignal.timeout(GEOCODING_TIMEOUT) },
+        );
+        const data = await response.json();
+
+        if (data && data.length > 0) {
+          return {
+            latitude: parseFloat(data[0].lat),
+            longitude: parseFloat(data[0].lon),
+          };
+        }
+        return null;
+      } catch (error) {
+        console.error("Geocoding failed:", error);
+        return null;
+      }
+    },
+    [],
+  );
+
+  // Reverse geocode coordinates to city name
+  const reverseGeocode = useCallback(
+    async (coords: Coordinates): Promise<string> => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`,
+          { signal: AbortSignal.timeout(GEOCODING_TIMEOUT) },
+        );
+        const data = await response.json();
+
+        return (
+          data.address?.city ||
+          data.address?.town ||
+          data.address?.village ||
+          data.address?.state ||
+          "Your Location"
+        );
+      } catch (error) {
+        console.error("Reverse geocoding failed:", error);
+        return "Your Location";
+      }
+    },
+    [],
+  );
+
+  // Save location to cache
+  const saveLocationToCache = useCallback(
+    (location: string, coords: Coordinates, autoDetected: boolean) => {
+      localStorage.setItem("userLocation", location);
+      localStorage.setItem("userLatitude", coords.latitude.toString());
+      localStorage.setItem("userLongitude", coords.longitude.toString());
+      localStorage.setItem("userLocationTimestamp", Date.now().toString());
+      localStorage.setItem("isAutoDetected", autoDetected.toString());
+    },
+    [],
+  );
+
+  // Clear location cache
+  const clearLocationCache = useCallback(() => {
+    localStorage.removeItem("userLocation");
+    localStorage.removeItem("userLatitude");
+    localStorage.removeItem("userLongitude");
+    localStorage.removeItem("userLocationTimestamp");
+    localStorage.removeItem("isAutoDetected");
+  }, []);
+
+  // Request location permission and auto-detect
+  const requestLocationPermission = useCallback(async () => {
+    if (locationLoading || !navigator.geolocation) return;
 
     setLocationLoading(true);
 
-    try {
-      if (!navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const coords: Coordinates = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+
+        // Check if coordinates are the same as current
+        if (
+          userCoordinates?.latitude === coords.latitude &&
+          userCoordinates?.longitude === coords.longitude &&
+          isAutoDetected
+        ) {
+          setLocationLoading(false);
+          setIsFirstLoad(false);
+          return;
+        }
+
+        const location = await reverseGeocode(coords);
+
+        setUserLocation(location);
+        setUserCoordinates(coords);
+        setIsAutoDetected(true);
+        saveLocationToCache(location, coords, true);
+
+        if (hasLoadedOnce.current) {
+          dispatch(resetEventsList());
+          hasLoadedOnce.current = false;
+        }
+
         setLocationLoading(false);
+        setIsFirstLoad(false);
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        setLocationLoading(false);
+        setIsFirstLoad(false);
+      },
+      {
+        timeout: GEOLOCATION_TIMEOUT,
+        maximumAge: GEOLOCATION_MAX_AGE,
+        enableHighAccuracy: false,
+      },
+    );
+  }, [
+    locationLoading,
+    userCoordinates,
+    isAutoDetected,
+    reverseGeocode,
+    saveLocationToCache,
+    dispatch,
+  ]);
+
+  // Handle manual location selection
+  const handleLocationSelect = useCallback(
+    async (location: string) => {
+      // If selecting the same location, just close dropdown
+      if (location === userLocation) {
+        setLocationDropdownOpen(false);
         return;
       }
 
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
+      // If clearing location (All Events)
+      if (!location) {
+        setUserLocation("");
+        setUserCoordinates(null);
+        setIsAutoDetected(false);
+        setLocationDropdownOpen(false);
+        clearLocationCache();
 
-          try {
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-              { signal: AbortSignal.timeout(5000) },
-            );
-            const data = await response.json();
+        if (hasLoadedOnce.current) {
+          dispatch(resetEventsList());
+          hasLoadedOnce.current = false;
+        }
+        return;
+      }
 
-            const location =
-              data.address?.city ||
-              data.address?.town ||
-              data.address?.village ||
-              data.address?.state ||
-              "Your Location";
+      // Geocode city name to coordinates
+      setLocationLoading(true);
+      const coords = await geocodeCityToCoordinates(location);
 
-            // If location is the same and auto-detected, just close dropdown
-            if (location === userLocation && isAutoDetected) {
-              setLocationLoading(false);
-              setIsFirstLoad(false);
-              return;
-            }
+      if (coords) {
+        setUserLocation(location);
+        setUserCoordinates(coords);
+        setIsAutoDetected(false);
+        setLocationDropdownOpen(false);
+        saveLocationToCache(location, coords, false);
 
-            setUserLocation(location);
-            setIsAutoDetected(true);
+        if (hasLoadedOnce.current) {
+          dispatch(resetEventsList());
+          hasLoadedOnce.current = false;
+        }
+      }
 
-            localStorage.setItem("userLocation", location);
-            localStorage.setItem(
-              "userLocationTimestamp",
-              Date.now().toString(),
-            );
-            localStorage.setItem("isAutoDetected", "true");
-
-            if (hasLoadedOnce.current) {
-              dispatch(resetEventsList());
-              hasLoadedOnce.current = false;
-            }
-          } catch (error) {
-            console.error("Reverse geocoding failed:", error);
-          } finally {
-            setLocationLoading(false);
-            setIsFirstLoad(false);
-          }
-        },
-        (error) => {
-          console.error("Geolocation error:", error);
-          setLocationLoading(false);
-          setIsFirstLoad(false);
-        },
-        {
-          timeout: 10000,
-          maximumAge: 300000,
-          enableHighAccuracy: false,
-        },
-      );
-    } catch (error) {
-      console.error("Error requesting location:", error);
       setLocationLoading(false);
-      setIsFirstLoad(false);
-    }
-  };
+    },
+    [
+      userLocation,
+      geocodeCityToCoordinates,
+      saveLocationToCache,
+      clearLocationCache,
+      dispatch,
+    ],
+  );
 
-  // Check cached location and request permission on mount
   useEffect(() => {
     const cachedLocation = localStorage.getItem("userLocation");
+    const cachedLatitude = localStorage.getItem("userLatitude");
+    const cachedLongitude = localStorage.getItem("userLongitude");
     const cacheTimestamp = localStorage.getItem("userLocationTimestamp");
     const wasAutoDetected = localStorage.getItem("isAutoDetected") === "true";
-    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
     if (
       cachedLocation &&
+      cachedLatitude &&
+      cachedLongitude &&
       cacheTimestamp &&
       Date.now() - parseInt(cacheTimestamp) < CACHE_DURATION
     ) {
       setUserLocation(cachedLocation);
+      setUserCoordinates({
+        latitude: parseFloat(cachedLatitude),
+        longitude: parseFloat(cachedLongitude),
+      });
       setIsAutoDetected(wasAutoDetected);
       setIsFirstLoad(false);
     } else if (!locationAttempted.current) {
@@ -170,48 +342,8 @@ export default function HomePage() {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const notifications = [
-    {
-      id: 1,
-      title: "Event Approved",
-      text: "Your event has been approved!",
-      read: false,
-    },
-    {
-      id: 2,
-      title: "New Booking",
-      text: "New booking received for Summer Festival",
-      read: false,
-    },
-    {
-      id: 3,
-      title: "Reminder",
-      text: "Event reminder: Tech Conference starts tomorrow",
-      read: true,
-    },
-    {
-      id: 4,
-      title: "Payment Received",
-      text: "Payment received for $150",
-      read: true,
-    },
-  ];
-
-  const filters = [
-    "All",
-    "Fest",
-    "Tech",
-    "Hackathon",
-    "Cultural",
-    "EDM",
-    "Concert",
-    "NGO",
-  ];
 
   // Initial fetch - only once when ready
   useEffect(() => {
@@ -220,11 +352,12 @@ export default function HomePage() {
       dispatch(
         fetchPublicEvents({
           limit: 10,
-          location: userLocation || undefined,
+          latitude: userCoordinates?.latitude,
+          longitude: userCoordinates?.longitude,
         }),
       );
     }
-  }, [dispatch, userLocation, isFirstLoad]);
+  }, [dispatch, userCoordinates, isFirstLoad]);
 
   // Refetch when filter changes
   useEffect(() => {
@@ -233,24 +366,26 @@ export default function HomePage() {
       dispatch(
         fetchPublicEvents({
           limit: 10,
-          location: userLocation || undefined,
+          latitude: userCoordinates?.latitude,
+          longitude: userCoordinates?.longitude,
         }),
       );
     }
-  }, [activeFilter, dispatch, userLocation]);
+  }, [activeFilter, dispatch, userCoordinates]);
 
-  // Refetch when location changes (only if events already loaded)
+  // Refetch when coordinates change (only if events already loaded)
   useEffect(() => {
-    if (userLocation && hasLoadedOnce.current) {
+    if (userCoordinates && hasLoadedOnce.current) {
       dispatch(resetEventsList());
       dispatch(
         fetchPublicEvents({
           limit: 10,
-          location: userLocation,
+          latitude: userCoordinates.latitude,
+          longitude: userCoordinates.longitude,
         }),
       );
     }
-  }, [userLocation, dispatch]);
+  }, [userCoordinates, dispatch]);
 
   // Infinite scroll observer
   useEffect(() => {
@@ -266,7 +401,8 @@ export default function HomePage() {
             fetchPublicEvents({
               cursor: nextCursor || undefined,
               limit: 10,
-              location: userLocation || undefined,
+              latitude: userCoordinates?.latitude,
+              longitude: userCoordinates?.longitude,
               append: true,
             }),
           );
@@ -285,7 +421,14 @@ export default function HomePage() {
         observer.unobserve(currentTarget);
       }
     };
-  }, [hasNextPage, loadingMore, loading, nextCursor, dispatch, userLocation]);
+  }, [
+    hasNextPage,
+    loadingMore,
+    loading,
+    nextCursor,
+    dispatch,
+    userCoordinates,
+  ]);
 
   // Check scroll for filter tags fade
   useEffect(() => {
@@ -308,29 +451,7 @@ export default function HomePage() {
     };
   }, []);
 
-  // Handle manual location selection
-  const handleLocationSelect = (location: string) => {
-    // If selecting the same location, just close dropdown
-    if (location === userLocation) {
-      setLocationDropdownOpen(false);
-      return;
-    }
-
-    setUserLocation(location);
-    setIsAutoDetected(false);
-    setLocationDropdownOpen(false);
-
-    localStorage.setItem("userLocation", location);
-    localStorage.setItem("userLocationTimestamp", Date.now().toString());
-    localStorage.setItem("isAutoDetected", "false");
-
-    if (hasLoadedOnce.current) {
-      dispatch(resetEventsList());
-      hasLoadedOnce.current = false;
-    }
-  };
-
-  // Apply search filter
+  // Filter events by search query
   const searchFiltered = searchQuery
     ? items.filter(
         (ev) =>
@@ -342,7 +463,7 @@ export default function HomePage() {
       )
     : items;
 
-  // Apply category filter
+  // Filter events by category
   const filteredItems =
     activeFilter === "All"
       ? searchFiltered
@@ -352,24 +473,52 @@ export default function HomePage() {
           ),
         );
 
-  const toggleSearch = () => {
-    const newSearchOpen = !searchOpen;
-    setSearchOpen(newSearchOpen);
-    if (!newSearchOpen) {
-      setSearchQuery("");
-    }
-  };
+  // Toggle search bar
+  const toggleSearch = useCallback(() => {
+    setSearchOpen((prev) => {
+      if (prev) setSearchQuery("");
+      return !prev;
+    });
+  }, []);
 
-  // Show initial loading only when fetching location for first time
+  // Handle filter change
+  const handleFilterChange = useCallback((filter: string) => {
+    setActiveFilter((prev) =>
+      filter === "All" || prev !== filter ? filter : "All",
+    );
+  }, []);
+
+  // Retry fetching events
+  const handleRetry = useCallback(() => {
+    dispatch(resetEventsList());
+    hasLoadedOnce.current = false;
+    dispatch(
+      fetchPublicEvents({
+        limit: 10,
+        latitude: userCoordinates?.latitude,
+        longitude: userCoordinates?.longitude,
+      }),
+    );
+  }, [dispatch, userCoordinates]);
+
+  // Clear all filters
+  const clearAllFilters = useCallback(() => {
+    setSearchQuery("");
+    setActiveFilter("All");
+  }, []);
+
   const showInitialLoading = isFirstLoad && locationLoading;
+  const hasActiveFilters = searchQuery || activeFilter !== "All";
 
   return (
-    <div className="relative">
+    <div className="relative min-h-screen">
+      {/* Background Gradient */}
       <img
         src="svgs/homeGradient.svg"
         alt=""
-        className="absolute top-[70px] md:right-2 md:block hidden z-0"
+        className="absolute top-[70px] md:right-2 md:block hidden z-0 pointer-events-none"
       />
+
       <div className="home-page-container z-30 relative">
         {/* Mobile Header */}
         <div className="w-full flex justify-between border-b md:hidden mb-4 pb-4 border-b-[#00000014]">
@@ -378,6 +527,7 @@ export default function HomePage() {
               onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
               disabled={locationLoading}
               className="home-location-box flex"
+              aria-label="Select location"
             >
               {locationLoading ? (
                 <Loader2 className="w-4 h-4 text-gray-600 animate-spin flex-shrink-0" />
@@ -389,15 +539,12 @@ export default function HomePage() {
                 />
               )}
               <p className="home-location-text leading-none text-left text-sm max-w-[120px] truncate">
-                {locationLoading
-                  ? "Locating..."
-                  : userLocation
-                    ? userLocation
-                    : "All Events"}
+                {locationLoading ? "Locating..." : userLocation || "All Events"}
               </p>
-              <ChevronDown className="w-4 h-4 text-gray-500" />
+              <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
             </button>
 
+            {/* Mobile Location Dropdown */}
             <AnimatePresence>
               {locationDropdownOpen && (
                 <motion.div
@@ -457,6 +604,7 @@ export default function HomePage() {
             </AnimatePresence>
           </div>
 
+          {/* Mobile Actions */}
           <div
             className="flex gap-4 items-center relative"
             ref={notificationRef}
@@ -464,19 +612,16 @@ export default function HomePage() {
             <button
               onClick={() => setNotificationOpen((prev) => !prev)}
               className="relative"
+              aria-label="Notifications"
             >
               <img
                 src="/svgs/notification.svg"
                 alt="Notifications"
                 className="w-7"
               />
-              {/* {notifications.filter((n) => !n.read).length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">
-                {notifications.filter((n) => !n.read).length}
-              </span>
-            )} */}
             </button>
 
+            {/* Notification Dropdown */}
             <AnimatePresence>
               {notificationOpen && (
                 <motion.div
@@ -487,24 +632,21 @@ export default function HomePage() {
                     duration: 0.35,
                     ease: [0.16, 1, 0.3, 1],
                   }}
-                  className="absolute top-12 right-0 max-w-sm w-[80.256vw] p-4 
-                 bg-white/70 backdrop-blur-2xl rounded-2xl shadow-lg 
-                 z-50 space-y-4 origin-top"
+                  className="absolute top-12 right-0 max-w-sm w-[80.256vw] p-4 bg-white/70 backdrop-blur-2xl rounded-2xl shadow-lg z-50 space-y-4 origin-top"
                 >
                   <h3 className="font-semibold text-2xl text-gray-900 bricolage-grotesque leading-none">
                     Notifications
                   </h3>
                   <div className="max-h-[60vh] overflow-y-auto space-y-3">
-                    {notifications.length > 0 ? (
-                      notifications.map((notification) => (
+                    {MOCK_NOTIFICATIONS.length > 0 ? (
+                      MOCK_NOTIFICATIONS.map((notification) => (
                         <div
                           key={notification.id}
-                          className={`px-3 py-2 hover:bg-gray-50 transition-colors 
-                         cursor-pointer bg-white rounded-xl ${
-                           !notification.read
-                             ? "border-l-4 border-blue-500"
-                             : ""
-                         }`}
+                          className={`px-3 py-2 hover:bg-gray-50 transition-colors cursor-pointer bg-white rounded-xl ${
+                            !notification.read
+                              ? "border-l-4 border-blue-500"
+                              : ""
+                          }`}
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1 pr-2">
@@ -538,21 +680,24 @@ export default function HomePage() {
             >
               <img
                 src="https://thumbs.dreamstime.com/b/simple-vector-illustration-showcases-user-profile-placeholder-icon-consists-black-circle-representing-head-351326903.jpg"
-                alt="User Profile Placeholder"
+                alt="User Profile"
                 className="w-full h-full object-cover"
               />
             </Link>
           </div>
         </div>
 
+        {/* Page Title */}
         <h1 className="home-page-heading">Events for you</h1>
 
         {/* Filter Bar */}
         <div className="home-filter-bar relative">
           <div className="flex items-center gap-4">
+            {/* Search Toggle */}
             <button
               onClick={toggleSearch}
               className="h-[52px] w-[52px] p-4 bg-white rounded-full md:flex hidden relative z-50 cursor-pointer items-center justify-center hover:bg-gray-50 transition-colors"
+              aria-label={searchOpen ? "Close search" : "Open search"}
             >
               {searchOpen ? (
                 <X size={20} className="text-gray-600" />
@@ -561,40 +706,36 @@ export default function HomePage() {
               )}
             </button>
 
+            {/* Filter Tags */}
             <div className="home-filter-tags-wrapper">
               {showLeftFade && <div className="home-filter-gradient-left" />}
               <div className="home-filter-tags" ref={tagsRef}>
-                {filters.map((filter, index) => (
-                  <h5
-                    key={index}
+                {FILTERS.map((filter) => (
+                  <button
+                    key={filter}
                     className={`home-filter-tag cursor-pointer transition-colors duration-200 ${
                       activeFilter === filter
                         ? "bg-black text-white"
                         : "bg-white hover:bg-gray-50"
                     }`}
-                    onClick={() => {
-                      if (filter === "All") {
-                        setActiveFilter("All");
-                      } else {
-                        setActiveFilter((prev) =>
-                          prev === filter ? "All" : filter,
-                        );
-                      }
-                    }}
+                    onClick={() => handleFilterChange(filter)}
+                    aria-pressed={activeFilter === filter}
                   >
                     {filter}
-                  </h5>
+                  </button>
                 ))}
               </div>
               {showRightFade && <div className="home-filter-gradient-right" />}
             </div>
           </div>
 
+          {/* Desktop Location Selector */}
           <div className="relative md:block hidden" ref={locationRef}>
             <button
               onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
               disabled={locationLoading}
-              className="home-location-box flex "
+              className="home-location-box flex"
+              aria-label="Select location"
             >
               {locationLoading ? (
                 <Loader2 className="w-5 h-5 text-gray-600 animate-spin" />
@@ -606,15 +747,12 @@ export default function HomePage() {
                 />
               )}
               <p className="home-location-text">
-                {locationLoading
-                  ? "Locating..."
-                  : userLocation
-                    ? userLocation
-                    : "All Events"}
+                {locationLoading ? "Locating..." : userLocation || "All Events"}
               </p>
               <ChevronDown className="w-4 h-4 text-gray-500" />
             </button>
 
+            {/* Desktop Location Dropdown */}
             <AnimatePresence>
               {locationDropdownOpen && (
                 <motion.div
@@ -631,7 +769,7 @@ export default function HomePage() {
                     }}
                     className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors border-b border-gray-100"
                   >
-                    <Navigation className="w-5 h-5 " />
+                    <Navigation className="w-5 h-5" />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">
                         Use Current Location
@@ -674,6 +812,7 @@ export default function HomePage() {
             </AnimatePresence>
           </div>
 
+          {/* Animated Search Input */}
           <AnimatePresence>
             {searchOpen && (
               <motion.div
@@ -711,7 +850,7 @@ export default function HomePage() {
                 <motion.input
                   type="text"
                   placeholder="Search events, tags, or locations..."
-                  className="w-full h-full bg-transparent outline-none px-4 text-base placeholder:text-gray-500 opacity-0"
+                  className="w-full h-full bg-transparent outline-none px-4 text-base placeholder:text-gray-500"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => {
@@ -727,8 +866,9 @@ export default function HomePage() {
           </AnimatePresence>
         </div>
 
-        {/* Content */}
+        {/* Content Area */}
         {showInitialLoading ? (
+          // Initial Location Loading
           <div className="flex flex-col items-center justify-center py-20">
             <div className="relative">
               <Loader2 className="w-16 h-16 text-black animate-spin" />
@@ -742,6 +882,7 @@ export default function HomePage() {
             </p>
           </div>
         ) : loading && items.length === 0 ? (
+          // Events Loading Skeleton
           <div className="space-y-6">
             {Array.from({ length: 4 }).map((_, idx) => (
               <div
@@ -766,6 +907,7 @@ export default function HomePage() {
             ))}
           </div>
         ) : error ? (
+          // Error State
           <div className="p-6 text-center">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-50 mb-3">
               <X className="w-6 h-6 text-red-500" />
@@ -777,44 +919,31 @@ export default function HomePage() {
               Please check your connection and try again
             </p>
             <button
-              onClick={() => {
-                dispatch(resetEventsList());
-                hasLoadedOnce.current = false;
-                dispatch(
-                  fetchPublicEvents({
-                    limit: 10,
-                    location: userLocation || undefined,
-                  }),
-                );
-              }}
+              onClick={handleRetry}
               className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
               Retry
             </button>
           </div>
         ) : filteredItems.length === 0 ? (
+          // Empty State
           <div className="p-12 text-center text-zinc-500">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
               <Bell size={32} className="text-gray-400" />
             </div>
             <p className="text-lg font-medium mb-2">
-              {searchQuery || activeFilter !== "All"
-                ? "No events found"
-                : "No events available"}
+              {hasActiveFilters ? "No events found" : "No events available"}
             </p>
             <p className="text-sm text-gray-400 mb-4">
-              {searchQuery || activeFilter !== "All"
+              {hasActiveFilters
                 ? "Try adjusting your filters or search query"
                 : userLocation
                   ? "No events in your area right now"
                   : "Check back later for new events"}
             </p>
-            {(searchQuery || activeFilter !== "All") && (
+            {hasActiveFilters && (
               <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setActiveFilter("All");
-                }}
+                onClick={clearAllFilters}
                 className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
               >
                 Clear Filters
@@ -822,6 +951,7 @@ export default function HomePage() {
             )}
           </div>
         ) : (
+          // Events List
           <>
             <div className="home-event-list">
               {filteredItems.map((ev) => (
@@ -845,6 +975,7 @@ export default function HomePage() {
               ))}
             </div>
 
+            {/* Infinite Scroll Loading */}
             {hasNextPage && (
               <div ref={observerTarget} className="w-full py-8">
                 {loadingMore && (
@@ -873,6 +1004,7 @@ export default function HomePage() {
               </div>
             )}
 
+            {/* End of List */}
             {!hasNextPage && items.length > 0 && (
               <div className="py-8 text-center text-gray-400">
                 <p className="text-sm">You've reached the end of the list</p>
