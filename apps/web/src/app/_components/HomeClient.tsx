@@ -7,7 +7,27 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import EventCard from "@/app/_components/EventCard";
 import Footer from "@/app/_components/Footer";
-import { Bell, X, MapPin } from "lucide-react";
+import {
+  Bell,
+  X,
+  MapPin,
+  Loader2,
+  ChevronDown,
+  Navigation,
+} from "lucide-react";
+
+const MAJOR_CITIES = [
+  "Mumbai",
+  "Delhi",
+  "Bangalore",
+  "Chandigarh",
+  "Hyderabad",
+  "Chennai",
+  "Kolkata",
+  "Pune",
+  "Ahmedabad",
+  "Jaipur",
+];
 
 export default function HomePage() {
   const dispatch = useAppDispatch();
@@ -20,64 +40,119 @@ export default function HomePage() {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [userLocation, setUserLocation] = useState<string>(
-    "Lovely Professional University",
-  );
-  const [locationLoading, setLocationLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<string>("");
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
+  const [isAutoDetected, setIsAutoDetected] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const tagsRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
+  const locationRef = useRef<HTMLDivElement>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
+  const hasLoadedOnce = useRef(false);
+  const locationAttempted = useRef(false);
 
-  // Get user's location on mount
-  useEffect(() => {
-    const getUserLocation = async () => {
-      try {
-        if (!navigator.geolocation) {
-          setLocationLoading(false);
-          return;
-        }
+  // Function to request location permission
+  const requestLocationPermission = async () => {
+    if (locationLoading) return;
 
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const { latitude, longitude } = position.coords;
+    setLocationLoading(true);
 
-            try {
-              // Reverse geocoding to get location name
-              const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-              );
-              const data = await response.json();
-
-              const location =
-                data.address?.city ||
-                data.address?.town ||
-                data.address?.village ||
-                data.address?.state ||
-                "Unknown Location";
-
-              setUserLocation(location);
-            } catch (error) {
-              console.error("Failed to get location name:", error);
-            } finally {
-              setLocationLoading(false);
-            }
-          },
-          (error) => {
-            console.error("Geolocation error:", error);
-            setLocationLoading(false);
-          },
-        );
-      } catch (error) {
-        console.error("Error getting user location:", error);
+    try {
+      if (!navigator.geolocation) {
         setLocationLoading(false);
+        return;
       }
-    };
 
-    getUserLocation();
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+              { signal: AbortSignal.timeout(5000) },
+            );
+            const data = await response.json();
+
+            const location =
+              data.address?.city ||
+              data.address?.town ||
+              data.address?.village ||
+              data.address?.state ||
+              "Your Location";
+
+            // If location is the same and auto-detected, just close dropdown
+            if (location === userLocation && isAutoDetected) {
+              setLocationLoading(false);
+              setIsFirstLoad(false);
+              return;
+            }
+
+            setUserLocation(location);
+            setIsAutoDetected(true);
+
+            localStorage.setItem("userLocation", location);
+            localStorage.setItem(
+              "userLocationTimestamp",
+              Date.now().toString(),
+            );
+            localStorage.setItem("isAutoDetected", "true");
+
+            if (hasLoadedOnce.current) {
+              dispatch(resetEventsList());
+              hasLoadedOnce.current = false;
+            }
+          } catch (error) {
+            console.error("Reverse geocoding failed:", error);
+          } finally {
+            setLocationLoading(false);
+            setIsFirstLoad(false);
+          }
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          setLocationLoading(false);
+          setIsFirstLoad(false);
+        },
+        {
+          timeout: 10000,
+          maximumAge: 300000,
+          enableHighAccuracy: false,
+        },
+      );
+    } catch (error) {
+      console.error("Error requesting location:", error);
+      setLocationLoading(false);
+      setIsFirstLoad(false);
+    }
+  };
+
+  // Check cached location and request permission on mount
+  useEffect(() => {
+    const cachedLocation = localStorage.getItem("userLocation");
+    const cacheTimestamp = localStorage.getItem("userLocationTimestamp");
+    const wasAutoDetected = localStorage.getItem("isAutoDetected") === "true";
+    const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+    if (
+      cachedLocation &&
+      cacheTimestamp &&
+      Date.now() - parseInt(cacheTimestamp) < CACHE_DURATION
+    ) {
+      setUserLocation(cachedLocation);
+      setIsAutoDetected(wasAutoDetected);
+      setIsFirstLoad(false);
+    } else if (!locationAttempted.current) {
+      locationAttempted.current = true;
+      requestLocationPermission();
+    } else {
+      setIsFirstLoad(false);
+    }
   }, []);
 
-  // Close notification on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -85,6 +160,12 @@ export default function HomePage() {
         !notificationRef.current.contains(event.target as Node)
       ) {
         setNotificationOpen(false);
+      }
+      if (
+        locationRef.current &&
+        !locationRef.current.contains(event.target as Node)
+      ) {
+        setLocationDropdownOpen(false);
       }
     };
 
@@ -132,21 +213,35 @@ export default function HomePage() {
     "NGO",
   ];
 
-  // Initial fetch with location
+  // Initial fetch - only once when ready
   useEffect(() => {
-    if (!locationLoading) {
+    if (!isFirstLoad && !hasLoadedOnce.current) {
+      hasLoadedOnce.current = true;
       dispatch(
         fetchPublicEvents({
           limit: 10,
-          location: userLocation,
+          location: userLocation || undefined,
         }),
       );
     }
-  }, [dispatch, locationLoading, userLocation]);
+  }, [dispatch, userLocation, isFirstLoad]);
 
-  // Reset and refetch when filter changes
+  // Refetch when filter changes
   useEffect(() => {
-    if (!locationLoading && activeFilter !== "All") {
+    if (hasLoadedOnce.current && activeFilter !== "All") {
+      dispatch(resetEventsList());
+      dispatch(
+        fetchPublicEvents({
+          limit: 10,
+          location: userLocation || undefined,
+        }),
+      );
+    }
+  }, [activeFilter, dispatch, userLocation]);
+
+  // Refetch when location changes (only if events already loaded)
+  useEffect(() => {
+    if (userLocation && hasLoadedOnce.current) {
       dispatch(resetEventsList());
       dispatch(
         fetchPublicEvents({
@@ -155,7 +250,7 @@ export default function HomePage() {
         }),
       );
     }
-  }, [activeFilter, dispatch, locationLoading, userLocation]);
+  }, [userLocation, dispatch]);
 
   // Infinite scroll observer
   useEffect(() => {
@@ -171,7 +266,7 @@ export default function HomePage() {
             fetchPublicEvents({
               cursor: nextCursor || undefined,
               limit: 10,
-              location: userLocation,
+              location: userLocation || undefined,
               append: true,
             }),
           );
@@ -213,7 +308,29 @@ export default function HomePage() {
     };
   }, []);
 
-  // Apply search filter first
+  // Handle manual location selection
+  const handleLocationSelect = (location: string) => {
+    // If selecting the same location, just close dropdown
+    if (location === userLocation) {
+      setLocationDropdownOpen(false);
+      return;
+    }
+
+    setUserLocation(location);
+    setIsAutoDetected(false);
+    setLocationDropdownOpen(false);
+
+    localStorage.setItem("userLocation", location);
+    localStorage.setItem("userLocationTimestamp", Date.now().toString());
+    localStorage.setItem("isAutoDetected", "false");
+
+    if (hasLoadedOnce.current) {
+      dispatch(resetEventsList());
+      hasLoadedOnce.current = false;
+    }
+  };
+
+  // Apply search filter
   const searchFiltered = searchQuery
     ? items.filter(
         (ev) =>
@@ -225,7 +342,7 @@ export default function HomePage() {
       )
     : items;
 
-  // Then apply category filter
+  // Apply category filter
   const filteredItems =
     activeFilter === "All"
       ? searchFiltered
@@ -243,19 +360,98 @@ export default function HomePage() {
     }
   };
 
+  // Show initial loading only when fetching location for first time
+  const showInitialLoading = isFirstLoad && locationLoading;
+
   return (
     <div className="home-page-container">
       {/* Mobile Header */}
       <div className="w-full flex justify-between border-b md:hidden mb-4 pb-4 border-b-[#00000014]">
-        <div className="home-location-box flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-gray-600 flex-shrink-0" />
-          <p className="home-location-text leading-none">
-            {locationLoading ? "Loading..." : userLocation}
-          </p>
+        <div className="relative" ref={locationRef}>
+          <button
+            onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
+            disabled={locationLoading}
+            className="home-location-box flex"
+          >
+            {locationLoading ? (
+              <Loader2 className="w-4 h-4 text-gray-600 animate-spin flex-shrink-0" />
+            ) : (
+              <MapPin
+                className={`w-4 h-4 flex-shrink-0 ${
+                  userLocation ? "text-black" : "text-gray-400"
+                }`}
+              />
+            )}
+            <p className="home-location-text leading-none text-left text-sm max-w-[120px] truncate">
+              {locationLoading
+                ? "Locating..."
+                : userLocation
+                  ? userLocation
+                  : "All Events"}
+            </p>
+            <ChevronDown className="w-4 h-4 text-gray-500" />
+          </button>
+
+          <AnimatePresence>
+            {locationDropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 z-50 py-2 max-h-[400px] overflow-y-auto"
+              >
+                <button
+                  onClick={() => {
+                    requestLocationPermission();
+                    setLocationDropdownOpen(false);
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors border-b border-gray-100"
+                >
+                  <Navigation className="w-4 h-4" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      Use Current Location
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Auto-detect your location
+                    </p>
+                  </div>
+                </button>
+
+                {userLocation && (
+                  <button
+                    onClick={() => handleLocationSelect("")}
+                    className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors text-sm"
+                  >
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-700">All Events</span>
+                  </button>
+                )}
+
+                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Popular Cities
+                </div>
+
+                {MAJOR_CITIES.map((city) => (
+                  <button
+                    key={city}
+                    onClick={() => handleLocationSelect(city)}
+                    className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 transition-colors text-sm ${
+                      userLocation === city && !isAutoDetected
+                        ? "bg-blue-50 text-blue-700 font-medium"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    {city}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="flex gap-4 items-center relative" ref={notificationRef}>
-          {/* Notification Toggle */}
           <button
             onClick={() => setNotificationOpen((prev) => !prev)}
             className="relative"
@@ -265,11 +461,11 @@ export default function HomePage() {
               alt="Notifications"
               className="w-7"
             />
-            {notifications.filter((n) => !n.read).length > 0 && (
+            {/* {notifications.filter((n) => !n.read).length > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">
                 {notifications.filter((n) => !n.read).length}
               </span>
-            )}
+            )} */}
           </button>
 
           <AnimatePresence>
@@ -322,7 +518,6 @@ export default function HomePage() {
             )}
           </AnimatePresence>
 
-          {/* Profile */}
           <Link
             href="/profile"
             className="w-9 h-9 shrink-0 rounded-full overflow-hidden"
@@ -343,7 +538,7 @@ export default function HomePage() {
         <div className="flex items-center gap-4">
           <button
             onClick={toggleSearch}
-            className="h-[52px] w-[52px] p-4 bg-white rounded-full md:block hidden relative z-50 cursor-pointer flex items-center justify-center hover:bg-gray-50 transition-colors"
+            className="h-[52px] w-[52px] p-4 bg-white rounded-full md:flex hidden relative z-50 cursor-pointer items-center justify-center hover:bg-gray-50 transition-colors"
           >
             {searchOpen ? (
               <X size={20} className="text-gray-600" />
@@ -381,11 +576,88 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="home-location-box md:flex hidden items-center gap-2">
-          <MapPin className="w-5 h-5 text-gray-600" />
-          <p className="home-location-text">
-            {locationLoading ? "Loading..." : userLocation}
-          </p>
+        <div className="relative md:block hidden" ref={locationRef}>
+          <button
+            onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
+            disabled={locationLoading}
+            className="home-location-box flex "
+          >
+            {locationLoading ? (
+              <Loader2 className="w-5 h-5 text-gray-600 animate-spin" />
+            ) : (
+              <MapPin
+                className={`w-5 h-5 ${
+                  userLocation ? "text-black" : "text-gray-400"
+                }`}
+              />
+            )}
+            <p className="home-location-text">
+              {locationLoading
+                ? "Locating..."
+                : userLocation
+                  ? userLocation
+                  : "All Events"}
+            </p>
+            <ChevronDown className="w-4 h-4 text-gray-500" />
+          </button>
+
+          <AnimatePresence>
+            {locationDropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-lg border border-gray-100 z-50 py-2 max-h-[400px] overflow-y-auto"
+              >
+                <button
+                  onClick={() => {
+                    requestLocationPermission();
+                    setLocationDropdownOpen(false);
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors border-b border-gray-100"
+                >
+                  <Navigation className="w-5 h-5 text-blue-600" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      Use Current Location
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Auto-detect your location
+                    </p>
+                  </div>
+                </button>
+
+                {userLocation && (
+                  <button
+                    onClick={() => handleLocationSelect("")}
+                    className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors text-sm"
+                  >
+                    <MapPin className="w-5 h-5 text-gray-400" />
+                    <span className="text-gray-700">All Events</span>
+                  </button>
+                )}
+
+                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Popular Cities
+                </div>
+
+                {MAJOR_CITIES.map((city) => (
+                  <button
+                    key={city}
+                    onClick={() => handleLocationSelect(city)}
+                    className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 transition-colors text-sm ${
+                      userLocation === city && !isAutoDetected
+                        ? "bg-blue-50 text-blue-700 font-medium"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    {city}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <AnimatePresence>
@@ -442,7 +714,20 @@ export default function HomePage() {
       </div>
 
       {/* Content */}
-      {loading ? (
+      {showInitialLoading ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="relative">
+            <Loader2 className="w-16 h-16 text-black animate-spin" />
+            <MapPin className="w-8 h-8 text-black absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <h3 className="text-xl font-semibold mt-6 text-gray-900">
+            Finding events near you
+          </h3>
+          <p className="text-gray-500 mt-2 text-center px-4">
+            Detecting your location for personalized events...
+          </p>
+        </div>
+      ) : loading && items.length === 0 ? (
         <div className="space-y-6">
           {Array.from({ length: 4 }).map((_, idx) => (
             <div
@@ -471,17 +756,24 @@ export default function HomePage() {
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-50 mb-3">
             <X className="w-6 h-6 text-red-500" />
           </div>
-          <p className="text-red-500 font-medium">{error}</p>
+          <p className="text-red-500 font-medium mb-2">Unable to load events</p>
+          <p className="text-gray-500 text-sm mb-4">
+            Please check your connection and try again
+          </p>
           <button
             onClick={() => {
               dispatch(resetEventsList());
+              hasLoadedOnce.current = false;
               dispatch(
-                fetchPublicEvents({ limit: 10, location: userLocation }),
+                fetchPublicEvents({
+                  limit: 10,
+                  location: userLocation || undefined,
+                }),
               );
             }}
-            className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
           >
-            Try Again
+            Retry
           </button>
         </div>
       ) : filteredItems.length === 0 ? (
@@ -489,10 +781,17 @@ export default function HomePage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
             <Bell size={32} className="text-gray-400" />
           </div>
-          <p className="text-lg font-medium">
+          <p className="text-lg font-medium mb-2">
             {searchQuery || activeFilter !== "All"
-              ? "No events found matching your search or filter."
-              : "No events available at the moment."}
+              ? "No events found"
+              : "No events available"}
+          </p>
+          <p className="text-sm text-gray-400 mb-4">
+            {searchQuery || activeFilter !== "All"
+              ? "Try adjusting your filters or search query"
+              : userLocation
+                ? "No events in your area right now"
+                : "Check back later for new events"}
           </p>
           {(searchQuery || activeFilter !== "All") && (
             <button
@@ -500,7 +799,7 @@ export default function HomePage() {
                 setSearchQuery("");
                 setActiveFilter("All");
               }}
-              className="mt-4 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+              className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
             >
               Clear Filters
             </button>
@@ -530,7 +829,6 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Infinite scroll trigger */}
           {hasNextPage && (
             <div ref={observerTarget} className="w-full py-8">
               {loadingMore && (
@@ -559,7 +857,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* End of list indicator */}
           {!hasNextPage && items.length > 0 && (
             <div className="py-8 text-center text-gray-400">
               <p className="text-sm">You've reached the end of the list</p>
