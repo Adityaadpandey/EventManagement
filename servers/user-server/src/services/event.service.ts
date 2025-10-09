@@ -240,45 +240,64 @@ export class EventService {
   ) {
     limit = Math.min(Number(limit) || 10, 100);
 
+    // Validate location parameters
+    const hasValidLocation =
+      longitude !== undefined &&
+      latitude !== undefined &&
+      !isNaN(longitude) &&
+      !isNaN(latitude) &&
+      latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180;
+
     // Include location params in cache key for location-specific caching
-    const locationKey =
-      longitude !== undefined && latitude !== undefined
-        ? `${latitude.toFixed(2)}_${longitude.toFixed(2)}`
-        : "all";
+    const locationKey = hasValidLocation
+      ? `${latitude!.toFixed(2)}_${longitude!.toFixed(2)}`
+      : "all";
     const cacheKey = `public-events:${locationKey}:${cursor || "first"}:${limit}`;
 
     try {
       // 1. Try cache
       const cached = await redis.get(cacheKey);
       if (cached) {
+        console.log(`Cache hit for key: ${cacheKey}`);
         return JSON.parse(cached);
       }
+
+      console.log(`Cache miss for key: ${cacheKey}`);
 
       // 2. Fetch from DB with location filtering
       const where: any = { status: "APPROVED" as const };
 
       // Calculate bounding box for 300km radius (optimization before precise calculation)
-      // 1 degree latitude ≈ 111km
-      // 1 degree longitude varies by latitude: ≈ 111km * cos(latitude)
-      let boundingBoxFilter = {};
-      if (longitude !== undefined && latitude !== undefined) {
+      if (hasValidLocation) {
         const radiusKm = 300;
         const latDelta = radiusKm / 111; // degrees latitude
         const lonDelta =
-          radiusKm / (111 * Math.cos((latitude * Math.PI) / 180)); // degrees longitude
+          radiusKm / (111 * Math.cos((latitude! * Math.PI) / 180)); // degrees longitude
 
-        boundingBoxFilter = {
+        const boundingBoxFilter = {
           latitude: {
-            gte: latitude - latDelta,
-            lte: latitude + latDelta,
+            gte: latitude! - latDelta,
+            lte: latitude! + latDelta,
           },
           longitude: {
-            gte: longitude - lonDelta,
-            lte: longitude + lonDelta,
+            gte: longitude! - lonDelta,
+            lte: longitude! + lonDelta,
+          },
+          // Ensure events have coordinates
+          NOT: {
+            OR: [{ latitude: null }, { longitude: null }],
           },
         };
 
         Object.assign(where, boundingBoxFilter);
+        console.log(
+          `Filtering events within 300km of (${latitude}, ${longitude})`,
+        );
+      } else {
+        console.log("No location filter applied - returning all events");
       }
 
       const events = await prisma.event.findMany({
@@ -322,19 +341,25 @@ export class EventService {
         },
       });
 
+      console.log(`Found ${events.length} events from database`);
+
       // 3. Filter by precise distance using Haversine formula
       let filteredEvents = events;
-      if (longitude !== undefined && latitude !== undefined) {
+      if (hasValidLocation) {
         filteredEvents = events.filter((event) => {
           if (event.latitude === null || event.longitude === null) return false;
           const distance = this.calculateDistance(
-            latitude,
-            longitude,
+            latitude!,
+            longitude!,
             event.latitude,
             event.longitude,
           );
+          console.log(
+            `Event "${event.title}" distance: ${distance.toFixed(2)}km`,
+          );
           return distance <= 300; // 300km radius
         });
+        console.log(`${filteredEvents.length} events within 300km radius`);
       }
 
       // 4. Apply pagination after filtering
@@ -355,7 +380,7 @@ export class EventService {
 
       // 5. Store in cache with appropriate TTL
       // Shorter TTL for location-specific queries (30s), longer for general (60s)
-      const ttl = longitude !== undefined && latitude !== undefined ? 30 : 60;
+      const ttl = hasValidLocation ? 30 : 60;
       await redis.set(cacheKey, JSON.stringify(result), "EX", ttl);
 
       return result;
@@ -526,6 +551,7 @@ export class EventService {
     }
   }
 
+  // Helper method for calculating distance (Haversine formula)
   private calculateDistance(
     lat1: number,
     lon1: number,
@@ -533,23 +559,15 @@ export class EventService {
     lon2: number,
   ): number {
     const R = 6371; // Earth's radius in kilometers
-    const dLat = this.toRadians(lat2 - lat1);
-    const dLon = this.toRadians(lon2 - lon1);
-
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRadians(lat1)) *
-        Math.cos(this.toRadians(lat2)) *
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
         Math.sin(dLon / 2) *
         Math.sin(dLon / 2);
-
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-
-    return distance;
-  }
-
-  private toRadians(degrees: number): number {
-    return degrees * (Math.PI / 180);
+    return R * c;
   }
 }
