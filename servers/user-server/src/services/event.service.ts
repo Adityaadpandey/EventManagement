@@ -501,6 +501,15 @@ export class EventService {
 
   async getPublicEventDetails(eventId: string) {
     try {
+      // Try to get from cache first
+      const cacheKey = `event:public:${eventId}`;
+      const cached = await redis.get(cacheKey);
+
+      if (cached) {
+        return JSON.parse(cached);
+      }
+
+      // If not in cache, fetch from database
       const event = await prisma.event.findUnique({
         where: {
           eventId,
@@ -546,7 +555,7 @@ export class EventService {
           },
           _count: {
             select: {
-              DiscountCode: true, // This adds the count of discount codes
+              DiscountCode: true,
             },
           },
         },
@@ -555,6 +564,10 @@ export class EventService {
       if (!event) {
         throw new Error("Event not found");
       }
+
+      // Store in cache with 10 hour expiration (adjust as needed)
+      await redis.set(cacheKey, JSON.stringify(event), "EX", 3600 * 10);
+
       return event;
     } catch (error) {
       logger.error("Error in getPublicEventDetails:", error);

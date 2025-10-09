@@ -20,9 +20,9 @@ router.get(
 );
 
 router.get(
-  "/:codeId",
+  "/:code/:eventId",
   authMiddleware,
-  discountController.getCodeInfoById.bind(discountController),
+  discountController.getCodeInfoByCode.bind(discountController),
 );
 
 export { router as discountRouter };
