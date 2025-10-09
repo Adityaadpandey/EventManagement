@@ -617,7 +617,7 @@ export default function HomePage() {
                   }}
                   className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors border-b border-gray-100"
                 >
-                  <Navigation className="w-5 h-5 text-blue-600" />
+                  <Navigation className="w-5 h-5 " />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">
                       Use Current Location
