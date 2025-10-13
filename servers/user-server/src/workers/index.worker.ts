@@ -25,3 +25,4 @@ const startWorker = (workerPath: string) => {
 // Absolute paths are required for worker_threads
 startWorker(path.resolve(__dirname, "./phoneOtp.worker.js"));
 startWorker(path.resolve(__dirname, "./email.worker.js"));
+startWorker(path.resolve(__dirname, "./analytics.worker.js"));
