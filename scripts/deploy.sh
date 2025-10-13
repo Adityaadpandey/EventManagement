@@ -92,11 +92,11 @@ while [ $RETRIES -lt $HEALTH_CHECK_RETRIES ]; do
         exit 1
     fi
 
-    # Check health via network call
-    HEALTH_CHECK=$(docker exec backend-test-${TIMESTAMP} wget --no-verbose --tries=1 --spider http://0.0.0.0:7001/health 2>&1 || echo "failed")
+    # Check health via curl (more reliable than wget for status codes)
+    HTTP_CODE=$(docker exec backend-test-${TIMESTAMP} sh -c "command -v curl >/dev/null && curl -s -o /dev/null -w '%{http_code}' http://0.0.0.0:7001/health || wget -q -O /dev/null -S http://0.0.0.0:7001/health 2>&1 | grep -o 'HTTP/[0-9.]* [0-9]*' | awk '{print \$2}'" 2>/dev/null || echo "000")
 
-    if echo "$HEALTH_CHECK" | grep -q "200 OK"; then
-        echo -e "${GREEN}✅ Test container is healthy!${NC}"
+    if [ "$HTTP_CODE" == "200" ]; then
+        echo -e "${GREEN}✅ Test container is healthy! (HTTP $HTTP_CODE)${NC}"
         HEALTHY=true
         break
     fi
