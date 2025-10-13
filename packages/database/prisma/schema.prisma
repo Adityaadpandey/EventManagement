@@ -6,7 +6,6 @@ datasource db {
 generator client {
     provider = "prisma-client-js"
     output   = "../generated"
-    previewFeatures = ["metrics"]
 }
 
 enum Role {
@@ -64,6 +63,7 @@ model User {
     Ticket        Ticket[]
     TicketScanLog TicketScanLog[]
     Refund        Refund[]
+    Notification  Notification[]
 
     // INDEXES
     @@index([role]) // Filter users by role
@@ -141,6 +141,9 @@ model Event {
     ctaClicksCount Int   @default(0)
     ticketsSold    Int   @default(0)
     revenue        Float @default(0)
+    conversionRate Float @default(0)
+
+    availableMailUpdates Int @default(2)
 
     // Relations
     TicketType     TicketType[]
@@ -408,4 +411,24 @@ model Refund {
     @@index([createdAt]) // Recent refund requests
     @@index([status, createdAt]) // Composite: pending refunds sorted by date
     @@index([processedBy]) // Refunds processed by admin
+}
+
+model Notification {
+    notificationId String   @id @default(uuid())
+    userId         String
+    user           User     @relation(fields: [userId], references: [userId])
+
+    title   String
+    message String
+    link    String?
+
+    read      Boolean   @default(false)
+    createdAt DateTime  @default(now())
+    readAt    DateTime?
+
+    // INDEXES
+    @@index([userId]) // User's notifications
+    @@index([read]) // Filter read/unread
+    @@index([createdAt]) // Recent notifications
+    @@index([userId, read]) // Composite: user's unread notifications
 }

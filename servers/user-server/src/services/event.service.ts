@@ -1,6 +1,7 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { redis } from "../config/redis";
+import { sendEmail } from "../lib/mail";
 
 export interface TicketTypeRequest {
   name: string;
@@ -643,6 +644,63 @@ export class EventService {
       return updatedEvent;
     } catch (error) {
       logger.error("Error in patchEvent:", error);
+      throw error;
+    }
+  }
+
+  async updateInfo(eventId: string, update: string) {
+    try {
+      //  so we need to fetch event ticket bought users and send them the email update so we will need the emails of the users who bought tickets for this event
+      const event = await prisma.event.findUnique({
+        where: { eventId },
+        include: {
+          Ticket: {
+            include: {
+              user: {
+                select: { email: true, name: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!event) {
+        throw new Error("Event not found");
+      }
+      const ticketedUsers = event.Ticket.map((t) => t.user);
+      const event_data = event.title;
+      logger.info(
+        `Fetched ${ticketedUsers.length} ticket holders for event "${event_data}"`,
+      );
+
+      // Send email to each user (mocked here)
+      for (const user of ticketedUsers) {
+        if (!user.email) {
+          logger.warn(`Skipping user ${user.name ?? "Unknown"} — no email`);
+          continue;
+        }
+
+        await sendEmail(
+          user.email,
+          `Important Update: ${event_data}`,
+          {
+            type: "event-update",
+            content: {
+              eventUpdate: {
+                message: update,
+                updatedAt: new Date().toISOString(),
+              },
+            },
+          },
+          user.name ?? "Attendee",
+        );
+      }
+      return {
+        success: true,
+        message: `Update sent to ${ticketedUsers.length} ticket holders for event "${event_data}"`,
+      };
+    } catch (error) {
+      logger.error("Error in updateInfo:", error);
       throw error;
     }
   }
