@@ -31,6 +31,7 @@ export class TicketController {
       if (result.error) {
         return sendError(res, result.error, 400);
       }
+      // Track ticket purchase for analytics
 
       return sendSuccess(
         res,

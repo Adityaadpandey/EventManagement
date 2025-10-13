@@ -9,5 +9,6 @@ export const updateUserProfileSchema = z
   })
 
   .refine((data) => data.name || data.email || data.avatar || data.phone, {
-    message: "At least one field (name, email, avatar) is required to update",
+    message:
+      "At least one field (name, email, avatar, phone) is required to update",
   });
