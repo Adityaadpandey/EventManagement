@@ -46,6 +46,13 @@ router.patch(
   eventController.patchEvent.bind(eventController),
 );
 
+router.post(
+  "/:eventId/info-update",
+  authMiddleware,
+  requireRole(["LISTER"]),
+  eventController.updateInfo.bind(eventController),
+);
+
 // DELETE /api/v1/event/:eventId
 
 // GET /api/v1/event/:eventId/attendees

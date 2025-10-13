@@ -224,4 +224,28 @@ export class EventController {
   async submitEventForApproval(_req: AuthenticatedRequest, _res: Response) {}
 
   async getEventAttendees(_req: AuthenticatedRequest, _res: Response) {}
+
+  async updateInfo(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) return sendError(res, "User ID is required", 400);
+
+      const eventId = req.params.eventId;
+      if (!eventId) return sendError(res, "Event ID is required", 400);
+
+      const update = req.body.update;
+      if (!update) return sendError(res, "Update data is required", 400);
+
+      const result = await this.eventService.updateInfo(eventId, update);
+      return sendSuccess(
+        res,
+        "Event info update processed",
+        result.message,
+        200,
+      );
+    } catch (error: any) {
+      logger.error("Failed to update event info:", error);
+      return sendError(res, "Failed to update event info", 500, error.message);
+    }
+  }
 }
