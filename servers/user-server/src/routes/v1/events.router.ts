@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { EventController } from "../../controllers/event.controller";
+import { trackEventView } from "../../middlewares/analytics.middleware";
 import { authMiddleware, requireRole } from "../../middlewares/auth.middleware";
 
 const router = Router();
@@ -27,6 +28,7 @@ router.get(
 // GET /api/v1/event/:eventId/public (PUBLIC)
 router.get(
   "/:eventId/public",
+  trackEventView,
   eventController.getPublicEventDetails.bind(eventController),
 );
 
