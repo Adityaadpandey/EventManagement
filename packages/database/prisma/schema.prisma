@@ -362,6 +362,26 @@ model EventAnalytics {
 
     lastUpdated DateTime @default(now()) @updatedAt
 
+    // Aggregated metrics
+  totalViews        Int      @default(0)
+  totalClicks       Int      @default(0)
+  totalTicketsSold  Int      @default(0)
+  totalRevenue      Float    @default(0)
+
+  viewsByDay        Json?    // { "2025-01-01": 150, "2025-01-02": 200 }
+  clicksByDay       Json?
+  salesByDay        Json?
+  revenueByDay      Json?
+
+  trafficSources    Json?    // { "direct": 500, "social": 300, "referral": 200 }
+
+  deviceBreakdown   Json?    // { "mobile": 600, "desktop": 400, "tablet": 100 }
+
+
+  createdAt         DateTime @default(now())
+
+  @@index([eventId])
+
     // INDEXES
     @@index([lastUpdated]) // Recently updated analytics
     @@index([revenue]) // Top revenue events
