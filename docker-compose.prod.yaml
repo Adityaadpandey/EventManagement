@@ -29,6 +29,13 @@ services:
         max-file: "5"
     # DDoS Protection: Resource limits
     deploy:
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first  # Critical for zero downtime
+      rollback_config:
+        parallelism: 1
+        delay: 5s
       resources:
         limits:
           memory: 7G  # Reduced to leave more for nginx cache
