@@ -1,9 +1,10 @@
+import { fetchPublicEventsSSR } from "@/lib/api/fetchPublicEvents";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
+import { Bricolage_Grotesque } from "next/font/google";
+import ClientLayout from "./_components/ClientLayout";
 import "./globals.css";
 import Providers from "./providers";
-import ClientLayout from "./_components/ClientLayout";
-import { Bricolage_Grotesque } from "next/font/google";
-import { fetchPublicEventsSSR } from "@/lib/api/fetchPublicEvents";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -221,7 +222,10 @@ export default async function RootLayout({
       </head>
       <body>
         <Providers>
-          <ClientLayout>{children}</ClientLayout>
+          <ClientLayout>
+            {children}
+            <SpeedInsights />
+          </ClientLayout>
         </Providers>
       </body>
     </html>
