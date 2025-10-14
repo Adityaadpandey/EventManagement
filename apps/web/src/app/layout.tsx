@@ -1,4 +1,5 @@
 import { fetchPublicEventsSSR } from "@/lib/api/fetchPublicEvents";
+import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Bricolage_Grotesque } from "next/font/google";
@@ -225,6 +226,7 @@ export default async function RootLayout({
           <ClientLayout>
             {children}
             <SpeedInsights />
+            <Analytics />
           </ClientLayout>
         </Providers>
       </body>
