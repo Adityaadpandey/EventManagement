@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 
 interface EventCardProps {
   imageUrl: string;
@@ -48,9 +49,11 @@ const EventCard: React.FC<EventCardProps> = ({
   return (
     <div className="flex flex-col gap-1 p-1 pb-[0.5555vw] bg-white md:rounded-[1.6666vw] rounded-2xl md:w-[36.25vw] max-w-[522px] w-[91.8vw]">
       <div className="md:h-[20.069vw] h-[50.256vw] md:rounded-3xl rounded-xl overflow-hidden">
-        <img
+        <Image
           src={imageUrl}
           alt="Event Image"
+          width={500}
+          height={300}
           className="w-full h-full object-cover"
         />
       </div>
