@@ -109,19 +109,19 @@ async function processAnalyticsQueue() {
             where: { eventId },
             create: {
               eventId,
-              totalViews: stats.views,
-              totalClicks: stats.ctaClicks,
-              totalTicketsSold: stats.ticketsSold,
-              totalRevenue: stats.revenue,
+              views: stats.views,
+              clicks: stats.ctaClicks,
+              ticketsSold: stats.ticketsSold,
+              revenue: stats.revenue,
               conversionRate:
                 stats.views > 0 ? (stats.ticketsSold / stats.views) * 100 : 0,
               lastUpdated: new Date(),
             },
             update: {
-              totalViews: { increment: stats.views },
-              totalClicks: { increment: stats.ctaClicks },
-              totalTicketsSold: { increment: stats.ticketsSold },
-              totalRevenue: { increment: stats.revenue },
+              views: { increment: stats.views },
+              clicks: { increment: stats.ctaClicks },
+              ticketsSold: { increment: stats.ticketsSold },
+              revenue: { increment: stats.revenue },
               lastUpdated: new Date(),
             },
           });

@@ -362,11 +362,6 @@ model EventAnalytics {
 
     lastUpdated DateTime @default(now()) @updatedAt
 
-    // Aggregated metrics
-  totalViews        Int      @default(0)
-  totalClicks       Int      @default(0)
-  totalTicketsSold  Int      @default(0)
-  totalRevenue      Float    @default(0)
 
   viewsByDay        Json?    // { "2025-01-01": 150, "2025-01-02": 200 }
   clicksByDay       Json?

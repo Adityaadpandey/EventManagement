@@ -2,48 +2,7 @@ import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { redis } from "../config/redis";
 import { sendEmail } from "../lib/mail";
-
-export interface TicketTypeRequest {
-  name: string;
-  description?: string;
-  price: number;
-  quantity: number;
-  salesCutoff?: string; // ISO date string
-}
-
-export interface CustomFieldRequest {
-  label: string;
-  fieldType: string; // 'text', 'number', 'dropdown', 'email', etc.
-  required: boolean;
-  options?: string; // JSON or comma-separated for dropdown options
-}
-
-export interface CreateEventRequest {
-  title: string;
-  description: string;
-  banner_horizontal: string;
-  banner_vertical: string;
-  banner_square: string;
-  date: string; // ISO date string
-  time: string; // ISO time string
-  tags: string[];
-  chips: string[];
-  restrictions?: string;
-  location: string;
-  longitude?: number;
-  latitude?: number;
-  capacity?: number;
-  samplePoster?: string;
-  socialMediaGraphic?: string;
-  eventFormat?: string;
-  requestedVenue?: string;
-  termsConditions?: string;
-  rulesRegulations?: string;
-  policies?: string;
-  dutyLeavesDetails?: string;
-  ticketTypes: TicketTypeRequest[];
-  customFields?: CustomFieldRequest[];
-}
+import { CreateEventRequest } from "../types/event";
 
 export class EventService {
   async createEvent(userId: string, eventData: CreateEventRequest) {
