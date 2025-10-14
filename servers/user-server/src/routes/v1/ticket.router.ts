@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { TicketController } from "../../controllers/ticket.controller";
+import { trackCTAClick } from "../../middlewares/analytics.middleware";
 import { authMiddleware, requireRole } from "../../middlewares/auth.middleware";
 
 const router = Router();
@@ -9,6 +10,7 @@ const ticketController = new TicketController();
 router.post(
   "/buy",
   authMiddleware,
+  trackCTAClick,
   ticketController.buyTicket.bind(ticketController),
 );
 

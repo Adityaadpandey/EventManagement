@@ -49,23 +49,55 @@ export class EventController {
         ? parseFloat(req.query.latitude as string)
         : undefined;
 
+      // New parameter to control whether to include global events
+      const includeGlobalEvents = req.query.includeGlobal !== "false"; // Default true
+
       if (limit <= 0) {
         return sendError(res, "Limit must be a positive integer", 400);
       }
 
-      const { events, nextCursor, hasNextPage } =
-        await this.eventService.getPublicEvents(
-          cursor,
-          limit,
-          longitude,
-          latitude,
+      // Validate coordinates if provided
+      if (
+        (longitude !== undefined || latitude !== undefined) &&
+        (longitude === undefined || latitude === undefined)
+      ) {
+        return sendError(
+          res,
+          "Both longitude and latitude must be provided together",
+          400,
         );
+      }
 
-      return sendSuccess(res, "Events fetched", events, 200, {
-        nextCursor,
-        hasNextPage,
+      if (longitude !== undefined && (longitude < -180 || longitude > 180)) {
+        return sendError(res, "Longitude must be between -180 and 180", 400);
+      }
+
+      if (latitude !== undefined && (latitude < -90 || latitude > 90)) {
+        return sendError(res, "Latitude must be between -90 and 90", 400);
+      }
+
+      const result = await this.eventService.getPublicEvents(
+        cursor,
         limit,
-      });
+        longitude,
+        latitude,
+        includeGlobalEvents,
+      );
+
+      return sendSuccess(
+        res,
+        "Events fetched successfully",
+        result.events,
+        200,
+        {
+          pagination: {
+            nextCursor: result.nextCursor,
+            hasNextPage: result.hasNextPage,
+            limit,
+          },
+          metadata: result.metadata,
+        },
+      );
     } catch (error: any) {
       logger.error("Failed to get public events:", error);
       return sendError(res, "Failed to get public events", 500, error.message);
@@ -192,4 +224,28 @@ export class EventController {
   async submitEventForApproval(_req: AuthenticatedRequest, _res: Response) {}
 
   async getEventAttendees(_req: AuthenticatedRequest, _res: Response) {}
+
+  async updateInfo(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) return sendError(res, "User ID is required", 400);
+
+      const eventId = req.params.eventId;
+      if (!eventId) return sendError(res, "Event ID is required", 400);
+
+      const update = req.body.update;
+      if (!update) return sendError(res, "Update data is required", 400);
+
+      const result = await this.eventService.updateInfo(eventId, update);
+      return sendSuccess(
+        res,
+        "Event info update processed",
+        result.message,
+        200,
+      );
+    } catch (error: any) {
+      logger.error("Failed to update event info:", error);
+      return sendError(res, "Failed to update event info", 500, error.message);
+    }
+  }
 }

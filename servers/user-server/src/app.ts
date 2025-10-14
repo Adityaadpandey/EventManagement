@@ -1,15 +1,12 @@
 import cors from "cors";
 import "dotenv/config";
-import express, {
-  type NextFunction,
-  type Request,
-  type Response,
-} from "express";
+import express, { type Request, type Response } from "express";
 import helmet from "helmet";
 import { config } from "./config";
 import logger from "./config/logger";
 import { connectRedis } from "./config/redis";
 import { compressionMiddleware } from "./middlewares/compression.middleware";
+import { errorHandler } from "./middlewares/error.middleware";
 import {
   adminLimiter,
   authLimiter,
@@ -63,7 +60,11 @@ app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 // CORS with proper configuration
 app.use(
   cors({
-    origin: ["https://www.tixin.in", "http://localhost:3000"],
+    origin: [
+      "https://www.tixin.in",
+      "http://localhost:3000",
+      "https://stag.tixin.in",
+    ],
     credentials: true,
     optionsSuccessStatus: 200,
     maxAge: 86400, // Cache preflight for 24 hours
@@ -148,29 +149,8 @@ app.use((req: Request, res: Response) => {
   return sendError(res, "Resource not found", 404);
 });
 
-// Enhanced error handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  // Generate unique error ID for tracking
-  const errorId = Math.random().toString(36).substr(2, 9);
-
-  logger.error("Unhandled error:", {
-    errorId,
-    error: err.message,
-    stack: config.NODE_ENV === "development" ? err.stack : undefined,
-    url: req.url,
-    method: req.method,
-    ip: req.ip,
-    userAgent: req.get("User-Agent"),
-  });
-
-  // Don't leak error details in production
-  const message =
-    config.NODE_ENV === "production"
-      ? `Internal server error (ID: ${errorId})`
-      : err.message;
-
-  return sendError(res, message, 500);
-});
+// Global error handler
+app.use(errorHandler);
 
 export const startServer = async () => {
   try {

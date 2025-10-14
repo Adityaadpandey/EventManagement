@@ -76,15 +76,16 @@ export class DiscountController {
     }
   }
 
-  async getCodeInfoById(req: AuthenticatedRequest, res: Response) {
+  async getCodeInfoByCode(req: AuthenticatedRequest, res: Response) {
     const userId = req.user?.userId;
-    const { codeId } = req.params;
+    const { code, eventId } = req.params;
 
     if (!userId) return sendError(res, "User ID is required", 400);
-    if (!codeId) return sendError(res, "Code ID is required", 400);
+    if (!code) return sendError(res, "Code ID is required", 400);
+    if (!eventId) return sendError(res, "Event ID is required", 400);
 
     try {
-      const result = await this.discountService.getCodeInfoById(codeId);
+      const result = await this.discountService.getCodeInfoById(code, eventId);
 
       if (result.error) {
         return sendError(res, result.error, 400);

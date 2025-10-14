@@ -4,6 +4,7 @@ interface Config {
   SERVICE_NAME: string;
   PORT: number;
   CORS_ORIGIN: string;
+  DATABASE_URL: string;
   LOG_LEVEL: string;
   NODE_ENV: string;
   REDIS_URL: string;
@@ -27,6 +28,7 @@ export const config: Config = {
   SERVICE_NAME: require("../../package.json").name || "user-server",
   PORT: Number.parseInt(process.env.PORT || "7001", 10),
   CORS_ORIGIN: process.env.CORS_ORIGIN || "https://www.tixin.in",
+  DATABASE_URL: process.env.DATABASE_URL || "",
   LOG_LEVEL: process.env.LOG_LEVEL || "info",
   NODE_ENV: process.env.NODE_ENV || "development",
   REDIS_URL: process.env.REDIS_URL || "",
