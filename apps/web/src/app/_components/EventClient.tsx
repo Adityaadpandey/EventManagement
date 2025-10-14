@@ -95,6 +95,7 @@ export default function EventClient({
   const [buying, setBuying] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
   const [discountCode, setDiscountCode] = useState<string>(""); // New state for discount code
+  const [countryCode, setCountryCode] = useState("91"); // New state for country code
 
   const chipColors = ["#EBF9FF", "#FFF7CC", "#FFF1EB", "#FFF1EB"];
 
@@ -189,30 +190,46 @@ export default function EventClient({
     }
   }, [hydrated, dispatch]);
 
-  // FIX 1: Auto-fill phone number when modal opens and user is authenticated
+  // Auto-fill form when modal opens and user is authenticated
   useEffect(() => {
     if (modalOpen && me && isAuthenticated) {
       let phoneNumber = "";
+      let extractedCountryCode = "91";
 
       if (me.phone) {
-        phoneNumber = me.phone;
+        let phone = me.phone;
 
-        // Remove + if present
-        if (phoneNumber.startsWith("+")) {
-          phoneNumber = phoneNumber.substring(1);
-        }
+        // If phone starts with +, extract country code and number
+        if (phone.startsWith("+")) {
+          phone = phone.substring(1);
 
-        // Remove country code if present (assuming 91 for India)
-        if (phoneNumber.startsWith("91") && phoneNumber.length > 10) {
-          phoneNumber = phoneNumber.substring(2);
-        }
-
-        // Take last 10 digits if longer
-        if (phoneNumber.length > 10) {
-          phoneNumber = phoneNumber.substring(phoneNumber.length - 10);
+          // Extract country code (assuming 1-3 digits)
+          if (phone.startsWith("91") && phone.length === 12) {
+            extractedCountryCode = "91";
+            phoneNumber = phone.substring(2);
+          } else if (phone.startsWith("1") && phone.length === 11) {
+            extractedCountryCode = "1";
+            phoneNumber = phone.substring(1);
+          } else {
+            // Try to extract first 1-3 digits as country code
+            const match = phone.match(/^(\d{1,3})(\d{10})$/);
+            if (match) {
+              extractedCountryCode = match[1];
+              phoneNumber = match[2];
+            } else {
+              phoneNumber = phone;
+            }
+          }
+        } else if (phone.length > 10) {
+          // If no + but longer than 10 digits, assume first digits are country code
+          extractedCountryCode = phone.substring(0, phone.length - 10);
+          phoneNumber = phone.substring(phone.length - 10);
+        } else {
+          phoneNumber = phone;
         }
       }
 
+      setCountryCode(extractedCountryCode);
       setAuthForm({
         name: me.name || "",
         identifier: me.email || "",
@@ -222,7 +239,7 @@ export default function EventClient({
     }
   }, [modalOpen, me, isAuthenticated]);
 
-  // FIX 2: Auto-select the most expensive ticket when modal opens
+  // Auto-select the most expensive ticket when modal opens
   useEffect(() => {
     if (modalOpen && ev?.TicketType && ev.TicketType.length > 0) {
       // Only auto-select if no ticket is currently selected
@@ -316,13 +333,16 @@ export default function EventClient({
     try {
       setIsVerifying(true);
 
+      // Build phone in format +91xxxxxxxxxx
+      const fullPhone = `+${countryCode}${authForm.phone}`;
+
       await dispatch(
         verifyOtp({
           identifier: authForm.identifier,
           otp: otpToUse,
           name: authForm.name,
           email: authForm.identifier,
-          phone: authForm.phone,
+          phone: fullPhone,
         }),
       ).unwrap();
 
@@ -401,33 +421,56 @@ export default function EventClient({
     setLocalAuthMsg(null);
   };
 
-  // FIX 3: Ensure profile complete with phone in +91xxxxxxxxxx format
   const ensureProfileComplete = async () => {
     if (!token) return;
-    if (me?.name && me?.email && me?.phone) return;
+
+    // console.log("Current me object:", me);
+    // console.log("Current authForm:", authForm);
+    // console.log("Current countryCode:", countryCode);
+
+    // Only update fields that are missing in the user profile OR have changed
+    const payload: any = {};
+
+    if (!me?.name && authForm.name && authForm.name.trim()) {
+      payload.name = authForm.name.trim();
+    }
+
+    if (!me?.email && authForm.identifier && authForm.identifier.trim()) {
+      payload.email = authForm.identifier.trim();
+    }
+
+    // For phone: update if user doesn't have phone OR if authForm phone has changed
+    if (authForm.phone && authForm.phone.trim()) {
+      const fullPhone = `+${countryCode}${authForm.phone.replace(/\D/g, "")}`;
+
+      // Only update if user doesn't have a phone or if the phone has changed
+      if (!me?.phone || me.phone !== fullPhone) {
+        payload.phone = fullPhone;
+      }
+    }
+
+    if (Object.keys(payload).length === 0) {
+      console.log("No profile updates needed");
+      return;
+    }
 
     try {
-      const payload: any = {};
-      if (!me?.name && authForm.name) payload.name = authForm.name;
-      if (!me?.email && authForm.identifier)
-        payload.email = authForm.identifier;
-
-      // IMPORTANT: Send phone with country code in format +91xxxxxxxxxx
-      if (!me?.phone && authForm.phone) {
-        const phoneNumber = authForm.phone.replace(/\D/g, ""); // Remove non-digits
-        payload.phone = `+91${phoneNumber}`; // Add country code
-      }
-
-      if (Object.keys(payload).length === 0) return;
+      console.log(
+        "Patching profile with:",
+        //  JSON.stringify(payload, null, 2)
+      );
 
       await api.patch("/user/profile", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      console.log("Profile patched successfully");
       await dispatch(hydrateSession());
-    } catch (err) {
-      console.error("Failed to patch profile:", err);
-      throw new Error("Failed to save profile details");
+    } catch (err: any) {
+      console.error(
+        "Failed to patch profile:",
+        err?.response?.data || err?.message || err,
+      );
     }
   };
 
@@ -466,9 +509,7 @@ export default function EventClient({
       await ensureProfileComplete();
 
       // Build complete attendeeData including custom fields
-      // Use phone with country code format
-      const phoneNumber = authForm.phone.replace(/\D/g, "");
-      const fullPhone = `+91${phoneNumber}`;
+      const fullPhone = `+${countryCode}${authForm.phone.replace(/\D/g, "")}`;
 
       const finalAttendee: Record<string, any> = {
         name: me?.name ?? authForm.name,
@@ -845,6 +886,8 @@ export default function EventClient({
         proceedFromTypes={proceedFromTypes}
         discountCode={discountCode}
         setDiscountCode={setDiscountCode}
+        countryCode={countryCode}
+        setCountryCode={setCountryCode}
       />
     </div>
   );
