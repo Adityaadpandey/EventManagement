@@ -8,6 +8,7 @@ export const updateUserProfileSchema = z
     phone: z.string().min(13, "Invalid phone number").optional(),
   })
 
-  .refine((data) => data.name || data.email || data.avatar, {
-    message: "At least one field (name, email, avatar) is required to update",
+  .refine((data) => data.name || data.email || data.avatar || data.phone, {
+    message:
+      "At least one field (name, email, avatar, phone) is required to update",
   });
