@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Instagram } from "lucide-react";
+import { Instagram, Linkedin } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -86,13 +86,23 @@ export default function Footer() {
               </svg>
             </a>
             <a
-              href=""
+              href="https://www.instagram.com/tixinhq"
               className="text-gray-500 hover:text-[#cdae00] transition-colors duration-300"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Follow Tixin on Instagram"
             >
               <Instagram className="w-4 h-4" aria-hidden="true" />
+            </a>
+
+            <a
+              href="https://www.linkedin.com/company/tixin/"
+              className="text-gray-500 hover:text-[#cdae00] transition-colors duration-300"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Follow Tixin on Instagram"
+            >
+              <Linkedin className="w-4 h-4" aria-hidden="true" />
             </a>
           </div>
         </div>

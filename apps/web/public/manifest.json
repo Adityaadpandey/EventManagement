@@ -1,0 +1,56 @@
+{
+  "name": "Tixin - Book Tickets & Host Events",
+  "short_name": "Tixin",
+  "description": "Book and host events easily with Tixin. India's leading event management platform with payment integration, custom event pages, ticket verification, and vendor management.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "scope": "/",
+  "id": "/",
+  "icons": [
+    {
+      "src": "/logos/pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logos/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logos/pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": [
+    "events",
+    "ticketing",
+    "entertainment",
+    "business",
+    "management"
+  ],
+  "lang": "en-IN",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "My Bookings",
+      "short_name": "tickets",
+      "url": "/tickets/my-tickets",
+      "icons": [{ "src": "/logos/pwa-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Host an Event",
+      "short_name": "Host",
+      "url": "/lister",
+      "icons": [{ "src": "/logos/pwa-icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

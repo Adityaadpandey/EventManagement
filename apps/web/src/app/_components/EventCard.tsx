@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { memo, useMemo } from "react";
 import Image from "next/image";
 
 interface EventCardProps {
@@ -8,78 +8,93 @@ interface EventCardProps {
   title: string;
   date: string;
   location: string;
-  price: string;
+  price: string | number;
 }
 
-const EventCard: React.FC<EventCardProps> = ({
-  imageUrl,
-  title,
-  date,
-  location,
-  price,
-}) => {
-  const formatDate = (dateString: string): string => {
-    const parsedDate = new Date(dateString);
-
-    const day = parsedDate.getDate();
-
-    const getOrdinal = (d: number): string => {
-      if (d >= 11 && d <= 13) return `${d}th`;
-      switch (d % 10) {
-        case 1:
-          return `${d}st`;
-        case 2:
-          return `${d}nd`;
-        case 3:
-          return `${d}rd`;
-        default:
-          return `${d}th`;
-      }
-    };
-
-    const dayWithSuffix = getOrdinal(day);
-    const month = parsedDate.toLocaleString("en-US", { month: "short" });
-    const weekday = parsedDate.toLocaleString("en-US", { weekday: "short" });
-
-    return `${dayWithSuffix} ${month} • ${weekday}`;
-  };
-
-  const formattedDate = formatDate(date);
-
-  return (
-    <div className="flex flex-col gap-1 p-1 pb-[0.5555vw] bg-white md:rounded-[1.6666vw] rounded-2xl md:w-[36.25vw] max-w-[522px] w-[91.8vw]">
-      <div className="md:h-[20.069vw] h-[50.256vw] md:rounded-3xl rounded-xl overflow-hidden">
-        <Image
-          src={imageUrl}
-          alt="Event Image"
-          width={500}
-          height={300}
-          className="w-full h-full object-cover"
-        />
-      </div>
-
-      <div className="px-3 py-2 flex justify-between gap-5 md:pb-2 pb-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-semibold">{title}</h1>
-          <h6 className="text-[#8B8B8B]">
-            {location} • {formattedDate}
-          </h6>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          {price !== 0 && (
-            <span className="text-[#8B8B8B] shrink-0 text-nowrap">
-              Starts at
-            </span>
-          )}
-
-          <h2 className={price === 0 ? "!text-green-600" : ""}>
-            {price === 0 ? "Free" : `₹${price}`}
-          </h2>
-        </div>
-      </div>
-    </div>
-  );
+// Memoized ordinal suffix calculation
+const getOrdinalSuffix = (day: number): string => {
+  if (day >= 11 && day <= 13) return "th";
+  const lastDigit = day % 10;
+  return lastDigit === 1
+    ? "st"
+    : lastDigit === 2
+      ? "nd"
+      : lastDigit === 3
+        ? "rd"
+        : "th";
 };
+
+// Optimized date formatting with caching
+const formatDate = (dateString: string): string => {
+  const parsedDate = new Date(dateString);
+
+  // Early return for invalid dates
+  if (isNaN(parsedDate.getTime())) return dateString;
+
+  const day = parsedDate.getDate();
+  const dayWithSuffix = `${day}${getOrdinalSuffix(day)}`;
+  const month = parsedDate.toLocaleString("en-US", { month: "short" });
+  const weekday = parsedDate.toLocaleString("en-US", { weekday: "short" });
+
+  return `${dayWithSuffix} ${month} • ${weekday}`;
+};
+
+const EventCard: React.FC<EventCardProps> = memo(
+  ({ imageUrl, title, date, location, price }) => {
+    // Memoize formatted date to prevent recalculation on re-renders
+    const formattedDate = useMemo(() => formatDate(date), [date]);
+
+    // Normalize price to number for consistent comparison
+    const priceValue = useMemo(
+      () => (typeof price === "string" ? parseFloat(price) : price),
+      [price],
+    );
+    const isFree = priceValue === 0;
+
+    // Memoize price display
+    const priceDisplay = useMemo(
+      () => (isFree ? "Free" : `₹${priceValue}`),
+      [isFree, priceValue],
+    );
+
+    return (
+      <div className="flex flex-col gap-1 p-1 pb-2 bg-white md:rounded-[28px] rounded-2xl md:w-[36.25vw] max-w-[522px] w-[91.8vw]">
+        <div className="md:h-[20.069vw] h-[50.256vw] md:rounded-3xl rounded-xl overflow-hidden">
+          <Image
+            src={imageUrl}
+            alt={`${title} event image`}
+            width={500}
+            height={300}
+            loading="lazy"
+            className="w-full h-full object-cover"
+            sizes="(max-width: 768px) 91.8vw, 36.25vw"
+            quality={85}
+          />
+        </div>
+
+        <div className="px-3 py-2 flex justify-between gap-5">
+          <div className="flex flex-col gap-1">
+            <h1 className="font-semibold">{title}</h1>
+            <h6 className="text-[#8B8B8B]">
+              {location} • {formattedDate}
+            </h6>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            {!isFree && (
+              <span className="text-[#8B8B8B] shrink-0 text-nowrap">
+                Starts at
+              </span>
+            )}
+
+            <h2 className={isFree ? "!text-green-600" : ""}>{priceDisplay}</h2>
+          </div>
+        </div>
+      </div>
+    );
+  },
+);
+
+EventCard.displayName = "EventCard";
 
 export default EventCard;
