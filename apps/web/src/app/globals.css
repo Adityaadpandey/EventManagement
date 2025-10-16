@@ -142,7 +142,7 @@ span {
 }
 
 .home-page-heading {
-  @apply md:w-[290px] w-[200px] leading-none tracking-[-3.2px] text-5xl md:text-[64px] font-extrabold md:pb-7 pb-3;
+  @apply w-[200px] leading-none tracking-[-3.2px] text-5xl font-extrabold pb-3;
   font-family: var(--primary-font);
 }
 
