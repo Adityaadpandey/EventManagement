@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import EventClient from "@/app/_components/EventClient";
 import { getEventDetails } from "@/lib/api/getEventDetails";
 
-// Enable ISR with 60 second revalidation
 export const revalidate = 60;
 
 export async function generateMetadata({
@@ -10,7 +9,6 @@ export async function generateMetadata({
 }: {
   params: Promise<{ eventId: string }>;
 }): Promise<Metadata> {
-  // Await params first
   const { eventId } = await params;
   const event = await getEventDetails(eventId);
 

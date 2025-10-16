@@ -537,7 +537,7 @@ export default async function RootLayout({
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
         />
-        <link rel="apple-touch-icon" href="/logos/pwa-icon-512.png" />
+        <link rel="apple-touch-icon" href="/logos/pwa-icon-192.png" />
 
         {/* Favicons */}
         <link rel="icon" href="/logos/roundedLogo.svg" />
