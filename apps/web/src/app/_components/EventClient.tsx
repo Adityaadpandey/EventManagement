@@ -381,7 +381,6 @@ export default function EventClient({
     setModalStep(0);
     setBuyError(null);
     setLocalAuthMsg(null);
-    // Don't reset selectedTicketId here - let useEffect handle it
   };
 
   const closeModal = () => {
@@ -424,11 +423,6 @@ export default function EventClient({
   const ensureProfileComplete = async () => {
     if (!token) return;
 
-    // console.log("Current me object:", me);
-    // console.log("Current authForm:", authForm);
-    // console.log("Current countryCode:", countryCode);
-
-    // Only update fields that are missing in the user profile OR have changed
     const payload: any = {};
 
     if (!me?.name && authForm.name && authForm.name.trim()) {
