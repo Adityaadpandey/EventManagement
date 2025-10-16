@@ -90,6 +90,14 @@ h5 {
   /* @apply md:text-[1.11111vw] text-[4.1025vw]; */
 }
 
+h4 {
+  font-size: 16px;
+  font-feature-settings: "liga" off;
+  letter-spacing: -2%;
+  line-height: 120%;
+  /* @apply md:text-[1.11111vw] text-[4.1025vw]; */
+}
+
 h6 {
   font-feature-settings: "liga" off;
   letter-spacing: -2%;
@@ -117,11 +125,16 @@ span {
   font-variation-settings: "wdth" 100;
 }
 
+.inter {
+  font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+}
+
 .backdropBlur {
   -webkit-backdrop-filter: blur(56px);
   backdrop-filter: blur(56px);
 }
-
 
 /* Home css */
 .home-page-container {
@@ -134,7 +147,7 @@ span {
 }
 
 .home-filter-bar {
-  @apply flex justify-between items-end mb-4 md:mb-6 w-full;
+  @apply flex justify-between items-center mb-4 md:mb-6 w-full;
 }
 
 .home-filter-tags {
@@ -153,7 +166,7 @@ span {
 .home-filter-tags {
   @apply flex md:gap-[0.6944vw] gap-2;
   overflow-x: auto;
-  padding: 8px 8px 8px 0px; 
+  padding: 8px 8px 8px 0px;
   scroll-behavior: smooth;
 }
 
