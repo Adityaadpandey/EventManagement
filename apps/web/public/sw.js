@@ -280,7 +280,7 @@ define(["./workbox-495fd258"], function (e) {
           revision: "a21bd8bd7db815b606994baeabfa901e",
         },
         {
-          url: "/logos/pwa-icon-512.png",
+          url: "/logos/pwa-icon-192.png",
           revision: "70808153e959f30eb1fce81eb14d1172",
         },
         {
