@@ -1,31 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback, memo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QRCode from "react-qr-code";
 import api from "@/lib/api";
-import {
-  PDFDownloadLink,
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-  Image,
-  Font,
-} from "@react-pdf/renderer";
 import QRCodeLib from "qrcode";
-import { div } from "framer-motion/client";
-
-// Register fonts for PDF (optional, but improves consistency)
-Font.register({
-  family: "Helvetica",
-  src: "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Helvetica/Helvetica.ttf",
-});
-Font.register({
-  family: "Helvetica-Bold",
-  src: "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Helvetica/Helvetica-Bold.ttf",
-});
+import PDFComponents from "@/app/_components/PDFComponents";
 
 // Types
 interface Ticket {
@@ -59,218 +39,41 @@ interface Ticket {
   };
 }
 
-// PDF Styles
-const styles = StyleSheet.create({
-  page: {
-    padding: 24,
-    fontFamily: "Helvetica",
-    fontSize: 12,
-    color: "#374151",
-    backgroundColor: "#F9FAFB",
-    position: "relative",
-  },
-  banner: {
-    width: "100%",
-    height: 160,
-    objectFit: "cover",
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  card: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-  },
-  left: {
-    flex: 1,
-    paddingRight: 16,
-  },
-  right: {
-    width: 140,
-    height: 140,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  eventTitle: {
-    fontSize: 22,
-    fontFamily: "Helvetica-Bold",
-    marginBottom: 10,
-    color: "#1F2937",
-  },
-  ticketTypeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  ticketType: {
-    fontSize: 12,
-    backgroundColor: "#FFF4B4",
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    color: "#7A5E00",
-    fontFamily: "Helvetica-Bold",
-  },
-  ticketQty: {
-    fontSize: 12,
-    color: "#8B8B8B",
-    marginLeft: 10,
-  },
-  infoBox: {
-    backgroundColor: "#F5F5F5",
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  infoIcon: {
-    fontSize: 14,
-    marginRight: 8,
-  },
-  infoText: {
-    fontSize: 12,
-    color: "#374151",
-  },
-  section: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontFamily: "Helvetica-Bold",
-    marginBottom: 12,
-    color: "#1F2937",
-  },
-  label: {
-    fontFamily: "Helvetica-Bold",
-    color: "#1F2937",
-  },
-  text: {
-    fontSize: 12,
-    marginBottom: 8,
-    lineHeight: 1.5,
-  },
-  qr: {
-    width: 140,
-    height: 140,
-    borderRadius: 16,
-  },
-  footer: {
-    position: "absolute",
-    bottom: 24,
-    width: "100%",
-    textAlign: "center",
-    fontSize: 14,
-    fontFamily: "Helvetica-Bold",
-    color: "#FFDA0A",
-    letterSpacing: 1,
-  },
-});
+const QRCodeDisplay = memo(
+  ({ qrCode, checkedIn }: { qrCode: string; checkedIn: boolean }) => {
+    if (checkedIn) {
+      return (
+        <div className="flex justify-center">
+          <div className="p-4 border-2 border-red-300 bg-red-50 rounded-3xl w-[320px] h-[320px] flex flex-col justify-center items-center text-center shadow-sm">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-12 w-12 text-red-400 mb-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+            <span className="text-red-500 font-medium">QR code expired</span>
+            <span className="text-gray-500 text-sm mt-1">
+              You have already checked in
+            </span>
+          </div>
+        </div>
+      );
+    }
 
-const TicketPDF = ({
-  ticket,
-  qrDataUrl,
-}: {
-  ticket: Ticket;
-  qrDataUrl: string | null;
-}) => {
-  const event = ticket.ticketType?.event;
-  const eventStart = event?.time ? new Date(event.time) : null;
-  const formattedDate = eventStart?.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-  const formattedTime = eventStart?.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
+    return <QRCode value={qrCode} level="H" className="rounded size-314" />;
+  },
+);
 
-  return (
-    <Document>
-      <Page style={styles.page}>
-        {/* Banner */}
-        {event?.banner_horizontal && (
-          <Image style={styles.banner} src={event.banner_horizontal} />
-        )}
+QRCodeDisplay.displayName = "QRCodeDisplay";
 
-        {/* Ticket card */}
-        <View style={styles.card}>
-          <View style={styles.left}>
-            <Text style={styles.eventTitle}>
-              {event?.title || "Event Ticket"}
-            </Text>
-
-            <View style={styles.ticketTypeContainer}>
-              <Text style={styles.ticketType}>
-                {ticket.ticketType?.name || "Standard"}
-              </Text>
-              <Text style={styles.ticketQty}>x{ticket.quantity ?? 1}</Text>
-            </View>
-
-            <View style={styles.infoBox}>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoText}>
-                  {formattedDate || "Date not specified"}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoText}>
-                  {formattedTime || "Time not specified"}
-                </Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoText}>
-                  {event?.location || "Location not specified"}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.right}>
-            {qrDataUrl && <Image style={styles.qr} src={qrDataUrl} />}
-          </View>
-        </View>
-
-        {/* Ticket details */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ticket Details</Text>
-          <Text style={styles.text}>
-            <Text style={styles.label}>Status: </Text>
-            {ticket.status || "Unknown"}
-          </Text>
-          <Text style={styles.text}>
-            <Text style={styles.label}>Price: </Text>
-            {ticket.totalPrice?.toFixed(2) ?? "0.00"} Rupees
-          </Text>
-          <Text style={styles.text}>
-            <Text style={styles.label}>Booked On: </Text>
-            {ticket.createdAt
-              ? new Date(ticket.createdAt).toLocaleString("en-US", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })
-              : "Not specified"}
-          </Text>
-        </View>
-
-        {/* Footer */}
-        <Text style={styles.footer}>Powered by Tixin</Text>
-      </Page>
-    </Document>
-  );
-};
-
-// Main Page
 export default function TicketDetailsPage() {
   const { ticketId } = useParams();
   const router = useRouter();
@@ -281,35 +84,59 @@ export default function TicketDetailsPage() {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!ticketId) {
+      setError("Invalid ticket ID");
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
+    const controller = new AbortController();
+
     const fetchTicket = async () => {
       try {
-        const res = await api.get(`/ticket/${ticketId}`);
+        const res = await api.get(`/ticket/${ticketId}`, {
+          signal: controller.signal,
+        });
+
         if (!cancelled) {
-          const t = res.data?.data || null;
-          setTicket(t);
-          if (t?.qrCode) {
-            const url = await QRCodeLib.toDataURL(t.qrCode, {
-              errorCorrectionLevel: "H",
-              margin: 2,
-              width: 256,
-            });
-            setQrDataUrl(url);
+          const ticketData = res.data?.data || null;
+          setTicket(ticketData);
+
+          // Generate QR code data URL only if needed
+          if (ticketData?.qrCode) {
+            try {
+              const url = await QRCodeLib.toDataURL(ticketData.qrCode, {
+                errorCorrectionLevel: "H",
+                margin: 2,
+                width: 256,
+              });
+              if (!cancelled) {
+                setQrDataUrl(url);
+              }
+            } catch (qrError) {
+              console.error("Failed to generate QR code:", qrError);
+            }
           }
         }
       } catch (e: any) {
-        if (!cancelled) {
+        if (!cancelled && e.name !== "AbortError") {
           setError(
             e?.response?.data?.message || "Failed to load ticket details",
           );
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
+
     fetchTicket();
+
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [ticketId]);
 
@@ -318,53 +145,55 @@ export default function TicketDetailsPage() {
       ticket?.ticketType?.event?.time
         ? new Date(ticket.ticketType.event.time)
         : null,
-    [ticket],
+    [ticket?.ticketType?.event?.time],
   );
 
-  const addToCalendar = useMemo(
+  const formattedEventDate = useMemo(
     () =>
       eventStart
-        ? () => {
-            const start = eventStart;
-            const end = new Date(start.getTime() + 2 * 60 * 60 * 1000); // Assume 2 hours
-            const formatDate = (d: Date) =>
-              d.toISOString().replace(/-|:|\.\d+/g, "");
-            const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-              ticket.ticketType!.event!.title || "Event",
-            )}&dates=${formatDate(start)}/${formatDate(end)}&details=${encodeURIComponent(
-              `Ticket for ${ticket.ticketType?.name || "Event"} - Quantity: ${ticket.quantity ?? 1}`,
-            )}&location=${encodeURIComponent(ticket.ticketType!.event!.location || "")}`;
-            window.open(url, "_blank");
-          }
-        : () => {},
-    [ticket, eventStart],
+        ? eventStart.toLocaleDateString(undefined, {
+            month: "long",
+            day: "numeric",
+          })
+        : null,
+    [eventStart],
+  );
+
+  const formattedEventTime = useMemo(
+    () =>
+      eventStart
+        ? eventStart.toLocaleTimeString(undefined, {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          })
+        : null,
+    [eventStart],
   );
 
   const pdfFileName = useMemo(
     () =>
       `${ticket?.ticketType?.event?.title?.replace(/\s+/g, "_") || "ticket"}_${ticketId}.pdf`,
-    [ticket, ticketId],
+    [ticket?.ticketType?.event?.title, ticketId],
   );
 
-  const formattedEventDateTime = eventStart
-    ? eventStart.toLocaleString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      })
-    : "Not specified";
+  const addToCalendar = useCallback(() => {
+    if (!eventStart || !ticket) return;
 
-  const formattedBookedOn = ticket?.createdAt
-    ? new Date(ticket.createdAt).toLocaleString("en-US", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
-    : "Not specified";
+    const start = eventStart;
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    const formatDate = (d: Date) => d.toISOString().replace(/-|:|\.\d+/g, "");
 
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+      ticket.ticketType?.event?.title || "Event",
+    )}&dates=${formatDate(start)}/${formatDate(end)}&details=${encodeURIComponent(
+      `Ticket for ${ticket.ticketType?.name || "Event"} - Quantity: ${ticket.quantity ?? 1}`,
+    )}&location=${encodeURIComponent(ticket.ticketType?.event?.location || "")}`;
+
+    window.open(url, "_blank", "noopener,noreferrer");
+  }, [ticket, eventStart]);
+
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -375,6 +204,7 @@ export default function TicketDetailsPage() {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -383,6 +213,7 @@ export default function TicketDetailsPage() {
     );
   }
 
+  // Not found state
   if (!ticket) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -403,7 +234,7 @@ export default function TicketDetailsPage() {
           />
         )}
         <div className="overflow-hidden flex justify-between bg-white rounded-4xl p-8 ">
-          {event?.banner_square && (
+          {event?.banner_horizontal && (
             <div
               className="w-[314px] h-40 xs:h-48 sm:h-56 md:h-64 lg:h-72 bg-cover bg-center rounded-3xl md:block hidden"
               style={{ backgroundImage: `url(${event.banner_horizontal})` }}
@@ -425,25 +256,12 @@ export default function TicketDetailsPage() {
             <div className="bg-[#F5F5F5] p-5 rounded-3xl">
               <div className="flex items-center gap-2 pb-5">
                 <img src="/svgs/calendar.svg" alt="" />
-                <h6 className="">
-                  {eventStart &&
-                    new Date(eventStart).toLocaleDateString(undefined, {
-                      month: "long",
-                      day: "numeric",
-                    })}{" "}
-                </h6>
+                <h6 className="">{formattedEventDate}</h6>
               </div>
 
               <div className="flex items-center gap-2 pb-5">
                 <img src="/svgs/clock.svg" alt="" />
-                <h6 className="">
-                  {eventStart &&
-                    `${new Date(eventStart).toLocaleTimeString(undefined, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: true,
-                    })}`}
-                </h6>
+                <h6 className="">{formattedEventTime}</h6>
               </div>
 
               <div className="flex items-center gap-2">
@@ -458,38 +276,10 @@ export default function TicketDetailsPage() {
           {ticket.qrCode && (
             <div className="flex justify-center">
               <div className="p-3 xs:p-4 border border-[#E5E5E5] rounded-3xl md:w-[314px] w-[81vw] h-[81vw] md:h-[314px] flex justify-center items-center">
-                {!ticket.checkedIn ? (
-                  <QRCode
-                    value={ticket.qrCode}
-                    level="H"
-                    className="rounded size-314"
-                  />
-                ) : (
-                  <div className="flex justify-center">
-                    <div className="p-4 border-2 border-red-300 bg-red-50 rounded-3xl w-[320px] h-[320px] flex flex-col justify-center items-center text-center shadow-sm">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-12 w-12 text-red-400 mb-3"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                      <span className="text-red-500 font-medium">
-                        QR code expired
-                      </span>
-                      <span className="text-gray-500 text-sm mt-1">
-                        You have already checked in
-                      </span>
-                    </div>
-                  </div>
-                )}
+                <QRCodeDisplay
+                  qrCode={ticket.qrCode}
+                  checkedIn={ticket.checkedIn || false}
+                />
               </div>
             </div>
           )}
@@ -505,25 +295,21 @@ export default function TicketDetailsPage() {
             <div className="space-y-3">
               <button
                 onClick={addToCalendar}
-                className="flex gap-2.5 w-full justify-center items-center px-5 py-4 border border-[#E5E5E5] rounded-xl text-base cursor-pointer"
+                className="flex gap-2.5 w-full justify-center items-center px-5 py-4 border border-[#E5E5E5] rounded-xl text-base cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!eventStart}
+                type="button"
               >
                 <img src="/svgs/addToCalendar.svg" alt="" />
                 Add to Calendar
               </button>
 
-              <PDFDownloadLink
-                document={<TicketPDF ticket={ticket} qrDataUrl={qrDataUrl} />}
-                fileName={pdfFileName}
-                className="flex gap-2.5 w-full justify-center items-center px-5 py-4 bg-black rounded-xl text-white text-base cursor-pointer"
-              >
-                {({ loading }) => (
-                  <>
-                    <img src="/svgs/download.svg" alt="" />
-                    {loading ? "Generating PDF..." : "Download Ticket"}
-                  </>
-                )}
-              </PDFDownloadLink>
+              {qrDataUrl && (
+                <PDFComponents
+                  ticket={ticket}
+                  qrDataUrl={qrDataUrl}
+                  pdfFileName={pdfFileName}
+                />
+              )}
             </div>
           </div>
         </div>
