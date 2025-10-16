@@ -47,18 +47,19 @@ const EventCard: React.FC<EventCardProps> = ({
   const formattedDate = formatDate(date);
 
   return (
-    <div className="flex flex-col gap-1 p-1 pb-[0.5555vw] bg-white md:rounded-[1.6666vw] rounded-2xl md:w-[36.25vw] max-w-[522px] w-[91.8vw]">
+    <div className="flex flex-col gap-1 p-1 pb-2 bg-white md:rounded-[28px] rounded-2xl md:w-[36.25vw] max-w-[522px] w-[91.8vw]">
       <div className="md:h-[20.069vw] h-[50.256vw] md:rounded-3xl rounded-xl overflow-hidden">
         <Image
           src={imageUrl}
           alt="Event Image"
           width={500}
           height={300}
+          loading="lazy"
           className="w-full h-full object-cover"
         />
       </div>
 
-      <div className="px-3 py-2 flex justify-between gap-5 md:pb-2 pb-3">
+      <div className="px-3 py-2 flex justify-between gap-5">
         <div className="flex flex-col gap-1">
           <h1 className="font-semibold">{title}</h1>
           <h6 className="text-[#8B8B8B]">
