@@ -24,6 +24,11 @@ class AuthService {
     return phone.number;
   }
 
+  // Add email normalization method
+  private normalizeEmail(email: string): string {
+    return email.toLowerCase().trim();
+  }
+
   async requestOtp(identifier: string): Promise<{ message: string }> {
     try {
       const isEmailType = this.isEmail(identifier);
@@ -33,10 +38,10 @@ class AuthService {
         throw new Error("Invalid email or phone number format");
       }
 
-      // Normalize phone number if it's a phone
+      // Normalize email or phone number
       const normalizedIdentifier = isPhoneType
         ? this.normalizePhone(identifier)
-        : identifier;
+        : this.normalizeEmail(identifier);
 
       const otpKey = `otp:${normalizedIdentifier}`;
       const countKey = `otp:count:${normalizedIdentifier}`;
@@ -109,10 +114,10 @@ class AuthService {
         throw new Error("Invalid email or phone number format");
       }
 
-      // Normalize phone number if it's a phone
+      // Normalize email or phone number
       const normalizedIdentifier = isPhoneType
         ? this.normalizePhone(identifier)
-        : identifier;
+        : this.normalizeEmail(identifier);
 
       const [storedOtp, existingUser] = await Promise.all([
         redis.get(`otp:${normalizedIdentifier}`),
