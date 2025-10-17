@@ -4,6 +4,11 @@ const ticketTypeSchema = z.object({
   name: z.string().min(1, "Ticket name is required"),
   price: z.number().nonnegative("Price must be a non-negative number"),
   quantity: z.number().positive("Quantity must be a positive number"),
+  description: z.string().optional(),
+  discountedPrice: z
+    .number()
+    .nonnegative("Discounted price must be a non-negative number")
+    .optional(),
 });
 
 const customFieldSchema = z.object({

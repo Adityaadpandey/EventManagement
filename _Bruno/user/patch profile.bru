@@ -5,15 +5,19 @@ meta {
 }
 
 patch {
-  url: {{host}}/user/profile
+  url: {{host}}/user/profile?debug=true
   body: json
   auth: inherit
 }
 
+params:query {
+  debug: true
+}
+
 body:json {
   {
-    "name": "Aditya",
-    "phone":"+919125083337"
+  //   "name": "Aditya",
+    "phonxe":"+919125083337"
   }
 }
 

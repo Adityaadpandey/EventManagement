@@ -2,6 +2,8 @@ export interface TicketTypeRequest {
   name: string;
   description?: string;
   price: number;
+  discountedPrice?: number;
+  discountReason?: string;
   quantity: number;
   salesCutoff?: string; // ISO date string
 }
