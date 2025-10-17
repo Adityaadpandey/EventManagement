@@ -11,7 +11,6 @@ interface EventCardProps {
   price: string | number;
 }
 
-// Memoized ordinal suffix calculation
 const getOrdinalSuffix = (day: number): string => {
   if (day >= 11 && day <= 13) return "th";
   const lastDigit = day % 10;
@@ -36,7 +35,7 @@ const formatDate = (dateString: string): string => {
   const month = parsedDate.toLocaleString("en-US", { month: "short" });
   const weekday = parsedDate.toLocaleString("en-US", { weekday: "short" });
 
-  return `${dayWithSuffix} ${month} • ${weekday}`;
+  return `${dayWithSuffix} ${month} · ${weekday}`;
 };
 
 const EventCard: React.FC<EventCardProps> = memo(
@@ -51,7 +50,6 @@ const EventCard: React.FC<EventCardProps> = memo(
     );
     const isFree = priceValue === 0;
 
-    // Memoize price display
     const priceDisplay = useMemo(
       () => (isFree ? "Free" : `₹${priceValue}`),
       [isFree, priceValue],
@@ -74,9 +72,9 @@ const EventCard: React.FC<EventCardProps> = memo(
 
         <div className="px-3 py-2 flex justify-between gap-5">
           <div className="flex flex-col gap-1">
-            <h1 className="font-semibold">{title}</h1>
+            <h1 className="font-semibold text-[#1E1E1E]">{title}</h1>
             <h6 className="text-[#8B8B8B]">
-              {location} • {formattedDate}
+              {location} · {formattedDate}
             </h6>
           </div>
 

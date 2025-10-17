@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { StepBreadcrumb } from "./StepBreadcrumb";
 import OtpInput from "./OtpInput";
@@ -33,7 +33,7 @@ interface ModalProps {
   sendOtp: () => void;
   otpSent: boolean;
   isVerifying: boolean;
-  verifyEmailOtp: () => void;
+  verifyEmailOtp: (otp?: string) => void;
   resendOtp: () => void;
   resendTimer: number;
   authLoading: boolean;
@@ -89,75 +89,77 @@ const Modal: React.FC<ModalProps> = ({
   countryCode,
   setCountryCode,
 }) => {
-  if (!modalOpen) return null;
-
-  const backdropClick = (e: React.MouseEvent) => {
-    if (e.target !== e.currentTarget) return;
-    if (modalStep === 3) {
-      return;
+  useEffect(() => {
+    if (modalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
     }
-    closeModal();
-  };
 
-  // Helper function to get full phone number
-  const getFullPhoneNumber = () => {
-    return `+${countryCode}${authForm.phone}`;
-  };
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [modalOpen]);
 
-  // Helper function to format phone for display
-  const getDisplayPhone = () => {
-    if (me?.phone) {
-      // If phone already has country code, display as is
-      if (me.phone.startsWith("+")) return me.phone;
-      // Otherwise add the current country code
-      return `+${countryCode}${me.phone}`;
-    }
-    if (authForm.phone) {
-      return `+${countryCode}${authForm.phone}`;
-    }
-    return "N/A";
-  };
+  // Handle escape key to close modal
+  useEffect(() => {
+    if (!modalOpen) return;
 
-  // Validation function for step 1
-  const validateStep1 = (): { valid: boolean; message: string } => {
-    // Check name
-    if (!authForm.name || authForm.name.trim().length === 0) {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && modalStep !== 3) {
+        closeModal();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [modalOpen, modalStep, closeModal]);
+
+  const validateStep1 = useCallback((): {
+    valid: boolean;
+    message: string;
+  } => {
+    const trimmedName = authForm.name?.trim();
+    if (!trimmedName || trimmedName.length === 0) {
       return { valid: false, message: "Please enter your name" };
     }
 
-    // Check email
-    if (!authForm.identifier || authForm.identifier.trim().length === 0) {
+    if (trimmedName.length < 2) {
+      return { valid: false, message: "Name must be at least 2 characters" };
+    }
+
+    const trimmedEmail = authForm.identifier?.trim();
+    if (!trimmedEmail || trimmedEmail.length === 0) {
       return { valid: false, message: "Please enter your email" };
     }
 
-    // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(authForm.identifier)) {
+    if (!emailRegex.test(trimmedEmail)) {
       return { valid: false, message: "Please enter a valid email address" };
     }
 
-    // Check if OTP is verified for non-authenticated users
     if (!isAuthenticated && !token) {
       return { valid: false, message: "Please verify your email with OTP" };
     }
 
-    // Check phone number
-    if (!authForm.phone || authForm.phone.trim().length === 0) {
+    const trimmedPhone = authForm.phone?.trim();
+    if (!trimmedPhone || trimmedPhone.length === 0) {
       return { valid: false, message: "Please enter your phone number" };
     }
 
-    // Validate phone number length (should be 10 digits for most numbers)
-    const phoneDigits = authForm.phone.replace(/\D/g, "");
+    const phoneDigits = trimmedPhone.replace(/\D/g, "");
     if (phoneDigits.length !== 10) {
-      return { valid: false, message: "Phone number must be 10 digits" };
+      return {
+        valid: false,
+        message: "Phone number must be exactly 10 digits",
+      };
     }
 
-    // Check custom required fields
-    if (ev.CustomField?.length > 0) {
+    if (ev?.CustomField?.length > 0) {
       for (const cf of ev.CustomField) {
         if (cf.required) {
-          const value = attendee[cf.label];
-          if (!value || value.trim().length === 0) {
+          const value = attendee[cf.label]?.trim();
+          if (!value || value.length === 0) {
             return { valid: false, message: `Please fill in ${cf.label}` };
           }
         }
@@ -165,20 +167,76 @@ const Modal: React.FC<ModalProps> = ({
     }
 
     return { valid: true, message: "" };
-  };
+  }, [authForm, isAuthenticated, token, ev, attendee]);
+
+  const getFullPhoneNumber = useCallback(() => {
+    return `+${countryCode}${authForm.phone}`;
+  }, [countryCode, authForm.phone]);
+
+  const getDisplayPhone = useCallback(() => {
+    if (me?.phone) {
+      if (me.phone.startsWith("+")) return me.phone;
+      return `+${countryCode}${me.phone}`;
+    }
+    if (authForm.phone) {
+      return `+${countryCode}${authForm.phone}`;
+    }
+    return "N/A";
+  }, [me, countryCode, authForm.phone]);
+
+  const handleBackdropClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.target === e.currentTarget && modalStep !== 3) {
+        closeModal();
+      }
+    },
+    [modalStep, closeModal],
+  );
+
+  const handleProceedToCheckout = useCallback(() => {
+    const validation = validateStep1();
+    if (!validation.valid) {
+      setLocalAuthMsg(validation.message);
+      return;
+    }
+    setLocalAuthMsg(null);
+    setModalStep(2);
+  }, [validateStep1, setLocalAuthMsg, setModalStep]);
+
+  const handleCountryCodeChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value.replace(/[^0-9]/g, "");
+      if (val.length <= 3) {
+        setCountryCode(val);
+      }
+    },
+    [setCountryCode],
+  );
+
+  const handlePhoneChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value.replace(/\D/g, "");
+      if (value.length <= 10) {
+        onAuthChange("phone")({
+          target: { value },
+        } as React.ChangeEvent<HTMLInputElement>);
+      }
+    },
+    [onAuthChange],
+  );
+
+  if (!modalOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-white/60 backdrop-blur-xl">
-      <div
-        className="absolute inset-0"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) closeModal();
-        }}
-      />
-
+    <div
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-white/60 backdrop-blur-xl"
+      onClick={handleBackdropClick}
+      role="presentation"
+    >
       <motion.div
         role="dialog"
         aria-modal="true"
+        aria-labelledby="modal-title"
         className="relative md:min-w-[524px] min-w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[5vw] sm:pt-9 pt-2 z-10 overflow-hidden"
         style={{
           boxShadow: "0 0 54px 10px rgba(0, 0, 0, 0.08)",
@@ -225,101 +283,119 @@ const Modal: React.FC<ModalProps> = ({
               className="space-y-4 md:pt-0 pt-6"
               layout
             >
-              <div className="text-sm">Choose ticket type</div>
+              <div className="text-sm" id="modal-title">
+                Choose ticket type
+              </div>
               <div className="space-y-3 md:max-h-[300px] overflow-y-auto">
-                {[...ev.TicketType]
-                  .sort((a: any, b: any) => b.price - a.price)
-                  .map((t: any, index: number) => {
-                    const active = t.ticketTypeId === selectedTicketId;
+                {ev?.TicketType && ev.TicketType.length > 0 ? (
+                  [...ev.TicketType]
+                    .sort((a: any, b: any) => b.price - a.price)
+                    .map((t: any, index: number) => {
+                      const active = t.ticketTypeId === selectedTicketId;
 
-                    let isGradient = false;
-                    let innerClass =
-                      "flex items-center justify-between gap-4 p-3 rounded-2xl";
-                    let wrapperClass = "rounded-2xl";
-                    let wrapperStyle: React.CSSProperties | undefined =
-                      undefined;
-                    let innerStyle: React.CSSProperties | undefined = undefined;
+                      let isGradient = false;
+                      let innerClass =
+                        "flex items-center justify-between gap-4 p-3 rounded-2xl";
+                      let wrapperClass = "rounded-2xl";
+                      let wrapperStyle: React.CSSProperties | undefined =
+                        undefined;
+                      let innerStyle: React.CSSProperties | undefined =
+                        undefined;
 
-                    if (ev.TicketType.length >= 3) {
-                      if (index === 0) {
-                        isGradient = true;
-                        wrapperClass += " p-[2px]";
-                        wrapperStyle = {
-                          backgroundImage:
-                            "linear-gradient(90deg, #FFC670 0%, #83F180 50%, #1BB3F3 100%)",
-                        };
-                        innerStyle = {
-                          backgroundImage:
-                            "linear-gradient(0deg, rgba(255,255,255,0.6), rgba(255,255,255,0.6)), linear-gradient(90deg, #FFC670, #83F180, #1BB3F3)",
-                        };
-                      } else if (index === 1) {
-                        innerClass += " bg-[#FFF2AB]";
+                      if (ev.TicketType.length >= 3) {
+                        if (index === 0) {
+                          isGradient = true;
+                          wrapperClass += " p-[2px]";
+                          wrapperStyle = {
+                            backgroundImage:
+                              "linear-gradient(90deg, #FFC670 0%, #83F180 50%, #1BB3F3 100%)",
+                          };
+                          innerStyle = {
+                            backgroundImage:
+                              "linear-gradient(0deg, rgba(255,255,255,0.6), rgba(255,255,255,0.6)), linear-gradient(90deg, #FFC670, #83F180, #1BB3F3)",
+                          };
+                        } else if (index === 1) {
+                          innerClass += " bg-[#FFF2AB]";
+                        } else {
+                          innerClass += " bg-[#F5F5F5]";
+                        }
                       } else {
                         innerClass += " bg-[#F5F5F5]";
                       }
-                    } else {
-                      innerClass += " bg-[#F5F5F5]";
-                    }
 
-                    const TicketBox = (
-                      <div className={innerClass} style={innerStyle}>
-                        <div>
-                          <div className="font-medium">{t.name}</div>
-                          <div className="text-xs">₹{t.price}</div>
-                        </div>
-                        <div className="flex items-center gap-2 bg-black text-white rounded-xl py-1">
-                          {active ? (
-                            <div className="flex items-center">
+                      const TicketBox = (
+                        <div className={innerClass} style={innerStyle}>
+                          <div>
+                            <div className="font-medium">{t.name}</div>
+                            <div className="text-xs">₹{t.price}</div>
+                          </div>
+                          <div className="flex items-center gap-2 bg-black text-white rounded-xl py-1">
+                            {active ? (
+                              <div className="flex items-center">
+                                <button
+                                  onClick={decQty}
+                                  className="px-3 cursor-pointer"
+                                  aria-label="Decrease quantity"
+                                  type="button"
+                                >
+                                  −
+                                </button>
+                                <h6 className="text-center bg-white text-black rounded-lg w-[43px] h-[40px] font-semibold flex items-center justify-center">
+                                  {selectedQuantity}
+                                </h6>
+                                <button
+                                  onClick={incQty}
+                                  className="px-3 cursor-pointer"
+                                  aria-label="Increase quantity"
+                                  type="button"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            ) : (
                               <button
-                                onClick={decQty}
-                                className="px-3 cursor-pointer"
+                                onClick={() => selectTicketType(t.ticketTypeId)}
+                                className="px-4 py-2 rounded-xl bg-black text-white cursor-pointer"
+                                type="button"
                               >
-                                −
+                                ADD
                               </button>
-                              <h6 className="text-center bg-white text-black rounded-lg w-[43px] h-[40px] font-semibold flex items-center justify-center">
-                                {selectedQuantity}
-                              </h6>
-                              <button
-                                onClick={incQty}
-                                className="px-3 cursor-pointer"
-                              >
-                                +
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => selectTicketType(t.ticketTypeId)}
-                              className="px-4 py-2 rounded-xl bg-black text-white cursor-pointer"
-                            >
-                              ADD
-                            </button>
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
+                      );
 
-                    return isGradient ? (
-                      <div
-                        key={t.ticketTypeId}
-                        className={wrapperClass}
-                        style={wrapperStyle}
-                      >
-                        {TicketBox}
-                      </div>
-                    ) : (
-                      <div key={t.ticketTypeId}>{TicketBox}</div>
-                    );
-                  })}
+                      return isGradient ? (
+                        <div
+                          key={t.ticketTypeId}
+                          className={wrapperClass}
+                          style={wrapperStyle}
+                        >
+                          {TicketBox}
+                        </div>
+                      ) : (
+                        <div key={t.ticketTypeId}>{TicketBox}</div>
+                      );
+                    })
+                ) : (
+                  <div className="text-center text-zinc-400 py-4">
+                    No tickets available
+                  </div>
+                )}
               </div>
 
               {localAuthMsg && (
-                <div className="text-xs text-zinc-300">{localAuthMsg}</div>
+                <div className="text-xs text-red-500" role="alert">
+                  {localAuthMsg}
+                </div>
               )}
 
               <button
                 onClick={proceedFromTypes}
                 className="px-4 md:py-7 py-6 rounded-full text-2xl bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer flex gap-3 justify-center"
                 style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
+                type="button"
+                disabled={!selectedTicketId}
               >
                 Proceed <img src="/svgs/arrowRight.svg" alt="" />
               </button>
@@ -341,7 +417,7 @@ const Modal: React.FC<ModalProps> = ({
                 <h1>Ticket Details</h1>
 
                 <p className="text-[#8B8B8B]">
-                  You will recieve your tickets and any update about the event
+                  You will receive your tickets and any update about the event
                   through these credentials, please double check them once
                 </p>
 
@@ -353,36 +429,27 @@ const Modal: React.FC<ModalProps> = ({
                       onChange={onAuthChange("name")}
                       className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
                       placeholder="Full name"
+                      aria-label="Your name"
                     />
                     <div className="text-base">Phone number</div>
                     <div className="flex gap-3">
                       <input
                         type="text"
                         value={`+${countryCode}`}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, "");
-                          if (val.length <= 3) {
-                            setCountryCode(val);
-                          }
-                        }}
+                        onChange={handleCountryCodeChange}
                         className="w-[72px] text-center text-black text-base border border-[#E5E5E5] rounded-2xl bg-[#F5F5F5]"
                         placeholder="+91"
                         maxLength={4}
+                        aria-label="Country code"
                       />
                       <input
                         value={authForm.phone}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/\D/g, "");
-                          if (value.length <= 10) {
-                            onAuthChange("phone")({
-                              target: { value },
-                            } as React.ChangeEvent<HTMLInputElement>);
-                          }
-                        }}
+                        onChange={handlePhoneChange}
                         className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
                         placeholder="Phone number"
                         type="tel"
                         maxLength={10}
+                        aria-label="Phone number"
                       />
                     </div>
                     <div className="text-base">Email address</div>
@@ -391,6 +458,8 @@ const Modal: React.FC<ModalProps> = ({
                       onChange={onAuthChange("identifier")}
                       className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
                       placeholder="Email"
+                      type="email"
+                      aria-label="Email address"
                     />
                   </div>
                 ) : (
@@ -402,6 +471,7 @@ const Modal: React.FC<ModalProps> = ({
                         onChange={onAuthChange("name")}
                         className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
                         placeholder="Full name"
+                        aria-label="Name"
                       />
                     </div>
 
@@ -411,30 +481,20 @@ const Modal: React.FC<ModalProps> = ({
                         <input
                           type="text"
                           value={`+${countryCode}`}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/[^0-9]/g, "");
-                            if (val.length <= 3) {
-                              setCountryCode(val);
-                            }
-                          }}
+                          onChange={handleCountryCodeChange}
                           className="w-[72px] text-center text-black text-base border border-[#E5E5E5] rounded-2xl bg-[#F5F5F5] outline-0"
                           placeholder="+91"
                           maxLength={4}
+                          aria-label="Country code"
                         />
                         <input
                           value={authForm.phone}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/\D/g, "");
-                            if (value.length <= 10) {
-                              onAuthChange("phone")({
-                                target: { value },
-                              } as React.ChangeEvent<HTMLInputElement>);
-                            }
-                          }}
+                          onChange={handlePhoneChange}
                           className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
                           placeholder="Phone number"
                           type="tel"
                           maxLength={10}
+                          aria-label="Phone number"
                         />
                       </div>
                     </div>
@@ -448,12 +508,14 @@ const Modal: React.FC<ModalProps> = ({
                           className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
                           placeholder="you@example.com"
                           type="email"
+                          aria-label="Email"
                         />
                         {!otpSent ? (
                           <button
                             onClick={sendOtp}
                             disabled={authLoading}
-                            className="w-full sm:w-auto p-6 text-base border border-[#E5E5E5] text-[#ffffff] rounded-2xl bg-black shrink-0 text-nowrap cursor-pointer"
+                            className="w-full sm:w-auto p-6 text-base border border-[#E5E5E5] text-[#ffffff] rounded-2xl bg-black shrink-0 text-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            type="button"
                           >
                             {authLoading ? "Sending..." : "Send OTP"}
                           </button>
@@ -478,11 +540,11 @@ const Modal: React.FC<ModalProps> = ({
                   </div>
                 )}
 
-                {ev.CustomField?.length > 0 && (
+                {ev?.CustomField?.length > 0 && (
                   <div className="mt-3 space-y-3">
                     <div className="text-base">Additional info</div>
                     {ev.CustomField.map((cf: any, idx: number) => (
-                      <div key={cf.label + idx} className="space-y-3">
+                      <div key={`${cf.label}-${idx}`} className="space-y-3">
                         <div className="text-base">
                           {cf.label}{" "}
                           {cf.required && (
@@ -496,13 +558,14 @@ const Modal: React.FC<ModalProps> = ({
                           }
                           placeholder={cf.fieldType}
                           className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
+                          aria-label={cf.label}
                         />
                       </div>
                     ))}
                   </div>
                 )}
 
-                {ev._count.DiscountCode && (
+                {ev?._count?.DiscountCode > 0 && (
                   <div className="mt-3 space-y-2">
                     <div className="text-base">Discount Code (Optional)</div>
                     <input
@@ -510,32 +573,24 @@ const Modal: React.FC<ModalProps> = ({
                       onChange={(e) => setDiscountCode(e.target.value)}
                       placeholder="Enter discount code"
                       className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
+                      aria-label="Discount code"
                     />
                   </div>
                 )}
               </div>
 
               <div className="w-full flex flex-col gap-2 justify-center items-center">
-                {localAuthMsg && (
-                  <div className="text-xs text-red-500">{localAuthMsg}</div>
-                )}
-
-                {buyError && (
-                  <div className="text-xs text-red-500">{buyError}</div>
+                {(localAuthMsg || buyError) && (
+                  <div className="text-xs text-red-500" role="alert">
+                    {localAuthMsg || buyError}
+                  </div>
                 )}
 
                 <button
-                  onClick={() => {
-                    const validation = validateStep1();
-                    if (!validation.valid) {
-                      setLocalAuthMsg(validation.message);
-                      return;
-                    }
-                    setLocalAuthMsg(null);
-                    setModalStep(2);
-                  }}
+                  onClick={handleProceedToCheckout}
                   className="px-6 sm:py-7 py-6 rounded-full md:text-xl text-base bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer max-w-[300px]"
                   style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
+                  type="button"
                 >
                   Continue to Checkout
                 </button>
@@ -557,10 +612,10 @@ const Modal: React.FC<ModalProps> = ({
               <div className="space-y-4 md:w-[574px] mx-auto h-[55vh] overflow-y-auto scrollable-with-scrollbar">
                 <div className="flex flex-col md:flex-row gap-6 md:items-center bg-[#F7F7F7] p-2 rounded-[28px]">
                   <div className="md:w-[221px] w-full h-[221px] bg-zinc-800 rounded-2xl overflow-hidden flex-shrink-0">
-                    {ev.banner_square || ev.banner_horizontal ? (
+                    {ev?.banner_square || ev?.banner_horizontal ? (
                       <img
                         src={ev.banner_square || ev.banner_horizontal}
-                        alt={ev.title}
+                        alt={ev.title || "Event"}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -570,36 +625,40 @@ const Modal: React.FC<ModalProps> = ({
                     )}
                   </div>
                   <div className="flex flex-col justify-between h-full gap-5">
-                    <h1 className="font-medium">{ev.title}</h1>
+                    <h1 className="font-medium">{ev?.title || "Event"}</h1>
 
                     <div>
-                      <div className="flex items-center gap-2 pb-5">
-                        <img src="/svgs/calendar.svg" alt="" />
-                        <h6 className="">
-                          {ev.date &&
-                            new Date(ev.date).toLocaleDateString(undefined, {
+                      {ev?.date && (
+                        <div className="flex items-center gap-2 pb-5">
+                          <img src="/svgs/calendar.svg" alt="" />
+                          <h6 className="">
+                            {new Date(ev.date).toLocaleDateString(undefined, {
                               month: "long",
                               day: "numeric",
-                            })}{" "}
-                        </h6>
-                      </div>
+                            })}
+                          </h6>
+                        </div>
+                      )}
 
-                      <div className="flex items-center gap-2 pb-5">
-                        <img src="/svgs/clock.svg" alt="" />
-                        <h6 className="">
-                          {ev.time &&
-                            `${new Date(ev.time).toLocaleTimeString(undefined, {
+                      {ev?.time && (
+                        <div className="flex items-center gap-2 pb-5">
+                          <img src="/svgs/clock.svg" alt="" />
+                          <h6 className="">
+                            {new Date(ev.time).toLocaleTimeString(undefined, {
                               hour: "2-digit",
                               minute: "2-digit",
                               hour12: true,
-                            })}`}
-                        </h6>
-                      </div>
+                            })}
+                          </h6>
+                        </div>
+                      )}
 
-                      <div className="flex items-center gap-2">
-                        <img src="/svgs/location.svg" alt="" width={16} />
-                        <h6 className="">{ev.location}</h6>
-                      </div>
+                      {ev?.location && (
+                        <div className="flex items-center gap-2">
+                          <img src="/svgs/location.svg" alt="" width={16} />
+                          <h6 className="">{ev.location}</h6>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -608,25 +667,25 @@ const Modal: React.FC<ModalProps> = ({
                   <div className="pt-6 flex flex-col md:flex-row md:justify-between md:items-end gap-8">
                     <div className="flex flex-col gap-5 w-full md:max-w-[50%] px-3">
                       <div className="space-y-1">
-                        <p className="text-[#8B8B8B]">Name</p>{" "}
+                        <p className="text-[#8B8B8B]">Name</p>
                         <p className="text-zinc-900 break-words">
                           {authForm.name || me?.name || "N/A"}
                         </p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[#8B8B8B]">Email:</p>{" "}
+                        <p className="text-[#8B8B8B]">Email:</p>
                         <p className="text-zinc-900 break-words">
                           {authForm.identifier || me?.email || "N/A"}
                         </p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[#8B8B8B]">Phone:</p>{" "}
+                        <p className="text-[#8B8B8B]">Phone:</p>
                         <p className="text-zinc-900 break-words">
                           {getDisplayPhone()}
                         </p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[#8B8B8B]">Ticket Details:</p>{" "}
+                        <p className="text-[#8B8B8B]">Ticket Details:</p>
                         <p className="text-zinc-900">
                           {selectedTicket?.name || "N/A"} – ₹
                           {selectedTicket?.price || 0} × {selectedQuantity}
@@ -634,7 +693,7 @@ const Modal: React.FC<ModalProps> = ({
                       </div>
                       {discountCode && (
                         <div className="space-y-1">
-                          <p className="text-[#8B8B8B]">Discount Code:</p>{" "}
+                          <p className="text-[#8B8B8B]">Discount Code:</p>
                           <p className="text-zinc-900">{discountCode}</p>
                         </div>
                       )}
@@ -642,17 +701,17 @@ const Modal: React.FC<ModalProps> = ({
 
                     <div className="flex flex-col gap-3 text-right md:w-[246px]">
                       <div className="flex justify-between px-2">
-                        <p className="text-[#8B8B8B]">SUB TOTAL</p>{" "}
+                        <p className="text-[#8B8B8B]">SUB TOTAL</p>
                         <p className="text-zinc-900">
                           ₹{(selectedTicket?.price ?? 0) * selectedQuantity}
                         </p>
                       </div>
                       <div className="flex justify-between px-2">
-                        <p className="text-[#8B8B8B]">GST</p>{" "}
+                        <p className="text-[#8B8B8B]">GST</p>
                         <p className="text-zinc-900">₹0</p>
                       </div>
                       <div className="flex justify-between bg-[#F5F5F5] py-3 px-2 rounded-md m-0">
-                        <h5 className="text-[#8B8B8B]">TOTAL</h5>{" "}
+                        <h5 className="text-[#8B8B8B]">TOTAL</h5>
                         <h5>
                           ₹
                           {(
@@ -665,7 +724,10 @@ const Modal: React.FC<ModalProps> = ({
                 </div>
               </div>
               {buyError && (
-                <div className="text-sm text-red-500 mt-2 flex w-full justify-center">
+                <div
+                  className="text-sm text-red-500 mt-2 flex w-full justify-center"
+                  role="alert"
+                >
                   {buyError}
                 </div>
               )}
@@ -673,8 +735,9 @@ const Modal: React.FC<ModalProps> = ({
                 <button
                   onClick={onBuy}
                   disabled={buying}
-                  className="px-4 sm:py-7 py-6 relative rounded-full overflow-hidden text-xl bg-[#FFE348] w-[300px] border-b-3 border-[#FFDA0A] cursor-pointer mx-auto"
+                  className="px-4 sm:py-7 py-6 relative rounded-full overflow-hidden text-xl bg-[#FFE348] w-[300px] border-b-3 border-[#FFDA0A] cursor-pointer mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
+                  type="button"
                 >
                   <motion.div
                     className="absolute top-0 h-full w-full pointer-events-none overflow-hidden rounded-full"
