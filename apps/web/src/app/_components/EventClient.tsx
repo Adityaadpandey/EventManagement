@@ -15,8 +15,8 @@ import {
 } from "@/lib/features/eventsSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { motion } from "framer-motion";
 
 type TicketType = {
@@ -48,6 +48,8 @@ type EventPublic = {
   CustomField: CustomField[];
   chips: string[];
   tags?: string[];
+  lister?: { bio?: string };
+  _count?: { DiscountCode?: number };
 };
 
 type EventClientProps = {
@@ -61,8 +63,10 @@ export default function EventClient({
 }: EventClientProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const razorpayLoadingRef = useRef(false);
+  const mountedRef = useRef(true);
 
-  // auth state
+  // Auth state
   const {
     user: me,
     token,
@@ -72,34 +76,34 @@ export default function EventClient({
     hydrated,
   } = useAppSelector((s) => s.auth);
 
-  // event state - use initialEvent as fallback
+  // Event state
   const {
     byId,
     loadingId,
     error: eventsError,
   } = useAppSelector((s) => s.events.details);
-  const ev = (byId[eventId] as EventPublic | undefined | any) || initialEvent;
+  const ev = (byId[eventId] as EventPublic | undefined) || initialEvent;
   const loadingEvent = loadingId === eventId && !initialEvent;
 
-  // list state for recommendations
+  // List state for recommendations
   const { items: allEvents, loading: listLoading } = useAppSelector(
     (s) => s.events.list,
   );
 
-  // booking UI state (outside modal)
+  // Modal & booking state
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalStep, setModalStep] = useState<number>(0); // 0: types, 1: details, 2: checkout
+  const [modalStep, setModalStep] = useState<number>(0);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
   const [attendee, setAttendee] = useState<Record<string, any>>({});
   const [buying, setBuying] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
-  const [discountCode, setDiscountCode] = useState<string>(""); // New state for discount code
-  const [countryCode, setCountryCode] = useState("91"); // New state for country code
+  const [discountCode, setDiscountCode] = useState<string>("");
+  const [countryCode, setCountryCode] = useState("91");
 
   const chipColors = ["#EBF9FF", "#FFF7CC", "#FFF1EB", "#FFF1EB"];
 
-  // local auth form for details step (identifier = email)
+  // Auth form state
   const [authForm, setAuthForm] = useState({
     name: "",
     identifier: "",
@@ -111,10 +115,17 @@ export default function EventClient({
   const [resendTimer, setResendTimer] = useState<number>(0);
 
   const isAuthenticated = Boolean(token && me);
-  const showAuthBlock = hydrated && !isAuthenticated;
+
+  // Cleanup on unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Helper to get unique words from text
-  const getWords = (text: string | null | undefined): string[] => {
+  const getWords = useCallback((text: string | null | undefined): string[] => {
     if (!text) return [];
     return [
       ...new Set(
@@ -123,17 +134,21 @@ export default function EventClient({
           .split(/\s+/)
           .filter((w) => w.length > 2),
       ),
-    ]; // Ignore short words
-  };
+    ];
+  }, []);
 
-  // Jaccard similarity function for sets of strings
-  const jaccardSimilarity = (setA: Set<string>, setB: Set<string>): number => {
-    if (setA.size === 0 && setB.size === 0) return 0;
-    const intersection = new Set([...setA].filter((x) => setB.has(x)));
-    const unionSize = setA.size + setB.size - intersection.size;
-    return unionSize === 0 ? 0 : intersection.size / unionSize;
-  };
+  // Jaccard similarity function
+  const jaccardSimilarity = useCallback(
+    (setA: Set<string>, setB: Set<string>): number => {
+      if (setA.size === 0 && setB.size === 0) return 0;
+      const intersection = new Set([...setA].filter((x) => setB.has(x)));
+      const unionSize = setA.size + setB.size - intersection.size;
+      return unionSize === 0 ? 0 : intersection.size / unionSize;
+    },
+    [],
+  );
 
+  // Calculate similar events
   const similarEvents = useMemo(() => {
     if (!ev || !allEvents || allEvents.length === 0) return [];
 
@@ -160,18 +175,17 @@ export default function EventClient({
         const titleScore = jaccardSimilarity(currentTitleSet, eventTitleSet);
         const descScore = jaccardSimilarity(currentDescSet, eventDescSet);
 
-        // Combined score: weighted average (more weight to tags, then desc, then title)
         const score = 0.5 * tagScore + 0.3 * descScore + 0.2 * titleScore;
 
         return { event, score };
       })
-      .filter(({ score }) => score > 0.1) // Threshold to avoid weak matches
+      .filter(({ score }) => score > 0.1)
       .sort((a, b) => b.score - a.score)
       .slice(0, 6)
       .map(({ event }) => event);
-  }, [ev, allEvents, eventId]);
+  }, [ev, allEvents, eventId, getWords, jaccardSimilarity]);
 
-  // Store initial event in Redux if not already there
+  // Store initial event in Redux
   useEffect(() => {
     if (initialEvent && !byId[eventId]) {
       dispatch(fetchEventDetails({ eventId }));
@@ -180,10 +194,12 @@ export default function EventClient({
 
   // Fetch public events for recommendations
   useEffect(() => {
-    if (!ev) return;
-    dispatch(fetchPublicEvents({ page: 1, limit: 20 }));
-  }, [dispatch, ev]);
+    if (ev && allEvents.length === 0 && !listLoading) {
+      dispatch(fetchPublicEvents({ page: 1, limit: 20 }));
+    }
+  }, [dispatch, ev, allEvents.length, listLoading]);
 
+  // Hydrate session
   useEffect(() => {
     if (!hydrated) {
       dispatch(hydrateSession());
@@ -199,11 +215,9 @@ export default function EventClient({
       if (me.phone) {
         let phone = me.phone;
 
-        // If phone starts with +, extract country code and number
         if (phone.startsWith("+")) {
           phone = phone.substring(1);
 
-          // Extract country code (assuming 1-3 digits)
           if (phone.startsWith("91") && phone.length === 12) {
             extractedCountryCode = "91";
             phoneNumber = phone.substring(2);
@@ -211,7 +225,6 @@ export default function EventClient({
             extractedCountryCode = "1";
             phoneNumber = phone.substring(1);
           } else {
-            // Try to extract first 1-3 digits as country code
             const match = phone.match(/^(\d{1,3})(\d{10})$/);
             if (match) {
               extractedCountryCode = match[1];
@@ -221,7 +234,6 @@ export default function EventClient({
             }
           }
         } else if (phone.length > 10) {
-          // If no + but longer than 10 digits, assume first digits are country code
           extractedCountryCode = phone.substring(0, phone.length - 10);
           phoneNumber = phone.substring(phone.length - 10);
         } else {
@@ -239,13 +251,12 @@ export default function EventClient({
     }
   }, [modalOpen, me, isAuthenticated]);
 
-  // Auto-select the most expensive ticket when modal opens
+  // Auto-select most expensive ticket
   useEffect(() => {
     if (modalOpen && ev?.TicketType && ev.TicketType.length > 0) {
-      // Only auto-select if no ticket is currently selected
       if (!selectedTicketId) {
         const sortedTickets = [...ev.TicketType].sort(
-          (a: any, b: any) => b.price - a.price,
+          (a, b) => b.price - a.price,
         );
         const topTicket = sortedTickets[0];
         if (topTicket) {
@@ -256,6 +267,7 @@ export default function EventClient({
     }
   }, [modalOpen, ev?.TicketType, selectedTicketId]);
 
+  // Resend timer countdown
   useEffect(() => {
     if (!otpSent || resendTimer <= 0) return;
     const id = window.setInterval(() => {
@@ -272,118 +284,179 @@ export default function EventClient({
 
   const selectedTicket = useMemo(
     () =>
-      ev?.TicketType?.find((t: any) => t.ticketTypeId === selectedTicketId) ??
-      null,
+      ev?.TicketType?.find((t) => t.ticketTypeId === selectedTicketId) ?? null,
     [ev, selectedTicketId],
   );
 
-  const loadRazorpay = (): Promise<void> =>
-    new Promise((resolve, reject) => {
-      if (typeof window === "undefined")
+  // Load Razorpay script
+  const loadRazorpay = useCallback((): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (typeof window === "undefined") {
         return reject(new Error("Client only"));
-      if ((window as any).Razorpay) return resolve();
+      }
+      if ((window as any).Razorpay) {
+        return resolve();
+      }
+      if (razorpayLoadingRef.current) {
+        // Already loading, wait for it
+        const checkInterval = setInterval(() => {
+          if ((window as any).Razorpay) {
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 100);
+        return;
+      }
+
+      razorpayLoadingRef.current = true;
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () =>
+      script.onload = () => {
+        razorpayLoadingRef.current = false;
+        resolve();
+      };
+      script.onerror = () => {
+        razorpayLoadingRef.current = false;
         reject(new Error("Razorpay script failed to load"));
+      };
       document.body.appendChild(script);
     });
+  }, []);
 
-  // helpers
-  const fmtCurrency = (amountInPaise: number) =>
-    new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-    }).format(amountInPaise / 100);
+  // Format currency
+  const fmtCurrency = useCallback(
+    (amountInPaise: number) =>
+      new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+      }).format(amountInPaise / 100),
+    [],
+  );
 
-  // auth form handlers
-  const onAuthChange =
+  // Auth form handlers
+  const onAuthChange = useCallback(
     (k: keyof typeof authForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setAuthForm((s) => ({ ...s, [k]: e.target.value }));
       setLocalAuthMsg(null);
-    };
+      setBuyError(null);
+    },
+    [],
+  );
 
-  const sendOtp = async () => {
+  const sendOtp = useCallback(async () => {
     setLocalAuthMsg(null);
-    if (!authForm.identifier.trim() || !authForm.name.trim()) {
+    setBuyError(null);
+
+    const trimmedEmail = authForm.identifier?.trim();
+    const trimmedName = authForm.name?.trim();
+
+    if (!trimmedEmail || !trimmedName) {
       setLocalAuthMsg("Name and email are required to request OTP.");
       return;
     }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setLocalAuthMsg("Please enter a valid email address.");
+      return;
+    }
+
     try {
-      await dispatch(requestOtp(authForm.identifier));
+      await dispatch(requestOtp(trimmedEmail)).unwrap();
       setLocalAuthMsg("OTP sent to your email. Check inbox/spam.");
       setResendTimer(300);
     } catch (err: any) {
-      setLocalAuthMsg(err?.message || "Failed to send OTP");
+      const errorMsg =
+        err?.message || err?.response?.data?.message || "Failed to send OTP";
+      setLocalAuthMsg(errorMsg);
     }
-  };
+  }, [authForm.identifier, authForm.name, dispatch]);
 
-  const verifyEmailOtp = async (otpParam?: string) => {
-    setLocalAuthMsg(null);
-
-    const otpToUse = (otpParam ?? authForm.otp ?? "").toString();
-
-    if (!authForm.identifier?.trim() || !otpToUse.trim()) {
-      setLocalAuthMsg("Email and OTP are required.");
-      return;
-    }
-
-    try {
-      setIsVerifying(true);
-
-      // Build phone in format +91xxxxxxxxxx
-      const fullPhone = `+${countryCode}${authForm.phone}`;
-
-      await dispatch(
-        verifyOtp({
-          identifier: authForm.identifier,
-          otp: otpToUse,
-          name: authForm.name,
-          email: authForm.identifier,
-          phone: fullPhone,
-        }),
-      ).unwrap();
-
-      setAuthForm((s) => ({ ...s, otp: "" }));
+  const verifyEmailOtp = useCallback(
+    async (otpParam?: string) => {
       setLocalAuthMsg(null);
-    } catch (err: any) {
-      setLocalAuthMsg(
-        err?.response?.data?.message || err?.message || "Failed to verify OTP",
-      );
-    } finally {
-      setIsVerifying(false);
-    }
-  };
+      setBuyError(null);
 
-  const resendOtp = async () => {
-    if (!authForm.identifier.trim()) {
+      const otpToUse = (otpParam ?? authForm.otp ?? "").toString().trim();
+      const trimmedEmail = authForm.identifier?.trim();
+
+      if (!trimmedEmail || !otpToUse) {
+        setLocalAuthMsg("Email and OTP are required.");
+        return;
+      }
+
+      if (otpToUse.length !== 6 || !/^\d{6}$/.test(otpToUse)) {
+        setLocalAuthMsg("OTP must be exactly 6 digits.");
+        return;
+      }
+
+      try {
+        setIsVerifying(true);
+
+        const fullPhone = `+${countryCode}${authForm.phone}`;
+
+        await dispatch(
+          verifyOtp({
+            identifier: trimmedEmail,
+            otp: otpToUse,
+            name: authForm.name?.trim(),
+            email: trimmedEmail,
+            phone: fullPhone,
+          }),
+        ).unwrap();
+
+        setAuthForm((s) => ({ ...s, otp: "" }));
+        setLocalAuthMsg(null);
+      } catch (err: any) {
+        const errorMsg =
+          err?.response?.data?.message ||
+          err?.message ||
+          "Invalid OTP. Please try again.";
+        setLocalAuthMsg(errorMsg);
+      } finally {
+        if (mountedRef.current) {
+          setIsVerifying(false);
+        }
+      }
+    },
+    [authForm, countryCode, dispatch],
+  );
+
+  const resendOtp = useCallback(async () => {
+    const trimmedEmail = authForm.identifier?.trim();
+
+    if (!trimmedEmail) {
       setLocalAuthMsg("Email is required to resend OTP.");
       return;
     }
+
     if (resendTimer > 0) {
       setLocalAuthMsg(`Please wait ${resendTimer}s before resending.`);
       return;
     }
-    try {
-      await dispatch(requestOtp(authForm.identifier));
-      setLocalAuthMsg("OTP resent.");
-      setResendTimer(30);
-    } catch {
-      setLocalAuthMsg("Failed to resend OTP.");
-    }
-  };
 
-  // modal actions
-  const openModal = () => {
+    try {
+      await dispatch(requestOtp(trimmedEmail)).unwrap();
+      setLocalAuthMsg("OTP resent successfully.");
+      setResendTimer(30);
+    } catch (err: any) {
+      const errorMsg =
+        err?.message || err?.response?.data?.message || "Failed to resend OTP";
+      setLocalAuthMsg(errorMsg);
+    }
+  }, [authForm.identifier, resendTimer, dispatch]);
+
+  // Modal actions
+  const openModal = useCallback(() => {
     setModalOpen(true);
     setModalStep(0);
     setBuyError(null);
     setLocalAuthMsg(null);
-  };
+  }, []);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setModalOpen(false);
     setModalStep(0);
     setSelectedTicketId(null);
@@ -391,96 +464,98 @@ export default function EventClient({
     setBuyError(null);
     setLocalAuthMsg(null);
     setDiscountCode("");
-  };
+  }, []);
 
-  const selectTicketType = (ticketTypeId: string) => {
+  const selectTicketType = useCallback((ticketTypeId: string) => {
     setSelectedTicketId(ticketTypeId);
     setSelectedQuantity(1);
     setLocalAuthMsg(null);
-  };
+    setBuyError(null);
+  }, []);
 
   const handleAttendeeChange = useCallback((label: string, value: string) => {
     setAttendee((prev) => ({ ...prev, [label]: value }));
+    setBuyError(null);
   }, []);
 
-  const incQty = () => {
+  const incQty = useCallback(() => {
     if (!selectedTicket) return;
     setSelectedQuantity((q) => Math.min(q + 1, selectedTicket.quantity));
-  };
-  const decQty = () => {
-    setSelectedQuantity((q) => Math.max(1, q - 1));
-  };
+  }, [selectedTicket]);
 
-  const proceedFromTypes = () => {
+  const decQty = useCallback(() => {
+    setSelectedQuantity((q) => Math.max(1, q - 1));
+  }, []);
+
+  const proceedFromTypes = useCallback(() => {
     if (!selectedTicketId || !selectedTicket) {
-      setLocalAuthMsg("Select a ticket and quantity to proceed.");
+      setLocalAuthMsg("Please select a ticket type to proceed.");
       return;
     }
     setModalStep(1);
     setLocalAuthMsg(null);
-  };
+    setBuyError(null);
+  }, [selectedTicketId, selectedTicket]);
 
-  const ensureProfileComplete = async () => {
+  const ensureProfileComplete = useCallback(async () => {
     if (!token) return;
 
     const payload: any = {};
 
-    if (!me?.name && authForm.name && authForm.name.trim()) {
-      payload.name = authForm.name.trim();
+    const trimmedName = authForm.name?.trim();
+    const trimmedEmail = authForm.identifier?.trim();
+    const trimmedPhone = authForm.phone?.trim();
+
+    if (!me?.name && trimmedName) {
+      payload.name = trimmedName;
     }
 
-    if (!me?.email && authForm.identifier && authForm.identifier.trim()) {
-      payload.email = authForm.identifier.trim();
+    if (!me?.email && trimmedEmail) {
+      payload.email = trimmedEmail;
     }
 
-    // For phone: update if user doesn't have phone OR if authForm phone has changed
-    if (authForm.phone && authForm.phone.trim()) {
-      const fullPhone = `+${countryCode}${authForm.phone.replace(/\D/g, "")}`;
-
-      // Only update if user doesn't have a phone or if the phone has changed
+    if (trimmedPhone) {
+      const fullPhone = `+${countryCode}${trimmedPhone.replace(/\D/g, "")}`;
       if (!me?.phone || me.phone !== fullPhone) {
         payload.phone = fullPhone;
       }
     }
 
     if (Object.keys(payload).length === 0) {
-      console.log("No profile updates needed");
       return;
     }
 
     try {
-      console.log(
-        "Patching profile with:",
-        //  JSON.stringify(payload, null, 2)
-      );
-
       await api.patch("/user/profile", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log("Profile patched successfully");
       await dispatch(hydrateSession());
     } catch (err: any) {
       console.error(
         "Failed to patch profile:",
         err?.response?.data || err?.message || err,
       );
+      throw new Error("Failed to update profile. Please try again.");
     }
-  };
+  }, [token, authForm, countryCode, me, dispatch]);
 
-  // booking -> buy
-  const onBuy = async () => {
+  const onBuy = useCallback(async () => {
     setBuyError(null);
     setLocalAuthMsg(null);
 
     if (!token || !me) {
-      setBuyError("Please verify via email OTP (or login) before buying.");
+      setBuyError("Please verify via email OTP before purchasing.");
+      setModalStep(1);
       return;
     }
+
     if (!selectedTicketId || !selectedTicket) {
-      setBuyError("Select a ticket type first.");
+      setBuyError("Please select a ticket type.");
+      setModalStep(0);
       return;
     }
+
     if (selectedQuantity <= 0) {
       setBuyError("Quantity must be at least 1.");
       return;
@@ -489,8 +564,8 @@ export default function EventClient({
     // Validate required custom fields
     if (ev?.CustomField) {
       for (const f of ev.CustomField) {
-        if (f.required && !attendee[f.label]) {
-          setBuyError(`Please fill ${f.label}`);
+        if (f.required && !attendee[f.label]?.trim()) {
+          setBuyError(`Please fill in ${f.label}`);
           setModalStep(1);
           return;
         }
@@ -502,38 +577,33 @@ export default function EventClient({
     try {
       await ensureProfileComplete();
 
-      // Build complete attendeeData including custom fields
       const fullPhone = `+${countryCode}${authForm.phone.replace(/\D/g, "")}`;
 
       const finalAttendee: Record<string, any> = {
-        name: me?.name ?? authForm.name,
-        email: me?.email ?? authForm.identifier,
+        name: me?.name ?? authForm.name?.trim(),
+        email: me?.email ?? authForm.identifier?.trim(),
         phone: me?.phone ?? fullPhone,
       };
 
-      // Add all custom field values to attendeeData
       if (ev?.CustomField) {
         for (const cf of ev.CustomField) {
-          if (attendee[cf.label]) {
-            finalAttendee[cf.label] = attendee[cf.label];
+          if (attendee[cf.label]?.trim()) {
+            finalAttendee[cf.label] = attendee[cf.label].trim();
           }
         }
       }
 
-      // Build payload
       const payload: any = {
         ticketTypeId: selectedTicketId,
         quantity: selectedQuantity,
         attendeeData: finalAttendee,
       };
 
-      if (discountCode && discountCode.trim() !== "") {
+      if (discountCode?.trim()) {
         payload.discountCode = discountCode.trim();
       }
 
-      const config = token
-        ? { headers: { Authorization: `Bearer ${token}` } }
-        : undefined;
+      const config = { headers: { Authorization: `Bearer ${token}` } };
 
       const res = await api.post("/ticket/buy", payload, config);
 
@@ -542,7 +612,7 @@ export default function EventClient({
         data?.ticket?.ticketId ||
         data?.ticketId ||
         data?.ticket?.id ||
-        data?.ticket?.id;
+        data?.id;
 
       const orderInfo =
         data?.paymentOrder ||
@@ -551,7 +621,6 @@ export default function EventClient({
         data?.order ||
         data?.payment;
 
-      // handle typical Razorpay flow
       if (
         orderInfo &&
         (orderInfo.order_id || orderInfo.id || orderInfo.razorpay_order_id)
@@ -567,19 +636,15 @@ export default function EventClient({
         const key =
           orderInfo.key ||
           orderInfo.razorpay_key ||
-          (process.env.NEXT_PUBLIC_RAZORPAY_KEY as string | undefined);
+          process.env.NEXT_PUBLIC_RAZORPAY_KEY;
 
         if (!key) {
-          setBuyError("Payment key missing. Contact admin.");
-          setBuying(false);
-          return;
+          throw new Error("Payment key missing. Please contact support.");
         }
 
         await loadRazorpay();
 
-        const serverConfig = token
-          ? { headers: { Authorization: `Bearer ${token}` } }
-          : undefined;
+        if (!mountedRef.current) return;
 
         const options: any = {
           key,
@@ -589,8 +654,8 @@ export default function EventClient({
           description: `Tickets for ${ev?.title || "event"}`,
           order_id: orderId,
           prefill: {
-            name: me?.name ?? authForm.name ?? undefined,
-            email: me?.email ?? authForm.identifier ?? undefined,
+            name: me?.name ?? authForm.name?.trim() ?? undefined,
+            email: me?.email ?? authForm.identifier?.trim() ?? undefined,
             contact: me?.phone ?? fullPhone ?? undefined,
           },
           handler: async (resp: any) => {
@@ -605,7 +670,7 @@ export default function EventClient({
                   razorpay_signature: resp.razorpay_signature,
                   ticketId,
                 },
-                serverConfig,
+                config,
               );
 
               const gotoId = ticketId || data?.ticket?.id || data?.ticketId;
@@ -617,37 +682,36 @@ export default function EventClient({
             } catch (verifyErr: any) {
               if (ticketId) {
                 try {
-                  await api.post(
-                    "/payment/failure",
-                    { ticketId },
-                    serverConfig,
-                  );
+                  await api.post("/payment/failure", { ticketId }, config);
                 } catch (_) {}
               }
-              setBuyError(
+              const errorMsg =
                 verifyErr?.response?.data?.message ||
-                  verifyErr?.message ||
-                  "Payment verification failed",
-              );
+                verifyErr?.message ||
+                "Payment verification failed. Please check My Bookings.";
+              setBuyError(errorMsg);
+              setModalStep(2);
+            } finally {
+              if (mountedRef.current) {
+                setBuying(false);
+              }
             }
           },
-
           modal: {
             ondismiss: async () => {
               try {
-                const createdTicketId =
-                  ticketId || data?.ticket?.id || data?.ticketId;
-                if (createdTicketId) {
-                  await api.post(
-                    "/payment/failure",
-                    { ticketId: createdTicketId },
-                    serverConfig,
-                  );
+                if (ticketId) {
+                  await api.post("/payment/failure", { ticketId }, config);
                 }
-              } catch {}
+              } catch (_) {}
 
-              setModalStep(2);
-              setBuying(false);
+              if (mountedRef.current) {
+                setModalStep(2);
+                setBuying(false);
+                setBuyError(
+                  "Payment was cancelled. Please try again if you wish to complete your purchase.",
+                );
+              }
             },
           },
         };
@@ -663,30 +727,63 @@ export default function EventClient({
           router.push(`/tickets/${gotoId}`);
         } else {
           setBuyError(
-            "Purchase succeeded but server response unexpected. Check My Bookings.",
+            "Purchase succeeded but response unexpected. Check My Bookings.",
           );
-          router.push("/tickets/my-tickets");
+          setTimeout(() => router.push("/tickets/my-tickets"), 2000);
         }
       }
     } catch (e: any) {
-      setBuyError(
-        e?.response?.data?.message || e?.message || "Failed to create ticket",
-      );
+      const errorMsg =
+        e?.response?.data?.message ||
+        e?.message ||
+        "Failed to create ticket. Please try again.";
+      setBuyError(errorMsg);
+      setModalStep(2);
     } finally {
-      setBuying(false);
+      if (mountedRef.current) {
+        setBuying(false);
+      }
     }
-  };
+  }, [
+    token,
+    me,
+    selectedTicketId,
+    selectedTicket,
+    selectedQuantity,
+    ev,
+    attendee,
+    authForm,
+    countryCode,
+    discountCode,
+    ensureProfileComplete,
+    loadRazorpay,
+    router,
+  ]);
 
-  if (eventsError) return <div className="p-6 text-red-500">{eventsError}</div>;
-  if (!ev) return <div className="p-6 text-zinc-400">Event not found</div>;
+  if (eventsError)
+    return (
+      <div className="p-6 text-red-500" role="alert">
+        {eventsError}
+      </div>
+    );
+  if (!ev)
+    return (
+      <div className="p-6 text-zinc-400">Event not found or unavailable</div>
+    );
+
+  const minPrice =
+    ev.TicketType && ev.TicketType.length > 0
+      ? Math.min(...ev.TicketType.map((t) => t.price))
+      : 0;
 
   return (
     <div className="max-w-6xl md:w-[80vw] mx-auto px-4 py-8 pb-48 w-[100vw] overflow-x-hidden">
       <div className="md:flex gap-2 items-center pb-4 px-1 hidden">
         <Link href="/" className="text-sm text-[#8B8B8B]">
           Home
-        </Link>{" "}
-        <span className="text-[#8B8B8B]">{">"}</span> <p>Event page</p>
+        </Link>
+        <span className="text-[#8B8B8B]">{">"}</span>
+        <p>Event page</p>
       </div>
 
       <Link
@@ -733,57 +830,65 @@ export default function EventClient({
               {ev.title}
             </h1>
 
-            <div className="flex gap-2 flex-wrap">
-              {ev.chips.map((chip, index) => (
-                <div
-                  key={index}
-                  className="rounded-full text-[12px] py-1 px-2"
-                  style={{
-                    backgroundColor: chipColors[index % chipColors.length],
-                  }}
-                >
-                  {chip}
-                </div>
-              ))}
-            </div>
+            {ev.chips && ev.chips.length > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                {ev.chips.map((chip, index) => (
+                  <div
+                    key={index}
+                    className="rounded-full text-[12px] py-1 px-2"
+                    style={{
+                      backgroundColor: chipColors[index % chipColors.length],
+                    }}
+                  >
+                    {chip}
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="px-6 py-5 bg-[#F5F5F5] md:rounded-[0.833333vw] rounded-xl flex flex-wrap w-full shrink-0 gap-5 justify-between">
-              <div className="flex items-center gap-2 shrink-0">
-                <img src="/svgs/calendar.svg" alt="" />
-                <h6 className="">
-                  {ev.date &&
-                    new Date(ev.date).toLocaleDateString(undefined, {
+              {ev.date && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <img src="/svgs/calendar.svg" alt="" />
+                  <h6 className="">
+                    {new Date(ev.date).toLocaleDateString(undefined, {
                       month: "long",
                       day: "numeric",
-                    })}{" "}
-                </h6>
-              </div>
+                    })}
+                  </h6>
+                </div>
+              )}
 
               <div className="flex gap-2 items-center shrink-0">
                 <img src="/svgs/clock.svg" alt="" />
                 <h6>5:00PM to 7:00PM</h6>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <img src="/svgs/location.svg" alt="" width={16} />
-                <h6 className="">{ev.location}</h6>
-              </div>
+              {ev.location && (
+                <div className="flex items-center gap-2 shrink-0">
+                  <img src="/svgs/location.svg" alt="" width={16} />
+                  <h6 className="">{ev.location}</h6>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="space-y-4 bg-white px-5 py-4 md:rounded-[1.3888888vw] rounded-xl">
-            <h6>About Event</h6>
-            <ReadMore text={ev.description} maxLength={2240} />
-          </div>
+          {ev.description && (
+            <div className="space-y-4 bg-white px-5 py-4 md:rounded-[1.3888888vw] rounded-xl">
+              <h6>About Event</h6>
+              <ReadMore text={ev.description} maxLength={2240} />
+            </div>
+          )}
         </aside>
       </div>
 
-      <div className="mt-4 md:w-[523px] space-y-2">
-        <h5>About Organiser</h5>
-        <ReadMore text={ev.lister.bio} maxLength={328} />
-      </div>
+      {ev.lister?.bio && (
+        <div className="mt-4 md:w-[523px] space-y-2">
+          <h5>About Organiser</h5>
+          <ReadMore text={ev.lister.bio} maxLength={328} />
+        </div>
+      )}
 
-      {/* Recommendations Section */}
       {similarEvents.length > 0 && (
         <div className="mt-8 space-y-4">
           <h1 className="bricolage-grotesque font-semibold">
@@ -801,9 +906,13 @@ export default function EventClient({
                   title={recEvent.title}
                   location={recEvent.location}
                   date={recEvent.date}
-                  price={Math.min(
-                    ...recEvent.TicketType.map((t: any) => t.price),
-                  )}
+                  price={
+                    recEvent.TicketType && recEvent.TicketType.length > 0
+                      ? Math.min(
+                          ...recEvent.TicketType.map((t: any) => t.price),
+                        )
+                      : 0
+                  }
                 />
               </Link>
             ))}
@@ -814,12 +923,13 @@ export default function EventClient({
       <div className="flex items-center gap-6 md:p-1 md:pl-8 rounded-full md:bg-white fixed bottom-7 md:w-full md:max-w-[524px] max-w-[358px] w-[92vw] -translate-x-[50%] left-[50%]">
         <div className="md:flex hidden flex-col gap-1 w-15">
           <span className="text-[#8B8B8B] shrink-0">Starts at</span>
-          <h2>₹{Math.min(...ev.TicketType.map((t) => t.price))}</h2>
+          <h2>₹{minPrice}</h2>
         </div>
         <button
           onClick={openModal}
           className="bg-[#FFE348] md:py-7 py-5 rounded-full w-full border-b-3 border-[#FFDA0A] cursor-pointer relative overflow-hidden"
           style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
+          disabled={!ev.TicketType || ev.TicketType.length === 0}
         >
           <motion.div
             className="absolute top-0 h-full w-full pointer-events-none overflow-hidden rounded-full"

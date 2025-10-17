@@ -70,7 +70,7 @@ h1 {
   font-size: 24px;
   color: var(--color-neutral-dark3);
   font-feature-settings: "liga" off;
-  line-height: 100%;
+  line-height: 120%;
   letter-spacing: -0.96px;
 }
 
@@ -142,12 +142,12 @@ span {
 }
 
 .home-page-heading {
-  @apply w-[200px] leading-none tracking-[-3.2px] text-5xl font-extrabold pb-3;
+  @apply w-[200px] leading-none tracking-[-1.92px] text-5xl font-extrabold pb-3;
   font-family: var(--primary-font);
 }
 
 .home-filter-bar {
-  @apply flex justify-between items-center mb-4 md:mb-6 w-full;
+  @apply flex justify-between items-center mb-5 w-full;
 }
 
 .home-filter-tags {
