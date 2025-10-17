@@ -2,6 +2,7 @@
 
 import React, { memo, useMemo } from "react";
 import Image from "next/image";
+import Superellipse from "react-superellipse";
 
 interface EventCardProps {
   imageUrl: string;
@@ -56,39 +57,53 @@ const EventCard: React.FC<EventCardProps> = memo(
     );
 
     return (
-      <div className="flex flex-col gap-1 p-1 pb-2 bg-white md:rounded-[28px] rounded-2xl md:w-[36.25vw] max-w-[522px] w-[91.8vw]">
-        <div className="md:h-[20.069vw] h-[50.256vw] md:rounded-3xl rounded-xl overflow-hidden">
-          <Image
-            src={imageUrl}
-            alt={`${title} event image`}
-            width={500}
-            height={300}
-            loading="lazy"
-            className="w-full h-full object-cover"
-            sizes="(max-width: 768px) 91.8vw, 36.25vw"
-            quality={85}
-          />
-        </div>
+      <Superellipse
+        style={{ width: "100%", height: "auto" }}
+        r1={0.01}
+        r2={0.13}
+      >
+        <div className="flex flex-col gap-1 p-1 pb-2 bg-white md:rounded-[28px] rounded-2xl md:w-[36.25vw] max-w-[522px] w-[91.8vw]">
+          <Superellipse
+            style={{ width: "100%", height: "auto" }}
+            r1={0.01}
+            r2={0.13}
+          >
+            <div className="md:h-[20.069vw] h-[50.256vw] md:rounded-3xl rounded-xl overflow-hidden">
+              <Image
+                src={imageUrl}
+                alt={`${title} event image`}
+                width={500}
+                height={300}
+                loading="lazy"
+                className="w-full h-full object-cover"
+                sizes="(max-width: 768px) 91.8vw, 36.25vw"
+                quality={85}
+              />
+            </div>
+          </Superellipse>
 
-        <div className="px-3 py-2 flex justify-between gap-5">
-          <div className="flex flex-col gap-1">
-            <h1 className="font-semibold text-[#1E1E1E]">{title}</h1>
-            <h6 className="text-[#8B8B8B]">
-              {location} · {formattedDate}
-            </h6>
+          <div className="px-3 py-2 flex justify-between gap-5">
+            <div className="flex flex-col gap-1">
+              <h1 className="font-semibold text-[#1E1E1E]">{title}</h1>
+              <h6 className="text-[#8B8B8B]">
+                {location} · {formattedDate}
+              </h6>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              {!isFree && (
+                <span className="text-[#8B8B8B] shrink-0 text-nowrap">
+                  Starts at
+                </span>
+              )}
+
+              <h2 className={isFree ? "!text-green-600" : ""}>
+                {priceDisplay}
+              </h2>
+            </div>
           </div>
-
-          <div className="flex flex-col gap-1">
-            {!isFree && (
-              <span className="text-[#8B8B8B] shrink-0 text-nowrap">
-                Starts at
-              </span>
-            )}
-
-            <h2 className={isFree ? "!text-green-600" : ""}>{priceDisplay}</h2>
-          </div>
         </div>
-      </div>
+      </Superellipse>
     );
   },
 );

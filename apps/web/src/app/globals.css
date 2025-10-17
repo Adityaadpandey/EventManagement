@@ -147,7 +147,7 @@ span {
 }
 
 .home-filter-bar {
-  @apply flex justify-between items-center mb-5 w-full;
+  @apply flex justify-between items-center md:mb-5 mb-3 w-full;
 }
 
 .home-filter-tags {
