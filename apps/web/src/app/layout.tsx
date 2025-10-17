@@ -6,6 +6,7 @@ import "./globals.css";
 import Providers from "./providers";
 import ClientLayout from "./_components/ClientLayout";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
+import PwaPrompt from "./_components/PwaPrompt";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -246,7 +247,7 @@ export default async function RootLayout({
       name: "Tixin",
       alternateName: ["Tixin Event Platform", "Tixin India", "Tixin.in"],
       url: "https://www.tixin.in",
-      logo: "https://www.tixin.in/logos/roundedLogo.svg",
+      logo: "https://www.tixin.in/logos/icon.png",
       image: "https://www.tixin.in/logos/logoOnBlack.png",
       description:
         "Book and host events easily with Tixin. India's premier event management platform with payment integration, automated ticket checking, custom event pages, and complete vendor management. Connect with sponsors, artists, and venues for seamless event hosting.",
@@ -305,7 +306,7 @@ export default async function RootLayout({
         name: "Tixin",
         logo: {
           "@type": "ImageObject",
-          url: "https://www.tixin.in/logos/roundedLogo.svg",
+          url: "https://www.tixin.in/logos/icon.png",
         },
       },
     },
@@ -540,6 +541,8 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/logos/pwa-icon-192.png" />
 
         {/* Favicons */}
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" href="/logos/icon.png" />
         <link rel="icon" href="/logos/roundedLogo.svg" />
         <link rel="apple-touch-icon" href="/logos/roundedLogo.svg" />
         <link rel="shortcut icon" href="/logos/roundedLogo.svg" />
@@ -591,6 +594,7 @@ export default async function RootLayout({
         <Providers>
           <ClientLayout>
             {children}
+            <PwaPrompt />
             <SpeedInsights />
             <Analytics />
           </ClientLayout>
