@@ -5,9 +5,15 @@ meta {
 }
 
 post {
-  url: {{host}}/event/
-  body: none
+  url: {{host}}/event/{{eventId}}/info-update
+  body: json
   auth: inherit
+}
+
+body:json {
+  {
+    "update":"New place is here"
+  }
 }
 
 settings {
