@@ -190,6 +190,8 @@ model TicketType {
     name        String
     description String?
     price       Float
+    discountedPrice Float?
+    discountReason String?
     quantity    Int
     salesCutoff DateTime?
 
