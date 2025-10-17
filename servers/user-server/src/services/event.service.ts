@@ -503,6 +503,9 @@ export class EventService {
               name: true,
               price: true,
               quantity: true,
+              discountedPrice: true,
+              discountReason: true,
+              salesCutoff: true,
             },
           },
           CustomField: {
@@ -578,14 +581,79 @@ export class EventService {
 
   async patchEvent(userId: string, eventId: string, updateData: any) {
     try {
-      const updatedEvent = await prisma.event.update({
+      const { ticketTypes, customFields, ...eventData } = updateData;
+
+      // First, verify the event exists
+      const existingEvent = await prisma.event.findUnique({
         where: { eventId },
-        data: {
-          ...updateData,
-          lister: {
-            connect: { userId },
+        select: {
+          listerId: true,
+          TicketType: {
+            include: {
+              _count: {
+                select: { Ticket: true },
+              },
+            },
           },
         },
+      });
+
+      if (!existingEvent) {
+        throw new Error(`Event with ID ${eventId} not found`);
+      }
+
+      // Check if any ticket types have sold tickets
+      const hasSoldTickets = existingEvent.TicketType.some(
+        (tt) => tt._count.Ticket > 0,
+      );
+
+      // Build the update data object
+      const updatePayload: any = {
+        ...eventData,
+      };
+
+      // Handle ticket types if provided
+      if (ticketTypes && ticketTypes.length > 0) {
+        if (hasSoldTickets) {
+          // If tickets have been sold, don't allow replacing ticket types
+          // Only allow adding new ones
+          throw new Error(
+            "Cannot modify or delete ticket types after tickets have been sold. You can only add new ticket types.",
+          );
+        } else {
+          // Safe to replace ticket types since no tickets sold
+          updatePayload.TicketType = {
+            deleteMany: {},
+            create: ticketTypes.map((t: any) => ({
+              name: t.name,
+              description: t.description || null,
+              price: t.price,
+              discountedPrice: t.discountedPrice || null,
+              discountReason: t.discountReason || null,
+              quantity: t.quantity,
+              salesCutoff: t.salesCutoff ? new Date(t.salesCutoff) : null,
+            })),
+          };
+        }
+      }
+
+      // Handle custom fields if provided
+      // Custom fields can be safely replaced as they don't have critical dependencies
+      if (customFields && customFields.length > 0) {
+        updatePayload.CustomField = {
+          deleteMany: {},
+          create: customFields.map((f: any) => ({
+            label: f.label,
+            fieldType: f.fieldType,
+            required: f.required,
+            options: f.options || null,
+          })),
+        };
+      }
+
+      const updatedEvent = await prisma.event.update({
+        where: { eventId },
+        data: updatePayload,
         include: {
           lister: {
             select: {
