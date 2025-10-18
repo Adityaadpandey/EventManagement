@@ -22,6 +22,9 @@ interface Config {
   SMTP_PORT: number;
   SMTP_USER: string;
   SMTP_PASS: string;
+
+  VAPID_PUBLIC_KEY: string;
+  VAPID_PRIVATE_KEY: string;
 }
 
 export const config: Config = {
@@ -43,6 +46,6 @@ export const config: Config = {
   SMTP_PORT: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587,
   SMTP_USER: process.env.SMTP_USER || "",
   SMTP_PASS: process.env.SMTP_PASS || "",
-  // SMTP_EMAIL_USER: process.env.SMTP_EMAIL_USER || "",
-  // SMTP_EMAIL_PASS: process.env.SMTP_EMAIL_PASS || "",
+  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || "",
+  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || "",
 };
