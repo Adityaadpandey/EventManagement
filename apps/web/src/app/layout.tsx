@@ -24,8 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL("https://www.tixin.in"),
     title: {
-      default:
-        "Tixin - Book Tickets & Host Events | Payment Integration, Custom Pages & Vendor Management",
+      default: "Tixin - Book Tickets & Host Events",
       template: "%s | Tixin - India's Leading Event Platform",
     },
     description:
@@ -108,10 +107,8 @@ export async function generateMetadata(): Promise<Metadata> {
       "online ticket sales platform",
     ],
     alternates: {
-      canonical: "https://www.tixin.in",
       languages: {
         "en-IN": "https://www.tixin.in",
-        "hi-IN": "https://www.tixin.in/hi",
       },
     },
     openGraph: {
