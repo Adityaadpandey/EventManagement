@@ -20,17 +20,12 @@ export class DiscountController {
     if (!eventId) return sendError(res, "Event ID is required", 400);
 
     try {
-      const { code, discountPct, maxUses, validFrom, validTo } =
-        createDiscountSchema.parse(req.body);
+      const validatedData = createDiscountSchema.parse(req.body);
 
-      const result = await this.discountService.createDiscountCode(
+      const result = await this.discountService.createDiscountCode({
         eventId,
-        code,
-        discountPct,
-        maxUses,
-        validFrom,
-        validTo,
-      );
+        ...validatedData,
+      });
 
       if (result.error) {
         return sendError(res, result.error, 400);
@@ -43,7 +38,7 @@ export class DiscountController {
       );
     } catch (error: any) {
       if (error.name === "ZodError") {
-        return sendError(res, error, 400);
+        return sendError(res, error.errors, 400);
       }
       logger.error("Error creating discount code:", error);
       return sendError(res, "Failed to create discount code", 500);
@@ -81,7 +76,7 @@ export class DiscountController {
     const { code, eventId } = req.params;
 
     if (!userId) return sendError(res, "User ID is required", 400);
-    if (!code) return sendError(res, "Code ID is required", 400);
+    if (!code) return sendError(res, "Code is required", 400);
     if (!eventId) return sendError(res, "Event ID is required", 400);
 
     try {
