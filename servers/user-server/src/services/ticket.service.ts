@@ -47,8 +47,8 @@ export class TicketService {
       let basePrice = ticketType.price * quantity;
       let finalPrice = basePrice;
       let discountCodeId: string | null = null;
-      let discountPercentage = 0;
       let discountAmount = 0;
+      let discountDetails: any = null;
 
       // Validate and apply discount code if provided
       if (discountCode && discountCode.trim() !== "") {
@@ -84,11 +84,40 @@ export class TicketService {
           };
         }
 
-        // Apply discount
-        discountCodeId = discount.codeId;
-        discountPercentage = discount.discountPct;
-        discountAmount = (basePrice * discountPercentage) / 100;
+        // Check minimum order amount
+        if (discount.minOrderAmt && basePrice < discount.minOrderAmt) {
+          return {
+            error: `Minimum order amount of ₹${discount.minOrderAmt} required to use this discount code`,
+          };
+        }
+
+        // Calculate discount based on type
+        if (discount.discountType === "PERCENTAGE" && discount.discountPct) {
+          discountAmount = (basePrice * discount.discountPct) / 100;
+
+          // Apply max discount cap if specified
+          if (discount.maxDiscount && discountAmount > discount.maxDiscount) {
+            discountAmount = discount.maxDiscount;
+          }
+        } else if (discount.discountType === "FLAT" && discount.discountAmt) {
+          discountAmount = discount.discountAmt;
+        }
+
+        // Ensure discount doesn't exceed base price
+        discountAmount = Math.min(discountAmount, basePrice);
         finalPrice = Math.max(0, basePrice - discountAmount);
+
+        discountCodeId = discount.codeId;
+        discountDetails = {
+          code: discount.code,
+          type: discount.discountType,
+          value:
+            discount.discountType === "PERCENTAGE"
+              ? discount.discountPct
+              : discount.discountAmt,
+          maxDiscount: discount.maxDiscount,
+          amountSaved: discountAmount,
+        };
       }
 
       const qrCode = this.generateQRCode();
@@ -165,7 +194,7 @@ export class TicketService {
             message: "Free ticket issued successfully",
             pricing: {
               basePrice,
-              discountApplied: discountPercentage,
+              discount: discountDetails,
               discountAmount,
               finalPrice,
             },
@@ -183,7 +212,7 @@ export class TicketService {
           eventId: ticketType.eventId,
           userId,
           discountCode: discountCode || null,
-          discountApplied: discountPercentage,
+          discountAmount: discountAmount.toString(),
         },
       });
 
@@ -194,7 +223,7 @@ export class TicketService {
           event: ticketType.event,
           pricing: {
             basePrice,
-            discountApplied: discountPercentage,
+            discount: discountDetails,
             discountAmount,
             finalPrice,
           },
