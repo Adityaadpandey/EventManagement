@@ -66,11 +66,11 @@ export class TicketService {
         const now = new Date();
 
         // Check if discount is active
-        if (now < discount.validFrom) {
+        if (discount.validFrom && now < discount.validFrom) {
           return { error: "This discount code is not yet active" };
         }
 
-        if (now > discount.validTo) {
+        if (discount.validTo && now > discount.validTo) {
           return { error: "This discount code has expired" };
         }
 
