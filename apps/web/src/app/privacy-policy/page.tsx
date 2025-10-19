@@ -51,7 +51,6 @@ export default function PrivacyPolicy() {
             content="Tixin, privacy policy, data protection, cookies, personal information, event tickets"
           />
           <meta name="robots" content="index, follow" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
           <link rel="canonical" href="https://www.tixin.com/privacy-policy" />
         </Head>
 

@@ -59,16 +59,16 @@ const EventCard: React.FC<EventCardProps> = memo(
     return (
       <Superellipse
         style={{ width: "100%", height: "auto" }}
-        r1={0.01}
-        r2={0.13}
+        r1={0.02}
+        r2={0.1}
       >
-        <div className="flex flex-col gap-1 p-1 pb-2 bg-white md:rounded-[28px] rounded-2xl md:w-[36.25vw] max-w-[522px] w-[91.8vw]">
+        <div className="flex flex-col gap-1 p-1 pb-2 bg-white  md:w-[36.25vw] max-w-[522px] w-[91.8vw]">
           <Superellipse
             style={{ width: "100%", height: "auto" }}
-            r1={0.01}
-            r2={0.13}
+            r1={0.02}
+            r2={0.1}
           >
-            <div className="md:h-[20.069vw] h-[50.256vw] md:rounded-3xl rounded-xl overflow-hidden">
+            <div className="md:h-[20.069vw] h-[50.256vw] overflow-hidden">
               <Image
                 src={imageUrl}
                 alt={`${title} event image`}

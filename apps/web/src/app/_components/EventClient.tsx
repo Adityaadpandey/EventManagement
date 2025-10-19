@@ -18,6 +18,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
+import SuperEllipse, { SuperEllipseImg } from "react-superellipse";
+import useIsMobile from "../hooks/useIsMobile";
 
 type TicketType = {
   ticketTypeId: string;
@@ -115,6 +118,8 @@ export default function EventClient({
   const [resendTimer, setResendTimer] = useState<number>(0);
 
   const isAuthenticated = Boolean(token && me);
+
+  const isMobile = useIsMobile();
 
   // Cleanup on unmount
   useEffect(() => {
@@ -806,78 +811,98 @@ export default function EventClient({
         Event Details
       </Link>
 
-      <div className="flex gap-6 md:flex-row flex-col w-fit">
+      <div className="flex gap-3 md:gap-6 md:flex-row flex-col w-fit">
         <div className="space-y-5">
-          <div className="relative md:w-[36.319vw] md:h-[36.319vw] w-[91.794vw] h-[91.794vw] md:rounded-[1.3888888vw] rounded-[5.128vw] overflow-hidden bg-zinc-300">
-            {ev.banner_square || ev.banner_horizontal ? (
-              <img
-                src={ev.banner_square || ev.banner_horizontal!}
-                alt={ev.title}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-zinc-500">
-                No image
-              </div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-          </div>
+          <SuperEllipse
+            style={{ width: "100%", height: "auto" }}
+            r1={isMobile ? 0.018 : 0.01}
+            r2={isMobile ? 0.1 : 0.06}
+          >
+            <div className="relative md:w-[36.319vw] md:h-[36.319vw] w-[91.794vw] h-[91.794vw] overflow-hidden bg-zinc-300">
+              {ev.banner_square || ev.banner_horizontal ? (
+                <Image
+                  src={ev.banner_square || ev.banner_horizontal!}
+                  alt={ev.title}
+                  layout="fill"
+                  objectFit="cover"
+                  className="absolute inset-0"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-zinc-500">
+                  No image
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            </div>
+          </SuperEllipse>
         </div>
 
         <aside className="md:w-full max-w-[92vw] space-y-4 overflow-hidden">
-          <div className="flex flex-col gap-4 bg-white md:rounded-[1.3888888vw] rounded-[20px] py-5 px-4">
-            <h1 className="text-3xl font-semibold leading-none md:max-w-[464px] w-[80%]">
-              {ev.title}
-            </h1>
+          <SuperEllipse
+            style={{ width: "100%", height: "auto" }}
+            r1={isMobile ? 0.018 : 0.02}
+            r2={isMobile ? 0.1 : 0.11}
+          >
+            <div className="flex flex-col gap-4 bg-white py-5 px-4">
+              <h1 className="text-3xl font-semibold leading-none md:max-w-[464px] w-[80%]">
+                {ev.title}
+              </h1>
 
-            {ev.chips && ev.chips.length > 0 && (
-              <div className="flex gap-2 flex-wrap">
-                {ev.chips.map((chip, index) => (
-                  <div
-                    key={index}
-                    className="rounded-full text-[12px] py-1 px-2"
-                    style={{
-                      backgroundColor: chipColors[index % chipColors.length],
-                    }}
-                  >
-                    {chip}
+              {ev.chips && ev.chips.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {ev.chips.map((chip, index) => (
+                    <div
+                      key={index}
+                      className="rounded-full text-[12px] py-1 px-2"
+                      style={{
+                        backgroundColor: chipColors[index % chipColors.length],
+                      }}
+                    >
+                      {chip}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="px-6 py-5 bg-[#F5F5F5] md:rounded-[0.833333vw] rounded-xl flex flex-wrap w-full shrink-0 gap-5 justify-between">
+                {ev.date && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <img src="/svgs/calendar.svg" alt="" />
+                    <h6 className="">
+                      {new Date(ev.date).toLocaleDateString(undefined, {
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </h6>
                   </div>
-                ))}
-              </div>
-            )}
+                )}
 
-            <div className="px-6 py-5 bg-[#F5F5F5] md:rounded-[0.833333vw] rounded-xl flex flex-wrap w-full shrink-0 gap-5 justify-between">
-              {ev.date && (
-                <div className="flex items-center gap-2 shrink-0">
-                  <img src="/svgs/calendar.svg" alt="" />
-                  <h6 className="">
-                    {new Date(ev.date).toLocaleDateString(undefined, {
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </h6>
+                <div className="flex gap-2 items-center shrink-0">
+                  <img src="/svgs/clock.svg" alt="" />
+                  <h6>5:00PM to 7:00PM</h6>
                 </div>
-              )}
 
-              <div className="flex gap-2 items-center shrink-0">
-                <img src="/svgs/clock.svg" alt="" />
-                <h6>5:00PM to 7:00PM</h6>
+                {ev.location && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <img src="/svgs/location.svg" alt="" width={16} />
+                    <h6 className="">{ev.location}</h6>
+                  </div>
+                )}
               </div>
-
-              {ev.location && (
-                <div className="flex items-center gap-2 shrink-0">
-                  <img src="/svgs/location.svg" alt="" width={16} />
-                  <h6 className="">{ev.location}</h6>
-                </div>
-              )}
             </div>
-          </div>
+          </SuperEllipse>
 
           {ev.description && (
-            <div className="space-y-4 bg-white px-5 py-4 md:rounded-[1.3888888vw] rounded-xl">
-              <h6>About Event</h6>
-              <ReadMore text={ev.description} maxLength={2240} />
-            </div>
+            <SuperEllipse
+              style={{ width: "100%", height: "auto" }}
+              r1={isMobile ? 0.018 : 0.02}
+              r2={isMobile ? 0.1 : 0.11}
+            >
+              <div className="space-y-4 bg-white px-5 py-4">
+                <h6>About Event</h6>
+                <ReadMore text={ev.description} maxLength={2240} />
+              </div>
+            </SuperEllipse>
           )}
         </aside>
       </div>
@@ -894,7 +919,7 @@ export default function EventClient({
           <h1 className="bricolage-grotesque font-semibold">
             Events you may like
           </h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col md:flex-row gap-4 md:overflow-auto">
             {similarEvents.map((recEvent: any) => (
               <Link
                 key={recEvent.eventId}

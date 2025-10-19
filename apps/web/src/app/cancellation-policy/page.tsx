@@ -51,11 +51,6 @@ export default function CancellationRefundPolicy() {
             content="Tixin, cancellation policy, refund policy, event tickets, customer service"
           />
           <meta name="robots" content="index, follow" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <link
-            rel="canonical"
-            href="https://www.tixin.com/cancellation-policy"
-          />
         </Head>
 
         {/* Navigation Bar */}

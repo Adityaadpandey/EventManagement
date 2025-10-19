@@ -64,6 +64,7 @@ model User {
     TicketScanLog TicketScanLog[]
     Refund        Refund[]
     Notification  Notification[]
+    PushSubscription PushSubscription[]
 
     // INDEXES
     @@index([role]) // Filter users by role
@@ -328,26 +329,36 @@ model TicketScanLog {
 
 
 model DiscountCode {
-    codeId   String @id @default(uuid())
-    eventId  String
-    event    Event  @relation(fields: [eventId], references: [eventId])
-
-    code        String @unique
+    codeId      String   @id @default(uuid())
+    eventId     String
+    event       Event    @relation(fields: [eventId], references: [eventId])
+    code        String   @unique
     description String?
-    discountPct Float
-    maxUses     Int?
-    usesCount   Int     @default(0)
-    validFrom   DateTime
-    validTo     DateTime
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    // Discount configuration
+    discountType DiscountType // PERCENTAGE or FLAT
+    discountPct  Float?       // For percentage discounts (e.g., 50 for 50%)
+    discountAmt  Float?       // For flat discounts (e.g., 100 for ₹100 off)
+    maxDiscount  Float?       // Maximum discount cap (e.g., 50 for max ₹50 off)
+    minOrderAmt  Float?       // Minimum order amount to apply discount
+
+    maxUses      Int?
+    usesCount    Int      @default(0)
+    validFrom    DateTime
+    validTo      DateTime
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
 
     // INDEXES
-    @@index([eventId]) // Codes for specific event
-    @@index([validFrom, validTo]) // Find active codes
-    @@index([code]) // Fast code lookup (already unique, but explicit helps)
-    @@index([eventId, validFrom, validTo]) // Composite: active codes for event
+    @@index([eventId])
+    @@index([validFrom, validTo])
+    @@index([code])
+    @@index([eventId, validFrom, validTo])
+}
+
+enum DiscountType {
+    PERCENTAGE
+    FLAT
 }
 
 
@@ -431,21 +442,48 @@ model Refund {
 }
 
 model Notification {
-    notificationId String   @id @default(uuid())
-    userId         String
-    user           User     @relation(fields: [userId], references: [userId])
+  notificationId String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [userId])
+  title          String
+  message        String
+  link           String?
+  type           String?  @default("info") // info, success, warning, error
+  read           Boolean  @default(false)
+  sent           Boolean  @default(false) // Track if push notification was sent
+  createdAt      DateTime @default(now())
+  readAt         DateTime?
+  sentAt         DateTime? // When push notification was sent
 
-    title   String
-    message String
-    link    String?
+  // INDEXES
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+  @@index([userId, read])
+  @@index([sent]) // Track unsent notifications
+}
 
-    read      Boolean   @default(false)
-    createdAt DateTime  @default(now())
-    readAt    DateTime?
+// New model for storing push subscriptions
+model PushSubscription {
+  subscriptionId String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [userId])
 
-    // INDEXES
-    @@index([userId]) // User's notifications
-    @@index([read]) // Filter read/unread
-    @@index([createdAt]) // Recent notifications
-    @@index([userId, read]) // Composite: user's unread notifications
+  // Push subscription data
+  endpoint       String   @unique
+  p256dh         String   // Encryption key
+  auth           String   // Authentication secret
+
+  // Metadata
+  userAgent      String?  // Browser/device info
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  lastUsedAt     DateTime @default(now())
+
+  // INDEXES
+  @@index([userId])
+  @@index([endpoint])
+  @@index([isActive])
+  @@index([userId, isActive]) // Get user's active subscriptions
 }
