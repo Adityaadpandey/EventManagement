@@ -17,6 +17,7 @@ const customFieldSchema = z.object({
   required: z.boolean({
     message: "Custom field 'required' must be a boolean",
   }),
+  options: z.string().optional().nullable(),
 });
 
 export const createEventSchema = z.object({

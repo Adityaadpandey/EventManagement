@@ -10,12 +10,9 @@ import { errorHandler } from "./middlewares/error.middleware";
 import {
   adminLimiter,
   authLimiter,
-  blockSuspiciousIPs,
-  combinedLimiter,
   heavyOperationLimiter,
 } from "./middlewares/rate-limit.middleware";
 import { reqMiddleware } from "./middlewares/req.middleware";
-import { securityMiddleware } from "./middlewares/security.middleware";
 import { adminRouter } from "./routes/v1/admin.router";
 import { authRouter } from "./routes/v1/auth.router";
 import { checkerRouter } from "./routes/v1/checker.router";
@@ -89,13 +86,13 @@ app.use((req, res, next) => {
 });
 
 // DDoS Protection Layer 1: Block known suspicious IPs
-app.use(blockSuspiciousIPs);
+// app.use(blockSuspiciousIPs);
 
 // DDoS Protection Layer 2: Security middleware (attack pattern detection)
-app.use(securityMiddleware);
+// app.use(securityMiddleware);
 
 // DDoS Protection Layer 3: Rate limiting
-app.use(combinedLimiter);
+// app.use(combinedLimiter);
 
 // Request middleware
 app.use(reqMiddleware);
