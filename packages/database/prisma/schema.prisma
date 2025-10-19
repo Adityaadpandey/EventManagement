@@ -344,8 +344,8 @@ model DiscountCode {
 
     maxUses      Int?
     usesCount    Int      @default(0)
-    validFrom    DateTime
-    validTo      DateTime
+    validFrom    DateTime?
+    validTo      DateTime?
     createdAt    DateTime @default(now())
     updatedAt    DateTime @updatedAt
 
