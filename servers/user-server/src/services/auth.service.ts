@@ -64,7 +64,7 @@ class AuthService {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
       // Store with 5-minute TTL
-      await redis.setex(otpKey, 300, otp);
+      await redis.setex(otpKey, 60, otp);
 
       const pipeline = redis.pipeline();
       pipeline.incr(countKey);
