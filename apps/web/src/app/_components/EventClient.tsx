@@ -1,8 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Modal from "@/app/_components/Modal";
 import ReadMore from "@/app/_components/ReadMore";
-import EventCard from "@/app/_components/EventCard";
 import api from "@/lib/api";
 import {
   hydrateSession,
@@ -16,11 +16,16 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef, memo } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import SuperEllipse, { SuperEllipseImg } from "react-superellipse";
+import SuperEllipse from "react-superellipse";
 import useIsMobile from "../hooks/useIsMobile";
+
+const EventCard = dynamic(() => import("@/app/_components/EventCard"), {
+  loading: () => <div className="h-48 bg-gray-200 animate-pulse rounded-lg" />,
+  ssr: false,
+});
 
 type TicketType = {
   ticketTypeId: string;
@@ -60,6 +65,108 @@ type EventClientProps = {
   initialEvent: EventPublic;
 };
 
+const CHIP_COLORS = ["#EBF9FF", "#FFF7CC", "#FFF1EB", "#FFF1EB"];
+const OTP_REGEX = /^\d{6}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
+
+const EventImage = memo(
+  ({ ev, isMobile }: { ev: EventPublic; isMobile: boolean }) => (
+    <SuperEllipse
+      style={{ width: "100%", height: "auto" }}
+      r1={isMobile ? 0.018 : 0.01}
+      r2={isMobile ? 0.1 : 0.06}
+    >
+      <div className="relative md:w-[36.319vw] md:h-[36.319vw] w-[91.794vw] h-[91.794vw] overflow-hidden bg-zinc-300">
+        {ev.banner_square || ev.banner_horizontal ? (
+          <Image
+            src={ev.banner_square || ev.banner_horizontal!}
+            alt={ev.title}
+            fill
+            sizes="(max-width: 768px) 92vw, 36vw"
+            className="object-cover"
+            priority
+            quality={85}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-zinc-500">
+            No image
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+      </div>
+    </SuperEllipse>
+  ),
+);
+EventImage.displayName = "EventImage";
+
+const EventInfo = memo(
+  ({
+    ev,
+    isMobile,
+    chipColors,
+  }: {
+    ev: EventPublic;
+    isMobile: boolean;
+    chipColors: string[];
+  }) => (
+    <SuperEllipse
+      style={{ width: "100%", height: "auto" }}
+      r1={isMobile ? 0.018 : 0.02}
+      r2={isMobile ? 0.1 : 0.11}
+    >
+      <div className="flex flex-col gap-4 bg-white py-5 px-4">
+        <h1 className="text-3xl font-semibold leading-none md:max-w-[464px] w-[80%]">
+          {ev.title}
+        </h1>
+
+        {ev.chips?.length > 0 && (
+          <div className="flex gap-2 flex-wrap">
+            {ev.chips.map((chip, index) => (
+              <div
+                key={index}
+                className="rounded-full text-[12px] py-1 px-2"
+                style={{
+                  backgroundColor: chipColors[index % chipColors.length],
+                }}
+              >
+                {chip}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="px-6 py-5 bg-[#F5F5F5] md:rounded-[0.833333vw] rounded-xl flex flex-wrap w-full shrink-0 gap-5 justify-between">
+          {ev.date && (
+            <div className="flex items-center gap-2 shrink-0">
+              <img src="/svgs/calendar.svg" alt="" width={20} height={20} />
+              <h6>
+                {new Date(ev.date).toLocaleDateString(undefined, {
+                  month: "long",
+                  day: "numeric",
+                })}
+              </h6>
+            </div>
+          )}
+
+          <div className="flex gap-2 items-center shrink-0">
+            <img src="/svgs/clock.svg" alt="" width={20} height={20} />
+            <h6>5:00PM to 7:00PM</h6>
+          </div>
+
+          {ev.location && (
+            <div className="flex items-center gap-2 shrink-0 w-full text-wrap">
+              <img src="/svgs/location.svg" alt="" width={16} height={16} />
+              <h6 className="!leading-[120%]">{ev.location}</h6>
+            </div>
+          )}
+        </div>
+      </div>
+    </SuperEllipse>
+  ),
+);
+EventInfo.displayName = "EventInfo";
+
 export default function EventClient({
   eventId,
   initialEvent,
@@ -69,31 +176,22 @@ export default function EventClient({
   const razorpayLoadingRef = useRef(false);
   const mountedRef = useRef(true);
 
-  // Auth state
   const {
     user: me,
     token,
     otpSent,
     loading: authLoading,
-    error: authError,
     hydrated,
   } = useAppSelector((s) => s.auth);
 
-  // Event state
-  const {
-    byId,
-    loadingId,
-    error: eventsError,
-  } = useAppSelector((s) => s.events.details);
+  const { byId, loadingId } = useAppSelector((s) => s.events.details);
   const ev = (byId[eventId] as EventPublic | undefined) || initialEvent;
-  const loadingEvent = loadingId === eventId && !initialEvent;
 
-  // List state for recommendations
   const { items: allEvents, loading: listLoading } = useAppSelector(
     (s) => s.events.list,
   );
 
-  // Modal & booking state
+  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalStep, setModalStep] = useState<number>(0);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
@@ -104,9 +202,6 @@ export default function EventClient({
   const [discountCode, setDiscountCode] = useState<string>("");
   const [countryCode, setCountryCode] = useState("91");
 
-  const chipColors = ["#EBF9FF", "#FFF7CC", "#FFF1EB", "#FFF1EB"];
-
-  // Auth form state
   const [authForm, setAuthForm] = useState({
     name: "",
     identifier: "",
@@ -118,10 +213,8 @@ export default function EventClient({
   const [resendTimer, setResendTimer] = useState<number>(0);
 
   const isAuthenticated = Boolean(token && me);
-
   const isMobile = useIsMobile();
 
-  // Cleanup on unmount
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -129,115 +222,235 @@ export default function EventClient({
     };
   }, []);
 
-  // Helper to get unique words from text
-  const getWords = useCallback((text: string | null | undefined): string[] => {
-    if (!text) return [];
-    return [
-      ...new Set(
+  const STOP_WORDS = new Set([
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "from",
+    "as",
+    "is",
+    "was",
+    "are",
+    "been",
+    "be",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "could",
+    "should",
+    "may",
+    "might",
+    "can",
+    "this",
+    "that",
+    "these",
+    "those",
+  ]);
+
+  const getWords = useCallback(
+    (text: string | null | undefined): Set<string> => {
+      if (!text) return new Set();
+
+      return new Set(
         text
           .toLowerCase()
+          .replace(/[^\w\s]/g, " ")
           .split(/\s+/)
-          .filter((w) => w.length > 2),
-      ),
-    ];
-  }, []);
-
-  // Jaccard similarity function
-  const jaccardSimilarity = useCallback(
-    (setA: Set<string>, setB: Set<string>): number => {
-      if (setA.size === 0 && setB.size === 0) return 0;
-      const intersection = new Set([...setA].filter((x) => setB.has(x)));
-      const unionSize = setA.size + setB.size - intersection.size;
-      return unionSize === 0 ? 0 : intersection.size / unionSize;
+          .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
+          .map((w) => {
+            return w.replace(/ing$|ed$|s$/, "").replace(/ies$/, "y");
+          }),
+      );
     },
     [],
   );
 
-  // Calculate similar events
+  const jaccardSimilarity = useCallback(
+    (setA: Set<string>, setB: Set<string>): number => {
+      if (setA.size === 0 || setB.size === 0) return 0;
+
+      const intersection = new Set([...setA].filter((x) => setB.has(x)));
+      const union = new Set([...setA, ...setB]);
+
+      return intersection.size / union.size;
+    },
+    [],
+  );
+
+  const cosineSimilarity = useCallback(
+    (setA: Set<string>, setB: Set<string>): number => {
+      if (setA.size === 0 || setB.size === 0) return 0;
+
+      const intersection = new Set([...setA].filter((x) => setB.has(x)));
+      const denominator = Math.sqrt(setA.size * setB.size);
+
+      return denominator === 0 ? 0 : intersection.size / denominator;
+    },
+    [],
+  );
+
   const similarEvents = useMemo(() => {
     if (!ev || !allEvents || allEvents.length === 0) return [];
 
-    const currentTags = [...(ev.chips || []), ...(ev.tags || [])];
+    const currentTags = new Set(
+      [...(ev.chips || []), ...(ev.tags || [])].map((t) =>
+        t.toLowerCase().trim(),
+      ),
+    );
     const currentTitleWords = getWords(ev.title);
     const currentDescWords = getWords(ev.description);
 
-    const currentTagSet = new Set(currentTags.map((t) => t.toLowerCase()));
-    const currentTitleSet = new Set(currentTitleWords);
-    const currentDescSet = new Set(currentDescWords);
+    const currentAllWords = new Set([
+      ...currentTitleWords,
+      ...currentDescWords,
+      ...currentTags,
+    ]);
 
-    return allEvents
+    const scoredEvents = allEvents
       .filter((event: any) => event.eventId !== eventId)
       .map((event: any) => {
-        const eventTags = [...(event.chips || []), ...(event.tags || [])];
+        const eventTags = new Set(
+          [...(event.chips || []), ...(event.tags || [])].map((t) =>
+            t.toLowerCase().trim(),
+          ),
+        );
         const eventTitleWords = getWords(event.title);
         const eventDescWords = getWords(event.description);
+        const eventAllWords = new Set([
+          ...eventTitleWords,
+          ...eventDescWords,
+          ...eventTags,
+        ]);
 
-        const eventTagSet = new Set(eventTags.map((t) => t.toLowerCase()));
-        const eventTitleSet = new Set(eventTitleWords);
-        const eventDescSet = new Set(eventDescWords);
+        const tagJaccard = jaccardSimilarity(currentTags, eventTags);
+        const tagCosine = cosineSimilarity(currentTags, eventTags);
+        const tagScore = 0.7 * tagJaccard + 0.3 * tagCosine;
 
-        const tagScore = jaccardSimilarity(currentTagSet, eventTagSet);
-        const titleScore = jaccardSimilarity(currentTitleSet, eventTitleSet);
-        const descScore = jaccardSimilarity(currentDescSet, eventDescSet);
+        const titleJaccard = jaccardSimilarity(
+          currentTitleWords,
+          eventTitleWords,
+        );
+        const titleCosine = cosineSimilarity(
+          currentTitleWords,
+          eventTitleWords,
+        );
+        const titleScore = 0.6 * titleJaccard + 0.4 * titleCosine;
 
-        const score = 0.5 * tagScore + 0.3 * descScore + 0.2 * titleScore;
+        const descJaccard = jaccardSimilarity(currentDescWords, eventDescWords);
+        const descCosine = cosineSimilarity(currentDescWords, eventDescWords);
+        const descScore = 0.5 * descJaccard + 0.5 * descCosine;
 
-        return { event, score };
+        const overallScore = cosineSimilarity(currentAllWords, eventAllWords);
+
+        const exactTagMatches = [...currentTags].filter((t) =>
+          eventTags.has(t),
+        ).length;
+        const exactTagBonus =
+          currentTags.size > 0
+            ? (exactTagMatches / currentTags.size) * 0.15
+            : 0;
+
+        const locationBonus =
+          ev.location &&
+          event.location &&
+          ev.location.toLowerCase() === event.location.toLowerCase()
+            ? 0.1
+            : 0;
+
+        const finalScore =
+          0.4 * tagScore +
+          0.25 * titleScore +
+          0.2 * descScore +
+          0.15 * overallScore +
+          exactTagBonus +
+          locationBonus;
+
+        return {
+          event,
+          score: finalScore,
+          // Debug info
+          breakdown: {
+            tagScore: tagScore.toFixed(3),
+            titleScore: titleScore.toFixed(3),
+            descScore: descScore.toFixed(3),
+            overallScore: overallScore.toFixed(3),
+            exactTagBonus: exactTagBonus.toFixed(3),
+            locationBonus: locationBonus.toFixed(3),
+          },
+        };
       })
-      .filter(({ score }) => score > 0.1)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 6)
+      .filter(({ score }) => score > 0.05)
+      .sort((a, b) => {
+        if (Math.abs(b.score - a.score) > 0.001) {
+          return b.score - a.score;
+        }
+        if (a.event.date && b.event.date) {
+          return (
+            new Date(a.event.date).getTime() - new Date(b.event.date).getTime()
+          );
+        }
+        return 0;
+      })
+      .slice(0, 10)
       .map(({ event }) => event);
-  }, [ev, allEvents, eventId, getWords, jaccardSimilarity]);
 
-  // Store initial event in Redux
+    return scoredEvents;
+  }, [ev, allEvents, eventId, getWords, jaccardSimilarity, cosineSimilarity]);
+
   useEffect(() => {
     if (initialEvent && !byId[eventId]) {
-      dispatch(fetchEventDetails({ eventId }));
+      const timer = setTimeout(() => {
+        dispatch(fetchEventDetails({ eventId }));
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [dispatch, eventId, initialEvent, byId]);
 
-  // Fetch public events for recommendations
   useEffect(() => {
     if (ev && allEvents.length === 0 && !listLoading) {
-      dispatch(fetchPublicEvents({ page: 1, limit: 20 }));
+      const timer = setTimeout(() => {
+        dispatch(fetchPublicEvents({ page: 1, limit: 20 }));
+      }, 1000);
+      return () => clearTimeout(timer);
     }
   }, [dispatch, ev, allEvents.length, listLoading]);
 
-  // Hydrate session
   useEffect(() => {
     if (!hydrated) {
       dispatch(hydrateSession());
     }
   }, [hydrated, dispatch]);
 
-  // Auto-fill form when modal opens and user is authenticated
   useEffect(() => {
     if (modalOpen && me && isAuthenticated) {
       let phoneNumber = "";
       let extractedCountryCode = "91";
 
       if (me.phone) {
-        let phone = me.phone;
+        let phone = me.phone.startsWith("+") ? me.phone.substring(1) : me.phone;
 
-        if (phone.startsWith("+")) {
-          phone = phone.substring(1);
-
-          if (phone.startsWith("91") && phone.length === 12) {
-            extractedCountryCode = "91";
-            phoneNumber = phone.substring(2);
-          } else if (phone.startsWith("1") && phone.length === 11) {
-            extractedCountryCode = "1";
-            phoneNumber = phone.substring(1);
-          } else {
-            const match = phone.match(/^(\d{1,3})(\d{10})$/);
-            if (match) {
-              extractedCountryCode = match[1];
-              phoneNumber = match[2];
-            } else {
-              phoneNumber = phone;
-            }
-          }
+        if (phone.startsWith("91") && phone.length === 12) {
+          extractedCountryCode = "91";
+          phoneNumber = phone.substring(2);
+        } else if (phone.startsWith("1") && phone.length === 11) {
+          extractedCountryCode = "1";
+          phoneNumber = phone.substring(1);
         } else if (phone.length > 10) {
           extractedCountryCode = phone.substring(0, phone.length - 10);
           phoneNumber = phone.substring(phone.length - 10);
@@ -256,35 +469,22 @@ export default function EventClient({
     }
   }, [modalOpen, me, isAuthenticated]);
 
-  // Auto-select most expensive ticket
   useEffect(() => {
-    if (modalOpen && ev?.TicketType && ev.TicketType.length > 0) {
-      if (!selectedTicketId) {
-        const sortedTickets = [...ev.TicketType].sort(
-          (a, b) => b.price - a.price,
-        );
-        const topTicket = sortedTickets[0];
-        if (topTicket) {
-          setSelectedTicketId(topTicket.ticketTypeId);
-          setSelectedQuantity(1);
-        }
+    if (modalOpen && ev?.TicketType?.length > 0 && !selectedTicketId) {
+      const topTicket = [...ev.TicketType].sort((a, b) => b.price - a.price)[0];
+      if (topTicket) {
+        setSelectedTicketId(topTicket.ticketTypeId);
+        setSelectedQuantity(1);
       }
     }
   }, [modalOpen, ev?.TicketType, selectedTicketId]);
 
-  // Resend timer countdown
   useEffect(() => {
     if (!otpSent || resendTimer <= 0) return;
-    const id = window.setInterval(() => {
-      setResendTimer((t) => {
-        if (t <= 1) {
-          window.clearInterval(id);
-          return 0;
-        }
-        return t - 1;
-      });
+    const id = setInterval(() => {
+      setResendTimer((t) => (t <= 1 ? 0 : t - 1));
     }, 1000);
-    return () => window.clearInterval(id);
+    return () => clearInterval(id);
   }, [otpSent, resendTimer]);
 
   const selectedTicket = useMemo(
@@ -293,7 +493,6 @@ export default function EventClient({
     [ev, selectedTicketId],
   );
 
-  // Load Razorpay script
   const loadRazorpay = useCallback((): Promise<void> => {
     return new Promise((resolve, reject) => {
       if (typeof window === "undefined") {
@@ -303,7 +502,6 @@ export default function EventClient({
         return resolve();
       }
       if (razorpayLoadingRef.current) {
-        // Already loading, wait for it
         const checkInterval = setInterval(() => {
           if ((window as any).Razorpay) {
             clearInterval(checkInterval);
@@ -315,7 +513,7 @@ export default function EventClient({
 
       razorpayLoadingRef.current = true;
       const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.src = RAZORPAY_SCRIPT_URL;
       script.async = true;
       script.onload = () => {
         razorpayLoadingRef.current = false;
@@ -329,7 +527,6 @@ export default function EventClient({
     });
   }, []);
 
-  // Format currency
   const fmtCurrency = useCallback(
     (amountInPaise: number) =>
       new Intl.NumberFormat("en-IN", {
@@ -339,7 +536,6 @@ export default function EventClient({
     [],
   );
 
-  // Auth form handlers
   const onAuthChange = useCallback(
     (k: keyof typeof authForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setAuthForm((s) => ({ ...s, [k]: e.target.value }));
@@ -361,9 +557,7 @@ export default function EventClient({
       return;
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
       setLocalAuthMsg("Please enter a valid email address.");
       return;
     }
@@ -392,7 +586,7 @@ export default function EventClient({
         return;
       }
 
-      if (otpToUse.length !== 6 || !/^\d{6}$/.test(otpToUse)) {
+      if (!OTP_REGEX.test(otpToUse)) {
         setLocalAuthMsg("OTP must be exactly 6 digits.");
         return;
       }
@@ -453,7 +647,6 @@ export default function EventClient({
     }
   }, [authForm.identifier, resendTimer, dispatch]);
 
-  // Modal actions
   const openModal = useCallback(() => {
     setModalOpen(true);
     setModalStep(0);
@@ -506,18 +699,12 @@ export default function EventClient({
     if (!token) return;
 
     const payload: any = {};
-
     const trimmedName = authForm.name?.trim();
     const trimmedEmail = authForm.identifier?.trim();
     const trimmedPhone = authForm.phone?.trim();
 
-    if (!me?.name && trimmedName) {
-      payload.name = trimmedName;
-    }
-
-    if (!me?.email && trimmedEmail) {
-      payload.email = trimmedEmail;
-    }
+    if (!me?.name && trimmedName) payload.name = trimmedName;
+    if (!me?.email && trimmedEmail) payload.email = trimmedEmail;
 
     if (trimmedPhone) {
       const fullPhone = `+${countryCode}${trimmedPhone.replace(/\D/g, "")}`;
@@ -526,21 +713,14 @@ export default function EventClient({
       }
     }
 
-    if (Object.keys(payload).length === 0) {
-      return;
-    }
+    if (Object.keys(payload).length === 0) return;
 
     try {
       await api.patch("/user/profile", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       await dispatch(hydrateSession());
     } catch (err: any) {
-      console.error(
-        "Failed to patch profile:",
-        err?.response?.data || err?.message || err,
-      );
       throw new Error("Failed to update profile. Please try again.");
     }
   }, [token, authForm, countryCode, me, dispatch]);
@@ -566,7 +746,6 @@ export default function EventClient({
       return;
     }
 
-    // Validate required custom fields
     if (ev?.CustomField) {
       for (const f of ev.CustomField) {
         if (f.required && !attendee[f.label]?.trim()) {
@@ -609,7 +788,6 @@ export default function EventClient({
       }
 
       const config = { headers: { Authorization: `Bearer ${token}` } };
-
       const res = await api.post("/ticket/buy", payload, config);
 
       const data = res.data?.data || res.data;
@@ -765,19 +943,14 @@ export default function EventClient({
     router,
   ]);
 
-  if (eventsError)
-    return (
-      <div className="p-6 text-red-500" role="alert">
-        {eventsError}
-      </div>
-    );
-  if (!ev)
+  if (!ev) {
     return (
       <div className="p-6 text-zinc-400">Event not found or unavailable</div>
     );
+  }
 
   const minPrice =
-    ev.TicketType && ev.TicketType.length > 0
+    ev.TicketType?.length > 0
       ? Math.min(...ev.TicketType.map((t) => t.price))
       : 0;
 
@@ -812,85 +985,19 @@ export default function EventClient({
       </Link>
 
       <div className="flex gap-3 md:gap-6 md:flex-row flex-col w-fit">
-        <div className="space-y-5">
-          <SuperEllipse
-            style={{ width: "100%", height: "auto" }}
-            r1={isMobile ? 0.018 : 0.01}
-            r2={isMobile ? 0.1 : 0.06}
-          >
-            <div className="relative md:w-[36.319vw] md:h-[36.319vw] w-[91.794vw] h-[91.794vw] overflow-hidden bg-zinc-300">
-              {ev.banner_square || ev.banner_horizontal ? (
-                <Image
-                  src={ev.banner_square || ev.banner_horizontal!}
-                  alt={ev.title}
-                  layout="fill"
-                  objectFit="cover"
-                  className="absolute inset-0"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-zinc-500">
-                  No image
-                </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+        <div className="md:space-y-5">
+          <EventImage ev={ev} isMobile={isMobile} />
+
+          {ev.lister?.bio && (
+            <div className="mt-4 md:max-w-[523px] space-y-2 flex-wrap hidden md:block">
+              <h5>About Organiser</h5>
+              <ReadMore text={ev.lister.bio} maxLength={328} />
             </div>
-          </SuperEllipse>
+          )}
         </div>
 
         <aside className="md:w-full max-w-[92vw] space-y-4 overflow-hidden">
-          <SuperEllipse
-            style={{ width: "100%", height: "auto" }}
-            r1={isMobile ? 0.018 : 0.02}
-            r2={isMobile ? 0.1 : 0.11}
-          >
-            <div className="flex flex-col gap-4 bg-white py-5 px-4">
-              <h1 className="text-3xl font-semibold leading-none md:max-w-[464px] w-[80%]">
-                {ev.title}
-              </h1>
-
-              {ev.chips && ev.chips.length > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                  {ev.chips.map((chip, index) => (
-                    <div
-                      key={index}
-                      className="rounded-full text-[12px] py-1 px-2"
-                      style={{
-                        backgroundColor: chipColors[index % chipColors.length],
-                      }}
-                    >
-                      {chip}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="px-6 py-5 bg-[#F5F5F5] md:rounded-[0.833333vw] rounded-xl flex flex-wrap w-full shrink-0 gap-5 justify-between">
-                {ev.date && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    <img src="/svgs/calendar.svg" alt="" />
-                    <h6 className="">
-                      {new Date(ev.date).toLocaleDateString(undefined, {
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </h6>
-                  </div>
-                )}
-
-                <div className="flex gap-2 items-center shrink-0">
-                  <img src="/svgs/clock.svg" alt="" />
-                  <h6>5:00PM to 7:00PM</h6>
-                </div>
-
-                {ev.location && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    <img src="/svgs/location.svg" alt="" width={16} />
-                    <h6 className="">{ev.location}</h6>
-                  </div>
-                )}
-              </div>
-            </div>
-          </SuperEllipse>
+          <EventInfo ev={ev} isMobile={isMobile} chipColors={CHIP_COLORS} />
 
           {ev.description && (
             <SuperEllipse
@@ -899,20 +1006,20 @@ export default function EventClient({
               r2={isMobile ? 0.1 : 0.11}
             >
               <div className="space-y-4 bg-white px-5 py-4">
-                <h6>About Event</h6>
+                <h4>About Event</h4>
                 <ReadMore text={ev.description} maxLength={2240} />
               </div>
             </SuperEllipse>
           )}
+
+          {ev.lister?.bio && (
+            <div className="mt-4 md:max-w-[523px] space-y-2 flex-wrap md:hidden">
+              <h4>About Organiser</h4>
+              <ReadMore text={ev.lister.bio} maxLength={328} />
+            </div>
+          )}
         </aside>
       </div>
-
-      {ev.lister?.bio && (
-        <div className="mt-4 md:w-[523px] space-y-2">
-          <h5>About Organiser</h5>
-          <ReadMore text={ev.lister.bio} maxLength={328} />
-        </div>
-      )}
 
       {similarEvents.length > 0 && (
         <div className="mt-8 space-y-4">
@@ -932,7 +1039,7 @@ export default function EventClient({
                   location={recEvent.location}
                   date={recEvent.date}
                   price={
-                    recEvent.TicketType && recEvent.TicketType.length > 0
+                    recEvent.TicketType?.length > 0
                       ? Math.min(
                           ...recEvent.TicketType.map((t: any) => t.price),
                         )
@@ -974,7 +1081,7 @@ export default function EventClient({
             />
           </motion.div>
           <div className="flex justify-center items-center gap-2">
-            <img src="/svgs/ticket.svg" alt="" />
+            <img src="/svgs/ticket.svg" alt="" width={24} height={24} />
             <h2 className="z-10">Book Ticket</h2>
           </div>
         </button>
