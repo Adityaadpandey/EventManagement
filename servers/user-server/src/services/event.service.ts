@@ -197,7 +197,8 @@ export class EventService {
     limit = 10,
     longitude?: number,
     latitude?: number,
-    includeGlobalEvents = true, // New parameter to control global events
+    includeGlobalEvents = true,
+    includeAll = false,
   ) {
     limit = Math.min(Number(limit) || 10, 100);
 
@@ -212,11 +213,11 @@ export class EventService {
       longitude >= -180 &&
       longitude <= 180;
 
-    // Enhanced cache key with global events flag
+    // Enhanced cache key with global events flag and includeAll flag
     const locationKey = hasValidLocation
       ? `${latitude!.toFixed(3)}_${longitude!.toFixed(3)}_${includeGlobalEvents}`
       : "all";
-    const cacheKey = `public-events:v2:${locationKey}:${cursor || "first"}:${limit}`;
+    const cacheKey = `public-events:v2:${locationKey}:${cursor || "first"}:${limit}:${includeAll}`;
 
     try {
       // 1. Try cache first
@@ -235,6 +236,63 @@ export class EventService {
           gte: new Date(), // Only future events
         },
       };
+
+      // If includeAll is true, fetch all events without location filtering
+      if (includeAll) {
+        const allEvents = await prisma.event.findMany({
+          where: baseWhere,
+          take: limit + 1, // Fetch one extra to determine if there's a next page
+          ...(cursor && {
+            cursor: { eventId: cursor },
+            skip: 1,
+          }),
+          orderBy: [{ date: "asc" }, { eventId: "asc" }],
+          select: this.getEventSelectFields(),
+        });
+
+        const hasNextPage = allEvents.length > limit;
+        const paginatedEvents = allEvents.slice(0, limit);
+        const nextCursor =
+          hasNextPage && paginatedEvents.length > 0
+            ? paginatedEvents[paginatedEvents.length - 1].eventId
+            : null;
+
+        const enhancedEvents = paginatedEvents.map((event) => ({
+          ...event,
+          isGlobalEvent: event.latitude === null || event.longitude === null,
+          minPrice: Math.min(...event.TicketType.map((t: any) => t.price)),
+          maxPrice: Math.max(...event.TicketType.map((t: any) => t.price)),
+          totalTickets: event.TicketType.reduce(
+            (sum: number, t: any) => sum + t.quantity,
+            0,
+          ),
+          formattedDate: new Date(event.date).toLocaleDateString(),
+          formattedTime: new Date(event.time).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        }));
+
+        const result = {
+          events: enhancedEvents,
+          nextCursor,
+          hasNextPage,
+          metadata: {
+            totalReturned: enhancedEvents.length,
+            locationBasedCount: 0,
+            globalEventsCount: 0,
+            searchLocation: null,
+            radiusKm: null,
+            includeAll: true,
+          },
+        };
+
+        await redis.set(cacheKey, JSON.stringify(result), "EX", 120);
+        logger.info(
+          `Returning all ${result.events.length} events (includeAll=true)`,
+        );
+        return result;
+      }
 
       let locationEvents: any[] = [];
       let globalEvents: any[] = [];
