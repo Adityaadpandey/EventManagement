@@ -463,7 +463,6 @@ model Notification {
   @@index([sent]) // Track unsent notifications
 }
 
-// New model for storing push subscriptions
 model PushSubscription {
   subscriptionId String   @id @default(uuid())
   userId         String

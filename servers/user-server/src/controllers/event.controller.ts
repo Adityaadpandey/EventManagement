@@ -52,6 +52,8 @@ export class EventController {
       // New parameter to control whether to include global events
       const includeGlobalEvents = req.query.includeGlobal !== "false"; // Default true
 
+      const includeAll = req.query.includeAll === "true"; // Default false
+
       if (limit <= 0) {
         return sendError(res, "Limit must be a positive integer", 400);
       }
@@ -82,6 +84,7 @@ export class EventController {
         longitude,
         latitude,
         includeGlobalEvents,
+        includeAll,
       );
 
       return sendSuccess(
