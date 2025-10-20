@@ -15,12 +15,12 @@ const ReadMore: React.FC<ReadMoreProps> = ({ text, maxLength = 300 }) => {
     expanded || !isLongText ? text : text.slice(0, maxLength) + "...";
 
   return (
-    <p className="text-[#8B8B8B]">
+    <p className="text-[#8B8B8B] !tracking-[-0.28px] !leading-[140%]">
       {displayText}
       {isLongText && (
         <span
           onClick={() => setExpanded(!expanded)}
-          className="cursor-pointer ml-1 hover:underline font-bold"
+          className="cursor-pointer ml-1 hover:underline font-semibold !text-xs"
         >
           {expanded ? "Read less" : "Read more"}
         </span>

@@ -1,7 +1,9 @@
 import React, { useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { StepBreadcrumb } from "./StepBreadcrumb";
+import CustomFieldInput from "@/app/_components/CustomFieldInput";
 import OtpInput from "./OtpInput";
+import Image from "next/image";
 
 const stepVariants = {
   initial: { opacity: 0, y: 40, x: 40 },
@@ -296,7 +298,7 @@ const Modal: React.FC<ModalProps> = ({
                       let isGradient = false;
                       let innerClass =
                         "flex items-center justify-between gap-4 p-3 rounded-2xl";
-                      let wrapperClass = "rounded-2xl";
+                      let wrapperClass = "rounded-[18px]";
                       let wrapperStyle: React.CSSProperties | undefined =
                         undefined;
                       let innerStyle: React.CSSProperties | undefined =
@@ -427,7 +429,7 @@ const Modal: React.FC<ModalProps> = ({
                     <input
                       value={authForm.name}
                       onChange={onAuthChange("name")}
-                      className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                      className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-none focus:border-[#FFDA0A]"
                       placeholder="Full name"
                       aria-label="Your name"
                     />
@@ -437,7 +439,7 @@ const Modal: React.FC<ModalProps> = ({
                         type="text"
                         value={`+${countryCode}`}
                         onChange={handleCountryCodeChange}
-                        className="w-[72px] text-center text-black text-base border border-[#E5E5E5] rounded-2xl bg-[#F5F5F5]"
+                        className="w-[72px] text-center text-black text-base border border-[#E5E5E5] rounded-2xl bg-[#F5F5F5] outline-none focus:border-[#FFDA0A]"
                         placeholder="+91"
                         maxLength={4}
                         aria-label="Country code"
@@ -445,7 +447,7 @@ const Modal: React.FC<ModalProps> = ({
                       <input
                         value={authForm.phone}
                         onChange={handlePhoneChange}
-                        className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                        className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-none focus:border-[#FFDA0A]"
                         placeholder="Phone number"
                         type="tel"
                         maxLength={10}
@@ -456,7 +458,7 @@ const Modal: React.FC<ModalProps> = ({
                     <input
                       value={authForm.identifier}
                       onChange={onAuthChange("identifier")}
-                      className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5]"
+                      className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-none focus:border-[#FFDA0A]"
                       placeholder="Email"
                       type="email"
                       aria-label="Email address"
@@ -469,7 +471,7 @@ const Modal: React.FC<ModalProps> = ({
                       <input
                         value={authForm.name}
                         onChange={onAuthChange("name")}
-                        className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
+                        className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-none focus:border-[#FFDA0A]"
                         placeholder="Full name"
                         aria-label="Name"
                       />
@@ -482,7 +484,7 @@ const Modal: React.FC<ModalProps> = ({
                           type="text"
                           value={`+${countryCode}`}
                           onChange={handleCountryCodeChange}
-                          className="w-[72px] text-center text-black text-base border border-[#E5E5E5] rounded-2xl bg-[#F5F5F5] outline-0"
+                          className="w-[72px] text-center text-black text-base border border-[#E5E5E5] rounded-2xl bg-[#F5F5F5] outline-none focus:border-[#FFDA0A]"
                           placeholder="+91"
                           maxLength={4}
                           aria-label="Country code"
@@ -490,7 +492,7 @@ const Modal: React.FC<ModalProps> = ({
                         <input
                           value={authForm.phone}
                           onChange={handlePhoneChange}
-                          className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
+                          className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-none focus:border-[#FFDA0A]"
                           placeholder="Phone number"
                           type="tel"
                           maxLength={10}
@@ -505,7 +507,7 @@ const Modal: React.FC<ModalProps> = ({
                         <input
                           value={authForm.identifier}
                           onChange={onAuthChange("identifier")}
-                          className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
+                          className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-none focus:border-[#FFDA0A]"
                           placeholder="you@example.com"
                           type="email"
                           aria-label="Email"
@@ -541,40 +543,33 @@ const Modal: React.FC<ModalProps> = ({
                 )}
 
                 {ev?.CustomField?.length > 0 && (
-                  <div className="mt-3 space-y-3">
-                    <div className="text-base">Additional info</div>
+                  <div className="mt-6 space-y-4 pt-4 border-t border-[#E5E5E5]">
+                    <div className="text-lg font-medium">
+                      Additional Information
+                    </div>
+                    <p className="text-sm text-[#8B8B8B]">
+                      Please provide the following details to complete your
+                      booking
+                    </p>
+
                     {ev.CustomField.map((cf: any, idx: number) => (
-                      <div key={`${cf.label}-${idx}`} className="space-y-3">
-                        <div className="text-base">
-                          {cf.label}{" "}
+                      <div key={`${cf.label}-${idx}`} className="space-y-2">
+                        <div className="text-base flex items-center gap-1">
+                          {cf.label}
                           {cf.required && (
-                            <span className="text-red-600 text-2xl">*</span>
+                            <span className="text-red-600 text-xl">*</span>
                           )}
                         </div>
-                        <input
+
+                        <CustomFieldInput
+                          cf={cf}
                           value={attendee[cf.label] ?? ""}
-                          onChange={(e) =>
-                            handleAttendeeChange(cf.label, e.target.value)
+                          onChange={(value) =>
+                            handleAttendeeChange(cf.label, value)
                           }
-                          placeholder={cf.fieldType}
-                          className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
-                          aria-label={cf.label}
                         />
                       </div>
                     ))}
-                  </div>
-                )}
-
-                {ev?._count?.DiscountCode > 0 && (
-                  <div className="mt-3 space-y-2">
-                    <div className="text-base">Discount Code (Optional)</div>
-                    <input
-                      value={discountCode}
-                      onChange={(e) => setDiscountCode(e.target.value)}
-                      placeholder="Enter discount code"
-                      className="w-full p-6 text-base border border-[#E5E5E5] text-[#8B8B8B] rounded-2xl bg-[#F5F5F5] outline-0"
-                      aria-label="Discount code"
-                    />
                   </div>
                 )}
               </div>
@@ -613,9 +608,16 @@ const Modal: React.FC<ModalProps> = ({
                 <div className="flex flex-col md:flex-row gap-6 md:items-center bg-[#F7F7F7] p-2 rounded-[28px]">
                   <div className="md:w-[221px] w-full h-[221px] bg-zinc-800 rounded-2xl overflow-hidden flex-shrink-0">
                     {ev?.banner_square || ev?.banner_horizontal ? (
-                      <img
-                        src={ev.banner_square || ev.banner_horizontal}
+                      <Image
+                        src={
+                          ev.banner_square ||
+                          ev.banner_horizontal ||
+                          "/default-image.jpg"
+                        }
                         alt={ev.title || "Event"}
+                        width={200}
+                        height={200}
+                        objectFit="cover"
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -663,9 +665,9 @@ const Modal: React.FC<ModalProps> = ({
                   </div>
                 </div>
 
-                <div className="flex flex-col px-2">
-                  <div className="pt-6 flex flex-col md:flex-row md:justify-between md:items-end gap-8">
-                    <div className="flex flex-col gap-5 w-full md:max-w-[50%] px-3">
+                <div className="flex flex-col px-2 md:h-[42%] pb-7 md:pb-0 mt-6">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-8">
+                    <div className="flex flex-col gap-5 w-full md:max-w-[50%] px-3 h-full">
                       <div className="space-y-1">
                         <p className="text-[#8B8B8B]">Name</p>
                         <p className="text-zinc-900 break-words">
@@ -691,33 +693,45 @@ const Modal: React.FC<ModalProps> = ({
                           {selectedTicket?.price || 0} × {selectedQuantity}
                         </p>
                       </div>
-                      {discountCode && (
-                        <div className="space-y-1">
-                          <p className="text-[#8B8B8B]">Discount Code:</p>
-                          <p className="text-zinc-900">{discountCode}</p>
-                        </div>
-                      )}
                     </div>
 
-                    <div className="flex flex-col gap-3 text-right md:w-[246px]">
-                      <div className="flex justify-between px-2">
-                        <p className="text-[#8B8B8B]">SUB TOTAL</p>
-                        <p className="text-zinc-900">
-                          ₹{(selectedTicket?.price ?? 0) * selectedQuantity}
-                        </p>
-                      </div>
-                      <div className="flex justify-between px-2">
-                        <p className="text-[#8B8B8B]">GST</p>
-                        <p className="text-zinc-900">₹0</p>
-                      </div>
-                      <div className="flex justify-between bg-[#F5F5F5] py-3 px-2 rounded-md m-0">
-                        <h5 className="text-[#8B8B8B]">TOTAL</h5>
-                        <h5>
-                          ₹
-                          {(
-                            (selectedTicket?.price ?? 0) * selectedQuantity
-                          ).toFixed(2)}
-                        </h5>
+                    <div className="flex flex-col gap-8 justify-between h-full">
+                      {ev?._count?.DiscountCode > 0 && (
+                        <div className="relative">
+                          <input
+                            value={discountCode}
+                            onChange={(e) => setDiscountCode(e.target.value)}
+                            placeholder="Have a coupon code?"
+                            className="w-full py-3 px-5 text-xs border border-[#E5E5E5] text-[#8B8B8B] rounded-full outline-0"
+                            aria-label="Discount code"
+                          />
+
+                          <button className="text-[10px] px-3 py-2 bg-[#E5E5E5] rounded-full absolute top-[5px] right-[5px] cursor-pointer">
+                            Apply
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="flex flex-col gap-3 text-right md:w-[246px]">
+                        <div className="flex justify-between px-2">
+                          <p className="text-[#8B8B8B]">SUB TOTAL</p>
+                          <p className="text-zinc-900">
+                            ₹{(selectedTicket?.price ?? 0) * selectedQuantity}
+                          </p>
+                        </div>
+                        <div className="flex justify-between px-2">
+                          <p className="text-[#8B8B8B]">GST</p>
+                          <p className="text-zinc-900">₹0</p>
+                        </div>
+                        <div className="flex justify-between bg-[#F5F5F5] py-3 px-2 rounded-md m-0">
+                          <h5 className="text-[#8B8B8B]">TOTAL</h5>
+                          <h5>
+                            ₹
+                            {(
+                              (selectedTicket?.price ?? 0) * selectedQuantity
+                            ).toFixed(2)}
+                          </h5>
+                        </div>
                       </div>
                     </div>
                   </div>

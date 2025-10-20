@@ -5,23 +5,23 @@ import EventClient from "@/app/_components/EventClient";
 import { getEventDetails } from "@/lib/api/getEventDetails";
 import EventLoading from "./loading";
 
-// Optimized caching strategy
-export const revalidate = 60; // ISR - revalidate every 60 seconds
-export const dynamic = "auto"; // Let Next.js choose the best strategy
-export const fetchCache = "default-cache"; // Cache fetch requests
+// Aggressive caching for better performance
+export const revalidate = 3600; // ISR - revalidate every hour instead of 60s
+export const dynamic = "force-static"; // Force static generation when possible
+export const fetchCache = "force-cache"; // Aggressively cache fetches
 
-// Helper function to strip HTML tags
+// Precompute helper functions (moved outside to avoid recreation)
+const HTML_TAG_REGEX = /<\/?[^>]+(>|$)/g;
+
 function stripHtml(html: string): string {
-  return html.replace(/<\/?[^>]+(>|$)/g, "");
+  return html.replace(HTML_TAG_REGEX, "");
 }
 
-// Helper function to truncate text
 function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength).trim()}...`;
 }
 
-// Helper function to extract keywords
 function extractKeywords(event: any): string[] {
   const categories = Array.isArray(event?.category)
     ? event.category
@@ -29,27 +29,31 @@ function extractKeywords(event: any): string[] {
       ? [event.category]
       : [];
 
-  const locationKeywords = event?.location
-    ? [
-        `events in ${event.location}`,
-        ...categories.map(
-          (cat) => `${cat.toLowerCase()} events in ${event.location}`,
-        ),
-      ]
-    : [];
-
-  return [
+  const keywords = [
     event?.title,
     event?.location,
     "Tixin",
     "book event tickets",
     "events in India",
-    ...categories.flatMap((cat) => [
+  ];
+
+  // Add category keywords
+  for (const cat of categories) {
+    keywords.push(
       `buy ${cat.toLowerCase()} tickets`,
       `${cat.toLowerCase()} events near me`,
-    ]),
-    ...locationKeywords,
-  ].filter(Boolean) as string[];
+    );
+  }
+
+  // Add location-specific keywords
+  if (event?.location) {
+    keywords.push(`events in ${event.location}`);
+    for (const cat of categories) {
+      keywords.push(`${cat.toLowerCase()} events in ${event.location}`);
+    }
+  }
+
+  return keywords.filter(Boolean) as string[];
 }
 
 export async function generateMetadata({
@@ -60,11 +64,11 @@ export async function generateMetadata({
   const { eventId } = await params;
 
   try {
-    // Fetch with timeout for faster failures
+    // Reduced timeout for faster failure
     const event = await Promise.race([
       getEventDetails(eventId),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout")), 3000),
+        setTimeout(() => reject(new Error("Timeout")), 2000),
       ),
     ]);
 
@@ -75,29 +79,20 @@ export async function generateMetadata({
       };
     }
 
-    // Build title efficiently
-    const titleParts = [
+    // Optimized title building
+    const title = [
       event.title,
       event.location && `in ${event.location}`,
       "Tixin",
-    ].filter(Boolean);
-    const title = titleParts.join(" | ");
+    ]
+      .filter(Boolean)
+      .join(" | ");
 
-    // Generate description
-    const cleanDescription = event.description
-      ? stripHtml(event.description)
-      : "";
-    const trimmedDescription = cleanDescription
-      ? truncateText(cleanDescription, 150)
-      : "";
-    const description = trimmedDescription
-      ? `${trimmedDescription} Book your tickets now on Tixin.`
+    // Optimized description
+    const description = event.description
+      ? `${truncateText(stripHtml(event.description), 150)} Book your tickets now on Tixin.`
       : "Discover and book tickets for events near you with Tixin — India's event discovery platform.";
 
-    // Extract keywords
-    const keywords = extractKeywords(event);
-
-    // Determine image URL
     const imageUrl =
       event.banner_square ||
       event.banner_horizontal ||
@@ -108,7 +103,7 @@ export async function generateMetadata({
     return {
       title,
       description,
-      keywords,
+      keywords: extractKeywords(event),
       openGraph: {
         title,
         description,
@@ -140,7 +135,6 @@ export async function generateMetadata({
       },
     };
   } catch (error) {
-    // Fast fail with minimal metadata
     return {
       title: "Event | Tixin",
       description: "Discover and book tickets for events near you with Tixin.",
@@ -156,8 +150,14 @@ export default async function EventPage({
 }) {
   const { eventId } = await params;
 
-  // Fetch event data - this will be cached by Next.js
-  const event = await getEventDetails(eventId);
+  // Fetch event data with error boundary
+  let event;
+  try {
+    event = await getEventDetails(eventId);
+  } catch (error) {
+    console.error("Failed to fetch event:", error);
+    notFound();
+  }
 
   if (!event) {
     notFound();

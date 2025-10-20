@@ -43,7 +43,7 @@ body {
   overflow-y: scroll;
   scrollbar-width: auto; /* Firefox */
   scrollbar-color: #fff4b4 #f1f1f1;
-  padding-right: 20px;
+  padding-right: 10px;
 }
 
 /* WebKit browsers (Chrome, Safari, Edge) */
@@ -218,4 +218,154 @@ span {
 
 .home-skeleton-text3 {
   @apply h-4 w-1/3 bg-zinc-800 rounded;
+}
+
+
+
+/* Custom scrollbar for dropdown */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #d1d1d1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #b1b1b1;
+}
+
+/* Firefox scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d1d1 #f5f5f5;
+}
+
+/* Input number spinner removal (optional) */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Date input styling improvement */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.6);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  filter: invert(0.4);
+}
+
+/* Checkbox custom styling */
+input[type="checkbox"] {
+  cursor: pointer;
+  position: relative;
+}
+
+input[type="checkbox"]:focus {
+  outline: 2px solid rgb(101, 98, 98);
+}
+
+/* Select arrow animation */
+select {
+  transition: all 0.2s ease;
+}
+
+select:hover {
+  border-color: #8b8b8b;
+}
+
+select:focus {
+  border-color: #5450501c;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Placeholder animation */
+input::placeholder,
+textarea::placeholder {
+  transition: opacity 0.2s ease;
+}
+
+input:focus::placeholder,
+textarea:focus::placeholder {
+  opacity: 0.5;
+}
+
+/* Disabled state for all custom field inputs */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #e5e5e5;
+}
+
+/* Loading state (optional) */
+.custom-field-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.custom-field-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 1.5rem;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  border: 2px solid #e5e5e5;
+  border-top-color: #8b8b8b;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  /* Larger touch targets on mobile */
+  input,
+  select,
+  textarea,
+  button {
+    min-height: 48px;
+  }
+  
+  /* Better mobile dropdown */
+  .custom-scrollbar {
+    max-height: 200px !important;
+  }
+}
+
+/* Error state styling (optional - can be added via props) */
+.custom-field-error {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
+}
+
+.custom-field-error:focus {
+  ring-color: rgb(186, 184, 169);
+}
+
+/* Success state styling (optional) */
+.custom-field-success {
+  border-color: #10b981 !important;
+  background-color: #f0fdf4;
 }
