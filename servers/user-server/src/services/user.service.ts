@@ -1,5 +1,6 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { createToken } from "../lib/jwt-token";
 
 export class UserService {
   async getUserProfile(userId: string) {
@@ -17,11 +18,11 @@ export class UserService {
           updatedAt: true,
         },
       });
-
       if (!userProfile) {
         throw new Error("User not found");
       }
-      return userProfile;
+      const token = createToken(userProfile.userId, userProfile.role);
+      return { ...userProfile, token };
     } catch (error: any) {
       logger.error("Error fetching user profile:", error);
       throw new Error("Failed to fetch user profile");
