@@ -27,7 +27,7 @@ export class AdminController {
       return sendSuccess(res, result.message, result.data, 201);
     } catch (error: any) {
       if (error.name === "ZodError") {
-        return sendError(res, error.errors, 400);
+        return sendError(res, error, 400);
       }
       logger.error("Create event error:", error);
       return sendError(res, "Failed to create event", 500, error.message);

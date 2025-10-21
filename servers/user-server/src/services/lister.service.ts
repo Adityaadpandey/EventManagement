@@ -1,5 +1,6 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { setCachedUser } from "../lib/redis-fn";
 
 export class ListerServer {
   async applyForLister(
@@ -30,6 +31,7 @@ export class ListerServer {
           companyName: listerData.companyName,
           companyLogo: listerData.companyLogo,
           bio: listerData.bio,
+          status: "COMPLETED",
         },
         select: {
           listerId: true,
@@ -40,6 +42,17 @@ export class ListerServer {
           status: true,
           createdAt: true,
         },
+      });
+
+      const _ = await prisma.user.update({
+        where: { userId },
+        data: {
+          role: "LISTER",
+        },
+      });
+      await setCachedUser(userId, {
+        ...existingUser,
+        role: "LISTER",
       });
 
       return lister;
