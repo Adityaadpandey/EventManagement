@@ -18,6 +18,11 @@ auth:bearer {
   token: {{token}}
 }
 
+script:post-response {
+  bru.setEnvVar("token",res.body.data.token)
+}
+
 settings {
   encodeUrl: true
+  timeout: 0
 }

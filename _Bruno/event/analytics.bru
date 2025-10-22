@@ -1,12 +1,12 @@
 meta {
-  name: event details public
+  name: analytics
   type: http
-  seq: 6
+  seq: 8
 }
 
 get {
-  url: {{host}}/event/{{eventId}}/public
-  body: json
+  url: {{host}}/event/{{eventId}}/analytics
+  body: none
   auth: inherit
 }
 
