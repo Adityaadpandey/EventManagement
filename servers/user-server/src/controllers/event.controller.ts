@@ -251,4 +251,33 @@ export class EventController {
       return sendError(res, "Failed to update event info", 500, error.message);
     }
   }
+
+  async getAnalytics(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) return sendError(res, "User ID is required", 400);
+
+      const eventId = req.params.eventId;
+      if (!eventId) return sendError(res, "Event ID is required", 400);
+
+      const analytics = await this.eventService.getEventAnalytics(
+        userId,
+        eventId,
+      );
+      return sendSuccess(
+        res,
+        "Event analytics retrieved successfully",
+        analytics,
+        200,
+      );
+    } catch (error: any) {
+      logger.error("Failed to get event analytics:", error);
+      return sendError(
+        res,
+        "Failed to get event analytics",
+        500,
+        error.message,
+      );
+    }
+  }
 }

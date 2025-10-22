@@ -12,47 +12,68 @@ post {
 
 body:json {
   {
-    "title": "The New Event",
-    "description": "Experience Something different",
-    "banner_horizontal": "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGV2ZW50fGVufDB8fDB8fHww",
-    "banner_vertical": "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGV2ZW50fGVufDB8fDB8fHww",
-    "banner_square": "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGV2ZW50fGVufDB8fDB8fHww",
-    "date": "2025-12-25",
-     "chips":[
-     "good questions",
-     "coollll"
-   ],
-     "tags":[
-     "good questions",
-     "coollll"
-   ],
-    "restrictions":"only for the lpu students",
-     "longitude":75.70203220502903,
-    "latitude":31.252046354715333,
-    "time": "2025-12-25T19:30:00Z",
-    "location": "Wembley Stadium, London",
-    "capacity": 90000,
+    "title": "LPU Hackathon 2025",
+    "description": "Join India’s brightest minds at the 36-hour LPU Hackathon 2025! Build, innovate, and pitch your idea to top industry leaders. Exciting prizes, mentorship, and networking await.",
+    "banner_horizontal": "https://imgs.search.brave.com/HypYGwESRTlrHQSVbJNrkYcFGbjYsfNFBVkU0u6FVUE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/ZHJpYmJibGUuY29t/L3VzZXJ1cGxvYWQv/MjIzMzI3OTgvZmls/ZS9vcmlnaW5hbC0x/MTQwODgyMGYzODc3/ZDQ5ZDgzNzk2ZGE3/NTNiYmQ4MC5wbmc_/Zm9ybWF0PXdlYnAm/cmVzaXplPTQwMHgz/MDAmdmVydGljYWw9/Y2VudGVy",
+    "banner_vertical": "https://imgs.search.brave.com/sd96-eBG9qxAjsPHaCJNCeaxXf5lb0FJpnnL_UhFuDU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5nZXR0eWltYWdl/cy5jb20vaWQvMTQz/MjcyNzExNS9waG90/by93b21hbi1wcm9n/cmFtbWluZy1zb2Z0/d2FyZS1jb2Rlcy1v/dmVybmlnaHQuanBn/P3M9NjEyeDYxMiZ3/PTAmaz0yMCZjPU9L/TWVqem1MeGZrekhM/SmVhOGNITzZvTWti/b2VZeVZfSGV5MzBp/Y19JUTA9",
+    "banner_square": "https://imgs.search.brave.com/HypYGwESRTlrHQSVbJNrkYcFGbjYsfNFBVkU0u6FVUE/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/ZHJpYmJibGUuY29t/L3VzZXJ1cGxvYWQv/MjIzMzI3OTgvZmls/ZS9vcmlnaW5hbC0x/MTQwODgyMGYzODc3/ZDQ5ZDgzNzk2ZGE3/NTNiYmQ4MC5wbmc_/Zm9ybWF0PXdlYnAm/cmVzaXplPTQwMHgz/MDAmdmVydGljYWw9/Y2VudGVy",
+    "date": "2025-12-15T00:00:00.000Z",
+    "time": "2025-12-15T10:00:00.000Z",
+    "location": "Lovely Professional University, Phagwara, Punjab, India",
+    "latitude": 31.2554,
+    "longitude": 75.7050,
+    "capacity": 500,
+    "tags": ["Hackathon", "Coding", "Innovation", "Students", "Tech"],
+    "chips": ["On-Campus", "36 Hours", "Teams Allowed", "Free Swags"],
+    "restrictions": "Open only to university students. Teams of 1-4 allowed.",
+  
     "ticketTypes": [
       {
         "name": "General Admission",
-        "description": "Standing area with standard entry",
-        "price": 0.00,
-        "quantity": 40000,
-        "salesCutoff": "2025-12-24T23:59:59Z"
-      }
-  
-    ],
-    "customFields": [
-      
+        "description": "Access to all areas of the hackathon including workshops and mentor support.",
+        "price": 0.0,
+        "quantity": 300,
+        "salesCutoff": "2025-12-10T23:59:59.000Z"
+      },
       {
-        "label": "Contact Number",
+        "name": "Premium Admission",
+        "description": "Includes exclusive swag, access to VIP lounge, and 1-on-1 mentorship session.",
+        "price": 199.0,
+        "discountedPrice": 149.0,
+        "discountReason": "Early Bird Discount",
+        "quantity": 50,
+        "salesCutoff": "2025-12-10T23:59:59.000Z"
+      }
+    ],
+  
+    "customFields": [
+      {
+        "label": "Team Name",
         "fieldType": "text",
         "required": true
       },
       {
-        "label": "Registeration No",
-        "fieldType": "text",
-        "required": true
+        "label": "GitHub Profile",
+        "fieldType": "url",
+        "required": false
+      },
+      {
+        "label": "T-Shirt Size",
+        "fieldType": "dropdown",
+        "required": true,
+        "options": "XS,S,M,L,XL,XXL"
+      },
+      {
+        "label": "Have you participated in a hackathon before?",
+        "fieldType": "radio",
+        "required": false,
+        "options": "Yes,No"
+      },
+      {
+        "label": "Dietary Preference",
+        "fieldType": "dropdown",
+        "required": false,
+        "options": "Vegetarian,Non-Vegetarian,Vegan,Other"
       }
     ]
   }
@@ -61,4 +82,5 @@ body:json {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }
