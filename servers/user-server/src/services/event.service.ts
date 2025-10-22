@@ -118,6 +118,8 @@ export class EventService {
                 eventId: event.eventId,
                 name: ticketType.name,
                 description: ticketType.description,
+                discountedPrice: ticketType.discountedPrice,
+                discountReason: ticketType.discountReason,
                 price: ticketType.price,
                 quantity: ticketType.quantity,
                 salesCutoff: ticketType.salesCutoff
@@ -827,6 +829,9 @@ export class EventService {
           EventAnalytics: true,
         },
       });
+      const conversionRate = event?.EventAnalytics
+        ? (event.EventAnalytics.ticketsSold * 100) / event.EventAnalytics.views
+        : 0;
 
       if (!event) {
         throw new Error("Event not found");
@@ -838,7 +843,7 @@ export class EventService {
         );
       }
 
-      return event.EventAnalytics;
+      return { ...event.EventAnalytics, conversionRate };
     } catch (error: any) {
       logger.error("Error in getEventAnalytics:", error);
       throw error;
