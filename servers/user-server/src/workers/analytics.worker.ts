@@ -39,11 +39,9 @@ async function processAnalyticsQueue() {
   try {
     // Get batch of analytics events from Redis queue
     const batch = await redis.rpop("analytics:queue", BATCH_SIZE);
-
     if (!batch || batch.length === 0) {
       return;
     }
-
     console.log(`📊 Processing ${batch.length} analytics events...`);
 
     // Parse all events
@@ -89,6 +87,29 @@ async function processAnalyticsQueue() {
     const updatePromises = Array.from(eventStatsMap.entries()).map(
       async ([eventId, stats]) => {
         try {
+          // First, get current event data to calculate accurate conversion rate
+          const currentEvent = await prisma.event.findUnique({
+            where: { eventId },
+            select: {
+              ctaClicksCount: true,
+              ticketsSold: true,
+            },
+          });
+
+          if (!currentEvent) {
+            console.warn(`⚠️ Event ${eventId} not found, skipping...`);
+            return;
+          }
+
+          // Calculate new totals after increments
+          const totalCtaClicks = currentEvent.ctaClicksCount + stats.ctaClicks;
+          const totalTicketsSold = currentEvent.ticketsSold + stats.ticketsSold;
+
+          // Conversion rate = (total tickets sold / total CTA clicks) * 100
+          const conversionRate =
+            totalCtaClicks > 0
+              ? Math.round((totalTicketsSold / totalCtaClicks) * 10000) / 100 // rounded to 2 decimals
+              : 0.1;
           // Update Event model
           await prisma.event.update({
             where: { eventId },
@@ -97,37 +118,45 @@ async function processAnalyticsQueue() {
               ctaClicksCount: { increment: stats.ctaClicks },
               ticketsSold: { increment: stats.ticketsSold },
               revenue: { increment: stats.revenue },
-              conversionRate:
-                stats.views > 0 ? (stats.ticketsSold / stats.views) * 100 : 0,
+              conversionRate, // Use calculated conversion rate
             },
           });
 
-          // Update EventAnalytics if it exists, create if it doesn't
-          const analyticsData = events.filter((e) => e.eventId === eventId);
+          // Get final event data after update to sync with EventAnalytics
+          const updatedEvent = await prisma.event.findUnique({
+            where: { eventId },
+            select: {
+              viewsCount: true,
+              ctaClicksCount: true,
+              ticketsSold: true,
+              revenue: true,
+            },
+          });
 
+          // Sync EventAnalytics with Event table (use absolute values, not increments)
           await prisma.eventAnalytics.upsert({
             where: { eventId },
             create: {
               eventId,
-              views: stats.views,
-              clicks: stats.ctaClicks,
-              ticketsSold: stats.ticketsSold,
-              revenue: stats.revenue,
-              conversionRate:
-                stats.views > 0 ? (stats.ticketsSold / stats.views) * 100 : 0,
+              views: updatedEvent!.viewsCount,
+              clicks: updatedEvent!.ctaClicksCount,
+              ticketsSold: updatedEvent!.ticketsSold,
+              revenue: updatedEvent!.revenue,
+              conversionRate,
               lastUpdated: new Date(),
             },
             update: {
-              views: { increment: stats.views },
-              clicks: { increment: stats.ctaClicks },
-              ticketsSold: { increment: stats.ticketsSold },
-              revenue: { increment: stats.revenue },
+              views: updatedEvent!.viewsCount,
+              clicks: updatedEvent!.ctaClicksCount,
+              ticketsSold: updatedEvent!.ticketsSold,
+              revenue: updatedEvent!.revenue,
+              conversionRate,
               lastUpdated: new Date(),
             },
           });
 
           console.log(
-            `✅ Updated analytics for event ${eventId}: +${stats.views} views, +${stats.ctaClicks} clicks, +${stats.ticketsSold} tickets sold`,
+            `✅ Updated analytics for event ${eventId}: +${stats.views} views, +${stats.ctaClicks} clicks, +${stats.ticketsSold} tickets, CR: ${conversionRate}%`,
           );
         } catch (error) {
           console.error(
@@ -136,23 +165,25 @@ async function processAnalyticsQueue() {
           );
 
           // Re-queue failed events (with retry limit)
-          const retryCount = (event as any).retryCount || 0;
-          if (retryCount < 3) {
-            const retryEvents = events
-              .filter((e) => e.eventId === eventId)
-              .map((e) => ({ ...e, retryCount: retryCount + 1 }));
-
-            await redis.lpush(
-              "analytics:queue",
-              ...retryEvents.map((e) => JSON.stringify(e)),
-            );
+          const failedEvents = events.filter((e) => e.eventId === eventId);
+          for (const event of failedEvents) {
+            const retryCount = (event as any).retryCount || 0;
+            if (retryCount < 3) {
+              await redis.lpush(
+                "analytics:queue",
+                JSON.stringify({ ...event, retryCount: retryCount + 1 }),
+              );
+            } else {
+              console.error(
+                `❌ Event ${eventId} failed after 3 retries, dropping event`,
+              );
+            }
           }
         }
       },
     );
 
     await Promise.allSettled(updatePromises);
-
     console.log(`✅ Completed processing ${batch.length} analytics events`);
   } catch (error) {
     console.error("❌ Analytics worker error:", error);

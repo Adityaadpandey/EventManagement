@@ -9,6 +9,7 @@ const ticketTypeSchema = z.object({
     .number()
     .nonnegative("Discounted price must be a non-negative number")
     .optional(),
+  discountReason: z.string().optional(),
 });
 
 const customFieldSchema = z.object({
