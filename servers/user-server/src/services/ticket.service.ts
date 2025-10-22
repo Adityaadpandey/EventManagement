@@ -28,9 +28,9 @@ export class TicketService {
       }
 
       // Ensure event is approved
-      if (ticketType.event.status !== "APPROVED") {
-        return { error: "Event is not available for ticket purchase" };
-      }
+      // if (ticketType.event.status !== "APPROVED") {
+      //   return { error: "Event is not available for ticket purchase" };
+      // }
 
       // Check availability
       const availableQuantity = ticketType.quantity - ticketType.soldCount;
