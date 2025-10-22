@@ -809,4 +809,39 @@ export class EventService {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
+
+  async getEventAnalytics(userId: string, eventId: string) {
+    try {
+      const event = await prisma.event.findUnique({
+        where: {
+          eventId,
+        },
+        include: {
+          lister: {
+            select: {
+              user: {
+                select: { userId: true },
+              },
+            },
+          },
+          EventAnalytics: true,
+        },
+      });
+
+      if (!event) {
+        throw new Error("Event not found");
+      }
+
+      if (event.lister.user.userId !== userId) {
+        throw new Error(
+          "You do not have permission to view this event's analytics",
+        );
+      }
+
+      return event.EventAnalytics;
+    } catch (error: any) {
+      logger.error("Error in getEventAnalytics:", error);
+      throw error;
+    }
+  }
 }

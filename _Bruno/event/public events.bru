@@ -5,12 +5,13 @@ meta {
 }
 
 get {
-  url: {{host}}/event/public
+  url: {{host}}/event/public?includeAll=true
   body: none
   auth: none
 }
 
 params:query {
+  includeAll: true
   ~limit: 2
   ~cursor: 21a6928a-7bbf-4df7-a591-2f11079bae3c
   ~longitude: 74.872261
@@ -23,4 +24,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

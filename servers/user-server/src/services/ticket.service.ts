@@ -43,8 +43,13 @@ export class TicketService {
         return { error: "Ticket sales have ended" };
       }
 
-      // Calculate base price
-      let basePrice = ticketType.price * quantity;
+      // Use discounted price if available, otherwise use regular price
+      const effectivePrice = ticketType.discountedPrice ?? ticketType.price;
+      const originalPrice = ticketType.price;
+      const hasTicketTypeDiscount = ticketType.discountedPrice !== null;
+
+      // Calculate base price using effective price
+      let basePrice = effectivePrice * quantity;
       let finalPrice = basePrice;
       let discountCodeId: string | null = null;
       let discountAmount = 0;
@@ -185,6 +190,22 @@ export class TicketService {
         return ticket;
       });
 
+      // Prepare pricing breakdown
+      const pricingBreakdown = {
+        originalPrice: originalPrice * quantity,
+        ticketTypeDiscount: hasTicketTypeDiscount
+          ? {
+              reason: ticketType.discountReason || "Special discount",
+              amountSaved: (originalPrice - effectivePrice) * quantity,
+            }
+          : null,
+        basePrice,
+        discountCode: discountDetails,
+        discountCodeAmount: discountAmount,
+        finalPrice,
+        savings: originalPrice * quantity - finalPrice,
+      };
+
       // If ticket is free, return success directly
       if (isFree) {
         return {
@@ -192,12 +213,7 @@ export class TicketService {
             ticket: result,
             event: ticketType.event,
             message: "Free ticket issued successfully",
-            pricing: {
-              basePrice,
-              discount: discountDetails,
-              discountAmount,
-              finalPrice,
-            },
+            pricing: pricingBreakdown,
           },
         };
       }
@@ -213,6 +229,7 @@ export class TicketService {
           userId,
           discountCode: discountCode || null,
           discountAmount: discountAmount.toString(),
+          hasTicketTypeDiscount: hasTicketTypeDiscount.toString(),
         },
       });
 
@@ -221,12 +238,7 @@ export class TicketService {
           ticket: result,
           razorpayOrder,
           event: ticketType.event,
-          pricing: {
-            basePrice,
-            discount: discountDetails,
-            discountAmount,
-            finalPrice,
-          },
+          pricing: pricingBreakdown,
         },
       };
     } catch (error) {
