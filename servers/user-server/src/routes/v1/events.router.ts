@@ -55,6 +55,12 @@ router.post(
   eventController.updateInfo.bind(eventController),
 );
 
+router.get(
+  "/:eventId/analytics",
+  authMiddleware,
+  requireRole(["LISTER"]),
+  eventController.getAnalytics.bind(eventController),
+);
 // DELETE /api/v1/event/:eventId
 
 // GET /api/v1/event/:eventId/attendees

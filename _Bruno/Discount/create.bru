@@ -12,15 +12,19 @@ post {
 
 body:json {
   {
-    "code": "FALL2025",
-    "discountPct": 20,
+    "code": "SAVE50",
+    "description": "50% off up to ₹50",
+    "discountType": "",
+    "discountPct": 50,
+    "maxDiscount": 50,
+    "minOrderAmt": 100,
     "maxUses": 100,
-    "validFrom": "2025-10-10T00:00:00.000Z",
-    "validTo": "2025-12-31T23:59:59.000Z"
+    "validFrom": "2025-10-20T00:00:00Z",
+    "validTo": "2025-11-20T23:59:59Z"
   }
-  
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }
