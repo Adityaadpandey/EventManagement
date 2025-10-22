@@ -225,62 +225,49 @@ export class ListerServer {
         },
         select: {
           listerId: true,
+          companyName: true,
+          user: {
+            select: {
+              name: true,
+            },
+          },
         },
       });
+
       if (!lister?.listerId) {
         throw new Error("User is not a Lister");
       }
+
       const { listerId } = lister;
-      const analytics = await prisma.listerAnalytics.findUnique({
-        where: { listerId },
-        select: {
-          totalEvents: true,
-          totalRevenue: true,
-          totalTicketsSold: true,
-          lastUpdated: true,
-          lister: {
-            select: {
-              companyName: true,
-              user: {
-                select: {
-                  name: true,
-                },
-              },
-            },
-          },
+
+      // Get real-time cumulative data from events
+      const eventStats = await prisma.event.aggregate({
+        where: {
+          listerId,
+          status: "APPROVED",
+        },
+        _sum: {
+          ticketsSold: true,
+          revenue: true,
+        },
+        _count: {
+          eventId: true,
         },
       });
+      console.log("Event Stats:", eventStats);
 
-      if (!analytics) {
-        // Create analytics record if it doesn't exist
-        const newAnalytics = await prisma.listerAnalytics.create({
-          data: {
-            listerId,
-            totalEvents: 0,
-            totalRevenue: 0,
-            totalTicketsSold: 0,
+      return {
+        totalEvents: eventStats._count.eventId || 0,
+        totalRevenue: eventStats._sum.revenue || 0,
+        totalTicketsSold: eventStats._sum.ticketsSold || 0,
+        lastUpdated: new Date(),
+        lister: {
+          companyName: lister.companyName,
+          user: {
+            name: lister.user.name,
           },
-          select: {
-            totalEvents: true,
-            totalRevenue: true,
-            totalTicketsSold: true,
-            lastUpdated: true,
-            lister: {
-              select: {
-                companyName: true,
-                user: {
-                  select: {
-                    name: true,
-                  },
-                },
-              },
-            },
-          },
-        });
-        return newAnalytics;
-      }
-
-      return analytics;
+        },
+      };
     } catch (error) {
       logger.error("Error in getListerAnalytics:", error);
       throw error;
