@@ -2,12 +2,14 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./features/authSlice";
 import eventsReducer from "./features/eventsSlice";
+import listerReducer from "./features/listerSlice";
 
 export const makeStore = () =>
   configureStore({
     reducer: {
       auth: authReducer,
       events: eventsReducer,
+      lister: listerReducer,
     },
   });
 
