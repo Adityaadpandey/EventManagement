@@ -8,6 +8,11 @@ import ImageUpload from "@/app/_components/ImageUpload";
 import TicketTypeManager from "@/app/_components/TicketTypeManager";
 import CustomFieldsManager from "@/app/_components/CustomFieldsManager";
 import { motion, AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
+
+// Dynamically import ReactQuill to avoid SSR issues
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
 type TicketType = {
   name: string;
@@ -53,6 +58,29 @@ const MIN_DESCRIPTION_LENGTH = 50;
 const DRAFT_KEY = "eventDraft";
 const DRAFT_EXPIRY_HOURS = 24;
 
+// Quill modules configuration
+const quillModules = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ list: "ordered" }, { list: "bullet" }],
+    [{ indent: "-1" }, { indent: "+1" }],
+    ["link"],
+    ["clean"],
+  ],
+};
+
+const quillFormats = [
+  "header",
+  "bold",
+  "italic",
+  "underline",
+  "strike",
+  "list",
+  "indent",
+  "link",
+];
+
 const validateEmail = (email: string): boolean => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
@@ -72,6 +100,23 @@ const sanitizeInput = (input: string, maxLength?: number): string => {
     sanitized = sanitized.slice(0, maxLength);
   }
   return sanitized;
+};
+
+// Function to strip HTML tags and get plain text length
+const getPlainTextLength = (html: string): number => {
+  // Check if we're in a browser environment
+  if (typeof window === "undefined") {
+    // Server-side: use a simple regex to strip HTML tags
+    return html
+      .replace(/<[^>]*>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .trim().length;
+  }
+
+  // Client-side: use DOM parsing for accurate results
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || "").length;
 };
 
 const CreateEventPage = () => {
@@ -210,14 +255,12 @@ const CreateEventPage = () => {
     currentStep,
   ]);
 
-  // Optimized input handler with sanitization
+  // Optimized input handler
   const handleChange = useCallback((field: keyof FormData, value: any) => {
     setFormData((prev) => {
-      // Sanitize string inputs
-      if (typeof value === "string") {
+      // Sanitize string inputs (except description which is HTML)
+      if (typeof value === "string" && field !== "description") {
         if (field === "title") value = sanitizeInput(value, MAX_TITLE_LENGTH);
-        if (field === "description")
-          value = sanitizeInput(value, MAX_DESCRIPTION_LENGTH);
         if (field === "location" || field === "restrictions")
           value = sanitizeInput(value);
       }
@@ -296,12 +339,13 @@ const CreateEventPage = () => {
           errors.title = `Title must be less than ${MAX_TITLE_LENGTH} characters`;
         }
 
-        // Description validation
-        if (!formData.description.trim()) {
+        // Description validation (check plain text length)
+        const plainTextLength = getPlainTextLength(formData.description);
+        if (!formData.description.trim() || plainTextLength === 0) {
           errors.description = "Description is required";
-        } else if (formData.description.length < MIN_DESCRIPTION_LENGTH) {
+        } else if (plainTextLength < MIN_DESCRIPTION_LENGTH) {
           errors.description = `Description must be at least ${MIN_DESCRIPTION_LENGTH} characters`;
-        } else if (formData.description.length > MAX_DESCRIPTION_LENGTH) {
+        } else if (plainTextLength > MAX_DESCRIPTION_LENGTH) {
           errors.description = `Description must be less than ${MAX_DESCRIPTION_LENGTH} characters`;
         }
 
@@ -444,7 +488,7 @@ const CreateEventPage = () => {
       // Clean and prepare payload
       const payload = {
         title: formData.title.trim(),
-        description: formData.description.trim(),
+        description: formData.description,
         banner_horizontal: bannerHorizontal,
         banner_vertical: bannerVertical,
         banner_square: bannerSquare,
@@ -578,6 +622,9 @@ const CreateEventPage = () => {
       </div>
     );
   }
+
+  // Calculate description character count
+  const descriptionLength = getPlainTextLength(formData.description);
 
   return (
     <div className="bg-gray-50 py-8 px-4">
@@ -771,27 +818,27 @@ const CreateEventPage = () => {
                   </div>
                 </div>
 
-                {/* Description */}
+                {/* Description with React Quill */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Description *
                   </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) =>
-                      handleChange("description", e.target.value)
-                    }
-                    rows={5}
-                    maxLength={MAX_DESCRIPTION_LENGTH}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black resize-none"
-                    placeholder={`Describe your event (minimum ${MIN_DESCRIPTION_LENGTH} characters)...`}
-                  />
+                  <div className="border border-gray-300 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-black">
+                    <ReactQuill
+                      theme="snow"
+                      value={formData.description}
+                      onChange={(value) => handleChange("description", value)}
+                      modules={quillModules}
+                      formats={quillFormats}
+                      placeholder={`Describe your event (minimum ${MIN_DESCRIPTION_LENGTH} characters)...`}
+                      className="bg-white"
+                    />
+                  </div>
                   <div className="flex justify-between items-center mt-1">
                     <p className="text-xs text-gray-500">
-                      {formData.description.length}/{MAX_DESCRIPTION_LENGTH}{" "}
-                      characters
-                      {formData.description.length < MIN_DESCRIPTION_LENGTH &&
-                        ` (${MIN_DESCRIPTION_LENGTH - formData.description.length} more needed)`}
+                      {descriptionLength}/{MAX_DESCRIPTION_LENGTH} characters
+                      {descriptionLength < MIN_DESCRIPTION_LENGTH &&
+                        ` (${MIN_DESCRIPTION_LENGTH - descriptionLength} more needed)`}
                     </p>
                     {validationErrors.description && (
                       <p className="text-red-500 text-xs">
@@ -1218,9 +1265,10 @@ const CreateEventPage = () => {
 
                   <div>
                     <p className="text-gray-600 mb-1">Description</p>
-                    <p className="text-sm line-clamp-3">
-                      {formData.description}
-                    </p>
+                    <div
+                      className="text-sm prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: formData.description }}
+                    />
                   </div>
 
                   {formData.tags.length > 0 && (
@@ -1534,35 +1582,47 @@ const CreateEventPage = () => {
             )}
           </div>
         </div>
-
-        {/* Tips */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-          <div className="flex gap-3">
-            <svg
-              className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <div className="text-sm text-blue-900">
-              <p className="font-semibold mb-1">💡 Pro Tips:</p>
-              <ul className="space-y-1 text-blue-800">
-                <li>• Your progress is automatically saved every 2 seconds</li>
-                <li>• Use Alt + Arrow keys to navigate between steps</li>
-                <li>• Click on completed steps to edit information</li>
-                <li>• All uploaded images are automatically optimized</li>
-              </ul>
-            </div>
-          </div>
-        </div>
       </div>
+
+      <style jsx global>{`
+        .ql-container {
+          font-family: inherit;
+          font-size: 14px;
+        }
+        .ql-editor {
+          min-height: 150px;
+          max-height: 300px;
+          overflow-y: auto;
+        }
+        .ql-editor.ql-blank::before {
+          font-style: normal;
+          color: #9ca3af;
+        }
+        .ql-toolbar {
+          border-top-left-radius: 0.75rem;
+          border-top-right-radius: 0.75rem;
+          border-bottom: 1px solid #e5e7eb;
+          background: #f9fafb;
+        }
+        .ql-container {
+          border-bottom-left-radius: 0.75rem;
+          border-bottom-right-radius: 0.75rem;
+        }
+        .prose {
+          color: inherit;
+        }
+        .prose p {
+          margin-bottom: 0.5em;
+        }
+        .prose ul,
+        .prose ol {
+          margin-left: 1.5em;
+        }
+        .prose a {
+          color: #2563eb;
+          text-decoration: underline;
+        }
+      `}</style>
     </div>
   );
 };

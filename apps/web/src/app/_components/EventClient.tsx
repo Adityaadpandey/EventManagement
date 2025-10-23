@@ -1007,7 +1007,7 @@ export default function EventClient({
             >
               <div className="space-y-4 bg-white px-5 py-4">
                 <h4>About Event</h4>
-                <ReadMore text={ev.description} maxLength={2240} />
+                <ReadMore text={ev.description} maxLength={1020} />
               </div>
             </SuperEllipse>
           )}

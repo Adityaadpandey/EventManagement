@@ -41,11 +41,31 @@ const CustomFieldsManager = memo(({ customFields, onChange }) => {
     (index, field, value) => {
       const updated = [...customFields];
 
-      // Validation
-      if (field === "label" && value.length > 100) return;
-      if (field === "options" && value.length > 500) return;
+      // ✅ Safe validation (only when value is a string)
+      if (field === "label" && typeof value === "string" && value.length > 100)
+        return;
+      if (
+        field === "options" &&
+        typeof value === "string" &&
+        value.length > 500
+      )
+        return;
 
-      updated[index] = { ...updated[index], [field]: value };
+      // ✅ When field type changes, clear incompatible fields
+      if (field === "fieldType") {
+        updated[index] = {
+          ...updated[index],
+          [field]: value,
+        };
+
+        // If new type isn't dropdown, remove options
+        if (value !== "dropdown") {
+          delete updated[index].options;
+        }
+      } else {
+        updated[index] = { ...updated[index], [field]: value };
+      }
+
       onChange(updated);
     },
     [customFields, onChange],
@@ -279,12 +299,9 @@ const CustomFieldsManager = memo(({ customFields, onChange }) => {
                 </label>
                 <select
                   value={field.fieldType}
-                  onChange={(e) => {
-                    updateCustomField(index, "fieldType", e.target.value);
-                    if (e.target.value !== "dropdown") {
-                      updateCustomField(index, "options", undefined);
-                    }
-                  }}
+                  onChange={(e) =>
+                    updateCustomField(index, "fieldType", e.target.value)
+                  }
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white cursor-pointer"
                 >
                   {FIELD_TYPES.map((type) => (
