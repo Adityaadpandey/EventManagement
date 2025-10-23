@@ -227,7 +227,7 @@ const TicketTypeManager: React.FC<TicketTypeManagerProps> = memo(
                 )}
 
                 {/* Sales Cutoff */}
-                <div className="md:col-span-2">
+                {/* <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-2">
                     Sales Cutoff Date (Optional)
                   </label>
@@ -242,7 +242,7 @@ const TicketTypeManager: React.FC<TicketTypeManagerProps> = memo(
                   <p className="text-xs text-gray-500 mt-1">
                     Stop selling this ticket type after this date/time
                   </p>
-                </div>
+                </div> */}
               </div>
 
               {/* Ticket Summary */}
