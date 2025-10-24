@@ -84,6 +84,20 @@ export class ListerServer {
               lastUpdated: true,
             },
           },
+          Event: {
+            select: {
+              eventId: true,
+              title: true,
+              date: true,
+              banner_horizontal: true,
+              banner_vertical: true,
+              banner_square: true,
+              status: true,
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
           user: {
             select: {
               userId: true,

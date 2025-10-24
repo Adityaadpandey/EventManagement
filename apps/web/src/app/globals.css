@@ -102,7 +102,7 @@ h6 {
   font-feature-settings: "liga" off;
   letter-spacing: -2%;
   line-height: 100%;
-  @apply md:text-sm text-xs leading-none;
+  @apply md:text-sm text-xs leading-[140%];
 }
 
 p {

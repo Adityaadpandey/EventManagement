@@ -213,7 +213,7 @@ export default function AuthPage() {
       <motion.div
         role="dialog"
         aria-modal="true"
-        className="relative md:max-w-[524px] w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[8.9vw] sm:pb-32 md:pb-9 pb-32 sm:pt-9 pt-2 z-10 overflow-hidden"
+        className="relative md:max-w-[524px] w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[8.9vw] sm:pb-40 md:pb-9 pb-32 sm:pt-9 pt-2 z-10 overflow-hidden"
         style={{ boxShadow: "0 0 54px 10px rgba(0, 0, 0, 0.08)" }}
         layout
         initial={{
@@ -267,7 +267,7 @@ export default function AuthPage() {
               <button
                 onClick={sendOtp}
                 disabled={loading}
-                className="w-full py-4 bg-yellow-400 rounded-full text-black font-medium disabled:opacity-50"
+                className="px-6 sm:py-7 py-6 rounded-full md:text-xl text-base bg-[#FFE348] w-full border-b-3 border-[#FFDA0A] cursor-pointer"
               >
                 {loading ? "Sending..." : "Send OTP"}
               </button>
