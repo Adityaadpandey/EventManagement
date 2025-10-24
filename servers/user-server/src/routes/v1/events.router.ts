@@ -49,7 +49,7 @@ router.patch(
 );
 
 router.post(
-  "/:eventId/info-update",
+  "/info-update/:eventId",
   authMiddleware,
   requireRole(["LISTER"]),
   eventController.updateInfo.bind(eventController),
