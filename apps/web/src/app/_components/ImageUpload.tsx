@@ -30,8 +30,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const dragCounterRef = useRef(0);
 
   // Cloudinary config
-  const CLOUD_NAME =
-    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dbcbvxuyk";
+  const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const UPLOAD_PRESET =
     process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "ml_default";
 
