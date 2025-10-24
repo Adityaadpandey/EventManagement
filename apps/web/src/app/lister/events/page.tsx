@@ -87,7 +87,7 @@ export default function ListerEventsPage() {
     );
 
   return (
-    <div className="mx-auto max-w-7xl p-6 pb-40">
+    <div className="mx-auto w-7xl p-6 pb-40">
       <div className="flex items-center justify-between mb-8">
         <h1 className="home-page-heading">My Events</h1>
         <Link
