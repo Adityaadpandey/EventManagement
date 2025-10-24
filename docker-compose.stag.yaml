@@ -1,16 +1,14 @@
 services:
   backend-service:
-    build:
-      context: .
-      dockerfile: servers/user-server/Dockerfile
-    image: backend-service
+    image: adppandey/backend-user-service:latest
+    container_name: backend-service-stag
     ports:
       - "7001:7001"
     command: ["node", "dist/bin.js"]
     environment:
       - NODE_ENV=production
-      - NODE_OPTIONS=--max-old-space-size=2048
-      - UV_THREADPOOL_SIZE=16
+      - NODE_OPTIONS=--max-old-space-size512
+      - UV_THREADPOOL_SIZE=8
       - HOST=0.0.0.0
       - PORT=7001
     healthcheck:
@@ -22,8 +20,3 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "5"
