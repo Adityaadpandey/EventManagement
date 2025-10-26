@@ -278,7 +278,7 @@ export default function NavBar() {
       </div>
 
       {/* Group 3: Lister/Admin Items */}
-      {navItems.group3.length > 0 && (
+      {/* {navItems.group3.length > 0 && (
         <div className="flex items-center gap-4 border-l border-zinc-300 pl-4">
           {navItems.group3.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href;
@@ -296,7 +296,7 @@ export default function NavBar() {
             );
           })}
         </div>
-      )}
+      )} */}
     </motion.nav>
   );
 }
