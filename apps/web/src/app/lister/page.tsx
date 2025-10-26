@@ -226,7 +226,7 @@ const ListerDashboard: React.FC = () => {
   }, []);
 
   const handleViewEvent = useCallback((eventId: string) => {
-    window.location.href = `/events/${eventId}`;
+    window.location.href = `/event/${eventId}`;
   }, []);
 
   // Loading State
@@ -681,13 +681,13 @@ const ListerDashboard: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button
+                      {/* <button
                         onClick={() => handleEditEvent(event.eventId)}
                         className="p-2 hover:bg-yellow-50 rounded-lg transition-colors text-[#FFE348]"
                         title="Edit Event"
                       >
                         <Edit2 className="w-5 h-5" />
-                      </button>
+                      </button> */}
                       <button
                         onClick={() => handleViewEvent(event.eventId)}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
