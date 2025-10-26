@@ -409,6 +409,32 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Lister-specific actions */}
+        {form.role === "LISTER" && (
+          <div className="bg-white rounded-2xl shadow-md p-6 mt-6 flex flex-wrap gap-3 justify-center md:justify-start mb-6">
+            <button
+              onClick={() => router.push("/lister/events")}
+              className="px-6 py-3 rounded-full bg-[#FFE348] border-b-2 border-[#FFDA0A] font-medium hover:brightness-95"
+            >
+              My Events
+            </button>
+
+            <button
+              onClick={() => router.push("/lister")}
+              className="px-6 py-3 rounded-full border border-zinc-200 bg-white hover:bg-zinc-50"
+            >
+              Lister Dashboard
+            </button>
+
+            <button
+              onClick={() => router.push("/lister/events/create")}
+              className="px-6 py-3 rounded-full bg-[#FFE348] border-b-2 border-[#FFDA0A] font-medium hover:brightness-95"
+            >
+              Create Event
+            </button>
+          </div>
+        )}
+
         {/* Personal Info */}
         <div className="bg-white rounded-2xl shadow p-6">
           <h2 className="text-lg font-medium mb-3">Personal Info</h2>
