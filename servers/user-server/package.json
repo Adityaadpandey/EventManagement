@@ -40,6 +40,7 @@
   "author": "aditya",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.917.0",
     "@repo/database": "../../packages/database",
     "@repo/logger": "../../packages/logger",
     "bcrypt": "^6.0.0",
