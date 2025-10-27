@@ -170,15 +170,12 @@ export class TicketService {
         }
 
         // Update ticket type sold count
-        await tx.ticketType.update({
-          where: { ticketTypeId },
-          data: {
-            soldCount: { increment: quantity },
-          },
-        });
-
         // If free ticket, also update event analytics
         if (isFree) {
+          await tx.ticketType.update({
+            where: { ticketTypeId },
+            data: { soldCount: { increment: quantity } },
+          });
           await tx.event.update({
             where: { eventId: ticketType.eventId },
             data: {
