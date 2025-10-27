@@ -68,27 +68,9 @@ export default function NavBar() {
   const notifications = [
     {
       id: 1,
-      title: "Event Approved",
-      text: "Your event has been approved!",
+      title: "Welcome!",
+      text: "Welcome to Tixin 🎉 We're excited to have you on board!",
       read: false,
-    },
-    {
-      id: 2,
-      title: "New Booking",
-      text: "New booking received for Summer Festival",
-      read: false,
-    },
-    {
-      id: 3,
-      title: "Reminder",
-      text: "Event reminder: Tech Conference starts tomorrow",
-      read: true,
-    },
-    {
-      id: 4,
-      title: "Payment Received",
-      text: "Payment received for $150",
-      read: true,
     },
   ];
 
@@ -278,7 +260,7 @@ export default function NavBar() {
       </div>
 
       {/* Group 3: Lister/Admin Items */}
-      {navItems.group3.length > 0 && (
+      {/* {navItems.group3.length > 0 && (
         <div className="flex items-center gap-4 border-l border-zinc-300 pl-4">
           {navItems.group3.map(({ href, label, icon: Icon }) => {
             const isActive = pathname === href;
@@ -296,7 +278,7 @@ export default function NavBar() {
             );
           })}
         </div>
-      )}
+      )} */}
     </motion.nav>
   );
 }

@@ -627,7 +627,7 @@ const CreateEventPage = () => {
   const descriptionLength = getPlainTextLength(formData.description);
 
   return (
-    <div className="bg-gray-50 py-8 px-4">
+    <div className="bg-gray-50 py-8 px-4 pb-40">
       <div className="max-w-4xl mx-auto" ref={formRef}>
         {/* Header */}
         <div className="mb-8">
