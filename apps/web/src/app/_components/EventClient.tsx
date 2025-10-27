@@ -151,7 +151,14 @@ const EventInfo = memo(
 
           <div className="flex gap-2 items-center shrink-0">
             <img src="/svgs/clock.svg" alt="" width={20} height={20} />
-            <h6>5:00PM to 7:00PM</h6>
+            <h6>
+              {new Date(ev.time).toLocaleTimeString("en-IN", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+                timeZone: "Asia/Kolkata",
+              })}
+            </h6>
           </div>
 
           {ev.location && (

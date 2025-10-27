@@ -720,15 +720,18 @@ const Modal: React.FC<ModalProps> = ({
                           </p>
                         </div>
                         <div className="flex justify-between px-2">
-                          <p className="text-[#8B8B8B]">GST</p>
-                          <p className="text-zinc-900">₹0</p>
+                          <p className="text-[#8B8B8B]">Platform Fee</p>
+                          <p className="text-zinc-900">
+                            ₹{ev.TicketType[0].platformfee * selectedQuantity}
+                          </p>
                         </div>
                         <div className="flex justify-between bg-[#F5F5F5] py-3 px-2 rounded-md m-0">
                           <h5 className="text-[#8B8B8B]">TOTAL</h5>
                           <h5>
                             ₹
                             {(
-                              (selectedTicket?.price ?? 0) * selectedQuantity
+                              (selectedTicket?.price ?? 0) * selectedQuantity +
+                              ev.TicketType[0].platformfee * selectedQuantity
                             ).toFixed(2)}
                           </h5>
                         </div>
