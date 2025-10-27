@@ -25,6 +25,10 @@ interface Config {
 
   VAPID_PUBLIC_KEY: string;
   VAPID_PRIVATE_KEY: string;
+
+  AWS_REGION: string;
+  AWS_ACCESS_KEY_ID: string;
+  AWS_SECRET_ACCESS_KEY: string;
 }
 
 export const config: Config = {
@@ -48,4 +52,8 @@ export const config: Config = {
   SMTP_PASS: process.env.SMTP_PASS || "",
   VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || "",
   VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || "",
+
+  AWS_REGION: process.env.AWS_REGION || "us-east-1",
+  AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID || "",
+  AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY || "",
 };
