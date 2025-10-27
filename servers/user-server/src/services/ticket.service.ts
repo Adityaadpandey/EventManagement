@@ -27,11 +27,6 @@ export class TicketService {
         return { error: "Ticket type not found" };
       }
 
-      // Ensure event is approved
-      // if (ticketType.event.status !== "APPROVED") {
-      //   return { error: "Event is not available for ticket purchase" };
-      // }
-
       // Check availability
       const availableQuantity = ticketType.quantity - ticketType.soldCount;
       if (availableQuantity < quantity) {
@@ -50,7 +45,7 @@ export class TicketService {
 
       // Calculate base price using effective price
       let basePrice = effectivePrice * quantity;
-      let finalPrice = basePrice;
+      let ticketSubtotal = basePrice;
       let discountCodeId: string | null = null;
       let discountAmount = 0;
       let discountDetails: any = null;
@@ -110,7 +105,7 @@ export class TicketService {
 
         // Ensure discount doesn't exceed base price
         discountAmount = Math.min(discountAmount, basePrice);
-        finalPrice = Math.max(0, basePrice - discountAmount);
+        ticketSubtotal = Math.max(0, basePrice - discountAmount);
 
         discountCodeId = discount.codeId;
         discountDetails = {
@@ -124,6 +119,12 @@ export class TicketService {
           amountSaved: discountAmount,
         };
       }
+
+      // Get platform fee from ticket type (applied once to the total order)
+      const platformFee = ticketType.platformfee;
+
+      // Calculate final price including platform fee
+      const finalPrice = ticketSubtotal + platformFee;
 
       const qrCode = this.generateQRCode();
 
@@ -202,6 +203,8 @@ export class TicketService {
         basePrice,
         discountCode: discountDetails,
         discountCodeAmount: discountAmount,
+        ticketSubtotal,
+        platformFee,
         finalPrice,
         savings: originalPrice * quantity - finalPrice,
       };
@@ -230,6 +233,7 @@ export class TicketService {
           discountCode: discountCode || null,
           discountAmount: discountAmount.toString(),
           hasTicketTypeDiscount: hasTicketTypeDiscount.toString(),
+          platformFee: platformFee.toString(),
         },
       });
 
