@@ -136,11 +136,15 @@ const EditEventPage = () => {
   // Populate form when event loads (only once)
   useEffect(() => {
     if (event && !originalData.current) {
+      // Extract date and time from ISO strings
+      const eventDate = event.date ? new Date(event.date) : null;
+      const eventTime = event.time ? new Date(event.time) : null;
+
       const initialData = {
         title: event.title || "",
         description: event.description || "",
-        date: event.date ? event.date.split("T")[0] : "",
-        time: event.time ? new Date(event.time).toTimeString().slice(0, 5) : "",
+        date: eventDate ? eventDate.toISOString().split("T")[0] : "",
+        time: eventTime ? eventTime.toTimeString().slice(0, 5) : "",
         location: event.location || "",
         latitude: event.latitude || null,
         longitude: event.longitude || null,
@@ -151,16 +155,35 @@ const EditEventPage = () => {
         termsConditions: event.termsConditions || "",
         rulesRegulations: event.rulesRegulations || "",
         policies: event.policies || "",
-        tags: event.tags || [],
-        chips: event.chips || [],
+        tags: Array.isArray(event.tags) ? event.tags : [],
+        chips: Array.isArray(event.chips) ? event.chips : [],
       };
 
       setFormData(initialData);
       setBannerHorizontal(event.banner_horizontal || "");
       setBannerVertical(event.banner_vertical || "");
       setBannerSquare(event.banner_square || "");
-      setTicketTypes(event.ticketTypes || []);
-      setCustomFields(event.customFields || []);
+
+      // Map TicketType array (from API) to ticketTypes (for component)
+      const mappedTickets = (event.TicketType || []).map((tt: any) => ({
+        name: tt.name || "",
+        description: tt.description || "",
+        price: tt.price || 0,
+        discountedPrice: tt.discountedPrice || undefined,
+        discountReason: tt.discountReason || "",
+        quantity: tt.quantity || 0,
+        salesCutoff: tt.salesCutoff || "",
+      }));
+      setTicketTypes(mappedTickets);
+
+      // Map CustomField array (from API) to customFields (for component)
+      const mappedFields = (event.CustomField || []).map((cf: any) => ({
+        label: cf.label || "",
+        fieldType: cf.fieldType || "text",
+        required: cf.required || false,
+        options: cf.options || "",
+      }));
+      setCustomFields(mappedFields);
 
       // Store original data for comparison
       originalData.current = {
@@ -168,8 +191,8 @@ const EditEventPage = () => {
         bannerHorizontal: event.banner_horizontal || "",
         bannerVertical: event.banner_vertical || "",
         bannerSquare: event.banner_square || "",
-        ticketTypes: event.ticketTypes || [],
-        customFields: event.customFields || [],
+        ticketTypes: mappedTickets,
+        customFields: mappedFields,
       };
     }
   }, [event]);
@@ -338,10 +361,12 @@ const EditEventPage = () => {
         updates.location = formData.location.trim();
       }
       if (formData.latitude !== originalData.current.latitude) {
-        updates.latitude = formData.latitude ?? undefined;
+        updates.latitude =
+          formData.latitude !== null ? formData.latitude : undefined;
       }
       if (formData.longitude !== originalData.current.longitude) {
-        updates.longitude = formData.longitude ?? undefined;
+        updates.longitude =
+          formData.longitude !== null ? formData.longitude : undefined;
       }
       if (formData.capacity !== originalData.current.capacity) {
         updates.capacity = formData.capacity
@@ -704,7 +729,6 @@ const EditEventPage = () => {
                   <label className="block text-sm font-medium mb-2">
                     Event Title *
                   </label>
-                  {console.log(event)}
                   <input
                     type="text"
                     value={formData.title}
