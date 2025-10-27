@@ -222,7 +222,7 @@ const ListerDashboard: React.FC = () => {
   }, []);
 
   const handleEditEvent = useCallback((eventId: string) => {
-    window.location.href = `/events/${eventId}/edit`;
+    window.location.href = `/event/${eventId}/edit`;
   }, []);
 
   const handleViewEvent = useCallback((eventId: string) => {
@@ -681,19 +681,21 @@ const ListerDashboard: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      {/* <button
+                      <button
+                        onClick={() => handleViewEvent(event.eventId)}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 flex justify-center items-center gap-1 cursor-pointer"
+                        title="View Event"
+                      >
+                        Analytics
+                        <Eye className="w-5 h-5" />
+                      </button>
+
+                      <button
                         onClick={() => handleEditEvent(event.eventId)}
-                        className="p-2 hover:bg-yellow-50 rounded-lg transition-colors text-[#FFE348]"
+                        className="p-2 hover:bg-yellow-50 rounded-lg transition-colors border cursor-pointer"
                         title="Edit Event"
                       >
                         <Edit2 className="w-5 h-5" />
-                      </button> */}
-                      <button
-                        onClick={() => handleViewEvent(event.eventId)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
-                        title="View Event"
-                      >
-                        <Eye className="w-5 h-5" />
                       </button>
                     </div>
                   </div>
