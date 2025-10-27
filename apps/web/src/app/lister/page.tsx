@@ -226,7 +226,7 @@ const ListerDashboard: React.FC = () => {
   }, []);
 
   const handleViewEvent = useCallback((eventId: string) => {
-    window.location.href = `/event/${eventId}`;
+    window.location.href = `/lister/events/${eventId}`;
   }, []);
 
   // Loading State
