@@ -26,19 +26,16 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
-    # DDoS Protection: Resource limits
     deploy:
       update_config:
         parallelism: 1
         delay: 10s
-        order: start-first  # Critical for zero downtime
+        order: start-first
       rollback_config:
         parallelism: 1
         delay: 5s
-    # Security: Read-only root filesystem where possible
     security_opt:
       - no-new-privileges:true
-    # Limit process capabilities
     cap_drop:
       - ALL
     cap_add:
@@ -66,7 +63,6 @@ services:
         reservations:
           memory: 512M
           cpus: '0.5'
-    # Security hardening
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -100,7 +96,7 @@ services:
       - CHOWN
       - SETUID
       - SETGID
-      - DAC_OVERRIDE  # Add this for cache directory access
+      - DAC_OVERRIDE
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/nginx-health || exit 1"]
       interval: 20s
@@ -108,9 +104,9 @@ services:
       retries: 3
       start_period: 30s
     sysctls:
-      - net.core.somaxconn=4096
-      - net.ipv4.tcp_max_syn_backlog=8192
-      - net.ipv4.ip_local_port_range=1024 65535
+      net.core.somaxconn: 4096
+      net.ipv4.tcp_max_syn_backlog: 8192
+      net.ipv4.ip_local_port_range: "1024 65535"
     networks:
       - app-network
 
@@ -120,14 +116,16 @@ services:
     volumes:
       - ./letsencrypt/www:/var/www/certbot
       - ./letsencrypt/conf:/etc/letsencrypt
-    entrypoint: sh -c "trap exit TERM; while :; do sleep 12h & wait $${!}; certbot renew --webroot -w /var/www/certbot --quiet; done"
+    entrypoint: >
+      sh -c "trap exit TERM; while :; do sleep 12h & wait $${!}; certbot renew --webroot -w /var/www/certbot --quiet; done"
     restart: unless-stopped
     networks:
+      - app-network
+
 
 networks:
   app-network:
     driver: bridge
-    # Enhanced network configuration
     driver_opts:
       com.docker.network.driver.mtu: 1500
     ipam:
