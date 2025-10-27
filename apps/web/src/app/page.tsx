@@ -44,27 +44,9 @@ const FILTERS = [
 const MOCK_NOTIFICATIONS = [
   {
     id: 1,
-    title: "Event Approved",
-    text: "Your event has been approved!",
+    title: "Welcome to Tixin",
+    text: "We're glad to have you join us. Let's get started!",
     read: false,
-  },
-  {
-    id: 2,
-    title: "New Booking",
-    text: "New booking received for Summer Festival",
-    read: false,
-  },
-  {
-    id: 3,
-    title: "Reminder",
-    text: "Event reminder: Tech Conference starts tomorrow",
-    read: true,
-  },
-  {
-    id: 4,
-    title: "Payment Received",
-    text: "Payment received for $150",
-    read: true,
   },
 ];
 

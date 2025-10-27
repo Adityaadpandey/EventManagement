@@ -252,10 +252,6 @@ export const fetchListerEvents = createAsyncThunk<
   }
 });
 
-/**
- * Fetch detailed event information for lister (includes private fields)
- * GET /event/:eventId/lister
- */
 export const fetchListerEventDetails = createAsyncThunk<
   { eventId: string; details: EventDetails },
   { eventId: string },
