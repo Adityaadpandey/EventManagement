@@ -121,7 +121,7 @@ export class TicketService {
       }
 
       // Get platform fee from ticket type (applied once to the total order)
-      const platformFee = ticketType.platformfee;
+      const platformFee = ticketType.platformfee * quantity;
 
       // Calculate final price including platform fee
       const finalPrice = ticketSubtotal + platformFee;
