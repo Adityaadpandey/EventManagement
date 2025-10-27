@@ -761,6 +761,8 @@ export class EventService {
       );
 
       // Send email to each user (mocked here)
+      // also not the one who has already been mailed
+
       for (const user of ticketedUsers) {
         if (!user.email) {
           logger.warn(`Skipping user ${user.name ?? "Unknown"} — no email`);

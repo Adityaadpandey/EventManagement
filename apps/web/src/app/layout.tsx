@@ -2,11 +2,11 @@ import { fetchPublicEventsSSR } from "@/lib/api/fetchPublicEvents";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
+import { Bricolage_Grotesque, Inter } from "next/font/google";
+import ClientLayout from "./_components/ClientLayout";
+import PwaPrompt from "./_components/PwaPrompt";
 import "./globals.css";
 import Providers from "./providers";
-import ClientLayout from "./_components/ClientLayout";
-import { Bricolage_Grotesque, Inter } from "next/font/google";
-import PwaPrompt from "./_components/PwaPrompt";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
