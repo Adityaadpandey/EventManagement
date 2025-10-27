@@ -26,7 +26,7 @@ const ReadMore: React.FC<ReadMoreProps> = ({ text, maxLength = 300 }) => {
     expanded || !isLongText ? text : plainText.slice(0, maxLength) + "...";
 
   return (
-    <div className="text-[#8B8B8B] !tracking-[-0.28px] !leading-[140%]">
+    <div className="!text-[#8B8B8B] !tracking-[-0.28px] !leading-[140%] !text-sm">
       <div
         dangerouslySetInnerHTML={{ __html: displayText }}
         className="inline"
