@@ -566,6 +566,7 @@ export class EventService {
               discountedPrice: true,
               discountReason: true,
               salesCutoff: true,
+              platformfee: true,
             },
           },
           CustomField: {
