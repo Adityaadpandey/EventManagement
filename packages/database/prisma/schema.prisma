@@ -23,11 +23,13 @@ enum Status {
     CANCELLATION_REQUESTED
     CANCELLED
 }
+
 enum TicketPaymentStatus {
     PENDING
     SUCCESS
     FAILED
 }
+
 enum RefundStatus {
     PENDING
     COMPLETED
@@ -42,7 +44,7 @@ enum ListerStatus {
 
 model User {
     userId   String  @id @default(uuid())
-    phone    String?  @unique
+    phone    String? @unique
     email    String? @unique
     password String?
     name     String?
@@ -59,11 +61,11 @@ model User {
     updatedAt DateTime @updatedAt
 
     // Relations
-    Lister        Lister?
-    Ticket        Ticket[]
-    TicketScanLog TicketScanLog[]
-    Refund        Refund[]
-    Notification  Notification[]
+    Lister           Lister?
+    Ticket           Ticket[]
+    TicketScanLog    TicketScanLog[]
+    Refund           Refund[]
+    Notification     Notification[]
     PushSubscription PushSubscription[]
 
     // INDEXES
@@ -72,7 +74,6 @@ model User {
     @@index([createdAt]) // Sort by registration date
     @@index([role, isActive]) // Composite: active users by role
 }
-
 
 model Lister {
     listerId String @id @default(uuid())
@@ -188,13 +189,15 @@ model TicketType {
     eventId      String
     event        Event  @relation(fields: [eventId], references: [eventId])
 
-    name        String
-    description String?
-    price       Float
+    name            String
+    description     String?
+    price           Float
     discountedPrice Float?
-    discountReason String?
-    quantity    Int
-    salesCutoff DateTime?
+    discountReason  String?
+    quantity        Int
+    salesCutoff     DateTime?
+
+    platformfee Int @default(0)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -210,7 +213,6 @@ model TicketType {
     @@index([eventId, price]) // Composite: ticket types sorted by price
 }
 
-
 model Ticket {
     ticketId     String     @id @default(uuid())
     ticketTypeId String
@@ -219,11 +221,11 @@ model Ticket {
     userId String
     user   User   @relation(fields: [userId], references: [userId])
 
-    status     TicketPaymentStatus  @default(PENDING)
+    status     TicketPaymentStatus @default(PENDING)
     quantity   Int
     totalPrice Float
-    qrCode     String  @unique
-    checkedIn  Boolean @default(false)
+    qrCode     String              @unique
+    checkedIn  Boolean             @default(false)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -248,7 +250,6 @@ model Ticket {
     @@index([qrCode]) // Fast QR code lookup (already unique, but explicit index helps)
 }
 
-
 model AttendeeFieldResponse {
     responseId String      @id @default(uuid())
     ticketId   String
@@ -262,7 +263,6 @@ model AttendeeFieldResponse {
     @@index([ticketId]) // Get all responses for a ticket
     @@index([fieldId]) // Analytics on field responses
 }
-
 
 model TicketChecker {
     checkerId String @id @default(uuid())
@@ -287,7 +287,6 @@ model TicketChecker {
 
     @@unique([eventId, username])
     @@index([listerId])
-
     // INDEXES
     @@index([active]) // Find active checkers
     @@index([eventId]) // Checkers for specific event
@@ -327,27 +326,26 @@ model TicketScanLog {
     @@index([performedByUserId]) // Scans by user
 }
 
-
 model DiscountCode {
-    codeId      String   @id @default(uuid())
+    codeId      String  @id @default(uuid())
     eventId     String
-    event       Event    @relation(fields: [eventId], references: [eventId])
-    code        String   @unique
+    event       Event   @relation(fields: [eventId], references: [eventId])
+    code        String  @unique
     description String?
 
     // Discount configuration
     discountType DiscountType // PERCENTAGE or FLAT
-    discountPct  Float?       // For percentage discounts (e.g., 50 for 50%)
-    discountAmt  Float?       // For flat discounts (e.g., 100 for ₹100 off)
-    maxDiscount  Float?       // Maximum discount cap (e.g., 50 for max ₹50 off)
-    minOrderAmt  Float?       // Minimum order amount to apply discount
+    discountPct  Float? // For percentage discounts (e.g., 50 for 50%)
+    discountAmt  Float? // For flat discounts (e.g., 100 for ₹100 off)
+    maxDiscount  Float? // Maximum discount cap (e.g., 50 for max ₹50 off)
+    minOrderAmt  Float? // Minimum order amount to apply discount
 
-    maxUses      Int?
-    usesCount    Int      @default(0)
-    validFrom    DateTime?
-    validTo      DateTime?
-    createdAt    DateTime @default(now())
-    updatedAt    DateTime @updatedAt
+    maxUses   Int?
+    usesCount Int       @default(0)
+    validFrom DateTime?
+    validTo   DateTime?
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
 
     // INDEXES
     @@index([eventId])
@@ -360,7 +358,6 @@ enum DiscountType {
     PERCENTAGE
     FLAT
 }
-
 
 model EventAnalytics {
     analyticsId String @id @default(uuid())
@@ -375,21 +372,18 @@ model EventAnalytics {
 
     lastUpdated DateTime @default(now()) @updatedAt
 
+    viewsByDay   Json? // { "2025-01-01": 150, "2025-01-02": 200 }
+    clicksByDay  Json?
+    salesByDay   Json?
+    revenueByDay Json?
 
-  viewsByDay        Json?    // { "2025-01-01": 150, "2025-01-02": 200 }
-  clicksByDay       Json?
-  salesByDay        Json?
-  revenueByDay      Json?
+    trafficSources Json? // { "direct": 500, "social": 300, "referral": 200 }
 
-  trafficSources    Json?    // { "direct": 500, "social": 300, "referral": 200 }
+    deviceBreakdown Json? // { "mobile": 600, "desktop": 400, "tablet": 100 }
 
-  deviceBreakdown   Json?    // { "mobile": 600, "desktop": 400, "tablet": 100 }
+    createdAt DateTime @default(now())
 
-
-  createdAt         DateTime @default(now())
-
-  @@index([eventId])
-
+    @@index([eventId])
     // INDEXES
     @@index([lastUpdated]) // Recently updated analytics
     @@index([revenue]) // Top revenue events
@@ -442,47 +436,47 @@ model Refund {
 }
 
 model Notification {
-  notificationId String   @id @default(uuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [userId])
-  title          String
-  message        String
-  link           String?
-  type           String?  @default("info") // info, success, warning, error
-  read           Boolean  @default(false)
-  sent           Boolean  @default(false) // Track if push notification was sent
-  createdAt      DateTime @default(now())
-  readAt         DateTime?
-  sentAt         DateTime? // When push notification was sent
+    notificationId String    @id @default(uuid())
+    userId         String
+    user           User      @relation(fields: [userId], references: [userId])
+    title          String
+    message        String
+    link           String?
+    type           String?   @default("info") // info, success, warning, error
+    read           Boolean   @default(false)
+    sent           Boolean   @default(false) // Track if push notification was sent
+    createdAt      DateTime  @default(now())
+    readAt         DateTime?
+    sentAt         DateTime? // When push notification was sent
 
-  // INDEXES
-  @@index([userId])
-  @@index([read])
-  @@index([createdAt])
-  @@index([userId, read])
-  @@index([sent]) // Track unsent notifications
+    // INDEXES
+    @@index([userId])
+    @@index([read])
+    @@index([createdAt])
+    @@index([userId, read])
+    @@index([sent]) // Track unsent notifications
 }
 
 model PushSubscription {
-  subscriptionId String   @id @default(uuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [userId])
+    subscriptionId String @id @default(uuid())
+    userId         String
+    user           User   @relation(fields: [userId], references: [userId])
 
-  // Push subscription data
-  endpoint       String   @unique
-  p256dh         String   // Encryption key
-  auth           String   // Authentication secret
+    // Push subscription data
+    endpoint String @unique
+    p256dh   String // Encryption key
+    auth     String // Authentication secret
 
-  // Metadata
-  userAgent      String?  // Browser/device info
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  lastUsedAt     DateTime @default(now())
+    // Metadata
+    userAgent  String? // Browser/device info
+    isActive   Boolean  @default(true)
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+    lastUsedAt DateTime @default(now())
 
-  // INDEXES
-  @@index([userId])
-  @@index([endpoint])
-  @@index([isActive])
-  @@index([userId, isActive]) // Get user's active subscriptions
+    // INDEXES
+    @@index([userId])
+    @@index([endpoint])
+    @@index([isActive])
+    @@index([userId, isActive]) // Get user's active subscriptions
 }
