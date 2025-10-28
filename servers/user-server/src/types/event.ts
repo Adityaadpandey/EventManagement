@@ -6,6 +6,7 @@ export interface TicketTypeRequest {
   discountReason?: string;
   quantity: number;
   salesCutoff?: string; // ISO date string
+  customField?: CustomFieldRequest[];
 }
 
 export interface CustomFieldRequest {

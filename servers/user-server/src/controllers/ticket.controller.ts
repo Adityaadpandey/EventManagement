@@ -40,7 +40,7 @@ export class TicketController {
       );
     } catch (error: any) {
       if (error.name === "ZodError") {
-        return sendError(res, error.errors?.[0]?.message, 400);
+        return sendError(res, error, 400);
       }
       logger.error("Error buying ticket:", error);
       return sendError(res, "Failed to create ticket", 500);
