@@ -59,6 +59,17 @@ export class EventService {
             "Invalid ticket type data. Name, valid price, and positive quantity are required",
           );
         }
+
+        // Validate ticket-specific custom fields if provided
+        if (ticketType.customField && ticketType.customField.length > 0) {
+          for (const field of ticketType.customField) {
+            if (!field.label || !field.fieldType) {
+              throw new Error(
+                `Invalid custom field for ticket type "${ticketType.name}". Label and fieldType are required`,
+              );
+            }
+          }
+        }
       }
 
       // Parse and validate date/time
@@ -110,10 +121,11 @@ export class EventService {
           },
         });
 
-        // Create ticket types
+        // Create ticket types with their custom fields
         const ticketTypes = await Promise.all(
           eventData.ticketTypes.map(async (ticketType) => {
-            return await tx.ticketType.create({
+            // Create the ticket type
+            const createdTicketType = await tx.ticketType.create({
               data: {
                 eventId: event.eventId,
                 name: ticketType.name,
@@ -127,17 +139,42 @@ export class EventService {
                   : null,
               },
             });
+
+            // Create ticket-specific custom fields if provided
+            let ticketCustomFields: any = [];
+            if (ticketType.customField && ticketType.customField.length > 0) {
+              ticketCustomFields = await Promise.all(
+                ticketType.customField.map(async (field) => {
+                  return await tx.customField.create({
+                    data: {
+                      eventId: event.eventId,
+                      ticketTypeId: createdTicketType.ticketTypeId,
+                      label: field.label,
+                      fieldType: field.fieldType,
+                      required: field.required,
+                      options: field.options,
+                    },
+                  });
+                }),
+              );
+            }
+
+            return {
+              ...createdTicketType,
+              customFields: ticketCustomFields,
+            };
           }),
         );
 
-        // Create custom fields if provided
-        let customFields: any = [];
+        // Create event-level custom fields if provided
+        let eventCustomFields: any = [];
         if (eventData.customFields && eventData.customFields.length > 0) {
-          customFields = await Promise.all(
+          eventCustomFields = await Promise.all(
             eventData.customFields.map(async (field) => {
               return await tx.customField.create({
                 data: {
                   eventId: event.eventId,
+                  ticketTypeId: null, // Event-level field, not ticket-specific
                   label: field.label,
                   fieldType: field.fieldType,
                   required: field.required,
@@ -158,7 +195,7 @@ export class EventService {
         return {
           event,
           ticketTypes,
-          customFields,
+          eventCustomFields,
         };
       });
 
@@ -176,8 +213,16 @@ export class EventService {
               },
             },
           },
-          TicketType: true,
-          CustomField: true,
+          TicketType: {
+            include: {
+              CustomField: true, // Include ticket-specific custom fields
+            },
+          },
+          CustomField: {
+            where: {
+              ticketTypeId: null, // Only event-level custom fields
+            },
+          },
           EventAnalytics: true,
         },
       });
@@ -524,7 +569,6 @@ export class EventService {
       // Try to get from cache first
       const cacheKey = `event:public:${eventId}`;
       const cached = await redis.get(cacheKey);
-
       if (cached) {
         return JSON.parse(cached);
       }
@@ -561,16 +605,33 @@ export class EventService {
             select: {
               ticketTypeId: true,
               name: true,
+              description: true,
               price: true,
               quantity: true,
               discountedPrice: true,
               discountReason: true,
               salesCutoff: true,
               platformfee: true,
+              soldCount: true,
+              CustomField: {
+                // Include ticket-specific custom fields
+                select: {
+                  fieldId: true,
+                  label: true,
+                  fieldType: true,
+                  required: true,
+                  options: true,
+                },
+              },
             },
           },
           CustomField: {
+            // Include event-level custom fields only
+            where: {
+              ticketTypeId: null,
+            },
             select: {
+              fieldId: true,
               label: true,
               fieldType: true,
               required: true,
@@ -588,6 +649,18 @@ export class EventService {
       if (!event) {
         throw new Error("Event not found");
       }
+
+      // // Calculate available tickets for each ticket type
+      // const eventWithAvailability = {
+      //   ...event,
+      //   TicketType: event.TicketType.map((ticketType) => ({
+      //     ...ticketType,
+      //     availableQuantity: ticketType.quantity - ticketType.soldCount,
+      //     isAvailable:
+      //       ticketType.quantity - ticketType.soldCount > 0 &&
+      //       (!ticketType.salesCutoff || new Date(ticketType.salesCutoff) > new Date()),
+      //   })),
+      // };
 
       // Store in cache with 10 hour expiration (adjust as needed)
       await redis.set(cacheKey, JSON.stringify(event), "EX", 3600 * 10);
