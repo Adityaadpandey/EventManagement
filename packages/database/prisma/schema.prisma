@@ -173,6 +173,8 @@ model CustomField {
     fieldId               String                  @id @default(uuid())
     eventId               String
     event                 Event                   @relation(fields: [eventId], references: [eventId])
+    ticketTypeId         String?
+    ticketType           TicketType?             @relation(fields: [ticketTypeId], references:[ticketTypeId])
     label                 String
     fieldType             String
     required              Boolean                 @default(false)
@@ -182,6 +184,8 @@ model CustomField {
     // INDEXES
     @@index([eventId]) // Query fields for specific event
     @@index([required]) // Find required fields
+    @@index([ticketTypeId])
+
 }
 
 model TicketType {
@@ -206,6 +210,7 @@ model TicketType {
 
     // Relations
     Ticket Ticket[]
+    CustomField CustomField[]
 
     // INDEXES
     @@index([eventId]) // Query ticket types for event
