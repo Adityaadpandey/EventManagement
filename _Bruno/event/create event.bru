@@ -23,17 +23,39 @@ body:json {
     "latitude": 31.2554,
     "longitude": 75.7050,
     "capacity": 500,
-    "tags": ["Hackathon", "Coding", "Innovation", "Students", "Tech"],
-    "chips": ["On-Campus", "36 Hours", "Teams Allowed", "Free Swags"],
+    "tags": [
+      "Hackathon",
+      "Coding",
+      "Innovation",
+      "Students",
+      "Tech"
+    ],
+    "chips": [
+      "On-Campus",
+      "36 Hours",
+      "Teams Allowed",
+      "Free Swags"
+    ],
     "restrictions": "Open only to university students. Teams of 1-4 allowed.",
-  
     "ticketTypes": [
       {
         "name": "General Admission",
         "description": "Access to all areas of the hackathon including workshops and mentor support.",
         "price": 0.0,
         "quantity": 300,
-        "salesCutoff": "2025-12-10T23:59:59.000Z"
+        "salesCutoff": "2025-12-10T23:59:59.000Z",
+        "customField": [
+          {
+            "label": "Team Name",
+            "fieldType": "text",
+            "required": true
+          },
+          {
+            "label": "GitHub Profile",
+            "fieldType": "url",
+            "required": false
+          }
+        ]
       },
       {
         "name": "Premium Admission",
@@ -45,7 +67,6 @@ body:json {
         "salesCutoff": "2025-12-10T23:59:59.000Z"
       }
     ],
-  
     "customFields": [
       {
         "label": "Team Name",
@@ -77,7 +98,6 @@ body:json {
       }
     ]
   }
-  
 }
 
 settings {

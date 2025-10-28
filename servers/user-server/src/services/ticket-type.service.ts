@@ -41,26 +41,59 @@ export class TicketTypeService {
         }
       }
 
-      // Create the ticket type
-      const ticketType = await prisma.ticketType.create({
-        data: {
-          eventId,
-          name: payload.name,
-          description: payload.description,
-          price: payload.price,
-          discountedPrice: payload.discountedPrice,
-          discountReason: payload.discountReason,
-          quantity: payload.quantity,
-          salesCutoff: payload.salesCutoff
-            ? new Date(payload.salesCutoff)
-            : null,
+      // Use transaction to create ticket type and custom fields
+      const result = await prisma.$transaction(async (tx) => {
+        // Create the ticket type
+        const ticketType = await tx.ticketType.create({
+          data: {
+            eventId,
+            name: payload.name,
+            description: payload.description,
+            price: payload.price,
+            discountedPrice: payload.discountedPrice,
+            discountReason: payload.discountReason,
+            quantity: payload.quantity,
+            salesCutoff: payload.salesCutoff
+              ? new Date(payload.salesCutoff)
+              : null,
+          },
+        });
+
+        // Create ticket-specific custom fields if provided
+        let customFields = [];
+        if (payload.customField && payload.customField.length > 0) {
+          customFields = await Promise.all(
+            payload.customField.map(async (field: any) => {
+              return await tx.customField.create({
+                data: {
+                  eventId,
+                  ticketTypeId: ticketType.ticketTypeId,
+                  label: field.label,
+                  fieldType: field.fieldType,
+                  required: field.required,
+                  options: field.options,
+                },
+              });
+            }),
+          );
+        }
+
+        return { ticketType, customFields };
+      });
+
+      // Fetch the complete ticket type with custom fields
+      const completeTicketType = await prisma.ticketType.findUnique({
+        where: { ticketTypeId: result.ticketType.ticketTypeId },
+        include: {
+          CustomField: true,
         },
       });
 
       logger.info(
-        `Ticket type ${ticketType.ticketTypeId} created for event ${eventId}`,
+        `Ticket type ${result.ticketType.ticketTypeId} created for event ${eventId} with ${result.customFields.length} custom fields`,
       );
-      return ticketType;
+
+      return completeTicketType;
     } catch (error) {
       logger.error("Error creating ticket type:", error);
       throw error;
@@ -87,6 +120,7 @@ export class TicketTypeService {
         },
         include: {
           event: true,
+          CustomField: true,
           _count: {
             select: { Ticket: true },
           },
@@ -123,32 +157,80 @@ export class TicketTypeService {
         }
       }
 
-      // Update the ticket type
-      const updatedTicketType = await prisma.ticketType.update({
+      // Use transaction to update ticket type and handle custom fields
+      const result = await prisma.$transaction(async (tx) => {
+        // Update the ticket type
+        const updatedTicketType = await tx.ticketType.update({
+          where: { ticketTypeId },
+          data: {
+            ...(payload.name && { name: payload.name }),
+            ...(payload.description !== undefined && {
+              description: payload.description,
+            }),
+            ...(payload.price !== undefined && { price: payload.price }),
+            ...(payload.discountedPrice !== undefined && {
+              discountedPrice: payload.discountedPrice,
+            }),
+            ...(payload.discountReason !== undefined && {
+              discountReason: payload.discountReason,
+            }),
+            ...(payload.quantity !== undefined && {
+              quantity: payload.quantity,
+            }),
+            ...(payload.salesCutoff !== undefined && {
+              salesCutoff: payload.salesCutoff
+                ? new Date(payload.salesCutoff)
+                : null,
+            }),
+          },
+        });
+
+        // Handle custom fields update if provided
+        let customFields = ticketType.CustomField;
+        if (payload.customField !== undefined) {
+          // If customField is provided, replace all existing fields
+          // First, delete existing ticket-specific custom fields
+          await tx.customField.deleteMany({
+            where: {
+              ticketTypeId,
+            },
+          });
+
+          // Then create new custom fields
+          if (payload.customField && payload.customField.length > 0) {
+            customFields = await Promise.all(
+              payload.customField.map(async (field: any) => {
+                return await tx.customField.create({
+                  data: {
+                    eventId,
+                    ticketTypeId,
+                    label: field.label,
+                    fieldType: field.fieldType,
+                    required: field.required,
+                    options: field.options,
+                  },
+                });
+              }),
+            );
+          } else {
+            customFields = [];
+          }
+        }
+
+        return { updatedTicketType, customFields };
+      });
+
+      // Fetch the complete ticket type with updated custom fields
+      const completeTicketType = await prisma.ticketType.findUnique({
         where: { ticketTypeId },
-        data: {
-          ...(payload.name && { name: payload.name }),
-          ...(payload.description !== undefined && {
-            description: payload.description,
-          }),
-          ...(payload.price !== undefined && { price: payload.price }),
-          ...(payload.discountedPrice !== undefined && {
-            discountedPrice: payload.discountedPrice,
-          }),
-          ...(payload.discountReason !== undefined && {
-            discountReason: payload.discountReason,
-          }),
-          ...(payload.quantity !== undefined && { quantity: payload.quantity }),
-          ...(payload.salesCutoff !== undefined && {
-            salesCutoff: payload.salesCutoff
-              ? new Date(payload.salesCutoff)
-              : null,
-          }),
+        include: {
+          CustomField: true,
         },
       });
 
       logger.info(`Ticket type ${ticketTypeId} updated for event ${eventId}`);
-      return updatedTicketType;
+
+      return completeTicketType;
     } catch (error) {
       logger.error("Error updating ticket type:", error);
       throw error;

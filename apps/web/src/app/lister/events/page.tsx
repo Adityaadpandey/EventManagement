@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
+import { BarChart, Edit } from "lucide-react";
 
 type ListerEvent = {
   eventId: string;
@@ -53,6 +54,7 @@ export default function ListerEventsPage() {
   const [items, setItems] = useState<ListerEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancel = false;
@@ -72,6 +74,17 @@ export default function ListerEventsPage() {
     };
   }, []);
 
+  const handleCopyLink = async (eventId: string) => {
+    const url = `https://tixin.in/event/${eventId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(eventId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      alert("Failed to copy link");
+    }
+  };
+
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -87,31 +100,38 @@ export default function ListerEventsPage() {
     );
 
   return (
-    <div className="mx-auto w-7xl p-6 pb-40">
-      <div className="flex items-center justify-between mb-8">
+    <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 pb-40 py-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3">
         <h1 className="home-page-heading">My Events</h1>
         <Link
           href="/lister/events/create"
-          className="bg-[#FFE348] hover:bg-yellow-300 text-gray-900 text-sm font-medium px-4 py-2 rounded-lg transition duration-200 flex items-center gap-2"
+          className="bg-[#FFE348] hover:bg-yellow-300 text-gray-900 text-sm sm:text-base font-medium px-4 py-2 rounded-lg transition duration-200 flex items-center gap-2 w-full sm:w-auto justify-center"
         >
-          <span>+</span> Create Event
+          <span>＋</span> Create Event
         </Link>
       </div>
 
+      {/* Empty State */}
       {items.length === 0 ? (
-        <div className="p-8 border border-gray-200 rounded-lg bg-white text-gray-600 text-center">
-          <p className="text-lg font-medium">No events listed yet.</p>
-          <p className="mt-2">Start by creating your first event!</p>
+        <div className="p-6 sm:p-8 border border-gray-200 rounded-lg bg-white text-gray-600 text-center">
+          <p className="text-base sm:text-lg font-medium">
+            No events listed yet.
+          </p>
+          <p className="mt-2 text-sm sm:text-base">
+            Start by creating your first event!
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {items.map((ev) => (
             <div
               key={ev.eventId}
-              className="bg-white border border-gray-200 rounded-3xl p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow duration-200"
+              className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 sm:gap-4 hover:shadow-lg transition-shadow duration-200"
             >
+              {/* Banner */}
               {ev.banner_square || ev.banner_horizontal ? (
-                <div className="relative w-full h-48 rounded-2xl overflow-hidden border border-gray-100">
+                <div className="relative w-full h-40 sm:h-48 rounded-xl overflow-hidden border border-gray-100">
                   <img
                     src={ev.banner_square || ev.banner_horizontal!}
                     alt={ev.title}
@@ -119,23 +139,27 @@ export default function ListerEventsPage() {
                   />
                 </div>
               ) : (
-                <div className="w-full h-48 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <span className="text-gray-400">No banner</span>
+                <div className="w-full h-40 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+                  No banner
                 </div>
               )}
 
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900 line-clamp-1">
+              {/* Title + Status */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 line-clamp-1">
                   {ev.title}
                 </h2>
                 <span
-                  className={`text-xs font-medium px-3 py-1 rounded-full ${statusBadgeClass(ev.status)}`}
+                  className={`text-xs sm:text-sm font-medium px-3 py-1 rounded-full ${statusBadgeClass(
+                    ev.status,
+                  )}`}
                 >
                   {formatStatus(ev.status)}
                 </span>
               </div>
 
-              <div className="text-sm text-gray-600 space-y-1">
+              {/* Info */}
+              <div className="text-sm sm:text-base text-gray-600 space-y-1">
                 {ev.location && (
                   <div className="flex items-center gap-2">
                     <span className="text-[#FFE348]">📍</span> {ev.location}
@@ -149,12 +173,34 @@ export default function ListerEventsPage() {
                 )}
               </div>
 
-              <div className="pt-2">
-                <Link
-                  href={`/event/${ev.eventId}`}
-                  className="text-sm text-yellow-600 hover:text-yellow-700 font-medium transition duration-200 flex items-center gap-2"
+              {/* Action Links */}
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 pt-2 text-sm font-medium">
+                {/* Copy / Share */}
+                <button
+                  onClick={() => handleCopyLink(ev.eventId)}
+                  className={`transition duration-200 flex items-center gap-2 justify-center sm:justify-start rounded-md px-3 py-2 border ${
+                    copiedId === ev.eventId
+                      ? "bg-green-50 text-green-700 border-green-200"
+                      : "text-yellow-600 hover:text-yellow-700 border-gray-200 hover:bg-yellow-50"
+                  }`}
                 >
-                  <span>🔗</span> View public page
+                  {copiedId === ev.eventId ? "✅ Copied!" : "🔗 Copy Link"}
+                </button>
+
+                {/* Analytics */}
+                <Link
+                  href={`/lister/events/${ev.eventId}`}
+                  className="text-blue-600 hover:text-blue-700 transition duration-200 flex items-center gap-2 justify-center sm:justify-start border border-gray-200 rounded-md px-3 py-2 hover:bg-blue-50"
+                >
+                  <BarChart /> Analytics
+                </Link>
+
+                {/* Edit */}
+                <Link
+                  href={`/event/${ev.eventId}/edit`}
+                  className="text-gray-700 hover:text-gray-900 transition duration-200 flex items-center gap-2 justify-center sm:justify-start border border-gray-200 rounded-md px-3 py-2 hover:bg-gray-50"
+                >
+                  <Edit /> Edit
                 </Link>
               </div>
             </div>

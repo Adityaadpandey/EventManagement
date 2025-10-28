@@ -6,60 +6,51 @@ import { config } from "../config";
 import { redis } from "../config/redis";
 
 const prisma = new PrismaClient({
-  log: ["error"], // Log only errors to reduce noise
+  log: ["error"],
   datasources: {
-    db: {
-      url: config.DATABASE_URL,
-    },
+    db: { url: config.DATABASE_URL },
   },
 });
 
 interface AnalyticsData {
   eventId: string;
-  type: "event_view" | "event_cta_click" | "ticket_purchase";
-  userId?: string;
+  type: "event_view" | "ticket_purchase" | "ticket_success";
   metadata?: Record<string, any>;
   timestamp: number;
 }
 
 interface EventStats {
   views: number;
-  ctaClicks: number;
-  ticketsSold: number;
+  ctaClicks: number; // attempted purchases
+  ticketsSold: number; // successful purchases
   revenue: number;
 }
 
-const BATCH_SIZE = 100; // Process 100 events at a time
-const POLLING_INTERVAL = 10000; // Poll every 10 seconds
+const BATCH_SIZE = 100;
+const POLLING_INTERVAL = 10000; // 10s
 
-/**
- * Process analytics queue and batch update the database
- */
 async function processAnalyticsQueue() {
   try {
-    // Get batch of analytics events from Redis queue
     const batch = await redis.rpop("analytics:queue", BATCH_SIZE);
-    if (!batch || batch.length === 0) {
-      return;
-    }
+    if (!batch || batch.length === 0) return;
+
     console.log(`📊 Processing ${batch.length} analytics events...`);
 
-    // Parse all events
+    // Parse and group events
     const events: AnalyticsData[] = batch
       .map((item) => {
         try {
           return JSON.parse(item);
-        } catch (error) {
-          console.error("Failed to parse analytics event:", error);
+        } catch (err) {
+          console.error("❌ Failed to parse event:", err);
           return null;
         }
       })
       .filter((e): e is AnalyticsData => e !== null);
 
-    // Group events by eventId for batch updates
     const eventStatsMap = new Map<string, EventStats>();
 
-    events.forEach((event) => {
+    for (const event of events) {
       const stats = eventStatsMap.get(event.eventId) || {
         views: 0,
         ctaClicks: 0,
@@ -71,59 +62,27 @@ async function processAnalyticsQueue() {
         case "event_view":
           stats.views++;
           break;
-        case "event_cta_click":
-          stats.ctaClicks++;
-          break;
+
         case "ticket_purchase":
+          // User attempted to buy tickets (regardless of success)
+          stats.ctaClicks += event.metadata?.quantity || 1;
+          break;
+
+        case "ticket_success":
+          // Successful ticket payment
           stats.ticketsSold += event.metadata?.quantity || 1;
           stats.revenue += event.metadata?.amount || 0;
           break;
       }
 
       eventStatsMap.set(event.eventId, stats);
-    });
+    }
 
-    // Batch update database
-    const updatePromises = Array.from(eventStatsMap.entries()).map(
+    // Batch update events in DB
+    const updates = Array.from(eventStatsMap.entries()).map(
       async ([eventId, stats]) => {
         try {
-          // First, get current event data to calculate accurate conversion rate
-          const currentEvent = await prisma.event.findUnique({
-            where: { eventId },
-            select: {
-              ctaClicksCount: true,
-              ticketsSold: true,
-            },
-          });
-
-          if (!currentEvent) {
-            console.warn(`⚠️ Event ${eventId} not found, skipping...`);
-            return;
-          }
-
-          // Calculate new totals after increments
-          const totalCtaClicks = currentEvent.ctaClicksCount + stats.ctaClicks;
-          const totalTicketsSold = currentEvent.ticketsSold + stats.ticketsSold;
-
-          // Conversion rate = (total tickets sold / total CTA clicks) * 100
-          const conversionRate =
-            totalCtaClicks > 0
-              ? Math.round((totalTicketsSold / totalCtaClicks) * 10000) / 100 // rounded to 2 decimals
-              : 0.1;
-          // Update Event model
-          await prisma.event.update({
-            where: { eventId },
-            data: {
-              viewsCount: { increment: stats.views },
-              ctaClicksCount: { increment: stats.ctaClicks },
-              ticketsSold: { increment: stats.ticketsSold },
-              revenue: { increment: stats.revenue },
-              conversionRate, // Use calculated conversion rate
-            },
-          });
-
-          // Get final event data after update to sync with EventAnalytics
-          const updatedEvent = await prisma.event.findUnique({
+          const current = await prisma.event.findUnique({
             where: { eventId },
             select: {
               viewsCount: true,
@@ -133,98 +92,92 @@ async function processAnalyticsQueue() {
             },
           });
 
-          // Sync EventAnalytics with Event table (use absolute values, not increments)
+          if (!current) {
+            console.warn(`⚠️ Event ${eventId} not found, skipping`);
+            return;
+          }
+
+          const totalViews = current.viewsCount + stats.views;
+          const totalCTA = current.ctaClicksCount + stats.ctaClicks;
+          const totalTicketsSold = current.ticketsSold + stats.ticketsSold;
+          const totalRevenue = current.revenue + stats.revenue;
+
+          const conversionRate =
+            totalCTA > 0
+              ? Math.round((totalTicketsSold / totalCTA) * 10000) / 100
+              : 0;
+
+          // Update main event
+          await prisma.event.update({
+            where: { eventId },
+            data: {
+              viewsCount: { increment: stats.views },
+              ctaClicksCount: { increment: stats.ctaClicks },
+              ticketsSold: { increment: stats.ticketsSold },
+              revenue: { increment: stats.revenue },
+              conversionRate,
+            },
+          });
+
+          // Update analytics table (absolute sync)
           await prisma.eventAnalytics.upsert({
             where: { eventId },
             create: {
               eventId,
-              views: updatedEvent!.viewsCount,
-              clicks: updatedEvent!.ctaClicksCount,
-              ticketsSold: updatedEvent!.ticketsSold,
-              revenue: updatedEvent!.revenue,
+              views: totalViews,
+              clicks: totalCTA,
+              ticketsSold: totalTicketsSold,
+              revenue: totalRevenue,
               conversionRate,
               lastUpdated: new Date(),
             },
             update: {
-              views: updatedEvent!.viewsCount,
-              clicks: updatedEvent!.ctaClicksCount,
-              ticketsSold: updatedEvent!.ticketsSold,
-              revenue: updatedEvent!.revenue,
+              views: totalViews,
+              clicks: totalCTA,
+              ticketsSold: totalTicketsSold,
+              revenue: totalRevenue,
               conversionRate,
               lastUpdated: new Date(),
             },
           });
 
           console.log(
-            `✅ Updated analytics for event ${eventId}: +${stats.views} views, +${stats.ctaClicks} clicks, +${stats.ticketsSold} tickets, CR: ${conversionRate}%`,
+            `✅ Event ${eventId}: +${stats.views} views, +${stats.ctaClicks} CTA, +${stats.ticketsSold} sold, ₹${stats.revenue} revenue, CR ${conversionRate}%`,
           );
-        } catch (error) {
-          console.error(
-            `❌ Failed to update analytics for event ${eventId}:`,
-            error,
-          );
-
-          // Re-queue failed events (with retry limit)
-          const failedEvents = events.filter((e) => e.eventId === eventId);
-          for (const event of failedEvents) {
-            const retryCount = (event as any).retryCount || 0;
-            if (retryCount < 3) {
-              await redis.lpush(
-                "analytics:queue",
-                JSON.stringify({ ...event, retryCount: retryCount + 1 }),
-              );
-            } else {
-              console.error(
-                `❌ Event ${eventId} failed after 3 retries, dropping event`,
-              );
-            }
-          }
+        } catch (err) {
+          console.error(`❌ Failed analytics update for ${eventId}:`, err);
         }
       },
     );
 
-    await Promise.allSettled(updatePromises);
+    await Promise.allSettled(updates);
     console.log(`✅ Completed processing ${batch.length} analytics events`);
-  } catch (error) {
-    console.error("❌ Analytics worker error:", error);
+  } catch (err) {
+    console.error("❌ Analytics worker error:", err);
   }
 }
 
-/**
- * Main worker loop
- */
 async function startWorker() {
   console.log("🚀 Analytics worker started");
-
-  // Initial run
   await processAnalyticsQueue();
-
-  // Set up polling interval
-  setInterval(async () => {
-    await processAnalyticsQueue();
-  }, POLLING_INTERVAL);
+  setInterval(processAnalyticsQueue, POLLING_INTERVAL);
 }
 
-// Handle graceful shutdown
 process.on("SIGTERM", async () => {
-  console.log("📊 Analytics worker shutting down...");
+  console.log("📊 Worker shutting down...");
   await prisma.$disconnect();
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
-  console.log("📊 Analytics worker shutting down...");
+  console.log("📊 Worker shutting down...");
   await prisma.$disconnect();
   process.exit(0);
 });
 
-// Start the worker
-startWorker().catch((error) => {
-  console.error("❌ Failed to start analytics worker:", error);
+startWorker().catch((err) => {
+  console.error("❌ Failed to start worker:", err);
   process.exit(1);
 });
 
-// Notify parent thread that worker is ready
-if (parentPort) {
-  parentPort.postMessage({ status: "ready" });
-}
+if (parentPort) parentPort.postMessage({ status: "ready" });

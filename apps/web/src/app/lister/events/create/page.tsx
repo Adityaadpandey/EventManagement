@@ -95,7 +95,8 @@ const validateUrl = (url: string): boolean => {
 };
 
 const sanitizeInput = (input: string, maxLength?: number): string => {
-  let sanitized = input.trim().replace(/[<>]/g, "");
+  // Don't trim during typing - only remove dangerous characters
+  let sanitized = input.replace(/[<>]/g, "");
   if (maxLength) {
     sanitized = sanitized.slice(0, maxLength);
   }
@@ -563,29 +564,52 @@ const CreateEventPage = () => {
     validateStep,
   ]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts - REMOVED TEMPORARILY TO FIX SPACE BAR ISSUE
+  // Will add back with proper event filtering
+  /*
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // ONLY handle very specific keyboard shortcuts
+      // Check for modifier keys first to avoid any interference with normal typing
+      
+      const hasAlt = e.altKey;
+      const hasCtrlOrCmd = e.ctrlKey || e.metaKey;
+      const isArrowLeft = e.key === "ArrowLeft";
+      const isArrowRight = e.key === "ArrowRight";
+      const isEnter = e.key === "Enter";
+      
       // Alt + Left Arrow: Previous step
-      if (e.altKey && e.key === "ArrowLeft" && currentStep > 1) {
+      if (hasAlt && isArrowLeft && !hasCtrlOrCmd && currentStep > 1) {
         e.preventDefault();
+        e.stopPropagation();
         prevStep();
+        return;
       }
+      
       // Alt + Right Arrow: Next step
-      if (e.altKey && e.key === "ArrowRight" && currentStep < 4) {
+      if (hasAlt && isArrowRight && !hasCtrlOrCmd && currentStep < 4) {
         e.preventDefault();
+        e.stopPropagation();
         nextStep();
+        return;
       }
+      
       // Ctrl/Cmd + Enter: Submit (on review step)
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && currentStep === 4) {
+      if (hasCtrlOrCmd && isEnter && !hasAlt && currentStep === 4) {
         e.preventDefault();
+        e.stopPropagation();
         handleSubmit();
+        return;
       }
+      
+      // For any other key, do absolutely nothing - let it pass through naturally
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    // Use capture phase to ensure we can stop propagation if needed
+    window.addEventListener("keydown", handleKeyDown, { capture: false });
+    return () => window.removeEventListener("keydown", handleKeyDown, { capture: false });
   }, [currentStep, prevStep, nextStep, handleSubmit]);
+  */
 
   // Access control
   if (user && user.role !== "LISTER") {
@@ -627,12 +651,14 @@ const CreateEventPage = () => {
   const descriptionLength = getPlainTextLength(formData.description);
 
   return (
-    <div className="bg-gray-50 py-8 px-4 pb-40">
-      <div className="max-w-4xl mx-auto" ref={formRef}>
+    <div className="py-4 sm:py-8 px-3 sm:px-4 pb-32 sm:pb-40">
+      <div className="max-w-6xl mx-auto" ref={formRef}>
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Create New Event</h1>
-          <p className="text-gray-600">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-4xl font-bold mb-2">
+            Create New Event
+          </h1>
+          <p className="text-sm sm:text-base text-gray-600">
             Fill in the details to create your event. Your progress is
             automatically saved.
           </p>
@@ -690,14 +716,14 @@ const CreateEventPage = () => {
         </AnimatePresence>
 
         {/* Progress Bar */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between mb-3">
             {STEPS.map((step, idx) => (
               <button
                 key={step}
                 onClick={() => goToStep(idx + 1)}
                 disabled={idx + 1 > currentStep}
-                className={`flex-1 text-center text-sm font-medium transition-colors ${
+                className={`flex-1 text-center text-xs sm:text-sm font-medium transition-colors ${
                   currentStep > idx + 1
                     ? "text-green-600 cursor-pointer hover:text-green-700"
                     : currentStep === idx + 1
@@ -705,9 +731,9 @@ const CreateEventPage = () => {
                       : "text-gray-400 cursor-not-allowed"
                 }`}
               >
-                <div className="flex flex-col items-center gap-2">
+                <div className="flex flex-col items-center gap-1 sm:gap-2">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                    className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold ${
                       currentStep > idx + 1
                         ? "bg-green-100 text-green-700"
                         : currentStep === idx + 1
@@ -718,6 +744,9 @@ const CreateEventPage = () => {
                     {currentStep > idx + 1 ? "✓" : idx + 1}
                   </div>
                   <span className="hidden sm:inline">{step}</span>
+                  <span className="sm:hidden text-[10px]">
+                    {step.split(" ")[0]}
+                  </span>
                 </div>
               </button>
             ))}
@@ -730,9 +759,12 @@ const CreateEventPage = () => {
               transition={{ duration: 0.3 }}
             />
           </div>
-          <p className="text-xs text-gray-500 mt-2 text-center">
+          <p className="text-xs text-gray-500 mt-2 text-center hidden sm:block">
             Step {currentStep} of {STEPS.length} • Press Alt + Arrow keys to
             navigate
+          </p>
+          <p className="text-xs text-gray-500 mt-2 text-center sm:hidden">
+            Step {currentStep} of {STEPS.length}
           </p>
         </div>
 
@@ -771,7 +803,7 @@ const CreateEventPage = () => {
         </AnimatePresence>
 
         {/* Form Steps */}
-        <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm">
           <AnimatePresence mode="wait">
             {/* Step 1: Basic Info */}
             {currentStep === 1 && (
@@ -1478,15 +1510,15 @@ const CreateEventPage = () => {
         </div>
 
         {/* Navigation Buttons */}
-        <div className="mt-8 flex justify-between items-center">
+        <div className="mt-6 sm:mt-8 flex justify-between items-center gap-3">
           {currentStep > 1 ? (
             <button
               onClick={prevStep}
               disabled={loading}
-              className="px-8 py-3 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 sm:px-8 py-3 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm sm:text-base"
             >
               <svg
-                className="w-5 h-5"
+                className="w-4 h-4 sm:w-5 sm:h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -1498,15 +1530,16 @@ const CreateEventPage = () => {
                   d="M15 19l-7-7 7-7"
                 />
               </svg>
-              Previous
+              <span className="hidden sm:inline">Previous</span>
+              <span className="sm:hidden">Back</span>
             </button>
           ) : (
             <div></div>
           )}
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {currentStep === 4 && (
-              <p className="text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-gray-600 hidden md:block">
                 Press Ctrl/Cmd + Enter to submit
               </p>
             )}
@@ -1514,11 +1547,11 @@ const CreateEventPage = () => {
               <button
                 onClick={nextStep}
                 disabled={loading}
-                className="px-8 py-3 bg-[#FFE348] rounded-full hover:bg-[#FFD700] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+                className="px-4 sm:px-8 py-3 bg-[#FFE348] rounded-full hover:bg-[#FFD700] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium text-sm sm:text-base"
               >
                 Next
                 <svg
-                  className="w-5 h-5"
+                  className="w-4 h-4 sm:w-5 sm:h-5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1535,12 +1568,12 @@ const CreateEventPage = () => {
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="px-8 py-3 bg-[#FFE348] rounded-full hover:bg-[#FFD700] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+                className="px-4 sm:px-8 py-3 bg-[#FFE348] rounded-full hover:bg-[#FFD700] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium text-sm sm:text-base whitespace-nowrap"
               >
                 {loading ? (
                   <>
                     <svg
-                      className="animate-spin w-5 h-5"
+                      className="animate-spin w-4 h-4 sm:w-5 sm:h-5"
                       fill="none"
                       viewBox="0 0 24 24"
                     >
@@ -1558,12 +1591,13 @@ const CreateEventPage = () => {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Creating Event...
+                    <span className="hidden sm:inline">Creating Event...</span>
+                    <span className="sm:hidden">Creating...</span>
                   </>
                 ) : (
                   <>
                     <svg
-                      className="w-5 h-5"
+                      className="w-4 h-4 sm:w-5 sm:h-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -1575,7 +1609,8 @@ const CreateEventPage = () => {
                         d="M5 13l4 4L19 7"
                       />
                     </svg>
-                    Create Event
+                    <span className="hidden sm:inline">Create Event</span>
+                    <span className="sm:hidden">Create</span>
                   </>
                 )}
               </button>

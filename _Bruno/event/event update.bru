@@ -5,17 +5,18 @@ meta {
 }
 
 post {
-  url: {{host}}/event/{{eventId}}/info-update
+  url: {{host}}/event/info-update/{{eventId}}
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "update":"New place is here"
+    "update":"See Rohit this is not a big deal you need to understand this thing"
   }
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }
