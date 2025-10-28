@@ -572,7 +572,7 @@ export default function EventClient({
     try {
       await dispatch(requestOtp(trimmedEmail)).unwrap();
       setLocalAuthMsg("OTP sent to your email. Check inbox/spam.");
-      setResendTimer(300);
+      setResendTimer(60);
     } catch (err: any) {
       const errorMsg =
         err?.message || err?.response?.data?.message || "Failed to send OTP";
