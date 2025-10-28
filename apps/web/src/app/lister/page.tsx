@@ -601,27 +601,29 @@ const ListerDashboard: React.FC = () => {
 
         {/* Events List */}
         <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center">
+          {/* Header */}
+          <div className="p-4 sm:p-6 border-b border-gray-100">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center">
               <Calendar className="w-5 h-5 mr-2 text-[#FFE348]" />
               Your Events ({events.length})
             </h3>
           </div>
 
+          {/* Empty State */}
           {events.length === 0 ? (
-            <div className="p-12 text-center">
+            <div className="p-8 sm:p-12 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Calendar className="w-8 h-8 text-gray-400" />
               </div>
               <h4 className="text-lg font-semibold text-gray-900 mb-2">
                 No Events Yet
               </h4>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 mb-6 text-sm sm:text-base">
                 Create your first event to get started
               </p>
               <button
                 onClick={handleCreateEvent}
-                className="px-6 py-3 bg-[#FFE348] hover:bg-[#FFE348] font-medium rounded-lg transition-colors shadow-md inline-flex items-center space-x-2"
+                className="px-5 sm:px-6 py-3 bg-[#FFE348] hover:bg-[#FFE348]/90 font-medium rounded-lg transition-colors shadow-md inline-flex items-center space-x-2 text-sm sm:text-base"
               >
                 <Plus className="w-4 h-4" />
                 <span>Create Event</span>
@@ -632,24 +634,26 @@ const ListerDashboard: React.FC = () => {
               {events.map((event) => (
                 <div
                   key={event.eventId}
-                  className="p-6 hover:bg-gray-50 transition-colors"
+                  className="p-4 sm:p-6 hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    {/* Event Info */}
+                    <div className="flex items-start sm:items-center space-x-4 flex-1">
                       {event.banner_square ? (
                         <img
                           src={event.banner_square}
                           alt={event.title}
-                          className="w-20 h-20 rounded-lg object-cover shadow-md"
+                          className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover shadow-md flex-shrink-0"
                         />
                       ) : (
-                        <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-md">
-                          <Calendar className="w-8 h-8 text-white" />
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-md">
+                          <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                         </div>
                       )}
+
                       <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h4 className="text-lg font-bold text-gray-900">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h4 className="text-base sm:text-lg font-bold text-gray-900 break-words">
                             {event.title}
                           </h4>
                           <span
@@ -664,14 +668,15 @@ const ListerDashboard: React.FC = () => {
                             {event.status}
                           </span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+
+                        <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2 sm:gap-4 text-sm text-gray-600">
                           <span className="flex items-center">
                             <Calendar className="w-4 h-4 mr-1" />
                             {formatDate(event.date)}
                           </span>
                           <span className="flex items-center">
                             <Ticket className="w-4 h-4 mr-1 text-[#FFE348]" />
-                            {formatNumber(event.ticketsSold)} tickets sold
+                            {formatNumber(event.ticketsSold)} sold
                           </span>
                           <span className="flex items-center font-semibold text-green-600">
                             <DollarSign className="w-4 h-4 mr-1" />
@@ -680,22 +685,23 @@ const ListerDashboard: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center space-x-2 self-end sm:self-auto">
                       <button
                         onClick={() => handleViewEvent(event.eventId)}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 flex justify-center items-center gap-1 cursor-pointer"
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 flex items-center gap-1 text-sm"
                         title="View Event"
                       >
                         Analytics
-                        <Eye className="w-5 h-5" />
+                        <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
-
                       <button
                         onClick={() => handleEditEvent(event.eventId)}
                         className="p-2 hover:bg-yellow-50 rounded-lg transition-colors border cursor-pointer"
                         title="Edit Event"
                       >
-                        <Edit2 className="w-5 h-5" />
+                        <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
                     </div>
                   </div>
