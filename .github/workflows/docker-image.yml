@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - production
-    paths:
-      - 'servers/user-server/**'
+
 
 jobs:
   build-and-push:
