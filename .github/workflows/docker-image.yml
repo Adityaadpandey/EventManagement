@@ -5,7 +5,6 @@ on:
     branches:
       - production
 
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -33,7 +32,6 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push Docker image
-        if: ${{ github.event.head_commit.changed_files != 0 }}
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -41,3 +39,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Trigger deployment webhook
+        run: |
+          curl --request POST \
+            --url https://hook.sevalla.com/apps/53ed9ce4-d8bd-48d4-ab48-9b8815e2f25c/deploy/tpxeaqmqoqny
