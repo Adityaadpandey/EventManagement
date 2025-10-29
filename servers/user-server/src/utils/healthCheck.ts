@@ -26,6 +26,7 @@ interface FullHealthReport {
     arch: string;
   };
   version: string;
+  buildDate: string;
   services: {
     postgres: ServiceCheckResult;
     redis: ServiceCheckResult;
@@ -65,7 +66,7 @@ export const healthCheck = async (): Promise<FullHealthReport> => {
   const allHealthy = postgres.status && redisStatus.status;
 
   return {
-    name: config.SERVICE_NAME || "auth-service",
+    name: config.SERVICE_NAME || "tixin-production",
     status: allHealthy ? "ok" : "unhealthy",
     timestamp: new Date().toISOString(),
     uptime: Math.floor(process.uptime()), // seconds
@@ -75,10 +76,11 @@ export const healthCheck = async (): Promise<FullHealthReport> => {
       platform: os.platform(),
       arch: os.arch(),
     },
-    version: packageJson.version || "unknown",
     services: {
       postgres,
       redis: redisStatus,
     },
+    version: process.env.APP_VERSION || packageJson.version || "unknown",
+    buildDate: process.env.BUILD_DATE || "unkown",
   };
 };
