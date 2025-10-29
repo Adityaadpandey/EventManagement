@@ -14,6 +14,37 @@ import "react-quill-new/dist/quill.snow.css";
 // Dynamically import ReactQuill to avoid SSR issues
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
+// Dynamically import MapPicker to avoid SSR issues
+const MapPicker = dynamic(() => import("@/app/_components/MapPicker"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[400px] bg-gray-100 rounded-xl flex items-center justify-center">
+      <div className="text-center">
+        <svg
+          className="animate-spin w-8 h-8 text-gray-400 mx-auto mb-2"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          ></circle>
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+        <p className="text-sm text-gray-600">Loading map...</p>
+      </div>
+    </div>
+  ),
+});
+
 type TicketType = {
   name: string;
   description?: string;
@@ -52,11 +83,23 @@ interface ValidationErrors {
 // Constants
 const STEPS = ["Basic Info", "Banners", "Tickets", "Review"] as const;
 const MAX_TAGS = 10;
+const MAX_CHIPS = 4;
 const MAX_TITLE_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 2000;
 const MIN_DESCRIPTION_LENGTH = 50;
 const DRAFT_KEY = "eventDraft";
 const DRAFT_EXPIRY_HOURS = 24;
+
+// Predefined tag options
+const TAG_OPTIONS = [
+  "Fest",
+  "Tech",
+  "Hackathon",
+  "Cultural",
+  "EDM",
+  "Concert",
+  "NGO",
+];
 
 // Quill modules configuration
 const quillModules = {
@@ -273,27 +316,34 @@ const CreateEventPage = () => {
   }, []);
 
   // Tag management
-  const addTag = useCallback(() => {
-    const trimmed = sanitizeInput(tagInput);
-    if (!trimmed) return;
+  const addTag = useCallback(
+    (tagToAdd?: string) => {
+      const tag = tagToAdd || tagInput;
+      const trimmed = sanitizeInput(tag);
+      if (!trimmed) return;
 
-    if (formData.tags.length >= MAX_TAGS) {
-      setValidationErrors((prev) => ({
-        ...prev,
-        tags: `Maximum ${MAX_TAGS} tags allowed`,
-      }));
-      return;
-    }
+      if (formData.tags.length >= MAX_TAGS) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          tags: `Maximum ${MAX_TAGS} tags allowed`,
+        }));
+        return;
+      }
 
-    if (formData.tags.includes(trimmed)) {
-      setValidationErrors((prev) => ({ ...prev, tags: "Tag already exists" }));
-      return;
-    }
+      if (formData.tags.includes(trimmed)) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          tags: "Tag already exists",
+        }));
+        return;
+      }
 
-    setFormData((prev) => ({ ...prev, tags: [...prev.tags, trimmed] }));
-    setTagInput("");
-    setValidationErrors((prev) => ({ ...prev, tags: "" }));
-  }, [tagInput, formData.tags]);
+      setFormData((prev) => ({ ...prev, tags: [...prev.tags, trimmed] }));
+      setTagInput("");
+      setValidationErrors((prev) => ({ ...prev, tags: "" }));
+    },
+    [tagInput, formData.tags],
+  );
 
   const removeTag = useCallback((index: number) => {
     setFormData((prev) => ({
@@ -306,6 +356,14 @@ const CreateEventPage = () => {
   const addChip = useCallback(() => {
     const trimmed = sanitizeInput(chipInput);
     if (!trimmed) return;
+
+    if (formData.chips.length >= MAX_CHIPS) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        chips: `Maximum ${MAX_CHIPS} chips allowed`,
+      }));
+      return;
+    }
 
     if (formData.chips.includes(trimmed)) {
       setValidationErrors((prev) => ({
@@ -564,53 +622,6 @@ const CreateEventPage = () => {
     validateStep,
   ]);
 
-  // Keyboard shortcuts - REMOVED TEMPORARILY TO FIX SPACE BAR ISSUE
-  // Will add back with proper event filtering
-  /*
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // ONLY handle very specific keyboard shortcuts
-      // Check for modifier keys first to avoid any interference with normal typing
-      
-      const hasAlt = e.altKey;
-      const hasCtrlOrCmd = e.ctrlKey || e.metaKey;
-      const isArrowLeft = e.key === "ArrowLeft";
-      const isArrowRight = e.key === "ArrowRight";
-      const isEnter = e.key === "Enter";
-      
-      // Alt + Left Arrow: Previous step
-      if (hasAlt && isArrowLeft && !hasCtrlOrCmd && currentStep > 1) {
-        e.preventDefault();
-        e.stopPropagation();
-        prevStep();
-        return;
-      }
-      
-      // Alt + Right Arrow: Next step
-      if (hasAlt && isArrowRight && !hasCtrlOrCmd && currentStep < 4) {
-        e.preventDefault();
-        e.stopPropagation();
-        nextStep();
-        return;
-      }
-      
-      // Ctrl/Cmd + Enter: Submit (on review step)
-      if (hasCtrlOrCmd && isEnter && !hasAlt && currentStep === 4) {
-        e.preventDefault();
-        e.stopPropagation();
-        handleSubmit();
-        return;
-      }
-      
-      // For any other key, do absolutely nothing - let it pass through naturally
-    };
-
-    // Use capture phase to ensure we can stop propagation if needed
-    window.addEventListener("keydown", handleKeyDown, { capture: false });
-    return () => window.removeEventListener("keydown", handleKeyDown, { capture: false });
-  }, [currentStep, prevStep, nextStep, handleSubmit]);
-  */
-
   // Access control
   if (user && user.role !== "LISTER") {
     return (
@@ -760,8 +771,7 @@ const CreateEventPage = () => {
             />
           </div>
           <p className="text-xs text-gray-500 mt-2 text-center hidden sm:block">
-            Step {currentStep} of {STEPS.length} • Press Alt + Arrow keys to
-            navigate
+            Step {currentStep} of {STEPS.length}
           </p>
           <p className="text-xs text-gray-500 mt-2 text-center sm:hidden">
             Step {currentStep} of {STEPS.length}
@@ -988,6 +998,25 @@ const CreateEventPage = () => {
                   </div>
                 </div>
 
+                {/* Map Picker */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Select Location on Map (Optional)
+                  </label>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Click on the map to set the event location, or enter
+                    coordinates manually above
+                  </p>
+                  <MapPicker
+                    latitude={formData.latitude}
+                    longitude={formData.longitude}
+                    onLocationChange={(lat, lng) => {
+                      handleChange("latitude", lat);
+                      handleChange("longitude", lng);
+                    }}
+                  />
+                </div>
+
                 {/* Capacity */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -1014,26 +1043,26 @@ const CreateEventPage = () => {
                   <label className="block text-sm font-medium mb-2">
                     Tags (Optional)
                   </label>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="text"
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyPress={(e) =>
-                        e.key === "Enter" && (e.preventDefault(), addTag())
-                      }
+                  <div className="mb-3">
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          addTag(e.target.value);
+                        }
+                      }}
                       disabled={formData.tags.length >= MAX_TAGS}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      placeholder="Add a tag and press Enter"
-                    />
-                    <button
-                      type="button"
-                      onClick={addTag}
-                      disabled={formData.tags.length >= MAX_TAGS}
-                      className="px-6 py-3 bg-gray-200 rounded-xl hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
-                      Add
-                    </button>
+                      <option value="">Select a tag to add...</option>
+                      {TAG_OPTIONS.filter(
+                        (tag) => !formData.tags.includes(tag),
+                      ).map((tag) => (
+                        <option key={tag} value={tag}>
+                          {tag}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   {validationErrors.tags && (
                     <p className="text-red-500 text-xs mb-2">
@@ -1075,13 +1104,15 @@ const CreateEventPage = () => {
                       onKeyPress={(e) =>
                         e.key === "Enter" && (e.preventDefault(), addChip())
                       }
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black"
+                      disabled={formData.chips.length >= MAX_CHIPS}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black disabled:bg-gray-100 disabled:cursor-not-allowed"
                       placeholder="Add a chip and press Enter"
                     />
                     <button
                       type="button"
                       onClick={addChip}
-                      className="px-6 py-3 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors"
+                      disabled={formData.chips.length >= MAX_CHIPS}
+                      className="px-6 py-3 bg-gray-200 rounded-xl hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Add
                     </button>
@@ -1108,6 +1139,9 @@ const CreateEventPage = () => {
                       </span>
                     ))}
                   </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {formData.chips.length}/{MAX_CHIPS} chips
+                  </p>
                 </div>
 
                 {/* Restrictions */}
@@ -1628,10 +1662,39 @@ const CreateEventPage = () => {
           min-height: 150px;
           max-height: 300px;
           overflow-y: auto;
+          font-size: 14px !important;
+          line-height: 1.4 !important;
+          color: #8b8b8b !important;
+        }
+        .ql-editor * {
+          font-size: 14px !important;
+          line-height: 1.4 !important;
+          color: #8b8b8b !important;
+        }
+        .ql-editor p,
+        .ql-editor li,
+        .ql-editor span,
+        .ql-editor strong,
+        .ql-editor em,
+        .ql-editor u {
+          font-size: 14px !important;
+          line-height: 1.4 !important;
+          color: #8b8b8b !important;
+        }
+        .ql-editor h1,
+        .ql-editor h2,
+        .ql-editor h3 {
+          color: #8b8b8b !important;
+          line-height: 1.4 !important;
+        }
+        .ql-editor a {
+          color: #2563eb !important;
+          text-decoration: underline;
         }
         .ql-editor.ql-blank::before {
           font-style: normal;
           color: #9ca3af;
+          font-size: 14px !important;
         }
         .ql-toolbar {
           border-top-left-radius: 0.75rem;
@@ -1644,7 +1707,14 @@ const CreateEventPage = () => {
           border-bottom-right-radius: 0.75rem;
         }
         .prose {
-          color: inherit;
+          color: #8b8b8b;
+          font-size: 14px;
+          line-height: 1.4;
+        }
+        .prose * {
+          color: #8b8b8b !important;
+          font-size: 14px !important;
+          line-height: 1.4 !important;
         }
         .prose p {
           margin-bottom: 0.5em;
@@ -1654,7 +1724,7 @@ const CreateEventPage = () => {
           margin-left: 1.5em;
         }
         .prose a {
-          color: #2563eb;
+          color: #2563eb !important;
           text-decoration: underline;
         }
       `}</style>
