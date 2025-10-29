@@ -30,7 +30,7 @@ const TABS = [
   "Basic Info",
   "Banners",
   "Tickets & Fields",
-  "Additional",
+  // "Additional",
 ] as const;
 const MAX_TAGS = 10;
 const MAX_TITLE_LENGTH = 200;
@@ -1073,7 +1073,7 @@ const EditEventPage = () => {
             )}
 
             {/* Tab 3: Additional Info */}
-            {activeTab === 3 && (
+            {/* {activeTab === 3 && (
               <motion.div
                 key="tab3"
                 initial={{ opacity: 0, x: 20 }}
@@ -1164,7 +1164,7 @@ const EditEventPage = () => {
                   />
                 </div>
               </motion.div>
-            )}
+            )} */}
           </AnimatePresence>
         </div>
 
