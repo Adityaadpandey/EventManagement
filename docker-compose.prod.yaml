@@ -54,15 +54,6 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          memory: 1.5G
-          cpus: '0.75'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
     security_opt:
       - no-new-privileges:true
     cap_drop:

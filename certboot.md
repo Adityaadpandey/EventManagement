@@ -1,0 +1,1 @@
+docker run -it --rm   -v "$(pwd)/letsencrypt/conf:/etc/letsencrypt"   -v "$(pwd)/letsencrypt/www:/var/www/certbot"   certbot/certbot certonly --webroot   -w /var/www/certbot   -d api.tixin.in   --email adityapandeyadp@gmail.com   --agree-tos   --no-eff-email
