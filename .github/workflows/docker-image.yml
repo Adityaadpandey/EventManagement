@@ -35,6 +35,10 @@ jobs:
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
+      - name: Extract build date
+        id: build_date
+        run: echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -45,7 +49,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             APP_VERSION=${{ steps.vars.outputs.sha_short }}
-            BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            BUILD_DATE=${{ steps.build_date.outputs.date }}
 
 
       - name: Trigger deployment webhook
