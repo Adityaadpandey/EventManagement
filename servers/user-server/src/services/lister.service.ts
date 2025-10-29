@@ -258,7 +258,7 @@ export class ListerServer {
       const eventStats = await prisma.event.aggregate({
         where: {
           listerId,
-          status: "APPROVED",
+          // status: "APPROVED",
         },
         _sum: {
           ticketsSold: true,
