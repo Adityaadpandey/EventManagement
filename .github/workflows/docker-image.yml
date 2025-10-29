@@ -31,6 +31,10 @@ jobs:
             type=sha,format=short
             type=raw,value=latest
 
+      - name: Extract short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -40,8 +44,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            APP_VERSION=${{ steps.meta.outputs.version }}
-            BUILD_DATE=${{ github.run_started_at }}
+            APP_VERSION=${{ steps.vars.outputs.sha_short }}
+            BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
 
       - name: Trigger deployment webhook
         run: |
