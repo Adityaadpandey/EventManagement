@@ -38,6 +38,12 @@ WORKDIR /workspace/servers/user-server
 
 ENV NODE_ENV=production
 
+ARG APP_VERSION=unknown
+ENV APP_VERSION=${APP_VERSION}
+
+ARG BUILD_DATE
+ENV BUILD_DATE=${BUILD_DATE}
+
 RUN npm install -g pnpm
 RUN pnpm install --prod
 
