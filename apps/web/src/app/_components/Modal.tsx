@@ -350,7 +350,12 @@ const Modal: React.FC<ModalProps> = ({
                         <div className={innerClass} style={innerStyle}>
                           <div>
                             <div className="font-medium">{t.name}</div>
-                            <div className="text-xs">₹{t.price}</div>
+                            <div className="text-xs">
+                              ₹
+                              {t.discountedPrice && t.discountedPrice > 0
+                                ? t.discountedPrice
+                                : t.price}
+                            </div>
                           </div>
                           <div className="flex items-center gap-2 bg-black text-white rounded-xl py-1">
                             {active ? (
