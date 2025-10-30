@@ -1,4 +1,5 @@
 name: Build, Push, and Deploy with Notifications
+
 on:
   push:
     branches:
@@ -13,20 +14,21 @@ jobs:
     outputs:
       image_tag: ${{ steps.vars.outputs.sha_short }}
       build_status: ${{ job.status }}
+
     steps:
-      - name: Checkout source code
+      - name: 🧾 Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
+      - name: ⚙️ Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
+      - name: 🔐 Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Extract Docker metadata (tags and labels)
+      - name: 🏷️ Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -35,15 +37,15 @@ jobs:
             type=sha,format=short
             type=raw,value=latest
 
-      - name: Extract short SHA
+      - name: 📦 Extract short SHA
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Extract build date
+      - name: 🕒 Extract build date
         id: build_date
         run: echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
 
-      - name: Build and push Docker image
+      - name: 🏗️ Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -55,7 +57,7 @@ jobs:
             APP_VERSION=${{ steps.vars.outputs.sha_short }}
             BUILD_DATE=${{ steps.build_date.outputs.date }}
 
-      - name: Notify build status
+      - name: 📣 Notify build status
         if: always()
         uses: appleboy/telegram-action@master
         with:
@@ -71,13 +73,14 @@ jobs:
             *Author:* ${{ github.actor }}
             *Message:* ${{ github.event.head_commit.message }}
 
-            [View Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            [🔍 View Run Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
   deploy-to-staging:
     needs: build-and-push
     runs-on: ubuntu-latest
+
     steps:
-      - name: Notify deployment start
+      - name: 🚀 Notify deployment start
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -85,14 +88,12 @@ jobs:
           format: markdown
           message: |
             🚀 *Starting Staging Deployment*
-
             *Environment:* Staging
             *Server:* stag.tixin.in
             *Image:* `${{ needs.build-and-push.outputs.image_tag }}`
-
             ⏳ Deploying...
 
-      - name: Deploy to staging server
+      - name: ⚡ Deploy to staging server
         id: deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -103,63 +104,42 @@ jobs:
           script_stop: true
           script: |
             set -e
-
             echo "📦 Starting deployment..."
             cd EventManagement
 
-            # Pull latest images
-            echo "⬇️ Pulling images..."
+            echo "⬇️ Pulling latest images..."
             docker compose -f docker-compose.stag.yaml pull
 
-            # Start services
             echo "🚀 Starting services..."
             docker compose -f docker-compose.stag.yaml up -d --force-recreate
 
-            # Wait for backend health (increased wait time for cluster startup)
-            echo "⏳ Waiting for backend workers to start..."
-            sleep 10  # Give workers time to fork and initialize
-
-            echo "⏳ Checking backend health..."
-            for i in {1..45}; do
-              if docker compose -f docker-compose.stag.yaml exec -T backend-service wget --no-verbose --tries=1 --spider http://localhost:7001/health 2>/dev/null; then
+            echo "⏳ Waiting for backend readiness..."
+            for i in {1..30}; do
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://stag.tixin.in/health || echo "000")
+              if [ "$HTTP_CODE" = "200" ]; then
                 echo "✅ Backend is healthy!"
+                echo "STATUS=success" >> /tmp/deploy_result.txt
                 break
               fi
-              if [ $i -eq 45 ]; then
-                echo "❌ Backend health check failed after 45 attempts"
-                echo "📋 Last 100 lines of logs:"
-                docker compose -f docker-compose.stag.yaml logs --tail=100 backend-service
+              if [ $i -eq 30 ]; then
+                echo "❌ Backend health check failed after 30 attempts"
+                echo "STATUS=failed" >> /tmp/deploy_result.txt
+                docker compose -f docker-compose.stag.yaml logs --tail=100 backend-service || true
                 exit 1
               fi
-              echo "Attempt $i/45..."
-              sleep 3
+              echo "Attempt $i/30..."
+              sleep 5
             done
 
-            # Test external endpoint
-            echo "🔍 Testing external endpoint..."
-            sleep 5
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://stag.tixin.in/health || echo "000")
-            echo "HTTP_CODE=$HTTP_CODE" >> /tmp/deploy_result.txt
-
-            if [ "$HTTP_CODE" = "200" ]; then
-              echo "✅ External endpoint is healthy!"
-              echo "STATUS=success" >> /tmp/deploy_result.txt
-            else
-              echo "❌ External endpoint returned: $HTTP_CODE"
-              echo "STATUS=warning" >> /tmp/deploy_result.txt
-            fi
-
-            # Cleanup
             echo "🧹 Cleaning up..."
             docker image prune -f
 
-            # Get container stats
             echo "📊 Container Status:"
             docker compose -f docker-compose.stag.yaml ps
 
             echo "✨ Deployment complete!"
 
-      - name: Get deployment details
+      - name: 📊 Get deployment details
         if: always()
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -169,22 +149,20 @@ jobs:
           port: 22
           script: |
             cd EventManagement
-
-            # Get container status
             echo "=== CONTAINER STATUS ==="
-            docker compose -f docker-compose.stag.yaml ps --format json | jq -r '.[] | "Container: \(.Name), Status: \(.State), Health: \(.Health)"'
+            docker compose -f docker-compose.stag.yaml ps --format json 2>/dev/null | \
+            jq -r '.[]? | "Container: \(.Name // "unknown"), Status: \(.State // "unknown"), Health: \(.Health // "n/a")"' || \
+            echo "⚠️ Could not parse container status (non-JSON output)"
 
-            # Get health check result if exists
+            echo "=== ENDPOINT TEST ==="
+            curl -s -o /dev/null -w "HTTP Status: %{http_code}\nResponse Time: %{time_total}s\n" https://stag.tixin.in/health || echo "Endpoint check failed"
+
             if [ -f /tmp/deploy_result.txt ]; then
               cat /tmp/deploy_result.txt
               rm /tmp/deploy_result.txt
             fi
 
-            # Test endpoint
-            echo "=== ENDPOINT TEST ==="
-            curl -s -o /dev/null -w "HTTP Status: %{http_code}\nResponse Time: %{time_total}s\n" https://stag.tixin.in/health || echo "Endpoint check failed"
-
-      - name: Notify deployment success
+      - name: ✅ Notify deployment success
         if: success()
         uses: appleboy/telegram-action@master
         with:
@@ -197,14 +175,13 @@ jobs:
             *Environment:* Staging
             *Server:* stag.tixin.in
             *Image:* `${{ needs.build-and-push.outputs.image_tag }}`
-            *Duration:* ${{ job.duration }}
 
-            🔗 [Test URL](https://stag.tixin.in/health)
+            🔗 [Health Check](https://stag.tixin.in/health)
             📊 [View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
-            All health checks passed! 🎉
+            🎉 All checks passed successfully!
 
-      - name: Notify deployment failure
+      - name: ❌ Notify deployment failure
         if: failure()
         uses: appleboy/telegram-action@master
         with:
@@ -218,13 +195,10 @@ jobs:
             *Server:* stag.tixin.in
             *Image:* `${{ needs.build-and-push.outputs.image_tag }}`
 
-            ⚠️ *Action Required!*
-            Check the logs immediately:
+            ⚠️ *Manual action may be required!*
             📊 [View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
 
-            Deployment has been rolled back.
-
-      - name: Rollback on failure
+      - name: 🔁 Rollback on failure
         if: failure()
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -233,8 +207,13 @@ jobs:
           key: ${{ secrets.STAGING_SSH_KEY }}
           port: 22
           script: |
+            if grep -q "STATUS=success" /tmp/deploy_result.txt 2>/dev/null; then
+              echo "✅ Deployment succeeded, skipping rollback."
+              exit 0
+            fi
+
             echo "❌ Rolling back..."
             cd EventManagement
             docker compose -f docker-compose.stag.yaml down
             docker compose -f docker-compose.stag.yaml up -d
-            echo "Rollback complete"
+            echo "♻️ Rollback complete."
