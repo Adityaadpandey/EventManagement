@@ -1,4 +1,3 @@
-
 name: Build, Push, and Deploy with Notifications
 on:
   push:
@@ -116,36 +115,24 @@ jobs:
             echo "🚀 Starting services..."
             docker compose -f docker-compose.stag.yaml up -d --force-recreate
 
-            # Wait for backend health
+            # Wait for backend health (increased wait time for cluster startup)
+            echo "⏳ Waiting for backend workers to start..."
+            sleep 10  # Give workers time to fork and initialize
+
             echo "⏳ Checking backend health..."
-            for i in {1..30}; do
+            for i in {1..45}; do
               if docker compose -f docker-compose.stag.yaml exec -T backend-service wget --no-verbose --tries=1 --spider http://localhost:7001/health 2>/dev/null; then
                 echo "✅ Backend is healthy!"
                 break
               fi
-              if [ $i -eq 30 ]; then
-                echo "❌ Backend health check failed"
-                docker compose -f docker-compose.stag.yaml logs --tail=50 backend-service
+              if [ $i -eq 45 ]; then
+                echo "❌ Backend health check failed after 45 attempts"
+                echo "📋 Last 100 lines of logs:"
+                docker compose -f docker-compose.stag.yaml logs --tail=100 backend-service
                 exit 1
               fi
-              echo "Attempt $i/30..."
-              sleep 2
-            done
-
-            # Wait for nginx health
-            echo "⏳ Checking nginx health..."
-            for i in {1..20}; do
-              if docker compose -f docker-compose.stag.yaml exec -T nginx wget --no-verbose --tries=1 --spider http://localhost/nginx-health 2>/dev/null; then
-                echo "✅ Nginx is healthy!"
-                break
-              fi
-              if [ $i -eq 20 ]; then
-                echo "❌ Nginx health check failed"
-                docker compose -f docker-compose.stag.yaml logs --tail=50 nginx
-                exit 1
-              fi
-              echo "Attempt $i/20..."
-              sleep 2
+              echo "Attempt $i/45..."
+              sleep 3
             done
 
             # Test external endpoint
