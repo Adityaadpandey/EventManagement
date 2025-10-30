@@ -520,6 +520,8 @@ export class EventService {
           name: true,
           price: true,
           quantity: true,
+          discountedPrice: true,
+          discountReason: true,
           salesCutoff: true,
         },
       },
