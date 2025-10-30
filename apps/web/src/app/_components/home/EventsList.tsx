@@ -34,7 +34,11 @@ export const EventsList = memo(
               className="group"
             >
               <EventCard
-                discountedPrice={ev.discountedPrice}
+                discountedPrice={
+                  ev.TicketType && ev.TicketType.length > 0
+                    ? Math.min(...ev.TicketType.map((t) => t.discountedPrice))
+                    : 0
+                }
                 imageUrl={ev.banner_horizontal}
                 title={ev.title}
                 location={ev.location}
