@@ -1,6 +1,6 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
-import { setCachedUser } from "../lib/redis-fn";
+import { invalidateUserSessions, setCachedUser } from "../lib/redis-fn";
 
 export class ListerServer {
   async applyForLister(
@@ -116,6 +116,8 @@ export class ListerServer {
       if (!lister) {
         throw new Error("Lister not found for given userId");
       }
+      await invalidateUserSessions(userId);
+
       return lister;
     } catch (error) {
       logger.error("Error in meLister:", error);
