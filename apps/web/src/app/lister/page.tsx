@@ -674,14 +674,6 @@ const ListerDashboard: React.FC = () => {
                             <Calendar className="w-4 h-4 mr-1" />
                             {formatDate(event.date)}
                           </span>
-                          <span className="flex items-center">
-                            <Ticket className="w-4 h-4 mr-1 text-[#FFE348]" />
-                            {formatNumber(event.ticketsSold)} sold
-                          </span>
-                          <span className="flex items-center font-semibold text-green-600">
-                            <DollarSign className="w-4 h-4 mr-1" />
-                            {formatCurrency(event.revenue)}
-                          </span>
                         </div>
                       </div>
                     </div>

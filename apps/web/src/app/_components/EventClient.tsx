@@ -753,7 +753,15 @@ export default function EventClient({
       return;
     }
 
-    if (ev?.CustomField) {
+    if (ev?.CustomField || selectedTicket.CustomField) {
+      for (const f of selectedTicket.CustomField) {
+        if (f.required && !attendee[f.label]?.trim()) {
+          setBuyError(`Please fill in ${f.label}`);
+          setModalStep(1);
+          return;
+        }
+      }
+
       for (const f of ev.CustomField) {
         if (f.required && !attendee[f.label]?.trim()) {
           setBuyError(`Please fill in ${f.label}`);
@@ -775,6 +783,14 @@ export default function EventClient({
         email: me?.email ?? authForm.identifier?.trim(),
         phone: me?.phone ?? fullPhone,
       };
+
+      if (selectedTicket.CustomField) {
+        for (const cf of selectedTicket.CustomField) {
+          if (attendee[cf.label]?.trim()) {
+            finalAttendee[cf.label] = attendee[cf.label].trim();
+          }
+        }
+      }
 
       if (ev?.CustomField) {
         for (const cf of ev.CustomField) {

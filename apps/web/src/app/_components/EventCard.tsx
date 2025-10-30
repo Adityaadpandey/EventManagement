@@ -10,6 +10,7 @@ interface EventCardProps {
   date: string;
   location: string;
   price: string | number;
+  discountedPrice?: string | number;
 }
 
 const getOrdinalSuffix = (day: number): string => {
@@ -40,7 +41,7 @@ const formatDate = (dateString: string): string => {
 };
 
 const EventCard: React.FC<EventCardProps> = memo(
-  ({ imageUrl, title, date, location, price }) => {
+  ({ imageUrl, title, date, location, price, discountedPrice }) => {
     // Memoize formatted date to prevent recalculation on re-renders
     const formattedDate = useMemo(() => formatDate(date), [date]);
 
@@ -97,9 +98,22 @@ const EventCard: React.FC<EventCardProps> = memo(
                 </span>
               )}
 
-              <h2 className={isFree ? "!text-green-600" : ""}>
-                {priceDisplay}
-              </h2>
+              {!discountedPrice && (
+                <h2 className={isFree ? "!text-green-600" : ""}>
+                  {priceDisplay}
+                </h2>
+              )}
+
+              {discountedPrice && (
+                <div className="flex gap-1">
+                  <h2 className="!text-[#007E45] !text-[24px]">
+                    {discountedPrice}
+                  </h2>
+                  <h3 className="line-through text-[#8B8B8B]">
+                    {priceDisplay}
+                  </h3>
+                </div>
+              )}
             </div>
           </div>
         </div>
