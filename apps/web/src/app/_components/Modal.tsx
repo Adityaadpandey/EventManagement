@@ -4,6 +4,7 @@ import { StepBreadcrumb } from "./StepBreadcrumb";
 import CustomFieldInput from "@/app/_components/CustomFieldInput";
 import OtpInput from "./OtpInput";
 import Image from "next/image";
+import { useParams } from "next/navigation";
 
 const stepVariants = {
   initial: { opacity: 0, y: 40, x: 40 },
@@ -91,6 +92,15 @@ const Modal: React.FC<ModalProps> = ({
   countryCode,
   setCountryCode,
 }) => {
+  // Get event ID from URL params
+  const params = useParams();
+  const eventIdFromParams = params?.eventId as string;
+
+  // Check if this is the restricted event
+  const isRestrictedEvent =
+    eventIdFromParams === "1edc63ac-30b1-42f3-8342-f008eb42439a";
+  const maxAllowedQty = isRestrictedEvent ? 1 : 999;
+
   useEffect(() => {
     if (modalOpen) {
       document.body.style.overflow = "hidden";
@@ -157,6 +167,17 @@ const Modal: React.FC<ModalProps> = ({
       };
     }
 
+    if (selectedTicket?.CustomField?.length > 0) {
+      for (const cf of selectedTicket.CustomField) {
+        if (cf.required) {
+          const value = attendee[cf.label]?.trim();
+          if (!value || value.length === 0) {
+            return { valid: false, message: `Please fill in ${cf.label}` };
+          }
+        }
+      }
+    }
+
     if (ev?.CustomField?.length > 0) {
       for (const cf of ev.CustomField) {
         if (cf.required) {
@@ -169,7 +190,7 @@ const Modal: React.FC<ModalProps> = ({
     }
 
     return { valid: true, message: "" };
-  }, [authForm, isAuthenticated, token, ev, attendee]);
+  }, [authForm, isAuthenticated, token, ev, attendee, selectedTicket]);
 
   const getFullPhoneNumber = useCallback(() => {
     return `+${countryCode}${authForm.phone}`;
@@ -347,9 +368,10 @@ const Modal: React.FC<ModalProps> = ({
                                 </h6>
                                 <button
                                   onClick={incQty}
-                                  className="px-3 cursor-pointer"
+                                  className="px-3 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                   aria-label="Increase quantity"
                                   type="button"
+                                  disabled={selectedQuantity >= maxAllowedQty}
                                 >
                                   +
                                 </button>
@@ -389,6 +411,15 @@ const Modal: React.FC<ModalProps> = ({
               {localAuthMsg && (
                 <div className="text-xs text-red-500" role="alert">
                   {localAuthMsg}
+                </div>
+              )}
+
+              {isRestrictedEvent && selectedQuantity >= maxAllowedQty && (
+                <div
+                  className="text-xs text-amber-600 bg-amber-50 p-3 rounded-lg"
+                  role="alert"
+                >
+                  Maximum 1 ticket allowed per person for this event
                 </div>
               )}
 
@@ -542,7 +573,8 @@ const Modal: React.FC<ModalProps> = ({
                   </div>
                 )}
 
-                {ev?.CustomField?.length > 0 && (
+                {(ev?.CustomField?.length > 0 ||
+                  selectedTicket?.CustomField?.length > 0) && (
                   <div className="mt-6 space-y-4 pt-4 border-t border-[#E5E5E5]">
                     <div className="text-lg font-medium">
                       Additional Information
@@ -552,8 +584,8 @@ const Modal: React.FC<ModalProps> = ({
                       booking
                     </p>
 
-                    {ev.CustomField.map((cf: any, idx: number) => (
-                      <div key={`${cf.label}-${idx}`} className="space-y-2">
+                    {ev?.CustomField?.map((cf: any, idx: number) => (
+                      <div key={`ev-${cf.label}-${idx}`} className="space-y-2">
                         <div className="text-base flex items-center gap-1">
                           {cf.label}
                           {cf.required && (
@@ -570,6 +602,30 @@ const Modal: React.FC<ModalProps> = ({
                         />
                       </div>
                     ))}
+
+                    {selectedTicket?.CustomField?.map(
+                      (cf: any, idx: number) => (
+                        <div
+                          key={`ticket-${cf.label}-${idx}`}
+                          className="space-y-2"
+                        >
+                          <div className="text-base flex items-center gap-1">
+                            {cf.label}
+                            {cf.required && (
+                              <span className="text-red-600 text-xl">*</span>
+                            )}
+                          </div>
+
+                          <CustomFieldInput
+                            cf={cf}
+                            value={attendee[cf.label] ?? ""}
+                            onChange={(value) =>
+                              handleAttendeeChange(cf.label, value)
+                            }
+                          />
+                        </div>
+                      ),
+                    )}
                   </div>
                 )}
               </div>
@@ -722,7 +778,7 @@ const Modal: React.FC<ModalProps> = ({
                         <div className="flex justify-between px-2">
                           <p className="text-[#8B8B8B]">Platform Fee</p>
                           <p className="text-zinc-900">
-                            ₹{ev.TicketType[0].platformfee * selectedQuantity}
+                            ₹{selectedTicket.platformfee * selectedQuantity}
                           </p>
                         </div>
                         <div className="flex justify-between bg-[#F5F5F5] py-3 px-2 rounded-md m-0">
@@ -731,7 +787,7 @@ const Modal: React.FC<ModalProps> = ({
                             ₹
                             {(
                               (selectedTicket?.price ?? 0) * selectedQuantity +
-                              ev.TicketType[0].platformfee * selectedQuantity
+                              selectedTicket.platformfee * selectedQuantity
                             ).toFixed(2)}
                           </h5>
                         </div>
