@@ -349,7 +349,6 @@ export default function HomePage() {
             />
           </div>
         </div>
-
         {/* Content Area */}
         {showInitialLoading ? (
           <LocationLoading />

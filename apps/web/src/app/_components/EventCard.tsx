@@ -104,7 +104,7 @@ const EventCard: React.FC<EventCardProps> = memo(
                 </h2>
               )}
 
-              {discountedPrice && (
+              {Number(discountedPrice) > 0 && (
                 <div className="flex gap-1">
                   <h2 className="!text-[#007E45] !text-[24px]">
                     {discountedPrice}

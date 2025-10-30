@@ -974,7 +974,13 @@ export default function EventClient({
 
   const minPrice =
     ev.TicketType?.length > 0
-      ? Math.min(...ev.TicketType.map((t) => t.price))
+      ? Math.min(
+          ...ev.TicketType.map((t: any) =>
+            t.discountedPrice && t.discountedPrice > 0
+              ? t.discountedPrice
+              : t.price,
+          ),
+        )
       : 0;
 
   return (
@@ -1057,6 +1063,13 @@ export default function EventClient({
                 className="group"
               >
                 <EventCard
+                  discountedPrice={
+                    ev.TicketType && ev.TicketType.length > 0
+                      ? Math.min(
+                          ...ev.TicketType.map((t: any) => t.discountedPrice),
+                        )
+                      : 0
+                  }
                   imageUrl={recEvent.banner_horizontal}
                   title={recEvent.title}
                   location={recEvent.location}
