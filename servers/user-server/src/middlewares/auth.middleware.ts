@@ -4,9 +4,8 @@ import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import {
-  getCachedToken,
   getCachedUser,
-  isTokenBlacklisted,
+  getTokenDataAndBlacklistStatus,
   setCachedToken,
   setCachedUser,
 } from "../lib/redis-fn";
@@ -26,16 +25,14 @@ export const authMiddleware = async (
       return sendError(res, "No token provided", 401);
     }
 
-    if (!process.env.JWT_SECRET) {
+    if (!config.JWT_SECRET) {
       logger.error("JWT_SECRET is not defined");
       return sendError(res, "Server configuration error", 500);
     }
 
     // Check blacklist early - fastest check
-    const [isBlacklisted, cachedUserId] = await Promise.all([
-      isTokenBlacklisted(token),
-      getCachedToken(token),
-    ]);
+    const [isBlacklisted, cachedUserId] =
+      await getTokenDataAndBlacklistStatus(token);
 
     if (isBlacklisted) {
       return sendError(res, "Token has been blacklisted", 401);
@@ -47,7 +44,7 @@ export const authMiddleware = async (
     // If no cached token, verify JWT
     if (!userId) {
       try {
-        decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
+        decoded = jwt.verify(token, config.JWT_SECRET) as JwtPayload;
         userId = decoded.userId;
       } catch (_jwtError) {
         return sendError(res, "Invalid Authorization token", 401);
@@ -105,7 +102,7 @@ export const authMiddleware = async (
     req.user = user;
     next();
   } catch (error) {
-    logger("Auth Middleware Error:", error);
+    logger.error("Auth Middleware Error:", error);
     return sendError(res, "Authentication failed", 500);
   }
 };
