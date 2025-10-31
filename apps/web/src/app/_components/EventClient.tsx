@@ -209,6 +209,12 @@ export default function EventClient({
   const [discountCode, setDiscountCode] = useState<string>("");
   const [countryCode, setCountryCode] = useState("91");
 
+  const eventDate = new Date(ev.date);
+  const currentDate = new Date();
+
+  // Check if the current date is after the event date
+  const isPastEvent = currentDate > eventDate;
+
   const [authForm, setAuthForm] = useState({
     name: "",
     identifier: "",
@@ -1096,7 +1102,7 @@ export default function EventClient({
           onClick={openModal}
           className="bg-[#FFE348] md:py-7 py-5 rounded-full w-full border-b-3 border-[#FFDA0A] cursor-pointer relative overflow-hidden"
           style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
-          disabled={!ev.TicketType || ev.TicketType.length === 0}
+          disabled={!ev.TicketType || ev.TicketType.length === 0 || isPastEvent}
         >
           <motion.div
             className="absolute top-0 h-full w-full pointer-events-none overflow-hidden rounded-full"
@@ -1117,7 +1123,9 @@ export default function EventClient({
           </motion.div>
           <div className="flex justify-center items-center gap-2">
             <img src="/svgs/ticket.svg" alt="" width={24} height={24} />
-            <h2 className="z-10">Book Ticket</h2>
+            <h2 className="z-10">
+              {isPastEvent ? "Event Ended" : "Book Ticket"}
+            </h2>
           </div>
         </button>
       </div>
