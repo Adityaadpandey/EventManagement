@@ -131,9 +131,6 @@ jobs:
               sleep 5
             done
 
-            echo "🧹 Cleaning up..."
-            docker image prune -f
-
             echo "📊 Container Status:"
             docker compose -f docker-compose.stag.yaml ps
 
