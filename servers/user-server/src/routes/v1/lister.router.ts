@@ -40,4 +40,11 @@ router.get(
   listerController.getListerAnalytics.bind(listerController),
 );
 
+router.get(
+  "/ticket-attendes/:eventId",
+  authMiddleware,
+  requireRole(["LISTER"]),
+  listerController.getTicketAttendes.bind(listerController),
+);
+
 export { router as listerRouter };
