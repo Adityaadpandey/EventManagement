@@ -277,10 +277,14 @@ export class EventService {
       logger.info(`Cache miss for key: ${cacheKey}`);
 
       // 2. Build query conditions
+      const oneDayAgo = new Date();
+      oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+      oneDayAgo.setHours(0, 0, 0, 0); // Reset to start of day
+
       const baseWhere = {
         status: "APPROVED" as const,
         date: {
-          gte: new Date(), // Only future events
+          gte: oneDayAgo, // Show events from 1 day ago onwards
         },
       };
 

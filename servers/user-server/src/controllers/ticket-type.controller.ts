@@ -32,11 +32,7 @@ export class TicketTypeController {
       return sendSuccess(res, "Ticket Type created successfully", result, 201);
     } catch (error: any) {
       if (error.name === "ZodError") {
-        return sendError(
-          res,
-          error.errors?.[0]?.message || "Validation error",
-          400,
-        );
+        return sendError(res, error, 400);
       }
       return sendError(
         res,
@@ -72,18 +68,14 @@ export class TicketTypeController {
 
       return sendSuccess(res, "Ticket Type updated successfully", result, 200);
     } catch (error: any) {
-      if (error.name === "ZodError") {
-        return sendError(
-          res,
-          error.errors?.[0]?.message || "Validation error",
-          400,
-        );
-      }
-      return sendError(
-        res,
-        error.message || "Failed to update the Ticket Type",
-        400,
-      );
+      // if (error.name === "ZodError") {
+      //   return sendError(
+      //     res,
+      //     error,
+      //     400,
+      //   );
+      // }
+      return sendError(res, error || "Failed to update the Ticket Type", 400);
     }
   }
 
