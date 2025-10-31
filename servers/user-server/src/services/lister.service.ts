@@ -289,4 +289,175 @@ export class ListerServer {
       throw error;
     }
   }
+
+  async getEventAttendeeTicketsDetails(eventId: string, userId: string) {
+    try {
+      const event = await prisma.event.findFirst({
+        where: {
+          eventId,
+          lister: { userId },
+        },
+        select: {
+          eventId: true,
+          title: true,
+          date: true,
+          time: true,
+          location: true,
+          CustomField: {
+            select: {
+              fieldId: true,
+              label: true,
+              fieldType: true,
+              required: true,
+              ticketTypeId: true,
+            },
+          },
+          TicketType: {
+            select: {
+              ticketTypeId: true,
+              name: true,
+              description: true,
+              price: true,
+              discountedPrice: true,
+              quantity: true,
+              soldCount: true,
+              Ticket: {
+                where: { status: "SUCCESS" },
+                select: {
+                  ticketId: true,
+                  quantity: true,
+                  totalPrice: true,
+                  qrCode: true,
+                  checkedIn: true,
+                  createdAt: true,
+                  user: {
+                    select: {
+                      userId: true,
+                      name: true,
+                      email: true,
+                      phone: true,
+                      avatar: true,
+                    },
+                  },
+                  AttendeeFieldResponse: {
+                    select: {
+                      responseId: true,
+                      value: true,
+                      createdAt: true,
+                      field: {
+                        select: {
+                          fieldId: true,
+                          label: true,
+                          fieldType: true,
+                          required: true,
+                        },
+                      },
+                    },
+                  },
+                },
+                orderBy: { createdAt: "desc" },
+              },
+            },
+            orderBy: { price: "asc" },
+          },
+        },
+      });
+
+      if (!event) {
+        logger.warn(
+          `Event not found or access denied for eventId: ${eventId} and userId: ${userId}`,
+        );
+        throw new Error("Access Denied or Event not found");
+      }
+
+      // 🧠 Group by Ticket Type (already done by Prisma)
+      const ticketTypesSummary = event.TicketType.map((ticketType) => {
+        const tickets = ticketType.Ticket.map((ticket) => {
+          // Convert attendee responses into a key-value map
+          const attendeeResponses = ticket.AttendeeFieldResponse.reduce(
+            (acc, response) => {
+              acc[response.field.label] = {
+                fieldId: response.field.fieldId,
+                value: response.value,
+                fieldType: response.field.fieldType,
+                required: response.field.required,
+              };
+              return acc;
+            },
+            {} as Record<string, any>,
+          );
+
+          return {
+            ticketId: ticket.ticketId,
+            qrCode: ticket.qrCode,
+            quantity: ticket.quantity,
+            totalPrice: ticket.totalPrice,
+            checkedIn: ticket.checkedIn,
+            purchaseDate: ticket.createdAt,
+            buyer: ticket.user,
+            attendeeFields: attendeeResponses,
+          };
+        });
+
+        const checkedInCount = tickets.filter((t) => t.checkedIn).length;
+        const totalRevenue = tickets.reduce((sum, t) => sum + t.totalPrice, 0);
+
+        return {
+          ticketTypeId: ticketType.ticketTypeId,
+          name: ticketType.name,
+          description: ticketType.description,
+          price: ticketType.price,
+          discountedPrice: ticketType.discountedPrice,
+          totalQuantity: ticketType.quantity,
+          soldCount: ticketType.soldCount,
+          availableCount: ticketType.quantity - ticketType.soldCount,
+          totalTickets: tickets.length,
+          checkedInCount,
+          totalRevenue,
+          tickets,
+        };
+      });
+
+      // 📊 Overall statistics
+      const totalTicketsSold = ticketTypesSummary.reduce(
+        (sum, t) => sum + t.totalTickets,
+        0,
+      );
+      const totalCheckedIn = ticketTypesSummary.reduce(
+        (sum, t) => sum + t.checkedInCount,
+        0,
+      );
+      const totalRevenue = ticketTypesSummary.reduce(
+        (sum, t) => sum + t.totalRevenue,
+        0,
+      );
+
+      return {
+        success: true,
+        data: {
+          event: {
+            eventId: event.eventId,
+            title: event.title,
+            date: event.date,
+            time: event.time,
+            location: event.location,
+          },
+          customFields: event.CustomField,
+          statistics: {
+            totalTicketsSold,
+            totalCheckedIn,
+            totalRevenue,
+            checkInRate:
+              totalTicketsSold > 0
+                ? `${((totalCheckedIn / totalTicketsSold) * 100).toFixed(2)}%`
+                : "0%",
+          },
+          ticketTypes: ticketTypesSummary, // 👈 grouped neatly by ticket type
+        },
+      };
+    } catch (e) {
+      logger.error("Error in getEventAttendeeTicketsDetails:", e);
+      throw e;
+    }
+  }
 }
