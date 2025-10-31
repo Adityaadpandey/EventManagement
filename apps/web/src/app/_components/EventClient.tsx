@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Modal from "@/app/_components/Modal";
 import ReadMore from "@/app/_components/ReadMore";
 import api from "@/lib/api";
@@ -14,11 +13,12 @@ import {
   fetchPublicEvents,
 } from "@/lib/features/eventsSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, useRef, memo } from "react";
-import { motion } from "framer-motion";
-import Image from "next/image";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SuperEllipse from "react-superellipse";
 import useIsMobile from "../hooks/useIsMobile";
 
@@ -784,26 +784,25 @@ export default function EventClient({
         phone: me?.phone ?? fullPhone,
       };
 
-      if (selectedTicket.CustomField) {
-        for (const cf of selectedTicket.CustomField) {
-          if (attendee[cf.label]?.trim()) {
-            finalAttendee[cf.label] = attendee[cf.label].trim();
-          }
-        }
-      }
+      // Collect all custom fields (from both ticket and event)
+      const allCustomFields = [
+        ...(selectedTicket.CustomField || []),
+        ...(ev?.CustomField || []),
+      ];
 
-      if (ev?.CustomField) {
-        for (const cf of ev.CustomField) {
-          if (attendee[cf.label]?.trim()) {
-            finalAttendee[cf.label] = attendee[cf.label].trim();
-          }
-        }
-      }
+      // Build attendeeData array
+      const attendeeData = allCustomFields
+        .filter((cf) => attendee[cf.label]?.trim()) // only include filled ones
+        .map((cf) => ({
+          fieldId: cf.id ?? cf.fieldId, // depends on your actual key name
+          value: attendee[cf.label].trim(),
+        }));
 
+      // Final payload in the correct format
       const payload: any = {
         ticketTypeId: selectedTicketId,
         quantity: selectedQuantity,
-        attendeeData: finalAttendee,
+        attendeeData, // now an array, not an object
       };
 
       if (discountCode?.trim()) {
