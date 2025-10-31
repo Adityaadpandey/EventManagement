@@ -85,4 +85,32 @@ export class ListerController {
       return sendError(res, "Failed to get analytics", 500, error.message);
     }
   }
+
+  async getTicketAttendes(req: AuthenticatedRequest, res: Response) {
+    const userId = req.user?.userId;
+    if (!userId) return sendError(res, "User ID is required", 400);
+
+    const { eventId } = req.params;
+    if (!eventId) return sendError(res, "Event ID is required", 400);
+
+    try {
+      const ticketsDetails =
+        await this.listerService.getEventAttendeeTicketsDetails(
+          eventId,
+          userId,
+        );
+      return sendSuccess(
+        res,
+        "Event attendee tickets details retrieved",
+        ticketsDetails.data,
+      );
+    } catch (error: any) {
+      return sendError(
+        res,
+        "Failed to get event attendee tickets details",
+        500,
+        error.message,
+      );
+    }
+  }
 }
