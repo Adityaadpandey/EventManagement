@@ -38,63 +38,72 @@ class AuthService {
         throw new Error("Invalid email or phone number format");
       }
 
-      // Normalize email or phone number
+      // Normalize email or phone
       const normalizedIdentifier = isPhoneType
         ? this.normalizePhone(identifier)
         : this.normalizeEmail(identifier);
 
       const otpKey = `otp:${normalizedIdentifier}`;
       const countKey = `otp:count:${normalizedIdentifier}`;
+      const resendCooldownKey = `otp:cooldown:${normalizedIdentifier}`;
 
-      // Check if the OTP is already active
-      const existingOtp = await redis.get(otpKey);
-      if (existingOtp) {
-        throw new Error(
-          "OTP already requested. Please wait before requesting a new one.",
-        );
-      }
-
+      // Limit total OTP requests per hour
       const requestCount = await redis.get(countKey);
-      if (requestCount && Number.parseInt(requestCount, 10) >= 3) {
+      if (requestCount && Number.parseInt(requestCount, 10) >= 5) {
         throw new Error(
           "Too many OTP requests. Please try again after 1 hour.",
         );
       }
 
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      // Check resend cooldown (30s)
+      const onCooldown = await redis.get(resendCooldownKey);
+      if (onCooldown) {
+        throw new Error(
+          "Please wait a few seconds before requesting OTP again.",
+        );
+      }
 
-      // Store with 5-minute TTL
-      await redis.setex(otpKey, 60, otp);
+      // If an OTP already exists, reuse it (still valid)
+      let otp = await redis.get(otpKey);
 
+      if (!otp) {
+        otp = Math.floor(100000 + Math.random() * 900000).toString();
+        await redis.setex(otpKey, 300, otp); // Valid for 5 minutes
+      }
+
+      // Set resend cooldown (30s)
+      await redis.setex(resendCooldownKey, 30, "1");
+
+      // Increment request count (max 3/hour)
       const pipeline = redis.pipeline();
       pipeline.incr(countKey);
       pipeline.expire(countKey, 3600); // 1 hour TTL
       await pipeline.exec();
 
+      // Try sending OTP via email or SMS
       try {
         if (isEmailType) {
-          // Send OTP email
           await sendEmail(
             normalizedIdentifier,
             "Your OTP for Login",
             { type: "otp", content: { otp } },
             "",
           );
-          return { message: "OTP request received. Email is being sent." };
+
+          return { message: "OTP sent to your email address." };
         } else {
-          // Send SMS
-          // console.log('Adding OTP job to queue:', { to: normalizedIdentifier, otp });
           await otpQueue.add(
             "send-otp",
-            { otp: otp, to: normalizedIdentifier },
+            { otp, to: normalizedIdentifier },
             { attempts: 3, backoff: { type: "exponential", delay: 5000 } },
           );
 
-          return { message: "OTP request received. SMS is being sent." };
+          return { message: "OTP sent to your phone number." };
         }
-      } catch (_error) {
-        // Clean up Redis if sending fails
-        await redis.del(otpKey);
+      } catch (sendError) {
+        // If sending fails, clean up if it was a newly generated OTP
+        const existingOtp = await redis.get(otpKey);
+        if (!existingOtp) await redis.del(otpKey);
         throw new Error(
           `Failed to send OTP via ${isEmailType ? "Email" : "SMS"}`,
         );
