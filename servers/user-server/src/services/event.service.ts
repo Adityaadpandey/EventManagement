@@ -896,10 +896,9 @@ export class EventService {
 
   async getEventAnalytics(userId: string, eventId: string) {
     try {
+      // Simply fetch the already-synced analytics data
       const event = await prisma.event.findUnique({
-        where: {
-          eventId,
-        },
+        where: { eventId },
         include: {
           lister: {
             select: {
@@ -909,11 +908,15 @@ export class EventService {
             },
           },
           EventAnalytics: true,
+          _count: {
+            select: {
+              Ticket: {
+                where: { status: "SUCCESS" },
+              },
+            },
+          },
         },
       });
-      const conversionRate = event?.EventAnalytics
-        ? (event.EventAnalytics.ticketsSold * 100) / event.EventAnalytics.views
-        : 0;
 
       if (!event) {
         throw new Error("Event not found");
@@ -925,7 +928,50 @@ export class EventService {
         );
       }
 
-      return { ...event.EventAnalytics, conversionRate };
+      // Read from EventAnalytics table (kept in sync by worker)
+      const analytics = event.EventAnalytics;
+
+      if (!analytics) {
+        // If analytics don't exist yet, return zeros
+        return {
+          eventId: event.eventId,
+          title: event.title,
+          views: event.viewsCount || 0,
+          clicks: event.ctaClicksCount || 0,
+          ticketsSold: event.ticketsSold || 0,
+          revenue: event.revenue || 0,
+          conversionRate: event.conversionRate || 0,
+          totalTickets: event._count.Ticket,
+          capacity: event.capacity,
+          capacityUtilization: event.capacity
+            ? parseFloat(
+                ((event.ticketsSold * 100) / event.capacity).toFixed(2),
+              )
+            : null,
+          eventDate: event.date,
+          lastUpdated: new Date(),
+        };
+      }
+
+      // Return the synced analytics data
+      return {
+        eventId: event.eventId,
+        title: event.title,
+        views: analytics.views,
+        clicks: analytics.clicks,
+        ticketsSold: analytics.ticketsSold,
+        revenue: analytics.revenue,
+        conversionRate: analytics.conversionRate,
+        totalTickets: event._count.Ticket,
+        capacity: event.capacity,
+        capacityUtilization: event.capacity
+          ? parseFloat(
+              ((analytics.ticketsSold * 100) / event.capacity).toFixed(2),
+            )
+          : null,
+        eventDate: event.date,
+        lastUpdated: analytics.lastUpdated,
+      };
     } catch (error: any) {
       logger.error("Error in getEventAnalytics:", error);
       throw error;

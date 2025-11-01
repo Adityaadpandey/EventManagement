@@ -21,8 +21,8 @@ interface AnalyticsData {
 
 interface EventStats {
   views: number;
-  ctaClicks: number; // attempted purchases
-  ticketsSold: number; // successful purchases
+  ctaClicks: number;
+  ticketsSold: number;
   revenue: number;
 }
 
@@ -36,7 +36,6 @@ async function processAnalyticsQueue() {
 
     console.log(`📊 Processing ${batch.length} analytics events...`);
 
-    // Parse and group events
     const events: AnalyticsData[] = batch
       .map((item) => {
         try {
@@ -64,12 +63,10 @@ async function processAnalyticsQueue() {
           break;
 
         case "ticket_purchase":
-          // User attempted to buy tickets (regardless of success)
           stats.ctaClicks += event.metadata?.quantity || 1;
           break;
 
         case "ticket_success":
-          // Successful ticket payment
           stats.ticketsSold += event.metadata?.quantity || 1;
           stats.revenue += event.metadata?.amount || 0;
           break;
@@ -82,67 +79,84 @@ async function processAnalyticsQueue() {
     const updates = Array.from(eventStatsMap.entries()).map(
       async ([eventId, stats]) => {
         try {
-          const current = await prisma.event.findUnique({
+          // Get real-time data from tickets for accurate sync
+          const eventWithTickets = await prisma.event.findUnique({
             where: { eventId },
             select: {
               viewsCount: true,
               ctaClicksCount: true,
-              ticketsSold: true,
-              revenue: true,
+              Ticket: {
+                where: { status: "SUCCESS" },
+                select: {
+                  quantity: true,
+                  totalPrice: true,
+                },
+              },
             },
           });
 
-          if (!current) {
+          if (!eventWithTickets) {
             console.warn(`⚠️ Event ${eventId} not found, skipping`);
             return;
           }
 
-          const totalViews = current.viewsCount + stats.views;
-          const totalCTA = current.ctaClicksCount + stats.ctaClicks;
-          const totalTicketsSold = current.ticketsSold + stats.ticketsSold;
-          const totalRevenue = current.revenue + stats.revenue;
+          // Calculate REAL ticket data from database
+          const realTicketsSold = eventWithTickets.Ticket.reduce(
+            (sum, ticket) => sum + ticket.quantity,
+            0,
+          );
+          const realRevenue = eventWithTickets.Ticket.reduce(
+            (sum, ticket) => sum + ticket.totalPrice,
+            0,
+          );
 
+          // Update views and CTA clicks incrementally (these come from queue)
+          const totalViews = eventWithTickets.viewsCount + stats.views;
+          const totalCTA = eventWithTickets.ctaClicksCount + stats.ctaClicks;
+
+          // Calculate conversion rate from REAL data
           const conversionRate =
-            totalCTA > 0
-              ? Math.round((totalTicketsSold / totalCTA) * 10000) / 100
+            totalViews > 0
+              ? parseFloat(((realTicketsSold * 100) / totalViews).toFixed(2))
               : 0;
 
-          // Update main event
+          // Update Event with incremental views/clicks but REAL sales data
           await prisma.event.update({
             where: { eventId },
             data: {
               viewsCount: { increment: stats.views },
               ctaClicksCount: { increment: stats.ctaClicks },
-              ticketsSold: { increment: stats.ticketsSold },
-              revenue: { increment: stats.revenue },
+              ticketsSold: realTicketsSold, // Set to real value
+              revenue: realRevenue, // Set to real value
               conversionRate,
             },
           });
 
-          // Update analytics table (absolute sync)
+          // Update EventAnalytics with REAL values
           await prisma.eventAnalytics.upsert({
             where: { eventId },
             create: {
               eventId,
               views: totalViews,
               clicks: totalCTA,
-              ticketsSold: totalTicketsSold,
-              revenue: totalRevenue,
+              ticketsSold: realTicketsSold,
+              revenue: realRevenue,
               conversionRate,
               lastUpdated: new Date(),
             },
             update: {
               views: totalViews,
               clicks: totalCTA,
-              ticketsSold: totalTicketsSold,
-              revenue: totalRevenue,
+              ticketsSold: realTicketsSold,
+              revenue: realRevenue,
               conversionRate,
               lastUpdated: new Date(),
             },
           });
 
           console.log(
-            `✅ Event ${eventId}: +${stats.views} views, +${stats.ctaClicks} CTA, +${stats.ticketsSold} sold, ₹${stats.revenue} revenue, CR ${conversionRate}%`,
+            `✅ Event ${eventId}: +${stats.views} views, +${stats.ctaClicks} CTA, ` +
+              `${realTicketsSold} sold (real), ₹${realRevenue.toFixed(2)} revenue (real), CR ${conversionRate}%`,
           );
         } catch (err) {
           console.error(`❌ Failed analytics update for ${eventId}:`, err);
