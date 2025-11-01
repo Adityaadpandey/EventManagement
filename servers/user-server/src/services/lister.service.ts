@@ -76,14 +76,6 @@ export class ListerServer {
           status: true,
           createdAt: true,
           updatedAt: true,
-          ListerAnalytics: {
-            select: {
-              totalEvents: true,
-              totalRevenue: true,
-              totalTicketsSold: true,
-              lastUpdated: true,
-            },
-          },
           Event: {
             select: {
               eventId: true,
@@ -93,6 +85,18 @@ export class ListerServer {
               banner_vertical: true,
               banner_square: true,
               status: true,
+              Ticket: {
+                where: { status: "SUCCESS" },
+                select: {
+                  quantity: true,
+                  totalPrice: true,
+                  ticketType: {
+                    select: {
+                      platformfee: true,
+                    },
+                  },
+                },
+              },
             },
             orderBy: {
               createdAt: "desc",
@@ -116,9 +120,69 @@ export class ListerServer {
       if (!lister) {
         throw new Error("Lister not found for given userId");
       }
+
+      // Calculate real-time analytics
+      let totalRevenue = 0;
+      let totalTicketsSold = 0;
+
+      lister.Event.forEach((event) => {
+        const eventTicketsSold = event.Ticket.reduce(
+          (sum, ticket) => sum + ticket.quantity,
+          0,
+        );
+        const eventRevenue = event.Ticket.reduce((sum, ticket) => {
+          // Calculate actual revenue by subtracting platform fees
+          // If platform fee exists, subtract it; if 0, subtract 5% of total price
+          const platformFee =
+            ticket.ticketType.platformfee > 0
+              ? ticket.ticketType.platformfee * ticket.quantity
+              : ticket.totalPrice * 0.05;
+          const actualRevenue = ticket.totalPrice - platformFee;
+          return sum + actualRevenue;
+        }, 0);
+
+        totalTicketsSold += eventTicketsSold;
+        totalRevenue += eventRevenue;
+      });
+
+      // Update the ListerAnalytics table with real-time data
+      await prisma.listerAnalytics.upsert({
+        where: { listerId: lister.listerId },
+        create: {
+          listerId: lister.listerId,
+          totalEvents: lister.Event.length,
+          totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+          totalTicketsSold,
+        },
+        update: {
+          totalEvents: lister.Event.length,
+          totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+          totalTicketsSold,
+          lastUpdated: new Date(),
+        },
+      });
+
       await invalidateUserSessions(userId);
 
-      return lister;
+      // Return lister data with real-time analytics
+      return {
+        ...lister,
+        ListerAnalytics: {
+          totalEvents: lister.Event.length,
+          totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+          totalTicketsSold,
+          lastUpdated: new Date(),
+        },
+        Event: lister.Event.map((event) => ({
+          eventId: event.eventId,
+          title: event.title,
+          date: event.date,
+          banner_horizontal: event.banner_horizontal,
+          banner_vertical: event.banner_vertical,
+          banner_square: event.banner_square,
+          status: event.status,
+        })),
+      };
     } catch (error) {
       logger.error("Error in meLister:", error);
       throw error;
