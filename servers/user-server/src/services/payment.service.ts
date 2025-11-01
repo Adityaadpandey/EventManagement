@@ -81,6 +81,14 @@ export class PaymentService {
         },
       });
 
+      // Calculate actual revenue (total price minus platform fees)
+      // If platform fee exists, subtract it; if 0, subtract 5% of total price
+      const platformFee =
+        ticket.ticketType.platformfee > 0
+          ? ticket.ticketType.platformfee * ticket.quantity
+          : ticket.totalPrice * 0.05;
+      const actualRevenue = ticket.totalPrice - platformFee;
+
       // Update event analytics
       await prisma.event.update({
         where: { eventId: ticket.ticketType.eventId },
@@ -89,7 +97,7 @@ export class PaymentService {
             increment: ticket.quantity,
           },
           revenue: {
-            increment: ticket.totalPrice,
+            increment: actualRevenue,
           },
         },
       });
@@ -102,13 +110,13 @@ export class PaymentService {
             increment: ticket.quantity,
           },
           revenue: {
-            increment: ticket.totalPrice,
+            increment: actualRevenue,
           },
         },
         create: {
           eventId: ticket.ticketType.eventId,
           ticketsSold: ticket.quantity,
-          revenue: ticket.totalPrice,
+          revenue: actualRevenue,
         },
       });
 
@@ -270,6 +278,14 @@ export class PaymentService {
         },
       });
 
+      // Calculate actual revenue impact (refund amount minus platform fees that were included)
+      // If platform fee exists, subtract it; if 0, subtract 5% of refund amount
+      const platformFee =
+        refund.ticket.ticketType.platformfee > 0
+          ? refund.ticket.ticketType.platformfee * refund.ticket.quantity
+          : refund.amount * 0.05;
+      const actualRevenueImpact = refund.amount - platformFee;
+
       // Update analytics (decrease revenue and ticket count)
       await prisma.event.update({
         where: { eventId: refund.eventEventId! },
@@ -278,7 +294,7 @@ export class PaymentService {
             decrement: refund.ticket.quantity,
           },
           revenue: {
-            decrement: refund.amount,
+            decrement: actualRevenueImpact,
           },
         },
       });

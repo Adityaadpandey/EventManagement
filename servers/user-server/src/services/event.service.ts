@@ -896,7 +896,7 @@ export class EventService {
 
   async getEventAnalytics(userId: string, eventId: string) {
     try {
-      // Simply fetch the already-synced analytics data
+      // Fetch event data with tickets to calculate real-time revenue
       const event = await prisma.event.findUnique({
         where: { eventId },
         include: {
@@ -908,6 +908,18 @@ export class EventService {
             },
           },
           EventAnalytics: true,
+          Ticket: {
+            where: { status: "SUCCESS" },
+            select: {
+              quantity: true,
+              totalPrice: true,
+              ticketType: {
+                select: {
+                  platformfee: true,
+                },
+              },
+            },
+          },
           _count: {
             select: {
               Ticket: {
@@ -928,24 +940,47 @@ export class EventService {
         );
       }
 
+      // Calculate real-time revenue with correct platform fee deduction
+      const realTimeRevenue = event.Ticket.reduce((sum, ticket) => {
+        // If platform fee exists, subtract it; if 0, subtract 5% of total price
+        const platformFee =
+          ticket.ticketType.platformfee > 0
+            ? ticket.ticketType.platformfee * ticket.quantity
+            : ticket.totalPrice * 0.05;
+        const actualRevenue = ticket.totalPrice - platformFee;
+        return sum + actualRevenue;
+      }, 0);
+
+      const realTimeTicketsSold = event.Ticket.reduce(
+        (sum, ticket) => sum + ticket.quantity,
+        0,
+      );
+
       // Read from EventAnalytics table (kept in sync by worker)
       const analytics = event.EventAnalytics;
 
       if (!analytics) {
-        // If analytics don't exist yet, return zeros
+        // If analytics don't exist yet, use real-time calculations
+        const conversionRate =
+          event.viewsCount > 0
+            ? parseFloat(
+                ((realTimeTicketsSold * 100) / event.viewsCount).toFixed(2),
+              )
+            : 0;
+
         return {
           eventId: event.eventId,
           title: event.title,
           views: event.viewsCount || 0,
           clicks: event.ctaClicksCount || 0,
-          ticketsSold: event.ticketsSold || 0,
-          revenue: event.revenue || 0,
-          conversionRate: event.conversionRate || 0,
+          ticketsSold: realTimeTicketsSold,
+          revenue: parseFloat(realTimeRevenue.toFixed(2)),
+          conversionRate,
           totalTickets: event._count.Ticket,
           capacity: event.capacity,
           capacityUtilization: event.capacity
             ? parseFloat(
-                ((event.ticketsSold * 100) / event.capacity).toFixed(2),
+                ((realTimeTicketsSold * 100) / event.capacity).toFixed(2),
               )
             : null,
           eventDate: event.date,
@@ -953,24 +988,31 @@ export class EventService {
         };
       }
 
-      // Return the synced analytics data
+      // Return analytics data with real-time revenue calculation
+      const conversionRate =
+        analytics.views > 0
+          ? parseFloat(
+              ((realTimeTicketsSold * 100) / analytics.views).toFixed(2),
+            )
+          : 0;
+
       return {
         eventId: event.eventId,
         title: event.title,
         views: analytics.views,
         clicks: analytics.clicks,
-        ticketsSold: analytics.ticketsSold,
-        revenue: analytics.revenue,
-        conversionRate: analytics.conversionRate,
+        ticketsSold: realTimeTicketsSold,
+        revenue: parseFloat(realTimeRevenue.toFixed(2)),
+        conversionRate,
         totalTickets: event._count.Ticket,
         capacity: event.capacity,
         capacityUtilization: event.capacity
           ? parseFloat(
-              ((analytics.ticketsSold * 100) / event.capacity).toFixed(2),
+              ((realTimeTicketsSold * 100) / event.capacity).toFixed(2),
             )
           : null,
         eventDate: event.date,
-        lastUpdated: analytics.lastUpdated,
+        lastUpdated: new Date(), // Update timestamp since we're recalculating
       };
     } catch (error: any) {
       logger.error("Error in getEventAnalytics:", error);
