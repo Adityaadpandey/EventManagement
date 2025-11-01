@@ -32,6 +32,29 @@ export class TicketService {
       if (availableQuantity < quantity) {
         return { error: `Only ${availableQuantity} tickets available` };
       }
+      const now = new Date();
+
+      // Ensure both date and time are set
+      if (ticketType.event.date && ticketType.event.time) {
+        // Assuming `event.date` is the date and `event.time` is the exact start DateTime
+        const eventStart = new Date(ticketType.event.time);
+
+        if (now >= eventStart) {
+          return {
+            error:
+              "Ticket sales have closed because the event has already started.",
+          };
+        }
+      } else if (ticketType.event.date) {
+        // Fallback if time is missing — compare only by date
+        const eventDate = new Date(ticketType.event.date);
+        if (now >= eventDate) {
+          return {
+            error:
+              "Ticket sales have closed because the event has already started.",
+          };
+        }
+      }
 
       // Check sales cutoff
       if (ticketType.salesCutoff && new Date() > ticketType.salesCutoff) {

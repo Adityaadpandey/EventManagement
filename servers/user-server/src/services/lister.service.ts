@@ -235,10 +235,9 @@ export class ListerServer {
 
   async getListerAnalytics(userId: string) {
     try {
+      // Get lister info
       const lister = await prisma.lister.findUnique({
-        where: {
-          userId,
-        },
+        where: { userId },
         select: {
           listerId: true,
           companyName: true,
@@ -256,26 +255,66 @@ export class ListerServer {
 
       const { listerId } = lister;
 
-      // Get real-time cumulative data from events
-      const eventStats = await prisma.event.aggregate({
-        where: {
-          listerId,
-          // status: "APPROVED",
-        },
-        _sum: {
-          ticketsSold: true,
-          revenue: true,
-        },
-        _count: {
+      // Get all events with their tickets - calculate from real data
+      const events = await prisma.event.findMany({
+        where: { listerId },
+        select: {
           eventId: true,
+          Ticket: {
+            where: { status: "SUCCESS" },
+            select: {
+              quantity: true,
+              totalPrice: true,
+            },
+          },
         },
       });
-      console.log("Event Stats:", eventStats);
+
+      // Calculate real-time totals from actual ticket data
+      let totalRevenue = 0;
+      let totalTicketsSold = 0;
+
+      events.forEach((event) => {
+        const eventTicketsSold = event.Ticket.reduce(
+          (sum, ticket) => sum + ticket.quantity,
+          0,
+        );
+        const eventRevenue = event.Ticket.reduce(
+          (sum, ticket) => sum + ticket.totalPrice,
+          0,
+        );
+
+        totalTicketsSold += eventTicketsSold;
+        totalRevenue += eventRevenue;
+      });
+
+      console.log("Real-time Lister Stats:", {
+        totalEvents: events.length,
+        totalTicketsSold,
+        totalRevenue,
+      });
+
+      // UPDATE: Sync calculated values back to ListerAnalytics table
+      await prisma.listerAnalytics.upsert({
+        where: { listerId },
+        create: {
+          listerId,
+          totalEvents: events.length,
+          totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+          totalTicketsSold,
+        },
+        update: {
+          totalEvents: events.length,
+          totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+          totalTicketsSold,
+          lastUpdated: new Date(),
+        },
+      });
 
       return {
-        totalEvents: eventStats._count.eventId || 0,
-        totalRevenue: eventStats._sum.revenue || 0,
-        totalTicketsSold: eventStats._sum.ticketsSold || 0,
+        totalEvents: events.length,
+        totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+        totalTicketsSold,
         lastUpdated: new Date(),
         lister: {
           companyName: lister.companyName,
@@ -284,7 +323,7 @@ export class ListerServer {
           },
         },
       };
-    } catch (error) {
+    } catch (error: any) {
       logger.error("Error in getListerAnalytics:", error);
       throw error;
     }
