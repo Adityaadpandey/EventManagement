@@ -90,6 +90,11 @@ async function processAnalyticsQueue() {
                 select: {
                   quantity: true,
                   totalPrice: true,
+                  ticketType: {
+                    select: {
+                      platformfee: true,
+                    },
+                  },
                 },
               },
             },
@@ -105,10 +110,16 @@ async function processAnalyticsQueue() {
             (sum, ticket) => sum + ticket.quantity,
             0,
           );
-          const realRevenue = eventWithTickets.Ticket.reduce(
-            (sum, ticket) => sum + ticket.totalPrice,
-            0,
-          );
+          const realRevenue = eventWithTickets.Ticket.reduce((sum, ticket) => {
+            // Calculate actual revenue by subtracting platform fees
+            // If platform fee exists, subtract it; if 0, subtract 5% of total price
+            const platformFee =
+              ticket.ticketType.platformfee > 0
+                ? ticket.ticketType.platformfee * ticket.quantity
+                : ticket.totalPrice * 0.05;
+            const actualRevenue = ticket.totalPrice - platformFee;
+            return sum + actualRevenue;
+          }, 0);
 
           // Update views and CTA clicks incrementally (these come from queue)
           const totalViews = eventWithTickets.viewsCount + stats.views;
