@@ -34,9 +34,7 @@ export class TicketService {
       }
       const now = new Date();
 
-      // Ensure both date and time are set
       if (ticketType.event.date && ticketType.event.time) {
-        // Assuming `event.date` is the date and `event.time` is the exact start DateTime
         const eventStart = new Date(ticketType.event.time);
 
         if (now >= eventStart) {
@@ -46,7 +44,6 @@ export class TicketService {
           };
         }
       } else if (ticketType.event.date) {
-        // Fallback if time is missing — compare only by date
         const eventDate = new Date(ticketType.event.date);
         if (now >= eventDate) {
           return {

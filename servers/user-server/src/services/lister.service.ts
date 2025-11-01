@@ -265,6 +265,11 @@ export class ListerServer {
             select: {
               quantity: true,
               totalPrice: true,
+              ticketType: {
+                select: {
+                  platformfee: true,
+                },
+              },
             },
           },
         },
@@ -279,10 +284,16 @@ export class ListerServer {
           (sum, ticket) => sum + ticket.quantity,
           0,
         );
-        const eventRevenue = event.Ticket.reduce(
-          (sum, ticket) => sum + ticket.totalPrice,
-          0,
-        );
+        const eventRevenue = event.Ticket.reduce((sum, ticket) => {
+          // Calculate actual revenue by subtracting platform fees
+          // If platform fee exists, subtract it; if 0, subtract 5% of total price
+          const platformFee =
+            ticket.ticketType.platformfee > 0
+              ? ticket.ticketType.platformfee * ticket.quantity
+              : ticket.totalPrice * 0.05;
+          const actualRevenue = ticket.totalPrice - platformFee;
+          return sum + actualRevenue;
+        }, 0);
 
         totalTicketsSold += eventTicketsSold;
         totalRevenue += eventRevenue;
@@ -360,6 +371,7 @@ export class ListerServer {
               discountedPrice: true,
               quantity: true,
               soldCount: true,
+              platformfee: true,
               Ticket: {
                 where: { status: "SUCCESS" },
                 select: {
@@ -439,7 +451,16 @@ export class ListerServer {
         });
 
         const checkedInCount = tickets.filter((t) => t.checkedIn).length;
-        const totalRevenue = tickets.reduce((sum, t) => sum + t.totalPrice, 0);
+        const totalRevenue = tickets.reduce((sum, t) => {
+          // Calculate actual revenue by subtracting platform fees
+          // If platform fee exists, subtract it; if 0, subtract 5% of total price
+          const platformFee =
+            ticketType.platformfee > 0
+              ? ticketType.platformfee * t.quantity
+              : t.totalPrice * 0.05;
+          const actualRevenue = t.totalPrice - platformFee;
+          return sum + actualRevenue;
+        }, 0);
 
         return {
           ticketTypeId: ticketType.ticketTypeId,
