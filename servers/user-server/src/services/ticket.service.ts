@@ -1,6 +1,7 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { razorpay } from "../lib/razorpay";
+import { trackCTAClickWithEventId } from "../middlewares/analytics.middleware";
 
 export class TicketService {
   async buyTicket(
@@ -11,31 +12,55 @@ export class TicketService {
     discountCode?: string,
   ) {
     try {
-      // Fetch ticket type and event details
+      // Fetch only essential ticket type data (ultra-minimal query)
       const ticketType = await prisma.ticketType.findUnique({
         where: { ticketTypeId },
-        include: {
-          event: {
-            include: {
-              CustomField: true,
-            },
-          },
-        },
       });
 
       if (!ticketType) {
         return { error: "Ticket type not found" };
       }
 
+      // Fetch event data separately
+      const event = await prisma.event.findUnique({
+        where: { eventId: ticketType.eventId },
+        select: {
+          eventId: true,
+          title: true,
+          date: true,
+          time: true,
+          location: true,
+        },
+      });
+
+      if (!event) {
+        return { error: "Event not found" };
+      }
+
+      // Combine the data
+      const ticketTypeWithEvent = {
+        ...ticketType,
+        event,
+      };
+
+      // Track CTA click (fire and forget - completely non-blocking)
+      setImmediate(() => {
+        trackCTAClickWithEventId(ticketType.eventId, userId, {
+          ticketTypeId,
+          quantity,
+        });
+      });
+
       // Check availability
-      const availableQuantity = ticketType.quantity - ticketType.soldCount;
+      const availableQuantity =
+        ticketTypeWithEvent.quantity - ticketTypeWithEvent.soldCount;
       if (availableQuantity < quantity) {
         return { error: `Only ${availableQuantity} tickets available` };
       }
       const now = new Date();
 
-      if (ticketType.event.date && ticketType.event.time) {
-        const eventStart = new Date(ticketType.event.time);
+      if (event.date && event.time) {
+        const eventStart = new Date(event.time);
 
         if (now >= eventStart) {
           return {
@@ -43,8 +68,8 @@ export class TicketService {
               "Ticket sales have closed because the event has already started.",
           };
         }
-      } else if (ticketType.event.date) {
-        const eventDate = new Date(ticketType.event.date);
+      } else if (event.date) {
+        const eventDate = new Date(event.date);
         if (now >= eventDate) {
           return {
             error:
@@ -54,14 +79,19 @@ export class TicketService {
       }
 
       // Check sales cutoff
-      if (ticketType.salesCutoff && new Date() > ticketType.salesCutoff) {
+      if (
+        ticketTypeWithEvent.salesCutoff &&
+        new Date() > ticketTypeWithEvent.salesCutoff
+      ) {
         return { error: "Ticket sales have ended" };
       }
 
       // Use discounted price if available, otherwise use regular price
-      const effectivePrice = ticketType.discountedPrice ?? ticketType.price;
-      const originalPrice = ticketType.price;
-      const hasTicketTypeDiscount = ticketType.discountedPrice !== null;
+      const effectivePrice =
+        ticketTypeWithEvent.discountedPrice ?? ticketTypeWithEvent.price;
+      const originalPrice = ticketTypeWithEvent.price;
+      const hasTicketTypeDiscount =
+        ticketTypeWithEvent.discountedPrice !== null;
 
       // Calculate base price using effective price
       let basePrice = effectivePrice * quantity;
@@ -75,7 +105,7 @@ export class TicketService {
         const discount = await prisma.discountCode.findFirst({
           where: {
             code: discountCode.toUpperCase(),
-            eventId: ticketType.eventId,
+            eventId: ticketTypeWithEvent.eventId,
           },
         });
 
@@ -141,19 +171,22 @@ export class TicketService {
       }
 
       // Get platform fee from ticket type (applied once to the total order)
-      const platformFee = ticketType.platformfee * quantity;
+      const platformFee = ticketTypeWithEvent.platformfee * quantity;
 
       // Calculate final price including platform fee
       const finalPrice = ticketSubtotal + platformFee;
-
-      const qrCode = this.generateQRCode();
 
       // Determine payment status
       const isFree = finalPrice === 0;
       const ticketStatus = isFree ? "SUCCESS" : "PENDING";
 
-      // Use transaction to ensure atomicity
+      // Use transaction to ensure atomicity (including ticket ID generation)
       const result = await prisma.$transaction(async (tx) => {
+        // Generate ticket ID inside transaction for better performance
+        const qrCode = await this.generateTicketIdInTransaction(
+          tx,
+          ticketTypeWithEvent,
+        );
         // Create ticket
         const ticket = await tx.ticket.create({
           data: {
@@ -163,7 +196,7 @@ export class TicketService {
             totalPrice: finalPrice,
             qrCode,
             status: ticketStatus,
-            eventEventId: ticketType.eventId,
+            eventEventId: ticketTypeWithEvent.eventId,
           },
         });
 
@@ -196,8 +229,8 @@ export class TicketService {
             where: { ticketTypeId },
             data: { soldCount: { increment: quantity } },
           });
-          await tx.event.update({
-            where: { eventId: ticketType.eventId },
+          await tx.eventAnalytics.update({
+            where: { eventId: ticketTypeWithEvent.eventId },
             data: {
               ticketsSold: { increment: quantity },
               revenue: { increment: 0 },
@@ -231,7 +264,7 @@ export class TicketService {
         return {
           data: {
             ticket: result,
-            event: ticketType.event,
+            event: event,
             message: "Free ticket issued successfully",
             pricing: pricingBreakdown,
           },
@@ -245,7 +278,7 @@ export class TicketService {
         receipt: result.ticketId,
         notes: {
           ticketId: result.ticketId,
-          eventId: ticketType.eventId,
+          eventId: ticketTypeWithEvent.eventId,
           userId,
           discountCode: discountCode || null,
           discountAmount: discountAmount.toString(),
@@ -258,7 +291,7 @@ export class TicketService {
         data: {
           ticket: result,
           razorpayOrder,
-          event: ticketType.event,
+          event: event,
           pricing: pricingBreakdown,
         },
       };
@@ -462,10 +495,46 @@ export class TicketService {
     }
   }
 
-  private generateQRCode(): string {
-    // Generate a unique QR code string
-    const timestamp = Date.now().toString();
-    const random = Math.random().toString(36).substring(2, 15);
-    return `TICKET_${timestamp}_${random}`;
+  private async generateTicketIdInTransaction(
+    tx: any,
+    ticketType: any,
+  ): Promise<string> {
+    // Use custom prefix if available, otherwise generate from event title
+    let prefix = ticketType.ticketPrefix;
+
+    if (!prefix) {
+      // Use event title from ticketType.event (already loaded in the main query)
+      if (ticketType.event?.title) {
+        // Extract initials from event title (e.g., "Code Caravan 3.0" -> "CC30")
+        prefix = ticketType.event.title
+          .split(" ")
+          .map((word: string) => word.charAt(0).toUpperCase())
+          .join("")
+          .replace(/[^A-Z0-9]/g, "") // Remove non-alphanumeric characters
+          .substring(0, 6); // Limit to 6 characters
+      }
+
+      // Fallback if no event found or title is empty
+      if (!prefix || prefix.length < 2) {
+        prefix = "TKT";
+      }
+    }
+
+    // Ultra-fast sequential numbering using Event table counter
+    const updatedEvent = await tx.event.update({
+      where: { eventId: ticketType.eventId },
+      data: {
+        ticketCounter: { increment: 1 },
+      },
+      select: { ticketCounter: true },
+    });
+
+    const ticketNumber = updatedEvent.ticketCounter;
+    const formattedNumber = ticketNumber.toString().padStart(3, "0");
+    const ticketId = `${prefix}${formattedNumber}`;
+
+    // Format: PREFIX + SEQUENTIAL_NUMBER
+    // Examples: CC3001, CC3002, CC3003, HDN001, HDN002
+    return ticketId;
   }
 }

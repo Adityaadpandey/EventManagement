@@ -6,7 +6,7 @@ import { redis } from "../config/redis";
 
 // Configure AWS SES client
 const sesClient = new SESClient({
-  region: config.AWS_REGION, // e.g., "us-east-1"
+  region: config.AWS_REGION,
   credentials: {
     accessKeyId: config.AWS_ACCESS_KEY_ID,
     secretAccessKey: config.AWS_SECRET_ACCESS_KEY,
@@ -54,7 +54,7 @@ export const emailWorker = new Worker(
         });
 
         await sesClient.send(command);
-        logger.info(`✅ Email sent to ${to}`);
+        logger.info(`Email sent to ${to}`);
       } else {
         // For emails with attachments, use SendRawEmail
         const { SendRawEmailCommand } = await import("@aws-sdk/client-ses");
@@ -97,10 +97,10 @@ export const emailWorker = new Worker(
         });
 
         await sesClient.send(command);
-        logger.info(`✅ Email with attachments sent to ${to}`);
+        logger.info(`Email with attachments sent to ${to}`);
       }
     } catch (err) {
-      logger.error(`❌ Failed to send email to ${to}`, err);
+      logger.error(`Failed to send email to ${to}`, err);
       throw err; // For retry
     }
   },

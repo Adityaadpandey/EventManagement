@@ -3,6 +3,7 @@ import "dotenv/config";
 import { PrismaClient } from "@repo/database";
 import { parentPort } from "worker_threads";
 import { config } from "../config";
+import logger from "../config/logger";
 import { redis } from "../config/redis";
 
 const prisma = new PrismaClient({
@@ -14,7 +15,7 @@ const prisma = new PrismaClient({
 
 interface AnalyticsData {
   eventId: string;
-  type: "event_view" | "ticket_purchase" | "ticket_success";
+  type: "event_view" | "event_cta_click" | "ticket_purchase" | "ticket_success";
   metadata?: Record<string, any>;
   timestamp: number;
 }
@@ -34,14 +35,14 @@ async function processAnalyticsQueue() {
     const batch = await redis.rpop("analytics:queue", BATCH_SIZE);
     if (!batch || batch.length === 0) return;
 
-    console.log(`📊 Processing ${batch.length} analytics events...`);
+    logger.info(`Processing ${batch.length} analytics events...`);
 
     const events: AnalyticsData[] = batch
       .map((item) => {
         try {
           return JSON.parse(item);
         } catch (err) {
-          console.error("❌ Failed to parse event:", err);
+          logger.error("Failed to parse event:", err);
           return null;
         }
       })
@@ -62,8 +63,13 @@ async function processAnalyticsQueue() {
           stats.views++;
           break;
 
+        case "event_cta_click":
+          stats.ctaClicks += 1;
+          break;
+
         case "ticket_purchase":
-          stats.ctaClicks += event.metadata?.quantity || 1;
+          stats.ticketsSold += event.metadata?.quantity || 1;
+          stats.revenue += event.metadata?.amount || 0;
           break;
 
         case "ticket_success":
@@ -79,12 +85,11 @@ async function processAnalyticsQueue() {
     const updates = Array.from(eventStatsMap.entries()).map(
       async ([eventId, stats]) => {
         try {
-          // Get real-time data from tickets for accurate sync
+          // Get real-time data from event and tickets for accurate sync
           const eventWithTickets = await prisma.event.findUnique({
             where: { eventId },
             select: {
-              viewsCount: true,
-              ctaClicksCount: true,
+              eventId: true,
               Ticket: {
                 where: { status: "SUCCESS" },
                 select: {
@@ -100,8 +105,17 @@ async function processAnalyticsQueue() {
             },
           });
 
+          // Get existing analytics for incremental updates
+          const existingAnalytics = await prisma.eventAnalytics.findUnique({
+            where: { eventId },
+            select: {
+              views: true,
+              clicks: true,
+            },
+          });
+
           if (!eventWithTickets) {
-            console.warn(`⚠️ Event ${eventId} not found, skipping`);
+            logger.warn(`Event ${eventId} not found, skipping`);
             return;
           }
 
@@ -112,18 +126,25 @@ async function processAnalyticsQueue() {
           );
           const realRevenue = eventWithTickets.Ticket.reduce((sum, ticket) => {
             // Calculate actual revenue by subtracting platform fees
-            // If platform fee exists, subtract it; if 0, subtract 5% of total price
-            const platformFee =
-              ticket.ticketType.platformfee > 0
-                ? ticket.ticketType.platformfee * ticket.quantity
-                : ticket.totalPrice * 0.05;
-            const actualRevenue = ticket.totalPrice - platformFee;
+            let actualRevenue = ticket.totalPrice;
+
+            // Only subtract platform fee if it exists and is > 0
+            if (ticket.ticketType.platformfee > 0) {
+              const platformFee =
+                ticket.ticketType.platformfee * ticket.quantity;
+              actualRevenue = ticket.totalPrice - platformFee;
+            } else {
+              // If no platform fee, subtract 5% as default platform fee
+              const defaultPlatformFee = ticket.totalPrice * 0.05;
+              actualRevenue = ticket.totalPrice - defaultPlatformFee;
+            }
+
             return sum + actualRevenue;
           }, 0);
 
           // Update views and CTA clicks incrementally (these come from queue)
-          const totalViews = eventWithTickets.viewsCount + stats.views;
-          const totalCTA = eventWithTickets.ctaClicksCount + stats.ctaClicks;
+          const totalViews = (existingAnalytics?.views || 0) + stats.views;
+          const totalCTA = (existingAnalytics?.clicks || 0) + stats.ctaClicks;
 
           // Calculate conversion rate from REAL data
           const conversionRate =
@@ -131,19 +152,39 @@ async function processAnalyticsQueue() {
               ? parseFloat(((realTicketsSold * 100) / totalViews).toFixed(2))
               : 0;
 
-          // Update Event with incremental views/clicks but REAL sales data
-          await prisma.event.update({
-            where: { eventId },
-            data: {
-              viewsCount: { increment: stats.views },
-              ctaClicksCount: { increment: stats.ctaClicks },
-              ticketsSold: realTicketsSold, // Set to real value
-              revenue: realRevenue, // Set to real value
-              conversionRate,
-            },
-          });
+          // Event table only stores ticketCounter now - all analytics in EventAnalytics
 
-          // Update EventAnalytics with REAL values
+          // Get current date for daily tracking
+          const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+
+          // Get existing daily analytics to merge data
+          const existingDailyAnalytics = await prisma.eventAnalytics.findUnique(
+            {
+              where: { eventId },
+              select: {
+                viewsByDay: true,
+                clicksByDay: true,
+                salesByDay: true,
+                revenueByDay: true,
+              },
+            },
+          );
+
+          // Prepare daily data updates
+          const viewsByDay = (existingDailyAnalytics?.viewsByDay as any) || {};
+          const clicksByDay =
+            (existingDailyAnalytics?.clicksByDay as any) || {};
+          const salesByDay = (existingDailyAnalytics?.salesByDay as any) || {};
+          const revenueByDay =
+            (existingDailyAnalytics?.revenueByDay as any) || {};
+
+          // Update today's data (increment existing or set new)
+          viewsByDay[today] = (viewsByDay[today] || 0) + stats.views;
+          clicksByDay[today] = (clicksByDay[today] || 0) + stats.ctaClicks;
+          salesByDay[today] = realTicketsSold; // Set to real current value
+          revenueByDay[today] = parseFloat(realRevenue.toFixed(2)); // Set to real current value
+
+          // Update EventAnalytics with REAL values and daily tracking
           await prisma.eventAnalytics.upsert({
             where: { eventId },
             create: {
@@ -153,6 +194,11 @@ async function processAnalyticsQueue() {
               ticketsSold: realTicketsSold,
               revenue: realRevenue,
               conversionRate,
+
+              viewsByDay,
+              clicksByDay,
+              salesByDay,
+              revenueByDay,
               lastUpdated: new Date(),
             },
             update: {
@@ -161,47 +207,52 @@ async function processAnalyticsQueue() {
               ticketsSold: realTicketsSold,
               revenue: realRevenue,
               conversionRate,
+
+              viewsByDay,
+              clicksByDay,
+              salesByDay,
+              revenueByDay,
               lastUpdated: new Date(),
             },
           });
 
-          console.log(
+          logger.info(
             `✅ Event ${eventId}: +${stats.views} views, +${stats.ctaClicks} CTA, ` +
               `${realTicketsSold} sold (real), ₹${realRevenue.toFixed(2)} revenue (real), CR ${conversionRate}%`,
           );
         } catch (err) {
-          console.error(`❌ Failed analytics update for ${eventId}:`, err);
+          logger.error(`Failed analytics update for ${eventId}:`, err);
         }
       },
     );
 
     await Promise.allSettled(updates);
-    console.log(`✅ Completed processing ${batch.length} analytics events`);
+    logger.info(`Completed processing ${batch.length} analytics events`);
   } catch (err) {
-    console.error("❌ Analytics worker error:", err);
+    logger.error("Analytics worker error:", err);
   }
 }
 
 async function startWorker() {
-  console.log("🚀 Analytics worker started");
+  logger.info("Analytics worker started");
   await processAnalyticsQueue();
   setInterval(processAnalyticsQueue, POLLING_INTERVAL);
 }
 
 process.on("SIGTERM", async () => {
-  console.log("📊 Worker shutting down...");
+  logger.info("Worker shutting down...");
   await prisma.$disconnect();
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
-  console.log("📊 Worker shutting down...");
+  logger.info("Worker shutting down...");
   await prisma.$disconnect();
   process.exit(0);
 });
 
 startWorker().catch((err) => {
-  console.error("❌ Failed to start worker:", err);
+  logger.error("Failed to start worker:", err);
   process.exit(1);
 });
 

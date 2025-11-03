@@ -453,7 +453,7 @@ const EditEventPage = () => {
         return;
       }
 
-      console.log("Submitting updates:", updates);
+      // console.log("Submitting updates:", updates);
 
       const resultAction = await dispatch(
         updateEvent({ eventId, updates }) as any,
