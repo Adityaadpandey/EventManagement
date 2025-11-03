@@ -906,8 +906,6 @@ export class EventService {
           date: true,
           capacity: true,
           ticketCounter: true,
-          viewsCount: true,
-          ctaClicksCount: true,
           lister: {
             select: {
               user: {
@@ -982,18 +980,13 @@ export class EventService {
 
       if (!analytics) {
         // If analytics don't exist yet, use real-time calculations
-        const conversionRate =
-          event.viewsCount > 0
-            ? parseFloat(
-                ((realTimeTicketsSold * 100) / event.viewsCount).toFixed(2),
-              )
-            : 0;
+        const conversionRate = 0; // No analytics record yet
 
         return {
           eventId: event.eventId,
           title: event.title,
-          views: event.viewsCount || 0,
-          clicks: event.ctaClicksCount || 0,
+          views: 0, // No analytics record yet
+          clicks: 0,
           ticketsSold: realTimeTicketsSold,
           revenue: parseFloat(realTimeRevenue.toFixed(2)),
           conversionRate,
@@ -1026,8 +1019,8 @@ export class EventService {
       return {
         eventId: event.eventId,
         title: event.title,
-        views: analytics.views,
-        clicks: analytics.clicks,
+        views: analytics.views || 0,
+        clicks: analytics.clicks || 0,
         ticketsSold: realTimeTicketsSold,
         revenue: parseFloat(realTimeRevenue.toFixed(2)),
         conversionRate,
@@ -1040,8 +1033,8 @@ export class EventService {
             )
           : null,
         eventDate: event.date,
-        lastUpdated: new Date(), // Update timestamp since we're recalculating
-        // Daily analytics data
+        lastUpdated: analytics.lastUpdated || new Date(),
+        // Daily analytics data from EventAnalytics
         viewsByDay: analytics.viewsByDay || {},
         clicksByDay: analytics.clicksByDay || {},
         salesByDay: analytics.salesByDay || {},
