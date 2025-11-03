@@ -53,6 +53,7 @@ export class TicketTypeService {
             discountedPrice: payload.discountedPrice,
             discountReason: payload.discountReason,
             quantity: payload.quantity,
+            ticketPrefix: payload.ticketPrefix,
             salesCutoff: payload.salesCutoff
               ? new Date(payload.salesCutoff)
               : null,

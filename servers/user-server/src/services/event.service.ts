@@ -134,6 +134,7 @@ export class EventService {
                 discountReason: ticketType.discountReason,
                 price: ticketType.price,
                 quantity: ticketType.quantity,
+                ticketPrefix: ticketType.ticketPrefix,
                 salesCutoff: ticketType.salesCutoff
                   ? new Date(ticketType.salesCutoff)
                   : null,
