@@ -146,11 +146,12 @@ export class TicketService {
       // Calculate final price including platform fee
       const finalPrice = ticketSubtotal + platformFee;
 
-      const qrCode = this.generateQRCode();
-
       // Determine payment status
       const isFree = finalPrice === 0;
       const ticketStatus = isFree ? "SUCCESS" : "PENDING";
+
+      // Generate unique ticket ID using atomic counter
+      const qrCode = await this.generateTicketId(ticketType);
 
       // Use transaction to ensure atomicity
       const result = await prisma.$transaction(async (tx) => {
@@ -462,10 +463,52 @@ export class TicketService {
     }
   }
 
-  private generateQRCode(): string {
-    // Generate a unique QR code string
-    const timestamp = Date.now().toString();
-    const random = Math.random().toString(36).substring(2, 15);
-    return `TICKET_${timestamp}_${random}`;
+  private async generateTicketId(ticketType: any): Promise<string> {
+    // Use custom prefix if available, otherwise generate from event title
+    let prefix = ticketType.ticketPrefix;
+
+    if (!prefix) {
+      // Generate default prefix from event title
+      const event = await prisma.event.findUnique({
+        where: { eventId: ticketType.eventId },
+        select: { title: true },
+      });
+
+      if (event) {
+        // Extract initials from event title (e.g., "Code Caravan 3.0" -> "CC30")
+        prefix = event.title
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase())
+          .join("")
+          .replace(/[^A-Z0-9]/g, "") // Remove non-alphanumeric characters
+          .substring(0, 6); // Limit to 6 characters
+      }
+
+      // Fallback if no event found or title is empty
+      if (!prefix || prefix.length < 2) {
+        prefix = "TKT";
+      }
+    }
+
+    // Atomically increment the total_tickets counter at event level to get next sequential number
+    const updatedEventAnalytics = await prisma.eventAnalytics.upsert({
+      where: { eventId: ticketType.eventId },
+      update: {
+        total_tickets: { increment: 1 },
+      },
+      create: {
+        eventId: ticketType.eventId,
+        total_tickets: 1,
+      },
+      select: { total_tickets: true },
+    });
+
+    const ticketNumber = updatedEventAnalytics.total_tickets;
+    const formattedNumber = ticketNumber.toString().padStart(3, "0");
+    const ticketId = `${prefix}${formattedNumber}`;
+
+    // Format: PREFIX + SEQUENTIAL_NUMBER (across all ticket types for the event)
+    // Examples: CC3001, CC3002, CC3003, HDN001, HDN002
+    return ticketId;
   }
 }

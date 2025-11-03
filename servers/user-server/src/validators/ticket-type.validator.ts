@@ -53,6 +53,16 @@ export const ticketTypeSchema = z
       .int("Quantity must be an integer")
       .positive("Quantity must be a positive number")
       .max(100000, "Quantity cannot exceed 100,000"),
+    ticketPrefix: z
+      .string()
+      .min(2, "Ticket prefix must be at least 2 characters")
+      .max(10, "Ticket prefix must not exceed 10 characters")
+      .regex(
+        /^[A-Z0-9]+$/,
+        "Ticket prefix must contain only uppercase letters and numbers",
+      )
+      .optional()
+      .nullable(),
     salesCutoff: z
       .string()
       .refine(

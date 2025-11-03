@@ -5,6 +5,7 @@ export interface TicketTypeRequest {
   discountedPrice?: number;
   discountReason?: string;
   quantity: number;
+  ticketPrefix?: string;
   salesCutoff?: string; // ISO date string
   customField?: CustomFieldRequest[];
 }
