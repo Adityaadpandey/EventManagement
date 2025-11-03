@@ -5,11 +5,9 @@ services:
     container_name: backend-service-stag
     ports:
       - "7001:7001"
-    command: ["node", "dist/bin.js"]
+    command: ["node", "dist/index.js"]
     environment:
       - NODE_ENV=production
-      - NODE_OPTIONS=--max-old-space-size=51
-      - UV_THREADPOOL_SIZE=8
       - HOST=0.0.0.0
       - PORT=7001
     healthcheck:
