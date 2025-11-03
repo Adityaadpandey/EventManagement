@@ -144,6 +144,7 @@ model Event {
     ticketsSold    Int   @default(0)
     revenue        Float @default(0)
     conversionRate Float @default(0)
+    ticketCounter  Int   @default(0) 
 
     availableMailUpdates Int @default(2)
 
@@ -202,8 +203,7 @@ model TicketType {
     salesCutoff     DateTime?
 
     platformfee Int @default(0)
-    ticketPrefix String? // Custom prefix for ticket IDs (e.g., "CC30" for Code Caravan 3.0)
-    
+    ticketPrefix String? 
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -375,8 +375,7 @@ model EventAnalytics {
     clicks         Int   @default(0)
     ticketsSold    Int   @default(0)
     revenue        Float @default(0)
-    conversionRate Float @default(0)
-    total_tickets  Int   @default(0) // Total tickets attempted across all ticket types for sequential numbering
+    conversionRate Float @default(0) 
 
     lastUpdated DateTime @default(now()) @updatedAt
 

@@ -35,14 +35,14 @@ async function processAnalyticsQueue() {
     const batch = await redis.rpop("analytics:queue", BATCH_SIZE);
     if (!batch || batch.length === 0) return;
 
-    logger.info(`📊 Processing ${batch.length} analytics events...`);
+    logger.info(`Processing ${batch.length} analytics events...`);
 
     const events: AnalyticsData[] = batch
       .map((item) => {
         try {
           return JSON.parse(item);
         } catch (err) {
-          logger.error("❌ Failed to parse event:", err);
+          logger.error("Failed to parse event:", err);
           return null;
         }
       })
@@ -107,7 +107,7 @@ async function processAnalyticsQueue() {
           });
 
           if (!eventWithTickets) {
-            logger.warn(`⚠️ Event ${eventId} not found, skipping`);
+            logger.warn(`Event ${eventId} not found, skipping`);
             return;
           }
 
@@ -160,7 +160,6 @@ async function processAnalyticsQueue() {
               clicksByDay: true,
               salesByDay: true,
               revenueByDay: true,
-              total_tickets: true,
             },
           });
 
@@ -186,7 +185,7 @@ async function processAnalyticsQueue() {
               ticketsSold: realTicketsSold,
               revenue: realRevenue,
               conversionRate,
-              total_tickets: realTicketsSold, // Initialize with current tickets sold
+
               viewsByDay,
               clicksByDay,
               salesByDay,
@@ -199,7 +198,7 @@ async function processAnalyticsQueue() {
               ticketsSold: realTicketsSold,
               revenue: realRevenue,
               conversionRate,
-              // Don't update total_tickets here as it's managed by ticket creation
+
               viewsByDay,
               clicksByDay,
               salesByDay,
@@ -209,42 +208,42 @@ async function processAnalyticsQueue() {
           });
 
           logger.info(
-            `✅ Event ${eventId}: +${stats.views} views, +${stats.ctaClicks} CTA, ` +
+            `Event ${eventId}: +${stats.views} views, +${stats.ctaClicks} CTA, ` +
               `${realTicketsSold} sold (real), ₹${realRevenue.toFixed(2)} revenue (real), CR ${conversionRate}%`,
           );
         } catch (err) {
-          logger.error(`❌ Failed analytics update for ${eventId}:`, err);
+          logger.error(`Failed analytics update for ${eventId}:`, err);
         }
       },
     );
 
     await Promise.allSettled(updates);
-    logger.info(`✅ Completed processing ${batch.length} analytics events`);
+    logger.info(`Completed processing ${batch.length} analytics events`);
   } catch (err) {
-    logger.error("❌ Analytics worker error:", err);
+    logger.error("Analytics worker error:", err);
   }
 }
 
 async function startWorker() {
-  logger.info("🚀 Analytics worker started");
+  logger.info("Analytics worker started");
   await processAnalyticsQueue();
   setInterval(processAnalyticsQueue, POLLING_INTERVAL);
 }
 
 process.on("SIGTERM", async () => {
-  logger.info("📊 Worker shutting down...");
+  logger.info("Worker shutting down...");
   await prisma.$disconnect();
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
-  logger.info("📊 Worker shutting down...");
+  logger.info("Worker shutting down...");
   await prisma.$disconnect();
   process.exit(0);
 });
 
 startWorker().catch((err) => {
-  logger.error("❌ Failed to start worker:", err);
+  logger.error("Failed to start worker:", err);
   process.exit(1);
 });
 

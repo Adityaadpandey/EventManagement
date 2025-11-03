@@ -900,7 +900,14 @@ export class EventService {
       // Fetch event data with tickets to calculate real-time revenue
       const event = await prisma.event.findUnique({
         where: { eventId },
-        include: {
+        select: {
+          eventId: true,
+          title: true,
+          date: true,
+          capacity: true,
+          ticketCounter: true,
+          viewsCount: true,
+          ctaClicksCount: true,
           lister: {
             select: {
               user: {
@@ -915,7 +922,6 @@ export class EventService {
               ticketsSold: true,
               revenue: true,
               conversionRate: true,
-              total_tickets: true,
               viewsByDay: true,
               clicksByDay: true,
               salesByDay: true,
@@ -992,7 +998,7 @@ export class EventService {
           revenue: parseFloat(realTimeRevenue.toFixed(2)),
           conversionRate,
           totalTickets: event._count.Ticket,
-          total_tickets: 0, // No analytics record yet
+          total_tickets: event.ticketCounter || 0,
           capacity: event.capacity,
           capacityUtilization: event.capacity
             ? parseFloat(
@@ -1026,7 +1032,7 @@ export class EventService {
         revenue: parseFloat(realTimeRevenue.toFixed(2)),
         conversionRate,
         totalTickets: event._count.Ticket,
-        total_tickets: analytics.total_tickets || 0,
+        total_tickets: event.ticketCounter || 0,
         capacity: event.capacity,
         capacityUtilization: event.capacity
           ? parseFloat(
