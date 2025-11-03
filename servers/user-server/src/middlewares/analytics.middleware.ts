@@ -1,6 +1,7 @@
 // src/middlewares/analytics.middleware.ts
 import { NextFunction, Request, Response } from "express";
 import { redis } from "../config/redis";
+import logger from "../config/logger";
 
 export enum AnalyticsEventType {
   EVENT_VIEW = "event_view",
@@ -48,7 +49,7 @@ export const trackEventView = async (
       await redis.hincrby(`event:${eventId}:stats`, "views", 1);
     }
   } catch (error) {
-    console.error("Analytics tracking error:", error);
+    logger.error("Analytics tracking error:", error);
     // Don't block the request if analytics fail
   }
 
@@ -59,36 +60,36 @@ export const trackEventView = async (
  * Middleware to track CTA clicks (call-to-action like "Buy Ticket" button)
  * Usage: Add to ticket purchase route
  */
-export const trackCTAClick = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
+
+/**
+ * Helper to track CTA click when we have eventId (called from ticket service)
+ */
+export const trackCTAClickWithEventId = async (
+  eventId: string,
+  userId?: string,
+  metadata?: any,
 ) => {
   try {
-    const eventId = req.body.eventId;
+    const analyticsData: AnalyticsData = {
+      eventId,
+      type: AnalyticsEventType.EVENT_CTA_CLICK,
+      userId,
+      metadata,
+      timestamp: Date.now(),
+    };
 
-    if (eventId) {
-      const analyticsData: AnalyticsData = {
-        eventId,
-        type: AnalyticsEventType.EVENT_CTA_CLICK,
-        userId: (req as any).user?.userId,
-        metadata: {
-          ticketTypeId: req.body.ticketTypeId,
-          quantity: req.body.quantity,
-        },
-        timestamp: Date.now(),
-      };
-
-      await redis.lpush("analytics:queue", JSON.stringify(analyticsData));
-
-      // Increment CTA clicks in Redis
-      await redis.hincrby(`event:${eventId}:stats`, "ctaClicks", 1);
-    }
+    // Fire and forget - don't block
+    setImmediate(async () => {
+      try {
+        await redis.lpush("analytics:queue", JSON.stringify(analyticsData));
+        await redis.hincrby(`event:${eventId}:stats`, "ctaClicks", 1);
+      } catch (error) {
+        logger.error("CTA tracking error:", error);
+      }
+    });
   } catch (error) {
-    console.error("CTA tracking error:", error);
+    logger.error("CTA tracking setup error:", error);
   }
-
-  next();
 };
 
 /**
@@ -128,7 +129,7 @@ export const trackTicketPurchase = async (
       redis.hincrbyfloat(eventStatsKey, "revenue", ticketData.amount),
     ]);
   } catch (error) {
-    console.error("Ticket purchase tracking error:", error);
+    logger.error("Ticket purchase tracking error:", error);
   }
 };
 
@@ -149,7 +150,7 @@ export const getRealtimeStats = async (eventId: string) => {
         : 0,
     };
   } catch (error) {
-    console.error("Error fetching realtime stats:", error);
+    logger.error("Error fetching realtime stats:", error);
     return null;
   }
 };

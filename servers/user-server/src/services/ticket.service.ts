@@ -1,6 +1,7 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { razorpay } from "../lib/razorpay";
+import { trackCTAClickWithEventId } from "../middlewares/analytics.middleware";
 
 export class TicketService {
   async buyTicket(
@@ -26,6 +27,12 @@ export class TicketService {
       if (!ticketType) {
         return { error: "Ticket type not found" };
       }
+
+      // Track CTA click (non-blocking)
+      trackCTAClickWithEventId(ticketType.eventId, userId, {
+        ticketTypeId,
+        quantity,
+      });
 
       // Check availability
       const availableQuantity = ticketType.quantity - ticketType.soldCount;
