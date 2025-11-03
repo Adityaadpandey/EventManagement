@@ -229,7 +229,7 @@ export class TicketService {
             where: { ticketTypeId },
             data: { soldCount: { increment: quantity } },
           });
-          await tx.event.update({
+          await tx.eventAnalytics.update({
             where: { eventId: ticketTypeWithEvent.eventId },
             data: {
               ticketsSold: { increment: quantity },

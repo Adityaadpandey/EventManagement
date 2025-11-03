@@ -90,7 +90,7 @@ export class PaymentService {
       const actualRevenue = ticket.totalPrice - platformFee;
 
       // Update event analytics
-      await prisma.event.update({
+      await prisma.eventAnalytics.update({
         where: { eventId: ticket.ticketType.eventId },
         data: {
           ticketsSold: {
@@ -287,7 +287,7 @@ export class PaymentService {
       const actualRevenueImpact = refund.amount - platformFee;
 
       // Update analytics (decrease revenue and ticket count)
-      await prisma.event.update({
+      await prisma.eventAnalytics.update({
         where: { eventId: refund.eventEventId! },
         data: {
           ticketsSold: {
