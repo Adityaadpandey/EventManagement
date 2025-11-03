@@ -1,23 +1,24 @@
 // src/workers/index.worker.ts
 import path from "path";
 import { Worker as NodeWorker } from "worker_threads";
+import logger from "../config/logger";
 
 const startWorker = (workerPath: string) => {
   const worker = new NodeWorker(workerPath);
 
   worker.on("online", () => {
-    console.log(`✅ Started worker: ${workerPath}`);
+    logger.info(`Started worker: ${workerPath}`);
   });
 
   worker.on("error", (err) => {
-    console.error(`❌ Error in worker ${workerPath}:`, err);
+    logger.error(`Error in worker ${workerPath}:`, err);
   });
 
   worker.on("exit", (code) => {
     if (code !== 0) {
-      console.error(`❌ Worker ${workerPath} exited with code ${code}`);
+      logger.error(`❌ Worker ${workerPath} exited with code ${code}`);
     } else {
-      console.log(`✅ Worker ${workerPath} exited cleanly`);
+      logger.info(`Worker ${workerPath} exited cleanly`);
     }
   });
 };

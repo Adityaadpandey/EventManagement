@@ -908,7 +908,21 @@ export class EventService {
               },
             },
           },
-          EventAnalytics: true,
+          EventAnalytics: {
+            select: {
+              views: true,
+              clicks: true,
+              ticketsSold: true,
+              revenue: true,
+              conversionRate: true,
+              total_tickets: true,
+              viewsByDay: true,
+              clicksByDay: true,
+              salesByDay: true,
+              revenueByDay: true,
+              lastUpdated: true,
+            },
+          },
           Ticket: {
             where: { status: "SUCCESS" },
             select: {
@@ -978,6 +992,7 @@ export class EventService {
           revenue: parseFloat(realTimeRevenue.toFixed(2)),
           conversionRate,
           totalTickets: event._count.Ticket,
+          total_tickets: 0, // No analytics record yet
           capacity: event.capacity,
           capacityUtilization: event.capacity
             ? parseFloat(
@@ -986,6 +1001,11 @@ export class EventService {
             : null,
           eventDate: event.date,
           lastUpdated: new Date(),
+          // Daily analytics (empty if no analytics record)
+          viewsByDay: {},
+          clicksByDay: {},
+          salesByDay: {},
+          revenueByDay: {},
         };
       }
 
@@ -1006,6 +1026,7 @@ export class EventService {
         revenue: parseFloat(realTimeRevenue.toFixed(2)),
         conversionRate,
         totalTickets: event._count.Ticket,
+        total_tickets: analytics.total_tickets || 0,
         capacity: event.capacity,
         capacityUtilization: event.capacity
           ? parseFloat(
@@ -1014,6 +1035,11 @@ export class EventService {
           : null,
         eventDate: event.date,
         lastUpdated: new Date(), // Update timestamp since we're recalculating
+        // Daily analytics data
+        viewsByDay: analytics.viewsByDay || {},
+        clicksByDay: analytics.clicksByDay || {},
+        salesByDay: analytics.salesByDay || {},
+        revenueByDay: analytics.revenueByDay || {},
       };
     } catch (error: any) {
       logger.error("Error in getEventAnalytics:", error);

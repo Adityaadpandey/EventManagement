@@ -363,7 +363,7 @@ export class ListerServer {
         totalRevenue += eventRevenue;
       });
 
-      console.log("Real-time Lister Stats:", {
+      logger.info("Real-time Lister Stats:", {
         totalEvents: events.length,
         totalTicketsSold,
         totalRevenue,
