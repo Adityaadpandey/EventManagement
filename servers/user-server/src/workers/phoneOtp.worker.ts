@@ -23,9 +23,9 @@ export const otpWorker = new Worker(
 
     try {
       await sendSMS(otp, parsed.number); // pass formatted number
-      logger.info(`✅ OTP sent to ${parsed.number}`);
+      logger.info(`OTP sent to ${parsed.number}`);
     } catch (err) {
-      logger.error(`❌ Failed to send OTP to ${parsed.number}`, err);
+      logger.error(`Failed to send OTP to ${parsed.number}`, err);
       throw err;
     }
   },

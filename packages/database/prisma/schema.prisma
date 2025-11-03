@@ -138,12 +138,8 @@ model Event {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    // Basic aggregated analytics
-    viewsCount     Int   @default(0)
-    ctaClicksCount Int   @default(0)
-    ticketsSold    Int   @default(0)
-    revenue        Float @default(0)
-    conversionRate Float @default(0)
+    // Only keep ticket counter for sequential numbering - all other analytics in EventAnalytics table
+    ticketCounter  Int   @default(0) // Fast counter for sequential ticket numbering 
 
     availableMailUpdates Int @default(2)
 
@@ -202,6 +198,7 @@ model TicketType {
     salesCutoff     DateTime?
 
     platformfee Int @default(0)
+    ticketPrefix String? 
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -369,11 +366,12 @@ model EventAnalytics {
     eventId     String @unique
     event       Event  @relation(fields: [eventId], references: [eventId])
 
+    // Main analytics data - single source of truth
     views          Int   @default(0)
     clicks         Int   @default(0)
     ticketsSold    Int   @default(0)
     revenue        Float @default(0)
-    conversionRate Float @default(0)
+    conversionRate Float @default(0) 
 
     lastUpdated DateTime @default(now()) @updatedAt
 
@@ -389,7 +387,6 @@ model EventAnalytics {
     createdAt DateTime @default(now())
 
     @@index([eventId])
-    // INDEXES
     @@index([lastUpdated]) // Recently updated analytics
     @@index([revenue]) // Top revenue events
     @@index([ticketsSold]) // Most popular events

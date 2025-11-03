@@ -19,6 +19,15 @@ const ticketTypeSchema = z.object({
     .nonnegative("Discounted price must be a non-negative number")
     .optional(),
   discountReason: z.string().optional(),
+  ticketPrefix: z
+    .string()
+    .min(2, "Ticket prefix must be at least 2 characters")
+    .max(10, "Ticket prefix must not exceed 10 characters")
+    .regex(
+      /^[A-Z0-9]+$/,
+      "Ticket prefix must contain only uppercase letters and numbers",
+    )
+    .optional(),
   customField: z.array(customFieldSchema).optional(),
 });
 
