@@ -584,7 +584,7 @@ const CreateEventPage = () => {
             : undefined,
       };
 
-      console.log("Submitting payload:", JSON.stringify(payload, null, 2));
+      // console.log("Submitting payload:", JSON.stringify(payload, null, 2));
 
       const result = await dispatch(createEvent(payload)).unwrap();
 
