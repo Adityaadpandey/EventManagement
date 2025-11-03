@@ -1024,7 +1024,6 @@ export class EventService {
         ticketsSold: realTimeTicketsSold,
         revenue: parseFloat(realTimeRevenue.toFixed(2)),
         conversionRate,
-        totalTickets: event._count.Ticket,
         total_tickets: event.ticketCounter || 0,
         capacity: event.capacity,
         capacityUtilization: event.capacity
