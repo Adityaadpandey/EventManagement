@@ -28,8 +28,8 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: api.tixin.in
-          username: ubuntu
-          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          username: root
+          key: ${{ secrets.PRODUCTION_SSH_KEY }} 
           port: 22
           script_stop: true
           script: |
@@ -71,7 +71,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: api.tixin.in
-          username: ubuntu
+          username: root
           key: ${{ secrets.PRODUCTION_SSH_KEY }}
           port: 22
           script: |
@@ -130,7 +130,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: api.tixin.in
-          username: ubuntu
+          username: root
           key: ${{ secrets.PRODUCTION_SSH_KEY }}
           port: 22
           script: |
