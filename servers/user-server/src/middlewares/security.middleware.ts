@@ -1,4 +1,3 @@
-// middlewares/security.middleware.ts - Advanced DDoS/DoS Protection
 import type { NextFunction, Request, Response } from "express";
 import logger from "../config/logger";
 

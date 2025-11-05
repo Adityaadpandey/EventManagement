@@ -95,8 +95,12 @@ async function processAnalyticsQueue() {
                 select: {
                   quantity: true,
                   totalPrice: true,
+                  ticketTypeId: true,
+                  createdAt: true,
                   ticketType: {
                     select: {
+                      ticketTypeId: true,
+                      name: true,
                       platformfee: true,
                     },
                   },
@@ -166,6 +170,7 @@ async function processAnalyticsQueue() {
                 clicksByDay: true,
                 salesByDay: true,
                 revenueByDay: true,
+                ticketTypesSalesByDay: true,
               },
             },
           );
@@ -177,12 +182,59 @@ async function processAnalyticsQueue() {
           const salesByDay = (existingDailyAnalytics?.salesByDay as any) || {};
           const revenueByDay =
             (existingDailyAnalytics?.revenueByDay as any) || {};
+          const ticketTypesSalesByDay =
+            (existingDailyAnalytics?.ticketTypesSalesByDay as any) || {};
 
           // Update today's data (increment existing or set new)
           viewsByDay[today] = (viewsByDay[today] || 0) + stats.views;
           clicksByDay[today] = (clicksByDay[today] || 0) + stats.ctaClicks;
           salesByDay[today] = realTicketsSold; // Set to real current value
           revenueByDay[today] = parseFloat(realRevenue.toFixed(2)); // Set to real current value
+
+          // Calculate ticket type sales by day - group all tickets by date and type
+          const ticketsByDate: Record<
+            string,
+            Record<string, { quantity: number; revenue: number; name: string }>
+          > = {};
+
+          for (const ticket of eventWithTickets.Ticket) {
+            const ticketDate = ticket.createdAt.toISOString().split("T")[0]; // YYYY-MM-DD
+            const ticketTypeId = ticket.ticketTypeId;
+            const ticketTypeName = ticket.ticketType?.name || "Unknown";
+
+            if (!ticketsByDate[ticketDate]) {
+              ticketsByDate[ticketDate] = {};
+            }
+
+            if (!ticketsByDate[ticketDate][ticketTypeId]) {
+              ticketsByDate[ticketDate][ticketTypeId] = {
+                quantity: 0,
+                revenue: 0,
+                name: ticketTypeName,
+              };
+            }
+
+            ticketsByDate[ticketDate][ticketTypeId].quantity += ticket.quantity;
+
+            // Calculate revenue for this ticket type (subtract platform fee)
+            let ticketRevenue = ticket.totalPrice;
+            if (ticket.ticketType?.platformfee > 0) {
+              const platformFee =
+                ticket.ticketType.platformfee * ticket.quantity;
+              ticketRevenue = ticket.totalPrice - platformFee;
+            } else {
+              // Default 5% platform fee
+              const defaultPlatformFee = ticket.totalPrice * 0.05;
+              ticketRevenue = ticket.totalPrice - defaultPlatformFee;
+            }
+
+            ticketsByDate[ticketDate][ticketTypeId].revenue += parseFloat(
+              ticketRevenue.toFixed(2),
+            );
+          }
+
+          // Update ticket types sales by day with complete data
+          Object.assign(ticketTypesSalesByDay, ticketsByDate);
 
           // Update EventAnalytics with REAL values and daily tracking
           await prisma.eventAnalytics.upsert({
@@ -199,6 +251,7 @@ async function processAnalyticsQueue() {
               clicksByDay,
               salesByDay,
               revenueByDay,
+              ticketTypesSalesByDay,
               lastUpdated: new Date(),
             },
             update: {
@@ -212,6 +265,7 @@ async function processAnalyticsQueue() {
               clicksByDay,
               salesByDay,
               revenueByDay,
+              ticketTypesSalesByDay,
               lastUpdated: new Date(),
             },
           });
