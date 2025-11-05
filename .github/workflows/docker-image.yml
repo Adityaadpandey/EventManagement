@@ -6,64 +6,141 @@ on:
       - production
 
 jobs:
-  build-and-push:
+
+  deploy-to-production:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: 🚀 Notify deployment start
+        uses: appleboy/telegram-action@master
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            🚀 *Starting PRODUCTION Deployment*
+            *Environment:* PRODUCTION
+            *Server:* api.tixin.in
+            ⏳ Deploying...
 
-      - name: Extract Docker metadata (tags and labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKER_REPOSITORY }}
-          tags: |
-            type=sha,format=short
-            type=raw,value=latest
-
-      - name: Extract short SHA
-        id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
-      - name: Extract build date
-        id: build_date
-        run: echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: servers/user-server/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            APP_VERSION=${{ steps.vars.outputs.sha_short }}
-            BUILD_DATE=${{ steps.build_date.outputs.date }}
-
-  deploy-to-staging:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to staging server
+      - name: ⚡ Deploy to production server
+        id: deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: stag.tixin.in
+          host: api.tixin.in
           username: ubuntu
-          key: ${{ secrets.STAGING_SSH_KEY }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            set -e
+            echo "📦 Starting deployment..."
+            cd EventManagement
+
+            echo "⬇️ Pulling latest images..."
+            docker compose -f docker-compose.prod.yaml pull
+
+            echo "🚀 Starting services..."
+            docker compose -f docker-compose.prod.yaml up -d --force-recreate
+
+            echo "⏳ Waiting for backend readiness..."
+            for i in {1..30}; do
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://api.tixin.in/health || echo "000")
+              if [ "$HTTP_CODE" = "200" ]; then
+                echo "Backend is healthy!"
+                echo "STATUS=success" >> /tmp/deploy_result.txt
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "Backend health check failed after 30 attempts"
+                echo "STATUS=failed" >> /tmp/deploy_result.txt
+                docker compose -f docker-compose.prod.yaml logs --tail=100 backend-service || true
+                exit 1
+              fi
+              echo "Attempt $i/30..."
+              sleep 5
+            done
+
+            echo "📊 Container Status:"
+            docker compose -f docker-compose.prod.yaml ps
+
+            echo "✨ Deployment complete!"
+
+      - name: 📊 Get deployment details
+        if: always()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: api.tixin.in
+          username: ubuntu
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
           port: 22
           script: |
             cd EventManagement
-            docker compose -f docker-compose.stag.yaml pull
-            docker compose -f docker-compose.stag.yaml up -d
-            docker image prune -f
+            echo "=== CONTAINER STATUS ==="
+            docker compose -f docker-compose.prod.yaml ps --format json 2>/dev/null | \
+            jq -r '.[]? | "Container: \(.Name // "unknown"), Status: \(.State // "unknown"), Health: \(.Health // "n/a")"' || \
+            echo "⚠️ Could not parse container status (non-JSON output)"
+
+            echo "=== ENDPOINT TEST ==="
+            curl -s -o /dev/null -w "HTTP Status: %{http_code}\nResponse Time: %{time_total}s\n" https://api.tixin.in/health || echo "Endpoint check failed"
+
+            if [ -f /tmp/deploy_result.txt ]; then
+              cat /tmp/deploy_result.txt
+              rm /tmp/deploy_result.txt
+            fi
+
+      - name: ✅ Notify deployment success
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            ✅ *PRODUCTION Deployment SUCCESS*
+
+            *Environment:* PRODUCTION
+            *Server:* api.tixin.in
+
+
+            🔗 [Health Check](https://api.tixin.in/health)
+            📊 [View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            🎉 All checks passed successfully!
+
+      - name: ❌ Notify deployment failure
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: markdown
+          message: |
+            ❌ *PRODUCTION Deployment FAILED*
+
+            *Environment:* PRODUCTION
+            *Server:* api.tixin.in
+
+
+            ⚠️ *Manual action may be required!*
+            📊 [View Logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+      - name: 🔁 Rollback on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: api.tixin.in
+          username: ubuntu
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: 22
+          script: |
+            if grep -q "STATUS=success" /tmp/deploy_result.txt 2>/dev/null; then
+              echo "✅ Deployment succeeded, skipping rollback."
+              exit 0
+            fi
+
+            echo "❌ Rolling back..."
+            cd EventManagement
+            docker compose -f docker-compose.prod.yaml down
+            docker compose -f docker-compose.prod.yaml up -d
+            echo "♻️ Rollback complete."

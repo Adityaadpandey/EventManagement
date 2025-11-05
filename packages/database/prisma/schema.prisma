@@ -366,7 +366,6 @@ model EventAnalytics {
     eventId     String @unique
     event       Event  @relation(fields: [eventId], references: [eventId])
 
-    // Main analytics data - single source of truth
     views          Int   @default(0)
     clicks         Int   @default(0)
     ticketsSold    Int   @default(0)
@@ -375,14 +374,14 @@ model EventAnalytics {
 
     lastUpdated DateTime @default(now()) @updatedAt
 
-    viewsByDay   Json? // { "2025-01-01": 150, "2025-01-02": 200 }
+    viewsByDay   Json? 
     clicksByDay  Json?
     salesByDay   Json?
     revenueByDay Json?
 
-    trafficSources Json? // { "direct": 500, "social": 300, "referral": 200 }
+    trafficSources Json? 
 
-    deviceBreakdown Json? // { "mobile": 600, "desktop": 400, "tablet": 100 }
+    deviceBreakdown Json? 
 
     createdAt DateTime @default(now())
 

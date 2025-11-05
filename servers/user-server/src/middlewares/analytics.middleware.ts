@@ -1,7 +1,7 @@
 // src/middlewares/analytics.middleware.ts
 import { NextFunction, Request, Response } from "express";
-import { redis } from "../config/redis";
 import logger from "../config/logger";
+import { redis } from "../config/redis";
 
 export enum AnalyticsEventType {
   EVENT_VIEW = "event_view",
@@ -17,10 +17,6 @@ interface AnalyticsData {
   timestamp: number;
 }
 
-/**
- * Middleware to track event views
- * Usage: Add after eventId param is available
- */
 export const trackEventView = async (
   req: Request,
   res: Response,
@@ -56,14 +52,6 @@ export const trackEventView = async (
   next();
 };
 
-/**
- * Middleware to track CTA clicks (call-to-action like "Buy Ticket" button)
- * Usage: Add to ticket purchase route
- */
-
-/**
- * Helper to track CTA click when we have eventId (called from ticket service)
- */
 export const trackCTAClickWithEventId = async (
   eventId: string,
   userId?: string,
@@ -92,10 +80,6 @@ export const trackCTAClickWithEventId = async (
   }
 };
 
-/**
- * Function to track ticket purchases (call after successful payment)
- * This should be called from your ticket controller after payment confirmation
- */
 export const trackTicketPurchase = async (
   eventId: string,
   ticketData: {
@@ -133,9 +117,6 @@ export const trackTicketPurchase = async (
   }
 };
 
-/**
- * Helper to get real-time stats from Redis
- */
 export const getRealtimeStats = async (eventId: string) => {
   try {
     const stats = await redis.hgetall(`event:${eventId}:stats`);
