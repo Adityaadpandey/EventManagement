@@ -374,10 +374,11 @@ model EventAnalytics {
 
     lastUpdated DateTime @default(now()) @updatedAt
 
-    viewsByDay   Json? 
+    viewsByDay   Json?
     clicksByDay  Json?
     salesByDay   Json?
     revenueByDay Json?
+    ticketTypesSalesByDay Json? // { "2024-01-15": { "ticketTypeId1": { "quantity": 10, "revenue": 1000 }, "ticketTypeId2": { "quantity": 5, "revenue": 500 } } }
 
     trafficSources Json? 
 
