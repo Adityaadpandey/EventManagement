@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
-import { BarChart, Edit } from "lucide-react";
+import { BarChart, Edit, Users } from "lucide-react";
 
 type ListerEvent = {
   eventId: string;
@@ -174,7 +174,7 @@ export default function ListerEventsPage() {
               </div>
 
               {/* Action Links */}
-              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-3 pt-2 text-sm font-medium">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 pt-2 text-sm font-medium">
                 {/* Copy / Share */}
                 <button
                   onClick={() => handleCopyLink(ev.eventId)}
@@ -201,6 +201,13 @@ export default function ListerEventsPage() {
                   className="text-gray-700 hover:text-gray-900 transition duration-200 flex items-center gap-2 justify-center sm:justify-start border border-gray-200 rounded-md px-3 py-2 hover:bg-gray-50"
                 >
                   <Edit /> Edit
+                </Link>
+
+                <Link
+                  href={`/event/${ev.eventId}/attendees`}
+                  className="text-gray-700 hover:text-gray-900 transition duration-200 flex items-center gap-2 justify-center sm:justify-start border border-gray-200 rounded-md px-3 py-2 hover:bg-gray-50"
+                >
+                  <Users /> Attendees
                 </Link>
               </div>
             </div>
