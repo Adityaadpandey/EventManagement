@@ -924,6 +924,7 @@ export class EventService {
               clicksByDay: true,
               salesByDay: true,
               revenueByDay: true,
+              ticketTypesSalesByDay: true,
               lastUpdated: true,
             },
           },
@@ -1005,6 +1006,7 @@ export class EventService {
           clicksByDay: {},
           salesByDay: {},
           revenueByDay: {},
+          ticketTypesSalesByDay: {},
         };
       }
 
@@ -1038,6 +1040,7 @@ export class EventService {
         clicksByDay: analytics.clicksByDay || {},
         salesByDay: analytics.salesByDay || {},
         revenueByDay: analytics.revenueByDay || {},
+        ticketTypesSalesByDay: analytics.ticketTypesSalesByDay || {},
       };
     } catch (error: any) {
       logger.error("Error in getEventAnalytics:", error);
