@@ -521,7 +521,17 @@ export class ListerServer {
           };
         });
 
-        const checkedInCount = tickets.filter((t) => t.checkedIn).length;
+        // Calculate actual number of people checked in (considering ticket quantity)
+        const checkedInCount = tickets.reduce((sum, t) => {
+          return sum + (t.checkedIn ? t.quantity : 0);
+        }, 0);
+
+        // Calculate actual number of tickets sold for this ticket type
+        const actualTicketsSold = tickets.reduce(
+          (sum, t) => sum + t.quantity,
+          0,
+        );
+
         const totalRevenue = tickets.reduce((sum, t) => {
           // Calculate actual revenue by subtracting platform fees
           // If platform fee exists, subtract it; if 0, subtract 5% of total price
@@ -540,11 +550,12 @@ export class ListerServer {
           price: ticketType.price,
           discountedPrice: ticketType.discountedPrice,
           totalQuantity: ticketType.quantity,
-          soldCount: ticketType.soldCount,
-          availableCount: ticketType.quantity - ticketType.soldCount,
-          totalTickets: tickets.length,
-          checkedInCount,
-          totalRevenue,
+          soldCount: actualTicketsSold, // Use calculated value instead of potentially stale soldCount
+          availableCount: ticketType.quantity - actualTicketsSold,
+          totalTickets: actualTicketsSold, // Actual tickets sold, not number of records
+          totalTicketRecords: tickets.length, // Number of purchase records
+          checkedInCount, // Number of people checked in
+          totalRevenue: parseFloat(totalRevenue.toFixed(2)),
           tickets,
         };
       });
@@ -562,6 +573,10 @@ export class ListerServer {
         (sum, t) => sum + t.totalRevenue,
         0,
       );
+      const totalTicketRecords = ticketTypesSummary.reduce(
+        (sum, t) => sum + t.totalTicketRecords,
+        0,
+      );
 
       return {
         success: true,
@@ -577,7 +592,8 @@ export class ListerServer {
           statistics: {
             totalTicketsSold,
             totalCheckedIn,
-            totalRevenue,
+            totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+            totalTicketRecords,
             checkInRate:
               totalTicketsSold > 0
                 ? `${((totalCheckedIn / totalTicketsSold) * 100).toFixed(2)}%`
