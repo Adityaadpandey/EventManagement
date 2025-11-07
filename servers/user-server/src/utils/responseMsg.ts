@@ -17,7 +17,7 @@ export const sendSuccess = (
 
 export const sendError = (
   res: Response,
-  message: string,
+  message: string | object,
   statusCode = 400,
   errors: any[] | null = null,
 ) => {

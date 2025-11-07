@@ -10,6 +10,7 @@ import {
   verifyPaymentSchema,
 } from "../validators/payment.validator";
 import { handlePaymentFailureSchema } from "../validators/ticket.validator";
+import { formatZodError } from "../utils/formatZodError";
 
 export class PaymentController {
   private paymentService: PaymentService;
@@ -29,21 +30,18 @@ export class PaymentController {
         razorpay_signature,
       );
 
-      if (result.error) {
-        return sendError(res, result.error, 400);
-      }
-
-      return sendSuccess(
-        res,
-        "Payment verified and ticket confirmed",
-        result.data,
-      );
+      return sendSuccess(res, "Payment verified and ticket confirmed", result);
     } catch (error: any) {
       if (error.name === "ZodError") {
-        return sendError(res, error.errors?.[0]?.message, 400);
+        const formattedErrors = formatZodError(error);
+        return sendError(
+          res,
+          { error: formattedErrors || "Validation error" },
+          400,
+        );
       }
       logger.error("Error verifying payment:", error);
-      return sendError(res, "Failed to verify payment", 500);
+      return sendError(res, error.message || "Failed to verify payment", 500);
     }
   }
 
@@ -53,13 +51,22 @@ export class PaymentController {
 
       const result = await this.paymentService.handlePaymentFailure(ticketId);
 
-      return sendSuccess(res, "Payment failure handled", result.data);
+      return sendSuccess(res, "Payment failure handled", result);
     } catch (error: any) {
       if (error.name === "ZodError") {
-        return sendError(res, error.errors?.[0]?.message, 400);
+        const formattedErrors = formatZodError(error);
+        return sendError(
+          res,
+          { error: formattedErrors || "Validation error" },
+          400,
+        );
       }
       logger.error("Error handling payment failure:", error);
-      return sendError(res, "Failed to handle payment failure", 500);
+      return sendError(
+        res,
+        error.message || "Failed to handle payment failure",
+        500,
+      );
     }
   }
 
@@ -87,25 +94,18 @@ export class PaymentController {
         reason,
       );
 
-      if (result.error) {
-        return sendError(res, result.error, 400);
-      }
-
-      return sendSuccess(
-        res,
-        "Refund request created successfully",
-        result.data,
-      );
+      return sendSuccess(res, "Refund request created successfully", result);
     } catch (error: any) {
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }
       logger.error("Error requesting refund:", error);
-      return sendError(res, "Failed to request refund", 500);
+      return sendError(res, error.message || "Failed to request refund", 500);
     }
   }
 
@@ -129,17 +129,18 @@ export class PaymentController {
         return sendError(res, "Invalid action. Use 'approve' or 'reject'", 400);
       }
 
-      return sendSuccess(res, `Refund ${action}d successfully`, result.data);
+      return sendSuccess(res, `Refund ${action}d successfully`, result);
     } catch (error: any) {
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }
       logger.error("Error processing refund:", error);
-      return sendError(res, "Failed to process refund", 500);
+      return sendError(res, error.message || "Failed to process refund", 500);
     }
   }
 

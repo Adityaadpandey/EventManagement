@@ -5,6 +5,7 @@ import {
   requestOtpSchema,
   verifyOtpSchema,
 } from "../validators/auth.validator";
+import { formatZodError } from "../utils/formatZodError";
 
 export class AuthController {
   private authService: AuthService;
@@ -20,9 +21,10 @@ export class AuthController {
       return sendSuccess(res, "OTP sent successfully");
     } catch (error: any) {
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }
@@ -37,9 +39,10 @@ export class AuthController {
       return sendSuccess(res, "OTP verified successfully", data);
     } catch (error: any) {
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }
