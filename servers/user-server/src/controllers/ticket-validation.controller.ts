@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
 import { prisma } from "../config/db";
-import logger from "../config/logger";
 import { TicketValidationService } from "../services/ticket-validation.service";
 import { sendError, sendSuccess } from "../utils/responseMsg";
 import {
@@ -9,6 +8,7 @@ import {
   scanTicketSchema,
 } from "../validators/ticket-validation.validator";
 import { formatZodError } from "../utils/formatZodError";
+import { logError, logInfo } from "../utils/logger-context";
 
 interface CheckerRequest extends Request {
   checker?: {
@@ -30,6 +30,7 @@ export class TicketValidationController {
     try {
       const { username, password } = checkerLoginSchema.parse(req.body);
 
+      logInfo(req, "Checker login attempt", { username });
       const result = await this.ticketValidationService.checkerLogin(
         username,
         password,
@@ -44,8 +45,10 @@ export class TicketValidationController {
           400,
         );
       }
-      logger.error("Error in checker login:", error);
-      return sendError(res, error.message || "Login failed", 401);
+      logError(req, "Checker login failed", error, {
+        username: req.body.username,
+      });
+      return sendError(res, "Login failed", 401);
     }
   }
 
@@ -58,7 +61,11 @@ export class TicketValidationController {
 
       const { qrCode, deviceInfo, note } = scanTicketSchema.parse(req.body);
 
-      const ipAddress = req.ip || req.connection.remoteAddress;
+      logInfo(req, "Scanning ticket", {
+        checkerId,
+        qrCode: qrCode.substring(0, 10) + "...",
+      });
+      const ipAddress = req.ip;
       const result = await this.ticketValidationService.scanTicket(
         qrCode,
         checkerId,
@@ -80,8 +87,10 @@ export class TicketValidationController {
           400,
         );
       }
-      logger.error("Error scanning ticket:", error);
-      return sendError(res, error.message || "Failed to scan ticket", 500);
+      logError(req, "Failed to scan ticket", error, {
+        checkerId: req.checker?.checkerId,
+      });
+      return sendError(res, "Failed to scan ticket", 500);
     }
   }
 
@@ -96,6 +105,7 @@ export class TicketValidationController {
 
       const { note } = resetTicketScanSchema.parse(req.body);
 
+      logInfo(req, "Resetting ticket scan", { ticketId, checkerId });
       const result = await this.ticketValidationService.resetTicketScan(
         ticketId,
         checkerId,
@@ -111,12 +121,10 @@ export class TicketValidationController {
           400,
         );
       }
-      logger.error("Error resetting ticket scan:", error);
-      return sendError(
-        res,
-        error.message || "Failed to reset ticket scan",
-        500,
-      );
+      logError(req, "Failed to reset ticket scan", error, {
+        ticketId: req.params.ticketId,
+      });
+      return sendError(res, "Failed to reset ticket scan", 500);
     }
   }
 
@@ -137,8 +145,10 @@ export class TicketValidationController {
       );
       return sendSuccess(res, "Scan history retrieved successfully", result);
     } catch (error: any) {
-      logger.error("Error getting scan history:", error);
-      return sendError(res, error.message || "Failed to get scan history", 500);
+      logError(req, "Failed to get scan history", error, {
+        checkerId: req.checker?.checkerId,
+      });
+      return sendError(res, "Failed to get scan history", 500);
     }
   }
 
@@ -186,7 +196,9 @@ export class TicketValidationController {
         checker,
       );
     } catch (error: any) {
-      logger.error("Error getting checker profile:", error);
+      logError(req, "Failed to get checker profile", error, {
+        checkerId: req.checker?.checkerId,
+      });
       return sendError(res, "Failed to get checker profile", 500);
     }
   }

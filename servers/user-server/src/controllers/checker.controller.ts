@@ -1,10 +1,10 @@
 import type { Response } from "express";
 import { randomUUID } from "node:crypto";
-import logger from "../config/logger";
 import { CheckerService } from "../services/checker.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
 import { formatZodError } from "../utils/formatZodError";
+import { logError, logInfo } from "../utils/logger-context";
 
 export class CheckerController {
   private checkerService: CheckerService;
@@ -23,6 +23,7 @@ export class CheckerController {
         return sendError(res, "Event ID is required", 400);
       }
 
+      logInfo(req, "Creating checker", { eventId, userId });
       const username = randomUUID().slice(0, 5);
       const password = randomUUID().slice(0, 8);
 
@@ -46,8 +47,10 @@ export class CheckerController {
         );
       }
 
-      logger.error("Error creating checker:", error);
-      return sendError(res, error.message || "Failed to create checker", 500);
+      logError(req, "Failed to create checker", error, {
+        eventId: req.params.eventId,
+      });
+      return sendError(res, "Failed to create checker", 500);
     }
   }
 
@@ -67,8 +70,10 @@ export class CheckerController {
       );
       return sendSuccess(res, "Checkers retrieved successfully", checkers);
     } catch (error: any) {
-      logger.error("Error getting checkers:", error);
-      return sendError(res, error.message || "Failed to get checkers", 500);
+      logError(req, "Failed to get checkers", error, {
+        eventId: req.params.eventId,
+      });
+      return sendError(res, "Failed to get checkers", 500);
     }
   }
 
@@ -82,8 +87,10 @@ export class CheckerController {
       const checker = await this.checkerService.getCheckerById(checkerId);
       return sendSuccess(res, "Checker retrieved successfully", checker);
     } catch (error: any) {
-      logger.error("Error getting checker:", error);
-      return sendError(res, error.message || "Failed to get checker", 500);
+      logError(req, "Failed to get checker", error, {
+        checkerId: req.params.checkerId,
+      });
+      return sendError(res, "Failed to get checker", 500);
     }
   }
 
@@ -97,11 +104,14 @@ export class CheckerController {
         return sendError(res, "Checker ID is required", 400);
       }
 
+      logInfo(req, "Deleting checker", { checkerId, userId });
       const result = await this.checkerService.deleteChecker(checkerId, userId);
       return sendSuccess(res, result.message);
     } catch (error: any) {
-      logger.error("Error deleting checker:", error);
-      return sendError(res, error.message || "Failed to delete checker", 500);
+      logError(req, "Failed to delete checker", error, {
+        checkerId: req.params.checkerId,
+      });
+      return sendError(res, "Failed to delete checker", 500);
     }
   }
 }

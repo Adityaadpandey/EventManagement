@@ -6,6 +6,7 @@ import {
   verifyOtpSchema,
 } from "../validators/auth.validator";
 import { formatZodError } from "../utils/formatZodError";
+import { logError, logInfo } from "../utils/logger-context";
 
 export class AuthController {
   private authService: AuthService;
@@ -17,6 +18,7 @@ export class AuthController {
   async requestOtp(req: Request, res: Response) {
     try {
       const { identifier } = requestOtpSchema.parse(req.body);
+      logInfo(req, "Requesting OTP", { identifier });
       await this.authService.requestOtp(identifier);
       return sendSuccess(res, "OTP sent successfully");
     } catch (error: any) {
@@ -28,6 +30,9 @@ export class AuthController {
           400,
         );
       }
+      logError(req, "Failed to send OTP", error, {
+        identifier: req.body.identifier,
+      });
       return sendError(res, error.message || "Failed to send OTP", 400);
     }
   }
@@ -35,6 +40,7 @@ export class AuthController {
   async verifyOtp(req: Request, res: Response) {
     try {
       const { identifier, otp } = verifyOtpSchema.parse(req.body);
+      logInfo(req, "Verifying OTP", { identifier });
       const data = await this.authService.verifyOtp(identifier, otp);
       return sendSuccess(res, "OTP verified successfully", data);
     } catch (error: any) {
@@ -46,6 +52,9 @@ export class AuthController {
           400,
         );
       }
+      logError(req, "Failed to verify OTP", error, {
+        identifier: req.body.identifier,
+      });
       return sendError(res, error.message || "Failed to verify OTP", 400);
     }
   }
