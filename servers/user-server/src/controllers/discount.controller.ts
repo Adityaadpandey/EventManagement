@@ -1,9 +1,10 @@
 import { Response } from "express";
-import logger from "../config/logger";
 import { DiscountService } from "../services/discount.service";
 import { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
 import { createDiscountSchema } from "../validators/discount.validator";
+import { formatZodError } from "../utils/formatZodError";
+import { logError, logInfo } from "../utils/logger-context";
 
 export class DiscountController {
   private discountService: DiscountService;
@@ -21,26 +22,27 @@ export class DiscountController {
 
     try {
       const validatedData = createDiscountSchema.parse(req.body);
+      logInfo(req, "Creating discount code", {
+        eventId,
+        code: validatedData.code,
+      });
 
       const result = await this.discountService.createDiscountCode({
         eventId,
         ...validatedData,
       });
 
-      if (result.error) {
-        return sendError(res, result.error, 400);
-      }
-
-      return sendSuccess(
-        res,
-        "Discount code created successfully",
-        result.data,
-      );
+      return sendSuccess(res, "Discount code created successfully", result);
     } catch (error: any) {
       if (error.name === "ZodError") {
-        return sendError(res, error.errors, 400);
+        const formattedErrors = formatZodError(error);
+        return sendError(
+          res,
+          { error: formattedErrors || "Validation error" },
+          400,
+        );
       }
-      logger.error("Error creating discount code:", error);
+      logError(req, "Failed to create discount code", error, { eventId });
       return sendError(res, "Failed to create discount code", 500);
     }
   }
@@ -56,18 +58,10 @@ export class DiscountController {
       const result =
         await this.discountService.getDiscountCodesByEvent(eventId);
 
-      if (result.error) {
-        return sendError(res, result.error, 400);
-      }
-
-      return sendSuccess(
-        res,
-        "Fetched discount codes successfully",
-        result.data,
-      );
+      return sendSuccess(res, "Fetched discount codes successfully", result);
     } catch (error: any) {
-      logger.error("Error getting event discount codes:", error);
-      return sendError(res, "Error getting event discount codes", 500);
+      logError(req, "Failed to get discount codes", error, { eventId });
+      return sendError(res, "Failed to get discount codes", 500);
     }
   }
 
@@ -82,17 +76,16 @@ export class DiscountController {
     try {
       const result = await this.discountService.getCodeInfoById(code, eventId);
 
-      if (result.error) {
-        return sendError(res, result.error, 400);
-      }
-
       return sendSuccess(
         res,
         "Fetched discount code info successfully",
-        result.data,
+        result,
       );
     } catch (error: any) {
-      logger.error("Error getting discount code info:", error);
+      logError(req, "Failed to get discount code info", error, {
+        code,
+        eventId,
+      });
       return sendError(res, "Failed to get discount code info", 500);
     }
   }

@@ -22,7 +22,7 @@ export class PaymentService {
           .digest("hex");
 
         if (expectedSignature !== razorpaySignature) {
-          return { error: "Invalid payment signature" };
+          throw new Error("Invalid payment signature");
         }
       }
 
@@ -30,7 +30,8 @@ export class PaymentService {
       const payment = await razorpay.payments.fetch(razorpayPaymentId);
 
       if (payment.status !== "captured") {
-        return { error: "Payment not captured" };
+        logger.error(`Payment ${razorpayPaymentId} not captured`);
+        throw new Error("Payment not captured");
       }
 
       // Check if ticket exists and get current status
@@ -43,11 +44,9 @@ export class PaymentService {
       if (existingTicket?.status === "SUCCESS") {
         logger.info(`Ticket ${payment.notes.ticketId} already processed`);
         return {
-          data: {
-            ticket: existingTicket,
-            payment,
-            alreadyProcessed: true,
-          },
+          ticket: existingTicket,
+          payment,
+          alreadyProcessed: true,
         };
       }
 
@@ -156,7 +155,7 @@ export class PaymentService {
         // Don't fail the payment verification if email fails
       }
 
-      return { data: { ticket, payment } };
+      return { ticket, payment };
     } catch (error) {
       logger.error("Error verifying payment:", error);
       throw error;
@@ -184,7 +183,7 @@ export class PaymentService {
         data: { status: "FAILED" },
       });
 
-      return { data: ticket };
+      return ticket;
     } catch (error) {
       logger.error("Error handling payment failure:", error);
       throw error;
@@ -194,7 +193,7 @@ export class PaymentService {
   async getPaymentDetails(paymentId: string) {
     try {
       const payment = await razorpay.payments.fetch(paymentId);
-      return { data: payment };
+      return payment;
     } catch (error) {
       logger.error("Error fetching payment details:", error);
       throw error;
@@ -221,11 +220,11 @@ export class PaymentService {
       });
 
       if (!ticket) {
-        return { error: "Ticket not found" };
+        throw new Error("Ticket not found");
       }
 
       if (ticket.status !== "SUCCESS") {
-        return { error: "Only successful tickets can be refunded" };
+        throw new Error("Only successful tickets can be refunded");
       }
 
       // Check if refund already exists
@@ -237,7 +236,7 @@ export class PaymentService {
       });
 
       if (existingRefund) {
-        return { error: "Refund already exists for this ticket" };
+        throw new Error("Refund already exists for this ticket");
       }
 
       // Create refund record
@@ -253,7 +252,7 @@ export class PaymentService {
         },
       });
 
-      return { data: refund };
+      return refund;
     } catch (error) {
       logger.error("Error processing refund:", error);
       throw error;
@@ -308,7 +307,7 @@ export class PaymentService {
         },
       });
 
-      return { data: refund };
+      return refund;
     } catch (error) {
       logger.error("Error completing refund:", error);
       throw error;
@@ -326,7 +325,7 @@ export class PaymentService {
         },
       });
 
-      return { data: refund };
+      return refund;
     } catch (error) {
       logger.error("Error rejecting refund:", error);
       throw error;

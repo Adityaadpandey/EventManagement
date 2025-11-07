@@ -24,7 +24,31 @@ export const getLogger = (service: string, level = "debug") => {
         const serviceName = chalk.cyan(`[${service}]`);
         const message = chalk.white(info.message);
 
-        return `${time} ${tag} ${serviceName}: ${message}`;
+        // Extract metadata (excluding winston internals)
+        const {
+          level,
+          message: msg,
+          timestamp,
+          service: svc,
+          ...metadata
+        } = info;
+
+        // Format metadata if present
+        let metaStr = "";
+        if (Object.keys(metadata).length > 0) {
+          // Highlight requestId if present
+          if (metadata.requestId) {
+            metaStr += chalk.yellow(` [reqId: ${metadata.requestId}]`);
+            delete metadata.requestId;
+          }
+
+          // Add remaining metadata
+          if (Object.keys(metadata).length > 0) {
+            metaStr += chalk.gray(` ${JSON.stringify(metadata)}`);
+          }
+        }
+
+        return `${time} ${tag} ${serviceName}: ${message}${metaStr}`;
       }),
     ),
     transports: [new winston.transports.Console()],
