@@ -7,6 +7,7 @@ import {
   createEventSchema,
   patchEventSchema,
 } from "../validators/event.validator";
+import { formatZodError } from "../utils/formatZodError";
 
 export class EventController {
   private eventService: EventService;
@@ -30,7 +31,12 @@ export class EventController {
       return sendSuccess(res, result.message, result.data, 201);
     } catch (error: any) {
       if (error.name === "ZodError") {
-        return sendError(res, error, 400);
+        const formattedErrors = formatZodError(error);
+        return sendError(
+          res,
+          { error: formattedErrors || "Validation error" },
+          400,
+        );
       }
       logger.error("Create event error:", error);
       return sendError(res, "Failed to create event", 500, error.message);
@@ -179,9 +185,10 @@ export class EventController {
       );
     } catch (error: any) {
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }
@@ -213,9 +220,10 @@ export class EventController {
       );
     } catch (error: any) {
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }
@@ -223,10 +231,6 @@ export class EventController {
       return sendError(res, "Failed to patch event", 500, error.message);
     }
   }
-
-  async submitEventForApproval(_req: AuthenticatedRequest, _res: Response) {}
-
-  async getEventAttendees(_req: AuthenticatedRequest, _res: Response) {}
 
   async updateInfo(req: AuthenticatedRequest, res: Response) {
     try {

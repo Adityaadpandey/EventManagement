@@ -4,6 +4,7 @@ import logger from "../config/logger";
 import { CheckerService } from "../services/checker.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
+import { formatZodError } from "../utils/formatZodError";
 
 export class CheckerController {
   private checkerService: CheckerService;
@@ -37,9 +38,10 @@ export class CheckerController {
       return sendSuccess(res, "Checker created successfully", checkerCopy, 201);
     } catch (error: any) {
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }

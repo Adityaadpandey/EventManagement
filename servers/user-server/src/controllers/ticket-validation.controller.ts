@@ -8,6 +8,7 @@ import {
   resetTicketScanSchema,
   scanTicketSchema,
 } from "../validators/ticket-validation.validator";
+import { formatZodError } from "../utils/formatZodError";
 
 interface CheckerRequest extends Request {
   checker?: {
@@ -36,9 +37,10 @@ export class TicketValidationController {
       return sendSuccess(res, "Login successful", result);
     } catch (error: any) {
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }
@@ -71,9 +73,10 @@ export class TicketValidationController {
       return sendError(res, result.message, 400);
     } catch (error: any) {
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }
@@ -101,9 +104,10 @@ export class TicketValidationController {
       return sendSuccess(res, result.message, result);
     } catch (error: any) {
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }

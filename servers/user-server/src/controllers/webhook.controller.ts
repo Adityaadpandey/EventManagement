@@ -82,22 +82,21 @@ export class WebhookController {
       }
 
       // Process the payment
-      const result = await this.paymentService.verifyPayment(
+      await this.paymentService.verifyPayment(
         payment.order_id,
         payment.id,
         "", // Signature already verified by webhook
         true, // Skip signature verification
       );
 
-      if (result.error) {
-        logger.error(`Error processing webhook payment: ${result.error}`);
-      } else {
-        logger.info(
-          `Successfully processed payment via webhook for ticket ${ticketId}`,
-        );
-      }
-    } catch (error) {
-      logger.error("Error handling payment.captured webhook:", error);
+      logger.info(
+        `Successfully processed payment via webhook for ticket ${ticketId}`,
+      );
+    } catch (error: any) {
+      logger.error(
+        "Error handling payment.captured webhook:",
+        error.message || error,
+      );
     }
   }
 

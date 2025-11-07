@@ -18,7 +18,7 @@ export class TicketService {
       });
 
       if (!ticketType) {
-        return { error: "Ticket type not found" };
+        throw new Error("Ticket type not found");
       }
 
       // Fetch event data separately
@@ -34,7 +34,7 @@ export class TicketService {
       });
 
       if (!event) {
-        return { error: "Event not found" };
+        throw new Error("Event not found");
       }
 
       // Combine the data
@@ -55,7 +55,7 @@ export class TicketService {
       const availableQuantity =
         ticketTypeWithEvent.quantity - ticketTypeWithEvent.soldCount;
       if (availableQuantity < quantity) {
-        return { error: `Only ${availableQuantity} tickets available` };
+        throw new Error(`Only ${availableQuantity} tickets available`);
       }
       const now = new Date();
 
@@ -63,18 +63,16 @@ export class TicketService {
         const eventStart = new Date(event.time);
 
         if (now >= eventStart) {
-          return {
-            error:
-              "Ticket sales have closed because the event has already started.",
-          };
+          throw new Error(
+            "Ticket sales have closed because the event has already started",
+          );
         }
       } else if (event.date) {
         const eventDate = new Date(event.date);
         if (now >= eventDate) {
-          return {
-            error:
-              "Ticket sales have closed because the event has already started.",
-          };
+          throw new Error(
+            "Ticket sales have closed because the event has already started",
+          );
         }
       }
 
@@ -83,7 +81,7 @@ export class TicketService {
         ticketTypeWithEvent.salesCutoff &&
         new Date() > ticketTypeWithEvent.salesCutoff
       ) {
-        return { error: "Ticket sales have ended" };
+        throw new Error("Ticket sales have ended");
       }
 
       // Use discounted price if available, otherwise use regular price
@@ -110,18 +108,18 @@ export class TicketService {
         });
 
         if (!discount) {
-          return { error: "Invalid discount code" };
+          throw new Error("Invalid discount code");
         }
 
         const now = new Date();
 
         // Check if discount is active
         if (discount.validFrom && now < discount.validFrom) {
-          return { error: "This discount code is not yet active" };
+          throw new Error("This discount code is not yet active");
         }
 
         if (discount.validTo && now > discount.validTo) {
-          return { error: "This discount code has expired" };
+          throw new Error("This discount code has expired");
         }
 
         // Check max uses
@@ -129,16 +127,16 @@ export class TicketService {
           discount.maxUses !== null &&
           discount.usesCount >= discount.maxUses
         ) {
-          return {
-            error: "This discount code has reached its maximum usage limit",
-          };
+          throw new Error(
+            "This discount code has reached its maximum usage limit",
+          );
         }
 
         // Check minimum order amount
         if (discount.minOrderAmt && basePrice < discount.minOrderAmt) {
-          return {
-            error: `Minimum order amount of ₹${discount.minOrderAmt} required to use this discount code`,
-          };
+          throw new Error(
+            `Minimum order amount of ₹${discount.minOrderAmt} required to use this discount code`,
+          );
         }
 
         // Calculate discount based on type
@@ -262,12 +260,10 @@ export class TicketService {
       // If ticket is free, return success directly
       if (isFree) {
         return {
-          data: {
-            ticket: result,
-            event: event,
-            message: "Free ticket issued successfully",
-            pricing: pricingBreakdown,
-          },
+          ticket: result,
+          event: event,
+          message: "Free ticket issued successfully",
+          pricing: pricingBreakdown,
         };
       }
 
@@ -288,12 +284,10 @@ export class TicketService {
       });
 
       return {
-        data: {
-          ticket: result,
-          razorpayOrder,
-          event: event,
-          pricing: pricingBreakdown,
-        },
+        ticket: result,
+        razorpayOrder,
+        event: event,
+        pricing: pricingBreakdown,
       };
     } catch (error) {
       logger.error("Error buying ticket:", error);
@@ -332,7 +326,7 @@ export class TicketService {
         orderBy: { createdAt: "desc" },
       });
 
-      return { data: tickets };
+      return tickets;
     } catch (error) {
       logger.error("Error fetching user tickets:", error);
       throw error;
@@ -361,7 +355,7 @@ export class TicketService {
         });
 
         if (!event) {
-          return { error: "Event not found or access denied" };
+          throw new Error("Event not found or access denied");
         }
       }
 
@@ -396,7 +390,7 @@ export class TicketService {
         orderBy: { createdAt: "desc" },
       });
 
-      return { data: tickets };
+      return tickets;
     } catch (error) {
       logger.error("Error fetching ticket buyers:", error);
       throw error;
@@ -441,7 +435,7 @@ export class TicketService {
         orderBy: { createdAt: "desc" },
       });
 
-      return { data: tickets };
+      return tickets;
     } catch (error) {
       logger.error("Error fetching all ticket buyers:", error);
       throw error;
@@ -485,10 +479,10 @@ export class TicketService {
       });
 
       if (!ticket) {
-        return { error: "Ticket not found" };
+        throw new Error("Ticket not found");
       }
 
-      return { data: ticket };
+      return ticket;
     } catch (error) {
       logger.error("Error fetching ticket details:", error);
       throw error;

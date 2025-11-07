@@ -34,10 +34,10 @@ export class DiscountService {
         },
       });
       logger.info("Discount code created:", newCode);
-      return { data: newCode };
+      return newCode;
     } catch (error) {
       logger.error("Failed to create discount code:", error);
-      return { error: "Failed to create discount code" };
+      throw new Error("Failed to create discount code");
     }
   }
 
@@ -47,10 +47,10 @@ export class DiscountService {
         where: { eventId },
         orderBy: { createdAt: "desc" },
       });
-      return { data: codes };
+      return codes;
     } catch (error) {
       logger.error("Failed to get discount codes:", error);
-      return { error: "Failed to Get the Event's Discount Codes" };
+      throw new Error("Failed to get the event's discount codes");
     }
   }
 
@@ -63,12 +63,12 @@ export class DiscountService {
         },
       });
       if (!codeInfo) {
-        return { error: "Discount code not found" };
+        throw new Error("Discount code not found");
       }
-      return { data: codeInfo };
+      return codeInfo;
     } catch (error) {
       logger.error("Failed to get discount code info:", error);
-      return { error: "Failed to get discount code Info" };
+      throw new Error("Failed to get discount code info");
     }
   }
 

@@ -6,6 +6,7 @@ import {
   patchTicketType,
   ticketTypeSchema,
 } from "../validators/ticket-type.validator";
+import { formatZodError } from "../utils/formatZodError";
 
 export class TicketTypeController {
   private ticketTypeService: TicketTypeService;
@@ -32,7 +33,12 @@ export class TicketTypeController {
       return sendSuccess(res, "Ticket Type created successfully", result, 201);
     } catch (error: any) {
       if (error.name === "ZodError") {
-        return sendError(res, error, 400);
+        const formattedErrors = formatZodError(error);
+        return sendError(
+          res,
+          { error: formattedErrors || "Validation error" },
+          400,
+        );
       }
       return sendError(
         res,
@@ -68,13 +74,14 @@ export class TicketTypeController {
 
       return sendSuccess(res, "Ticket Type updated successfully", result, 200);
     } catch (error: any) {
-      // if (error.name === "ZodError") {
-      //   return sendError(
-      //     res,
-      //     error,
-      //     400,
-      //   );
-      // }
+      if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
+        return sendError(
+          res,
+          { error: formattedErrors || "Validation error" },
+          400,
+        );
+      }
       return sendError(res, error || "Failed to update the Ticket Type", 400);
     }
   }
