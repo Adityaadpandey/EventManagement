@@ -6,6 +6,7 @@ import {
   applyForListerSchema,
   updateListerSchema,
 } from "../validators/lister.validator";
+import { logError, logInfo } from "../utils/logger-context";
 
 export class ListerController {
   private listerService: ListerServer;
@@ -21,13 +22,18 @@ export class ListerController {
     const validatedData = applyForListerSchema.parse(req.body);
 
     try {
+      logInfo(req, "Applying for lister", {
+        userId,
+        companyName: validatedData.companyName,
+      });
       const lister = await this.listerService.applyForLister(
         userId,
         validatedData,
       );
       return sendSuccess(res, "Lister applied successfully", lister);
     } catch (error: any) {
-      return sendError(res, "Failed to apply for lister", 500, error.message);
+      logError(req, "Failed to apply for lister", error, { userId });
+      return sendError(res, "Failed to apply for lister", 500);
     }
   }
 
@@ -39,7 +45,8 @@ export class ListerController {
       const lister = await this.listerService.meLister(userId);
       return sendSuccess(res, "Lister found", lister);
     } catch (error: any) {
-      return sendError(res, "Lister not found", 500, error.message);
+      logError(req, "Failed to fetch lister profile", error, { userId });
+      return sendError(res, "Lister not found", 500);
     }
   }
 
@@ -50,13 +57,15 @@ export class ListerController {
     const validatedData = updateListerSchema.parse(req.body);
 
     try {
+      logInfo(req, "Updating lister profile", { userId });
       const updatedLister = await this.listerService.updateLister(
         userId,
         validatedData,
       );
       return sendSuccess(res, "Lister updated successfully", updatedLister);
     } catch (error: any) {
-      return sendError(res, "Failed to update lister", 500, error.message);
+      logError(req, "Failed to update lister", error, { userId });
+      return sendError(res, "Failed to update lister", 500);
     }
   }
 
@@ -70,7 +79,8 @@ export class ListerController {
       const lister = await this.listerService.getLister(listerId);
       return sendSuccess(res, "Lister found", lister);
     } catch (error: any) {
-      return sendError(res, "Failed to fetch lister", 500, error.message);
+      logError(req, "Failed to fetch lister", error, { listerId });
+      return sendError(res, "Failed to fetch lister", 500);
     }
   }
 
@@ -82,7 +92,8 @@ export class ListerController {
       const analytics = await this.listerService.getListerAnalytics(userId);
       return sendSuccess(res, "Lister analytics retrieved", analytics);
     } catch (error: any) {
-      return sendError(res, "Failed to get analytics", 500, error.message);
+      logError(req, "Failed to get lister analytics", error, { userId });
+      return sendError(res, "Failed to get analytics", 500);
     }
   }
 
@@ -105,11 +116,14 @@ export class ListerController {
         ticketsDetails.data,
       );
     } catch (error: any) {
+      logError(req, "Failed to get event attendee tickets details", error, {
+        eventId,
+        userId,
+      });
       return sendError(
         res,
         "Failed to get event attendee tickets details",
         500,
-        error.message,
       );
     }
   }

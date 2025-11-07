@@ -3,6 +3,7 @@ import { UserService } from "../services/user.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
 import { updateUserProfileSchema } from "../validators/user.validator";
+import { logError, logInfo } from "../utils/logger-context";
 
 export class UserController {
   private userService: UserService;
@@ -25,11 +26,8 @@ export class UserController {
         userProfile,
       );
     } catch (error: any) {
-      return sendError(
-        res,
-        error.message || "Failed to retrieve user profile",
-        500,
-      );
+      logError(req, "Failed to retrieve user profile", error, { userId });
+      return sendError(res, "Failed to retrieve user profile", 500);
     }
   }
 
@@ -42,17 +40,15 @@ export class UserController {
     const updateData = updateUserProfileSchema.parse(req.body);
 
     try {
+      logInfo(req, "Updating user profile", { userId });
       const updatedUser = await this.userService.updateUserProfile(
         userId,
         updateData,
       );
       return sendSuccess(res, "User profile updated successfully", updatedUser);
     } catch (error: any) {
-      return sendError(
-        res,
-        error.message || "Failed to update user profile",
-        500,
-      );
+      logError(req, "Failed to update user profile", error, { userId });
+      return sendError(res, "Failed to update user profile", 500);
     }
   }
 }

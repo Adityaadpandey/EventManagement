@@ -12,6 +12,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   if (err instanceof ZodError) {
     logger.warn("Validation error", {
       errorId,
+      requestId: req.requestId,
       url: req.originalUrl,
       method: req.method,
       ip: req.ip,
@@ -21,6 +22,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 
     return res.status(400).json({
       errorId,
+      requestId: req.requestId,
       message: "Validation failed",
       issues: err.issues.map((e) => ({
         path: e.path.join("."),
@@ -32,6 +34,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   // Log all other errors
   logger.error("Unhandled error", {
     errorId,
+    requestId: req.requestId,
     message: err.message,
     stack: err.stack,
     url: req.originalUrl,
@@ -42,6 +45,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 
   const errorResponse: Record<string, any> = {
     errorId,
+    requestId: req.requestId,
     message: wantsDebug
       ? err.message
       : `Internal server error (ID: ${errorId})`,

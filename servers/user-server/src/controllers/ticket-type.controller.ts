@@ -7,6 +7,7 @@ import {
   ticketTypeSchema,
 } from "../validators/ticket-type.validator";
 import { formatZodError } from "../utils/formatZodError";
+import { logError, logInfo } from "../utils/logger-context";
 
 export class TicketTypeController {
   private ticketTypeService: TicketTypeService;
@@ -24,6 +25,7 @@ export class TicketTypeController {
       if (!eventId) return sendError(res, "Event ID is required", 400);
 
       const parsedBody = ticketTypeSchema.parse(req.body);
+      logInfo(req, "Creating ticket type", { eventId, name: parsedBody.name });
       const result = await this.ticketTypeService.CreateTicketType(
         userId,
         eventId,
@@ -40,11 +42,10 @@ export class TicketTypeController {
           400,
         );
       }
-      return sendError(
-        res,
-        error.message || "Failed to create the Ticket Type",
-        400,
-      );
+      logError(req, "Failed to create ticket type", error, {
+        eventId: req.params.eventId,
+      });
+      return sendError(res, "Failed to create the Ticket Type", 400);
     }
   }
 
@@ -65,6 +66,7 @@ export class TicketTypeController {
         return sendError(res, "No fields to update", 400);
       }
 
+      logInfo(req, "Updating ticket type", { eventId, ticketTypeId });
       const result = await this.ticketTypeService.UpdateTicketType(
         userId,
         eventId,
@@ -82,7 +84,10 @@ export class TicketTypeController {
           400,
         );
       }
-      return sendError(res, error || "Failed to update the Ticket Type", 400);
+      logError(req, "Failed to update ticket type", error, {
+        ticketTypeId: req.params.ticketTypeId,
+      });
+      return sendError(res, "Failed to update the Ticket Type", 400);
     }
   }
 
@@ -96,6 +101,7 @@ export class TicketTypeController {
       if (!ticketTypeId)
         return sendError(res, "Ticket Type ID is required", 400);
 
+      logInfo(req, "Deleting ticket type", { eventId, ticketTypeId });
       const result = await this.ticketTypeService.DeleteTicketType(
         userId,
         eventId,
@@ -104,11 +110,10 @@ export class TicketTypeController {
 
       return sendSuccess(res, "Ticket Type deleted successfully", result, 200);
     } catch (error: any) {
-      return sendError(
-        res,
-        error.message || "Failed to delete the Ticket Type",
-        400,
-      );
+      logError(req, "Failed to delete ticket type", error, {
+        ticketTypeId: req.params.ticketTypeId,
+      });
+      return sendError(res, "Failed to delete the Ticket Type", 400);
     }
   }
 }

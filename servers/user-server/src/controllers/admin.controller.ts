@@ -1,5 +1,4 @@
 import type { Response } from "express";
-import logger from "../config/logger";
 import { AdminService } from "../services/admin.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
@@ -7,6 +6,7 @@ import {
   changeEventStatusSchema,
   promoteUserSchema,
 } from "../validators/admin.validator";
+import { logError, logInfo } from "../utils/logger-context";
 
 export class AdminController {
   private adminService: AdminService;
@@ -20,6 +20,9 @@ export class AdminController {
       const userId = req.user?.userId;
       if (!userId) return sendError(res, "User ID is required", 400);
       const validatedData = promoteUserSchema.parse(req.body);
+      logInfo(req, "Changing user to lister status", {
+        targetUserId: validatedData.userId,
+      });
       const result = await this.adminService.changeUserToListerStatus(
         userId,
         validatedData,
@@ -29,8 +32,8 @@ export class AdminController {
       if (error.name === "ZodError") {
         return sendError(res, error, 400);
       }
-      logger.error("Create event error:", error);
-      return sendError(res, "Failed to create event", 500, error.message);
+      logError(req, "Failed to change user to lister", error);
+      return sendError(res, "Failed to change user to lister", 500);
     }
   }
 
@@ -43,13 +46,8 @@ export class AdminController {
       const result = await this.adminService.getAllListerRequests(userId);
       return sendSuccess(res, result.message, result.data, 200);
     } catch (error: any) {
-      logger.error("Error fetching lister requests:", error);
-      return sendError(
-        res,
-        "Failed to fetch lister requests",
-        500,
-        error.message,
-      );
+      logError(req, "Failed to fetch lister requests", error);
+      return sendError(res, "Failed to fetch lister requests", 500);
     }
   }
 
@@ -59,6 +57,10 @@ export class AdminController {
       if (!userId) return sendError(res, "User ID is required", 400);
       const validatedData = changeEventStatusSchema.parse(req.body);
 
+      logInfo(req, "Changing event status", {
+        eventId: validatedData.eventId,
+        newStatus: validatedData.newStatus,
+      });
       // Call the service method to change event status
       const result = await this.adminService.changeEventStatus(
         userId,
@@ -66,13 +68,8 @@ export class AdminController {
       );
       return sendSuccess(res, result.message, result.data, 200);
     } catch (error: any) {
-      logger.error("Error changing event status:", error);
-      return sendError(
-        res,
-        "Failed to change event status",
-        500,
-        error.message,
-      );
+      logError(req, "Failed to change event status", error);
+      return sendError(res, "Failed to change event status", 500);
     }
   }
   async getAllPendingEvents(req: AuthenticatedRequest, res: Response) {
@@ -84,13 +81,8 @@ export class AdminController {
       const result = await this.adminService.getAllPendingEvents(userId);
       return sendSuccess(res, result.message, result.data, 200);
     } catch (error: any) {
-      logger.error("Error fetching pending events:", error);
-      return sendError(
-        res,
-        "Failed to fetch pending events",
-        500,
-        error.message,
-      );
+      logError(req, "Failed to fetch pending events", error);
+      return sendError(res, "Failed to fetch pending events", 500);
     }
   }
 }
