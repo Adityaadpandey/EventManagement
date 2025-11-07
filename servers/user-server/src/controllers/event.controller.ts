@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import logger from "../config/logger";
 import { EventService } from "../services/event.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
@@ -7,6 +6,8 @@ import {
   createEventSchema,
   patchEventSchema,
 } from "../validators/event.validator";
+import { formatZodError } from "../utils/formatZodError";
+import { logError, logInfo } from "../utils/logger-context";
 
 export class EventController {
   private eventService: EventService;
@@ -21,6 +22,7 @@ export class EventController {
       if (!userId) return sendError(res, "User ID is required", 400);
 
       const validatedData = createEventSchema.parse(req.body);
+      logInfo(req, "Creating event", { userId, title: validatedData.title });
 
       const result = await this.eventService.createEvent(userId, {
         ...validatedData,
@@ -30,10 +32,15 @@ export class EventController {
       return sendSuccess(res, result.message, result.data, 201);
     } catch (error: any) {
       if (error.name === "ZodError") {
-        return sendError(res, error, 400);
+        const formattedErrors = formatZodError(error);
+        return sendError(
+          res,
+          { error: formattedErrors || "Validation error" },
+          400,
+        );
       }
-      logger.error("Create event error:", error);
-      return sendError(res, "Failed to create event", 500, error.message);
+      logError(req, "Failed to create event", error);
+      return sendError(res, "Failed to create event", 500);
     }
   }
 
@@ -102,8 +109,8 @@ export class EventController {
         },
       );
     } catch (error: any) {
-      logger.error("Failed to get public events:", error);
-      return sendError(res, "Failed to get public events", 500, error.message);
+      logError(req, "Failed to get public events", error);
+      return sendError(res, "Failed to get public events", 500);
     }
   }
 
@@ -121,8 +128,10 @@ export class EventController {
         200,
       );
     } catch (error: any) {
-      logger.error("Failed to get lister event:", error);
-      return sendError(res, "Failed to get lister event", 500, error.message);
+      logError(req, "Failed to get lister events", error, {
+        userId: req.user?.userId,
+      });
+      return sendError(res, "Failed to get lister events", 500);
     }
   }
 
@@ -146,13 +155,10 @@ export class EventController {
         200,
       );
     } catch (error: any) {
-      logger.error("Failed to get public event details:", error);
-      return sendError(
-        res,
-        "Failed to get public event details",
-        500,
-        error.message,
-      );
+      logError(req, "Failed to get public event details", error, {
+        eventId: req.params.eventId,
+      });
+      return sendError(res, "Failed to get public event details", 500);
     }
   }
 
@@ -179,14 +185,17 @@ export class EventController {
       );
     } catch (error: any) {
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }
-      logger.error("Failed to get event details:", error);
-      return sendError(res, "Failed to get event details", 500, error.message);
+      logError(req, "Failed to get event details", error, {
+        eventId: req.params.eventId,
+      });
+      return sendError(res, "Failed to get event details", 500);
     }
   }
 
@@ -199,6 +208,7 @@ export class EventController {
       if (!eventId) return sendError(res, "Event ID is required", 400);
 
       const validatedData = patchEventSchema.parse(req.body);
+      logInfo(req, "Patching event", { eventId, userId });
 
       const updatedEvent = await this.eventService.patchEvent(
         userId,
@@ -213,20 +223,19 @@ export class EventController {
       );
     } catch (error: any) {
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }
-      logger.error("Failed to patch event:", error);
-      return sendError(res, "Failed to patch event", 500, error.message);
+      logError(req, "Failed to patch event", error, {
+        eventId: req.params.eventId,
+      });
+      return sendError(res, "Failed to patch event", 500);
     }
   }
-
-  async submitEventForApproval(_req: AuthenticatedRequest, _res: Response) {}
-
-  async getEventAttendees(_req: AuthenticatedRequest, _res: Response) {}
 
   async updateInfo(req: AuthenticatedRequest, res: Response) {
     try {
@@ -239,6 +248,7 @@ export class EventController {
       const update = req.body.update;
       if (!update) return sendError(res, "Update data is required", 400);
 
+      logInfo(req, "Updating event info", { eventId });
       const result = await this.eventService.updateInfo(eventId, update);
       return sendSuccess(
         res,
@@ -247,8 +257,10 @@ export class EventController {
         200,
       );
     } catch (error: any) {
-      logger.error("Failed to update event info:", error);
-      return sendError(res, "Failed to update event info", 500, error.message);
+      logError(req, "Failed to update event info", error, {
+        eventId: req.params.eventId,
+      });
+      return sendError(res, "Failed to update event info", 500);
     }
   }
 
@@ -271,13 +283,10 @@ export class EventController {
         200,
       );
     } catch (error: any) {
-      logger.error("Failed to get event analytics:", error);
-      return sendError(
-        res,
-        "Failed to get event analytics",
-        500,
-        error.message,
-      );
+      logError(req, "Failed to get event analytics", error, {
+        eventId: req.params.eventId,
+      });
+      return sendError(res, "Failed to get event analytics", 500);
     }
   }
 }

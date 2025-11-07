@@ -1,9 +1,10 @@
 import type { Response } from "express";
-import logger from "../config/logger";
 import { TicketService } from "../services/ticket.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
 import { buyTicketSchema } from "../validators/ticket.validator";
+import { formatZodError } from "../utils/formatZodError";
+import { logError, logInfo } from "../utils/logger-context";
 
 export class TicketController {
   private ticketService: TicketService;
@@ -20,6 +21,7 @@ export class TicketController {
       const { ticketTypeId, quantity, attendeeData, discountCode } =
         buyTicketSchema.parse(req.body);
 
+      logInfo(req, "Buying ticket", { userId, ticketTypeId, quantity });
       const result = await this.ticketService.buyTicket(
         userId,
         ticketTypeId,
@@ -28,21 +30,23 @@ export class TicketController {
         discountCode || undefined,
       );
 
-      if (result.error) {
-        return sendError(res, result.error, 400);
-      }
-      // Track ticket purchase for analytics
-
       return sendSuccess(
         res,
         "Ticket created successfully, proceed to payment",
-        result.data,
+        result,
       );
     } catch (error: any) {
       if (error.name === "ZodError") {
-        return sendError(res, error, 400);
+        const formattedErrors = formatZodError(error);
+        return sendError(
+          res,
+          { error: formattedErrors || "Validation error" },
+          400,
+        );
       }
-      logger.error("Error buying ticket:", error);
+      logError(req, "Failed to create ticket", error, {
+        ticketTypeId: req.body.ticketTypeId,
+      });
       return sendError(res, "Failed to create ticket", 500);
     }
   }
@@ -53,9 +57,11 @@ export class TicketController {
       if (!userId) return sendError(res, "User ID is required", 400);
 
       const result = await this.ticketService.getUserTickets(userId);
-      return sendSuccess(res, "User tickets fetched successfully", result.data);
-    } catch (error) {
-      logger("Error fetching user tickets:", error);
+      return sendSuccess(res, "User tickets fetched successfully", result);
+    } catch (error: any) {
+      logError(req, "Failed to fetch user tickets", error, {
+        userId: req.user?.userId,
+      });
       return sendError(res, "Failed to fetch user tickets", 500);
     }
   }
@@ -75,17 +81,11 @@ export class TicketController {
         userId,
       );
 
-      if (result.error) {
-        return sendError(res, result.error, 400);
-      }
-
-      return sendSuccess(
-        res,
-        "Ticket buyers fetched successfully",
-        result.data,
-      );
-    } catch (error) {
-      logger("Error fetching ticket buyers for event:", error);
+      return sendSuccess(res, "Ticket buyers fetched successfully", result);
+    } catch (error: any) {
+      logError(req, "Failed to fetch ticket buyers", error, {
+        eventId: req.params.eventId,
+      });
       return sendError(res, "Failed to fetch ticket buyers", 500);
     }
   }
@@ -101,13 +101,9 @@ export class TicketController {
 
       const result = await this.ticketService.getAllTicketBuyers();
 
-      return sendSuccess(
-        res,
-        "All ticket buyers fetched successfully",
-        result.data,
-      );
-    } catch (error) {
-      logger("Error fetching all ticket buyers:", error);
+      return sendSuccess(res, "All ticket buyers fetched successfully", result);
+    } catch (error: any) {
+      logError(req, "Failed to fetch all ticket buyers", error);
       return sendError(res, "Failed to fetch all ticket buyers", 500);
     }
   }
@@ -131,17 +127,11 @@ export class TicketController {
         searchUserId,
       );
 
-      if (result.error) {
-        return sendError(res, result.error, 404);
-      }
-
-      return sendSuccess(
-        res,
-        "Ticket details fetched successfully",
-        result.data,
-      );
-    } catch (error) {
-      logger("Error fetching ticket details:", error);
+      return sendSuccess(res, "Ticket details fetched successfully", result);
+    } catch (error: any) {
+      logError(req, "Failed to fetch ticket details", error, {
+        ticketId: req.params.ticketId,
+      });
       return sendError(res, "Failed to fetch ticket details", 500);
     }
   }

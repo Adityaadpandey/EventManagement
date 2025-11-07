@@ -10,9 +10,12 @@ import { errorHandler } from "./middlewares/error.middleware";
 import {
   adminLimiter,
   authLimiter,
+  blockSuspiciousIPs,
+  combinedLimiter,
   heavyOperationLimiter,
 } from "./middlewares/rate-limit.middleware";
 import { reqMiddleware } from "./middlewares/req.middleware";
+import { requestIdMiddleware } from "./middlewares/request-id.middleware";
 import { adminRouter } from "./routes/v1/admin.router";
 import { authRouter } from "./routes/v1/auth.router";
 import { checkerRouter } from "./routes/v1/checker.router";
@@ -28,6 +31,7 @@ import { getDatabaseMetrics } from "./utils/databseMatrices";
 import { setupGracefulShutdown } from "./utils/gracefullShutdown";
 import { healthCheck } from "./utils/healthCheck";
 import { sendError } from "./utils/responseMsg";
+import { securityMiddleware } from "./middlewares/security.middleware";
 
 const app = express();
 
@@ -50,6 +54,9 @@ app.use(
 
 // Apply compression early in the middleware chain
 app.use(compressionMiddleware);
+
+// Add request ID tracking (before any logging)
+app.use(requestIdMiddleware);
 
 // Body parsing with strict limits for DDoS protection
 app.use(express.json({ limit: "5mb" })); // Reduced from 10mb
@@ -86,13 +93,13 @@ app.use((req, res, next) => {
 });
 
 // DDoS Protection Layer 1: Block known suspicious IPs
-// app.use(blockSuspiciousIPs);
+app.use(blockSuspiciousIPs);
 
 // DDoS Protection Layer 2: Security middleware (attack pattern detection)
-// app.use(securityMiddleware);
+app.use(securityMiddleware);
 
 // DDoS Protection Layer 3: Rate limiting
-// app.use(combinedLimiter);
+app.use(combinedLimiter);
 
 // Request middleware
 app.use(reqMiddleware);
