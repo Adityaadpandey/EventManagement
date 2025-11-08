@@ -101,10 +101,7 @@ app.use(securityMiddleware);
 // DDoS Protection Layer 3: Rate limiting
 app.use(combinedLimiter);
 
-// Request middleware
-app.use(reqMiddleware);
-
-// Health check endpoint (no rate limiting)
+// Health check endpoint (before logging middleware to avoid noise)
 app.get("/health", async (_, res: Response) => {
   const status = await healthCheck();
   const allHealthy = Object.values(status).every(Boolean);
@@ -115,6 +112,9 @@ app.get("/health", async (_, res: Response) => {
     worker: process.pid,
   });
 });
+
+// Request middleware (logs all requests except health checks)
+app.use(reqMiddleware);
 
 // Metrics endpoint for monitoring
 app.get("/metrics", async (req: Request, res: Response) => {

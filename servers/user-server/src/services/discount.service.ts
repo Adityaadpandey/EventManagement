@@ -1,5 +1,6 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { getDiscountCache, setDiscountCache } from "../lib/cache";
 
 interface CreateDiscountParams {
   eventId: string;
@@ -56,6 +57,11 @@ export class DiscountService {
 
   async getCodeInfoById(code: string, eventId: string) {
     try {
+      // const cache = await getDiscountCache(code,eventId);
+      // if(cache) {
+      //   return cache;
+      // }
+
       const codeInfo = await prisma.discountCode.findFirst({
         where: {
           code: code.toUpperCase(),
@@ -65,58 +71,13 @@ export class DiscountService {
       if (!codeInfo) {
         throw new Error("Discount code not found");
       }
+      setDiscountCache(code, eventId, codeInfo).catch((err) =>
+        logger.warn("Failed to cache discount code:", err),
+      );
       return codeInfo;
     } catch (error) {
       logger.error("Failed to get discount code info:", error);
       throw new Error("Failed to get discount code info");
     }
-  }
-
-  /**
-   * Calculate discount amount based on order total
-   */
-  calculateDiscount(
-    orderAmount: number,
-    discount: any,
-  ): {
-    discountAmount: number;
-    finalPrice: number;
-    discountApplied: boolean;
-    reason?: string;
-  } {
-    // Check minimum order amount
-    if (discount.minOrderAmt && orderAmount < discount.minOrderAmt) {
-      return {
-        discountAmount: 0,
-        finalPrice: orderAmount,
-        discountApplied: false,
-        reason: `Minimum order amount of ₹${discount.minOrderAmt} required`,
-      };
-    }
-
-    let discountAmount = 0;
-
-    // Calculate based on discount type
-    if (discount.discountType === "PERCENTAGE" && discount.discountPct) {
-      discountAmount = (orderAmount * discount.discountPct) / 100;
-    } else if (discount.discountType === "FLAT" && discount.discountAmt) {
-      discountAmount = discount.discountAmt;
-    }
-
-    // Apply max discount cap if specified
-    if (discount.maxDiscount && discountAmount > discount.maxDiscount) {
-      discountAmount = discount.maxDiscount;
-    }
-
-    // Ensure discount doesn't exceed order amount
-    discountAmount = Math.min(discountAmount, orderAmount);
-
-    const finalPrice = Math.max(0, orderAmount - discountAmount);
-
-    return {
-      discountAmount,
-      finalPrice,
-      discountApplied: true,
-    };
   }
 }

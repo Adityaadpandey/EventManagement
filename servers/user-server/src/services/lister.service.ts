@@ -1,6 +1,12 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
-import { invalidateUserSessions, setCachedUser } from "../lib/redis-fn";
+import {
+  setUserCache,
+  invalidateUserCaches,
+  getListerCache,
+  setListerCache,
+  delListerCache,
+} from "../lib/cache";
 
 export class ListerServer {
   async applyForLister(
@@ -50,10 +56,15 @@ export class ListerServer {
           role: "LISTER",
         },
       });
-      await setCachedUser(userId, {
+
+      // Update user cache with new role
+      await setUserCache(userId, {
         ...existingUser,
         role: "LISTER",
       });
+
+      // Cache the lister profile
+      await setListerCache(lister.listerId, lister);
 
       return lister;
     } catch (error) {
@@ -162,10 +173,11 @@ export class ListerServer {
         },
       });
 
-      await invalidateUserSessions(userId);
+      // Invalidate user caches after updating analytics
+      await invalidateUserCaches(userId);
 
-      // Return lister data with real-time analytics
-      return {
+      // Cache the lister profile
+      const listerResult = {
         ...lister,
         ListerAnalytics: {
           totalEvents: lister.Event.length,
@@ -183,6 +195,11 @@ export class ListerServer {
           status: event.status,
         })),
       };
+
+      // Cache the lister result
+      await setListerCache(lister.listerId, listerResult);
+
+      return listerResult;
     } catch (error) {
       logger.error("Error in meLister:", error);
       throw error;
@@ -231,6 +248,10 @@ export class ListerServer {
         },
       });
 
+      // Invalidate lister cache
+      await delListerCache(existingLister.listerId);
+      await invalidateUserCaches(userId);
+
       return updatedLister;
     } catch (error) {
       logger.error("Error in updateLister:", error);
@@ -240,6 +261,14 @@ export class ListerServer {
 
   async getLister(listerId: string) {
     try {
+      // Try cache first
+      const cached = await getListerCache(listerId);
+      if (cached) {
+        logger.info(`Lister cache hit for ${listerId}`);
+        return cached;
+      }
+
+      // Cache miss - fetch from database
       const lister = await prisma.lister.findUnique({
         where: {
           listerId,
@@ -296,6 +325,9 @@ export class ListerServer {
       if (!lister) {
         throw new Error("Lister not found for given listerId");
       }
+
+      // Cache the lister
+      await setListerCache(listerId, lister);
 
       return lister;
     } catch (error) {

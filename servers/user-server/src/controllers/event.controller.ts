@@ -40,7 +40,7 @@ export class EventController {
         );
       }
       logError(req, "Failed to create event", error);
-      return sendError(res, "Failed to create event", 500);
+      return sendError(res, "Failed to create event", 500, error.message);
     }
   }
 
@@ -110,7 +110,7 @@ export class EventController {
       );
     } catch (error: any) {
       logError(req, "Failed to get public events", error);
-      return sendError(res, "Failed to get public events", 500);
+      return sendError(res, "Failed to get public events", 500, error.message);
     }
   }
 
@@ -131,7 +131,7 @@ export class EventController {
       logError(req, "Failed to get lister events", error, {
         userId: req.user?.userId,
       });
-      return sendError(res, "Failed to get lister events", 500);
+      return sendError(res, "Failed to get lister events", 500, error.message);
     }
   }
 
@@ -158,7 +158,12 @@ export class EventController {
       logError(req, "Failed to get public event details", error, {
         eventId: req.params.eventId,
       });
-      return sendError(res, "Failed to get public event details", 500);
+      return sendError(
+        res,
+        "Failed to get public event details",
+        500,
+        error.message,
+      );
     }
   }
 
@@ -195,7 +200,7 @@ export class EventController {
       logError(req, "Failed to get event details", error, {
         eventId: req.params.eventId,
       });
-      return sendError(res, "Failed to get event details", 500);
+      return sendError(res, "Failed to get event details", 500, error.message);
     }
   }
 
@@ -233,7 +238,7 @@ export class EventController {
       logError(req, "Failed to patch event", error, {
         eventId: req.params.eventId,
       });
-      return sendError(res, "Failed to patch event", 500);
+      return sendError(res, "Failed to patch event", 500, error.message);
     }
   }
 
@@ -260,7 +265,7 @@ export class EventController {
       logError(req, "Failed to update event info", error, {
         eventId: req.params.eventId,
       });
-      return sendError(res, "Failed to update event info", 500);
+      return sendError(res, "Failed to update event info", 500, error.message);
     }
   }
 
@@ -286,7 +291,12 @@ export class EventController {
       logError(req, "Failed to get event analytics", error, {
         eventId: req.params.eventId,
       });
-      return sendError(res, "Failed to get event analytics", 500);
+      return sendError(
+        res,
+        "Failed to get event analytics",
+        500,
+        error.message,
+      );
     }
   }
 }
