@@ -33,7 +33,7 @@ export class AuthController {
       logError(req, "Failed to send OTP", error, {
         identifier: req.body.identifier,
       });
-      return sendError(res, error.message || "Failed to send OTP", 400);
+      return sendError(res, "Failed to send OTP", 400, error.message);
     }
   }
 
@@ -55,7 +55,7 @@ export class AuthController {
       logError(req, "Failed to verify OTP", error, {
         identifier: req.body.identifier,
       });
-      return sendError(res, error.message || "Failed to verify OTP", 400);
+      return sendError(res, "Failed to verify OTP", 400, error.message);
     }
   }
 }

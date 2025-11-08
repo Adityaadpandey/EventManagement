@@ -1,5 +1,7 @@
+import { DiscountCode, DiscountType } from "@repo/database";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { getDiscountCache, setDiscountCache } from "../lib/cache";
 import { razorpay } from "../lib/razorpay";
 import { trackCTAClickWithEventId } from "../middlewares/analytics.middleware";
 
@@ -97,15 +99,32 @@ export class TicketService {
       let discountCodeId: string | null = null;
       let discountAmount = 0;
       let discountDetails: any = null;
+      let appliedDiscount: any = null; // Store discount for cache update later
 
       // Validate and apply discount code if provided
       if (discountCode && discountCode.trim() !== "") {
-        const discount = await prisma.discountCode.findFirst({
-          where: {
-            code: discountCode.toUpperCase(),
-            eventId: ticketTypeWithEvent.eventId,
-          },
-        });
+        let discount: any = await getDiscountCache(
+          discountCode.toUpperCase(),
+          event.eventId,
+        );
+
+        if (!discount) {
+          discount = await prisma.discountCode.findFirst({
+            where: {
+              code: discountCode.toUpperCase(),
+              eventId: ticketTypeWithEvent.eventId,
+            },
+          });
+
+          // Cache the discount code for future use
+          if (discount) {
+            await setDiscountCache(
+              discountCode.toUpperCase(),
+              event.eventId,
+              discount,
+            );
+          }
+        }
 
         if (!discount) {
           throw new Error("Invalid discount code");
@@ -156,6 +175,7 @@ export class TicketService {
         ticketSubtotal = Math.max(0, basePrice - discountAmount);
 
         discountCodeId = discount.codeId;
+        appliedDiscount = discount; // Store for cache update
         discountDetails = {
           code: discount.code,
           type: discount.discountType,
@@ -211,13 +231,20 @@ export class TicketService {
         }
 
         // Increment discount code usage if applied
-        if (discountCodeId) {
-          await tx.discountCode.update({
+        if (discountCodeId && appliedDiscount) {
+          const updatedDiscount = await tx.discountCode.update({
             where: { codeId: discountCodeId },
             data: {
               usesCount: { increment: 1 },
             },
           });
+
+          // Update cache with new usage count to enforce limits
+          await setDiscountCache(
+            appliedDiscount.code.toUpperCase(),
+            event.eventId,
+            updatedDiscount,
+          );
         }
 
         // Update ticket type sold count

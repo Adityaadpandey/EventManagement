@@ -5,30 +5,14 @@ import { redis } from "../config/redis";
 import { createToken } from "../lib/jwt-token";
 import { sendEmail } from "../lib/mail";
 import { otpQueue } from "../lib/queues";
-import { setCachedUser } from "../lib/redis-fn";
+import {
+  setUserCache,
+  setTokenCache,
+  buildCacheKey,
+  CACHE_PREFIX,
+} from "../lib/cache";
 
 class AuthService {
-  private isEmail(input: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(input);
-  }
-
-  private isPhone(input: string): boolean {
-    const phone = parsePhoneNumberFromString(input, "IN");
-    return phone?.isValid() || false;
-  }
-
-  private normalizePhone(rawPhone: string): string {
-    const phone = parsePhoneNumberFromString(rawPhone, "IN");
-    if (!phone?.isValid()) throw new Error("Invalid phone number");
-    return phone.number;
-  }
-
-  // Add email normalization method
-  private normalizeEmail(email: string): string {
-    return email.toLowerCase().trim();
-  }
-
   async requestOtp(identifier: string): Promise<{ message: string }> {
     try {
       const isEmailType = this.isEmail(identifier);
@@ -43,9 +27,18 @@ class AuthService {
         ? this.normalizePhone(identifier)
         : this.normalizeEmail(identifier);
 
-      const otpKey = `otp:${normalizedIdentifier}`;
-      const countKey = `otp:count:${normalizedIdentifier}`;
-      const resendCooldownKey = `otp:cooldown:${normalizedIdentifier}`;
+      // Use consistent cache key patterns
+      const otpKey = buildCacheKey(CACHE_PREFIX.OTP, normalizedIdentifier);
+      const countKey = buildCacheKey(
+        CACHE_PREFIX.OTP,
+        "count",
+        normalizedIdentifier,
+      );
+      const resendCooldownKey = buildCacheKey(
+        CACHE_PREFIX.OTP,
+        "cooldown",
+        normalizedIdentifier,
+      );
 
       // Limit total OTP requests per hour
       const requestCount = await redis.get(countKey);
@@ -74,7 +67,7 @@ class AuthService {
       // Set resend cooldown (30s)
       await redis.setex(resendCooldownKey, 30, "1");
 
-      // Increment request count (max 3/hour)
+      // Increment request count (max 5/hour)
       const pipeline = redis.pipeline();
       pipeline.incr(countKey);
       pipeline.expire(countKey, 3600); // 1 hour TTL
@@ -128,8 +121,11 @@ class AuthService {
         ? this.normalizePhone(identifier)
         : this.normalizeEmail(identifier);
 
+      // Use consistent cache key pattern
+      const otpKey = buildCacheKey(CACHE_PREFIX.OTP, normalizedIdentifier);
+
       const [storedOtp, existingUser] = await Promise.all([
-        redis.get(`otp:${normalizedIdentifier}`),
+        redis.get(otpKey),
         isEmailType
           ? prisma.user.findUnique({
               where: { email: normalizedIdentifier },
@@ -196,7 +192,7 @@ class AuthService {
               isActive: true,
             },
           }),
-          redis.del(`otp:${normalizedIdentifier}`),
+          redis.del(otpKey),
         ]);
         user = newUser;
       } else {
@@ -211,7 +207,7 @@ class AuthService {
             : { phoneVerified: true };
 
           const [, updatedUser] = await Promise.all([
-            redis.del(`otp:${normalizedIdentifier}`),
+            redis.del(otpKey),
             prisma.user.update({
               where: isEmailType
                 ? { email: normalizedIdentifier }
@@ -233,7 +229,7 @@ class AuthService {
           ]);
           user = updatedUser;
         } else {
-          await redis.del(`otp:${normalizedIdentifier}`);
+          await redis.del(otpKey);
           user = existingUser;
         }
       }
@@ -247,12 +243,15 @@ class AuthService {
         throw new Error("Account has been deactivated");
       }
 
-      // Create token and cache user data in parallel
+      // Create token
       const token = createToken(user.userId, user.role);
 
-      // Cache the user data for future auth middleware calls
-      setCachedUser(user.userId, user).catch((error) => {
-        logger.error("Failed to cache user:", error);
+      // Cache user data and token in parallel (don't await to avoid blocking)
+      Promise.all([
+        setUserCache(user.userId, user),
+        setTokenCache(token, user.userId),
+      ]).catch((error) => {
+        logger.error("Failed to cache user/token:", error);
         // Don't throw as the main operation succeeded
       });
 
@@ -276,6 +275,26 @@ class AuthService {
       logger.error("Error in verifyOtp:", error);
       throw error;
     }
+  }
+  private isEmail(input: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(input);
+  }
+
+  private isPhone(input: string): boolean {
+    const phone = parsePhoneNumberFromString(input, "IN");
+    return phone?.isValid() || false;
+  }
+
+  private normalizePhone(rawPhone: string): string {
+    const phone = parsePhoneNumberFromString(rawPhone, "IN");
+    if (!phone?.isValid()) throw new Error("Invalid phone number");
+    return phone.number;
+  }
+
+  // Add email normalization method
+  private normalizeEmail(email: string): string {
+    return email.toLowerCase().trim();
   }
 }
 

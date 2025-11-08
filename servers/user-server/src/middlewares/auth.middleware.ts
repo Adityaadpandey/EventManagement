@@ -4,11 +4,11 @@ import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import {
-  getCachedUser,
   getTokenDataAndBlacklistStatus,
-  setCachedToken,
-  setCachedUser,
-} from "../lib/redis-fn";
+  getUserCache,
+  setUserCache,
+  setTokenCache,
+} from "../lib/cache";
 import type { AuthenticatedRequest, JwtPayload } from "../types/auth";
 import { sendError } from "../utils/responseMsg";
 
@@ -52,7 +52,7 @@ export const authMiddleware = async (
     }
 
     // Try to get user from cache first
-    let user = await getCachedUser(userId);
+    let user = await getUserCache(userId);
 
     if (!user) {
       // Fetch from database with minimal fields
@@ -65,7 +65,7 @@ export const authMiddleware = async (
           phone: true,
           phoneVerified: true,
           emailVerified: true,
-          isActive: true, // Added this important field
+          isActive: true,
         },
       });
 
@@ -74,32 +74,32 @@ export const authMiddleware = async (
       }
 
       // Check if user is active
-      if (!user.isActive) {
+      if (!(user as any).isActive) {
         return sendError(res, "Account has been deactivated", 401);
       }
 
       // Cache both user and token (only if we had to fetch from DB)
-      const cachePromises = [setCachedUser(userId, user)];
+      const cachePromises = [setUserCache(userId, user)];
 
       // Only cache token if we just verified it (not already cached)
       if (!cachedUserId) {
-        cachePromises.push(setCachedToken(token, userId));
+        cachePromises.push(setTokenCache(token, userId));
       }
 
       await Promise.all(cachePromises);
     } else {
       // Even if user is cached, check if active (this is a fast in-memory check)
-      if (!user.isActive) {
+      if (!(user as any).isActive) {
         return sendError(res, "Account has been deactivated", 401);
       }
 
       // If user was cached but token wasn't, cache the token
       if (!cachedUserId) {
-        await setCachedToken(token, userId);
+        await setTokenCache(token, userId);
       }
     }
 
-    req.user = user;
+    req.user = user as any;
     next();
   } catch (error) {
     logger.error("Auth Middleware Error:", error);

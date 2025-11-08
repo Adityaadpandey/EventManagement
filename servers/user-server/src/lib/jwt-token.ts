@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { config } from "../config";
 import logger from "../config/logger";
-import { setCachedToken } from "./redis-fn";
+import { setTokenCache } from "./cache";
 
 export const createToken = (
   userId: string,
@@ -19,7 +19,7 @@ export const createToken = (
     });
 
     // Store the token in Redis
-    setCachedToken(token, userId).catch((error) => {
+    setTokenCache(token, userId).catch((error) => {
       logger.error("Failed to cache token:", error);
       // Don't throw here as token creation succeeded
     });
