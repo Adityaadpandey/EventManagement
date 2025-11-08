@@ -6,6 +6,13 @@ export const reqMiddleware = (
   res: Response,
   next: NextFunction,
 ) => {
+  // Skip logging for health check and metrics endpoints to reduce noise
+  const skipLogging = req.path === "/health" || req.path === "/metrics";
+
+  if (skipLogging) {
+    return next();
+  }
+
   const start = process.hrtime();
   const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
