@@ -3,6 +3,15 @@ import logger from "../config/logger";
 import { redis } from "../config/redis";
 import { sendEmail } from "../lib/mail";
 import { CreateEventRequest } from "../types/event";
+import {
+  getEventAnalyticsCache,
+  getListerEventsCache,
+  getPublicEventCache,
+  invalidateEventCaches,
+  setEventAnalyticsCache,
+  setListerEventsCache,
+  setPublicEventCache,
+} from "../lib/cache";
 
 export class EventService {
   async createEvent(userId: string, eventData: CreateEventRequest) {
@@ -547,6 +556,15 @@ export class EventService {
 
   async getListerEvents(userId: string) {
     try {
+      // Try cache first
+
+      const cached = await getListerEventsCache(userId);
+      if (cached) {
+        logger.info(`Lister events cache hit for user ${userId}`);
+        return cached;
+      }
+
+      // Cache miss - fetch from database
       const events = await prisma.event.findMany({
         where: {
           lister: {
@@ -564,6 +582,9 @@ export class EventService {
         logger.warn(`No events found for user ${userId}`);
       }
 
+      // Cache the results
+      await setListerEventsCache(userId, events);
+
       return events;
     } catch (error) {
       logger.error("Error in getListerEvents:", error);
@@ -574,10 +595,11 @@ export class EventService {
   async getPublicEventDetails(eventId: string) {
     try {
       // Try to get from cache first
-      const cacheKey = `event:public:${eventId}`;
-      const cached = await redis.get(cacheKey);
+
+      const cached = await getPublicEventCache(eventId);
       if (cached) {
-        return JSON.parse(cached);
+        logger.info(`Public event cache hit for ${eventId}`);
+        return cached;
       }
 
       // If not in cache, fetch from database
@@ -657,20 +679,8 @@ export class EventService {
         throw new Error("Event not found");
       }
 
-      // // Calculate available tickets for each ticket type
-      // const eventWithAvailability = {
-      //   ...event,
-      //   TicketType: event.TicketType.map((ticketType) => ({
-      //     ...ticketType,
-      //     availableQuantity: ticketType.quantity - ticketType.soldCount,
-      //     isAvailable:
-      //       ticketType.quantity - ticketType.soldCount > 0 &&
-      //       (!ticketType.salesCutoff || new Date(ticketType.salesCutoff) > new Date()),
-      //   })),
-      // };
-
-      // Store in cache with 10 hour expiration (adjust as needed)
-      await redis.set(cacheKey, JSON.stringify(event), "EX", 3600 * 10);
+      // Store in cache
+      await setPublicEventCache(eventId, event);
 
       return event;
     } catch (error) {
@@ -681,6 +691,21 @@ export class EventService {
 
   async getEventDetails(userId: string, eventId: string) {
     try {
+      // Try cache first
+      const { getEventCache, setEventCache } = await import("../lib/cache");
+      const cached = await getEventCache(eventId);
+
+      if (cached) {
+        // Verify ownership from cache
+        const cachedEvent = cached as any;
+        if (cachedEvent.lister?.user?.userId !== userId) {
+          throw new Error("You do not have permission to view this event");
+        }
+        logger.info(`Event details cache hit for ${eventId}`);
+        return cached;
+      }
+
+      // Cache miss - fetch from database
       const event = await prisma.event.findUnique({
         where: {
           eventId,
@@ -712,6 +737,9 @@ export class EventService {
       if (event.lister.user.userId !== userId) {
         throw new Error("You do not have permission to view this event");
       }
+
+      // Cache the event details
+      await setEventCache(eventId, event);
 
       return event;
     } catch (error) {
@@ -809,6 +837,9 @@ export class EventService {
         },
       });
 
+      // Invalidate all event-related caches
+      await invalidateEventCaches(eventId, userId);
+
       return updatedEvent;
     } catch (error) {
       logger.error("Error in patchEvent:", error);
@@ -897,6 +928,14 @@ export class EventService {
 
   async getEventAnalytics(userId: string, eventId: string) {
     try {
+      // Try cache first (short TTL for analytics)
+
+      const cached = await getEventAnalyticsCache(eventId);
+      if (cached) {
+        logger.info(`Event analytics cache hit for ${eventId}`);
+        return cached;
+      }
+
       // Fetch event data with tickets to calculate real-time revenue
       const event = await prisma.event.findUnique({
         where: { eventId },
@@ -1018,7 +1057,7 @@ export class EventService {
             )
           : 0;
 
-      return {
+      const analyticsResult = {
         eventId: event.eventId,
         title: event.title,
         views: analytics.views || 0,
@@ -1042,6 +1081,11 @@ export class EventService {
         revenueByDay: analytics.revenueByDay || {},
         ticketTypesSalesByDay: analytics.ticketTypesSalesByDay || {},
       };
+
+      // Cache analytics with short TTL (1 minute)
+      await setEventAnalyticsCache(eventId, analyticsResult);
+
+      return analyticsResult;
     } catch (error: any) {
       logger.error("Error in getEventAnalytics:", error);
       throw error;

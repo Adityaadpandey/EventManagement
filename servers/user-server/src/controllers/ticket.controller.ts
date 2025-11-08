@@ -47,7 +47,7 @@ export class TicketController {
       logError(req, "Failed to create ticket", error, {
         ticketTypeId: req.body.ticketTypeId,
       });
-      return sendError(res, "Failed to create ticket", 500);
+      return sendError(res, "Failed to create ticket", 500, error.message);
     }
   }
 
@@ -62,7 +62,7 @@ export class TicketController {
       logError(req, "Failed to fetch user tickets", error, {
         userId: req.user?.userId,
       });
-      return sendError(res, "Failed to fetch user tickets", 500);
+      return sendError(res, "Failed to fetch user tickets", 500, error.message);
     }
   }
 
@@ -86,7 +86,12 @@ export class TicketController {
       logError(req, "Failed to fetch ticket buyers", error, {
         eventId: req.params.eventId,
       });
-      return sendError(res, "Failed to fetch ticket buyers", 500);
+      return sendError(
+        res,
+        "Failed to fetch ticket buyers",
+        500,
+        error.message,
+      );
     }
   }
 
@@ -104,7 +109,12 @@ export class TicketController {
       return sendSuccess(res, "All ticket buyers fetched successfully", result);
     } catch (error: any) {
       logError(req, "Failed to fetch all ticket buyers", error);
-      return sendError(res, "Failed to fetch all ticket buyers", 500);
+      return sendError(
+        res,
+        "Failed to fetch all ticket buyers",
+        500,
+        error.message,
+      );
     }
   }
 
@@ -132,7 +142,12 @@ export class TicketController {
       logError(req, "Failed to fetch ticket details", error, {
         ticketId: req.params.ticketId,
       });
-      return sendError(res, "Failed to fetch ticket details", 500);
+      return sendError(
+        res,
+        "Failed to fetch ticket details",
+        500,
+        error.message,
+      );
     }
   }
 }
