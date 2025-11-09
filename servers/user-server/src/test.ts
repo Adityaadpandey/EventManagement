@@ -31,6 +31,8 @@ const TicketEmail = async () => {
           seatNumber: "A12",
           date: "2025-08-15",
           venue: "Grand Arena",
+          InstagramLink: "https://instagram.com/eventlister",
+          email: "myName@gmail.com",
         },
       },
     },
@@ -53,9 +55,9 @@ const OtpEmail = async () => {
 };
 
 const main = async () => {
-  await EventUpdate();
+  // await EventUpdate();
   await TicketEmail();
-  await OtpEmail();
+  // await OtpEmail();
 };
 
 main();

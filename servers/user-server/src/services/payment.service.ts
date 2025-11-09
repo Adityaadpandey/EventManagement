@@ -60,6 +60,19 @@ export class PaymentService {
               event: true,
             },
           },
+          Event: {
+            include: {
+              lister: {
+                include: {
+                  user: {
+                    select: {
+                      email: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
           user: {
             select: {
               name: true,
@@ -137,6 +150,11 @@ export class PaymentService {
                     .toISOString()
                     .split("T")[0],
                   venue: ticket.ticketType.event.location,
+                  InstagramLink: ticket?.Event?.lister?.InstagramLink,
+                  FacebookLink: ticket?.Event?.lister?.FacebookLink,
+                  XLink: ticket?.Event?.lister?.XLink,
+                  website: ticket?.Event?.lister?.website,
+                  email: ticket?.Event?.lister?.user?.email,
                 },
               },
             },

@@ -82,7 +82,11 @@ model Lister {
 
     companyName String?
     companyLogo String?
-    bio         String?
+    bio         String  ?
+    InstagramLink String?
+    FacebookLink  String?
+    XLink   String?
+    website   String?
 
     createdAt DateTime     @default(now())
     updatedAt DateTime     @updatedAt
@@ -139,7 +143,7 @@ model Event {
     updatedAt DateTime @updatedAt
 
     // Only keep ticket counter for sequential numbering - all other analytics in EventAnalytics table
-    ticketCounter  Int   @default(0) // Fast counter for sequential ticket numbering 
+    ticketCounter  Int   @default(0) // Fast counter for sequential ticket numbering
 
     availableMailUpdates Int @default(2)
 
@@ -198,7 +202,7 @@ model TicketType {
     salesCutoff     DateTime?
 
     platformfee Int @default(0)
-    ticketPrefix String? 
+    ticketPrefix String?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -370,7 +374,7 @@ model EventAnalytics {
     clicks         Int   @default(0)
     ticketsSold    Int   @default(0)
     revenue        Float @default(0)
-    conversionRate Float @default(0) 
+    conversionRate Float @default(0)
 
     lastUpdated DateTime @default(now()) @updatedAt
 
@@ -380,9 +384,9 @@ model EventAnalytics {
     revenueByDay Json?
     ticketTypesSalesByDay Json? // { "2024-01-15": { "ticketTypeId1": { "quantity": 10, "revenue": 1000 }, "ticketTypeId2": { "quantity": 5, "revenue": 500 } } }
 
-    trafficSources Json? 
+    trafficSources Json?
 
-    deviceBreakdown Json? 
+    deviceBreakdown Json?
 
     createdAt DateTime @default(now())
 
