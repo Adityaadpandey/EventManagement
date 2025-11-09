@@ -5,6 +5,11 @@ export interface Ticket {
   seatNumber?: string;
   date: string;
   venue?: string;
+  InstagramLink?: string | null;
+  FacebookLink?: string | null;
+  XLink?: string | null;
+  website?: string | null;
+  email?: string | null;
 }
 
 export interface TicketEmailContent {
