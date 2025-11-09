@@ -57,16 +57,16 @@ export const detectAttackPatterns = (
       /script.*>/i,
     ];
 
-    if (
-      sqlPatterns.some((pattern) => pattern.test(url) || pattern.test(body))
-    ) {
-      logger.error("SQL injection attempt detected", {
-        ip: req.ip,
-        url: req.url,
-        userAgent,
-      });
-      return res.status(403).json({ error: "Invalid request" });
-    }
+    // if (
+    //   sqlPatterns.some((pattern) => pattern.test(url) || pattern.test(body))
+    // ) {
+    //   logger.error("SQL injection attempt detected", {
+    //     ip: req.ip,
+    //     url: req.url,
+    //     userAgent,
+    //   });
+    //   return res.status(403).json({ error: "Invalid request" });
+    // }
 
     // Block XSS attempts
     const xssPatterns = [
