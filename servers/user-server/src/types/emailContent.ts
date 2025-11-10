@@ -5,11 +5,13 @@ export interface Ticket {
   seatNumber?: string;
   date: string;
   venue?: string;
+  CompanyName?: string | null;
   InstagramLink?: string | null;
   FacebookLink?: string | null;
   XLink?: string | null;
   website?: string | null;
-  email?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
 }
 
 export interface TicketEmailContent {

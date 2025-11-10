@@ -32,7 +32,7 @@ const TicketEmail = async () => {
           date: "2025-08-15",
           venue: "Grand Arena",
           InstagramLink: "https://instagram.com/eventlister",
-          email: "myName@gmail.com",
+          contactEmail: "myName@gmail.com",
         },
       },
     },

@@ -2,9 +2,9 @@ import crypto from "node:crypto";
 import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { delTicketCache } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
 import { razorpay } from "../lib/razorpay";
-import { delTicketCache } from "../lib/cache";
 
 export class PaymentService {
   async verifyPayment(
@@ -121,6 +121,9 @@ export class PaymentService {
             FacebookLink: true,
             XLink: true,
             website: true,
+            companyName: true,
+            contactPhone: true,
+            contactEmail: true,
             user: {
               select: { email: true },
             },
@@ -146,11 +149,13 @@ export class PaymentService {
                     .toISOString()
                     .split("T")[0],
                   venue: ticket.ticketType.event.location,
+                  CompanyName: lister?.companyName,
                   InstagramLink: lister?.InstagramLink || null,
                   FacebookLink: lister?.FacebookLink || null,
                   XLink: lister?.XLink || null,
                   website: lister?.website || null,
-                  email: lister?.user?.email || null,
+                  contactPhone: lister?.contactPhone || null,
+                  contactEmail: lister?.contactEmail || null,
                 },
               },
             },
