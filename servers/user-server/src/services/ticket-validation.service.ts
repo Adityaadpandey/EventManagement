@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { delTicketCache } from "../lib/cache";
 
 export class TicketValidationService {
   async checkerLogin(username: string, password: string) {
@@ -212,6 +213,13 @@ export class TicketValidationService {
         ticket.ticketType.event.eventId,
       );
 
+      // Invalidate ticket cache after check-in
+      delTicketCache(ticket.ticketId).catch(() =>
+        logger.warn(
+          `Failed to invalidate cache for ticket: ${ticket.ticketId}`,
+        ),
+      );
+
       return {
         success: true,
         message: "Ticket successfully scanned and checked in",
@@ -281,6 +289,11 @@ export class TicketValidationService {
         undefined,
         undefined,
         ticket.ticketType.event.eventId,
+      );
+
+      // Invalidate ticket cache after reset
+      delTicketCache(ticketId).catch(() =>
+        logger.warn(`Failed to invalidate cache for ticket: ${ticketId}`),
       );
 
       return {

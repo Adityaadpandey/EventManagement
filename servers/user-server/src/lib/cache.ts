@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import logger from "../config/logger";
 import { redis } from "../config/redis";
-import { DiscountType } from "@repo/database";
 
 // Cache key prefixes
 export const CACHE_PREFIX = {
@@ -291,6 +290,10 @@ export const delTicketCache = async (ticketId: string) => {
   const key = buildCacheKey(CACHE_PREFIX.TICKET, ticketId);
   await cacheDel(key);
 };
+
+// ============================================================================
+// Ticket Type CACHING
+// ============================================================================
 
 export const getTicketTypeCache = async (ticketTypeId: string) => {
   const key = buildCacheKey(CACHE_PREFIX.TICKET_TYPE, ticketTypeId);

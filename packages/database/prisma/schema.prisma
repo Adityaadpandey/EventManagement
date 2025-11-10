@@ -88,6 +88,9 @@ model Lister {
     XLink   String?
     website   String?
 
+    contactPhone String?
+    contactEmail String?
+
     createdAt DateTime     @default(now())
     updatedAt DateTime     @updatedAt
     status    ListerStatus @default(PENDING)
@@ -249,6 +252,7 @@ model Ticket {
     @@index([eventEventId]) // All tickets for an event
     @@index([status]) // Filter by payment status
     @@index([checkedIn]) // Find unchecked tickets
+    @@index([ticketId,userId])
     @@index([createdAt]) // Recent purchases
     @@index([userId, status]) // Composite: user's tickets by status
     @@index([eventEventId, status]) // Composite: event tickets by status
@@ -355,6 +359,7 @@ model DiscountCode {
 
     // INDEXES
     @@index([eventId])
+    @@index([code, eventId])
     @@index([validFrom, validTo])
     @@index([code])
     @@index([eventId, validFrom, validTo])
