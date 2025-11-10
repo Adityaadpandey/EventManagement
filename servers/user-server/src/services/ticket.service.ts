@@ -274,7 +274,7 @@ export class TicketService {
                 select: { email: true, name: true },
               }),
               prisma.lister.findUnique({
-                where: { userId: event.listerId },
+                where: { listerId: event.listerId },
                 select: {
                   InstagramLink: true,
                   FacebookLink: true,
