@@ -1,7 +1,7 @@
-import { DiscountCode, DiscountType } from "@repo/database";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { getDiscountCache, setDiscountCache } from "../lib/cache";
+import { sendEmail } from "../lib/mail";
 import { razorpay } from "../lib/razorpay";
 import { trackCTAClickWithEventId } from "../middlewares/analytics.middleware";
 
@@ -32,6 +32,7 @@ export class TicketService {
           date: true,
           time: true,
           location: true,
+          listerId: true,
         },
       });
 
@@ -198,6 +199,25 @@ export class TicketService {
       const isFree = finalPrice === 0;
       const ticketStatus = isFree ? "SUCCESS" : "PENDING";
 
+      // Fetch user data for email (if free ticket)
+      let userData = null;
+      let listerData = null;
+      if (isFree) {
+        userData = await prisma.user.findUnique({
+          where: { userId },
+          select: { email: true, name: true },
+        });
+
+        listerData = await prisma.lister.findUnique({
+          where: { listerId: ticketTypeWithEvent.event.listerId },
+          include: {
+            user: {
+              select: { email: true },
+            },
+          },
+        });
+      }
+
       // Use transaction to ensure atomicity (including ticket ID generation)
       const result = await prisma.$transaction(async (tx) => {
         // Generate ticket ID inside transaction for better performance
@@ -250,6 +270,50 @@ export class TicketService {
         // Update ticket type sold count
         // If free ticket, also update event analytics
         if (isFree) {
+          // Send email for free ticket
+          try {
+            if (userData?.email) {
+              await sendEmail(
+                userData.email,
+                `Your Ticket for ${ticketTypeWithEvent.event.title}`,
+                {
+                  type: "ticket",
+                  content: {
+                    ticket: {
+                      ticketQR: ticket.qrCode,
+                      ticketId: ticket.ticketId,
+                      eventName: ticketTypeWithEvent.event.title,
+                      seatNumber: ticket.qrCode,
+                      date: ticketTypeWithEvent.event.date
+                        .toISOString()
+                        .split("T")[0],
+                      venue: ticketTypeWithEvent.event.location,
+                      InstagramLink: listerData?.InstagramLink,
+                      FacebookLink: listerData?.FacebookLink,
+                      XLink: listerData?.XLink,
+                      website: listerData?.website,
+                      email: listerData?.user?.email,
+                    },
+                  },
+                },
+                userData.name || "Valued Customer",
+              );
+              logger.info(
+                `Ticket confirmation email sent to ${userData.email} for ticket ${ticket.ticketId}`,
+              );
+            } else {
+              logger.warn(
+                `No email address found for user ${userId}, skipping email notification`,
+              );
+            }
+          } catch (emailError) {
+            logger.error(
+              "Error sending ticket confirmation email:",
+              emailError,
+            );
+            // Don't fail the ticket if email fails or so
+          }
+
           await tx.ticketType.update({
             where: { ticketTypeId },
             data: { soldCount: { increment: quantity } },
