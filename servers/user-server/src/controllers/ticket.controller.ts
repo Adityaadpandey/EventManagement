@@ -1,10 +1,10 @@
 import type { Response } from "express";
 import { TicketService } from "../services/ticket.service";
 import type { AuthenticatedRequest } from "../types/auth";
-import { sendError, sendSuccess } from "../utils/responseMsg";
-import { buyTicketSchema } from "../validators/ticket.validator";
 import { formatZodError } from "../utils/formatZodError";
 import { logError, logInfo } from "../utils/logger-context";
+import { sendError, sendSuccess } from "../utils/responseMsg";
+import { buyTicketSchema } from "../validators/ticket.validator";
 
 export class TicketController {
   private ticketService: TicketService;
@@ -122,6 +122,9 @@ export class TicketController {
     try {
       const { ticketId } = req.params;
       const userId = req.user?.userId;
+      if (!userId) {
+        return sendError(res, "User Id is required", 400);
+      }
       const userRole = req.user?.role;
 
       if (!ticketId) {

@@ -4,6 +4,7 @@ import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { sendEmail } from "../lib/mail";
 import { razorpay } from "../lib/razorpay";
+import { delTicketCache } from "../lib/cache";
 
 export class PaymentService {
   async verifyPayment(
@@ -50,25 +51,20 @@ export class PaymentService {
         };
       }
 
-      // Update ticket status to SUCCESS
+      // Update ticket status to SUCCESS (optimized query)
       const ticket = await prisma.ticket.update({
         where: { ticketId: payment.notes.ticketId },
         data: { status: "SUCCESS" },
         include: {
           ticketType: {
             include: {
-              event: true,
-            },
-          },
-          Event: {
-            include: {
-              lister: {
-                include: {
-                  user: {
-                    select: {
-                      email: true,
-                    },
-                  },
+              event: {
+                select: {
+                  eventId: true,
+                  title: true,
+                  date: true,
+                  location: true,
+                  listerId: true,
                 },
               },
             },
@@ -83,54 +79,54 @@ export class PaymentService {
         },
       });
 
-      // Update sold count and revenue
-      await prisma.ticketType.update({
-        where: { ticketTypeId: ticket.ticketTypeId },
-        data: {
-          soldCount: {
-            increment: ticket.quantity,
-          },
-        },
-      });
+      // Invalidate ticket cache after status update
+      delTicketCache(ticket.ticketId).catch(() =>
+        logger.warn(
+          `Failed to invalidate cache for ticket: ${ticket.ticketId}`,
+        ),
+      );
 
       // Calculate actual revenue (total price minus platform fees)
-      // If platform fee exists, subtract it; if 0, subtract 5% of total price
       const platformFee =
         ticket.ticketType.platformfee > 0
           ? ticket.ticketType.platformfee * ticket.quantity
           : ticket.totalPrice * 0.05;
       const actualRevenue = ticket.totalPrice - platformFee;
 
-      // Update event analytics
-      await prisma.eventAnalytics.update({
-        where: { eventId: ticket.ticketType.eventId },
-        data: {
-          ticketsSold: {
-            increment: ticket.quantity,
+      // Parallel updates and lister fetch for better performance (optimized)
+      const [, , lister] = await Promise.all([
+        // Update ticket type sold count
+        prisma.ticketType.update({
+          where: { ticketTypeId: ticket.ticketTypeId },
+          data: { soldCount: { increment: ticket.quantity } },
+        }),
+        // Update event analytics (upsert handles both create and update)
+        prisma.eventAnalytics.upsert({
+          where: { eventId: ticket.ticketType.eventId },
+          update: {
+            ticketsSold: { increment: ticket.quantity },
+            revenue: { increment: actualRevenue },
           },
-          revenue: {
-            increment: actualRevenue,
+          create: {
+            eventId: ticket.ticketType.eventId,
+            ticketsSold: ticket.quantity,
+            revenue: actualRevenue,
           },
-        },
-      });
-
-      // Update event analytics table
-      await prisma.eventAnalytics.upsert({
-        where: { eventId: ticket.ticketType.eventId },
-        update: {
-          ticketsSold: {
-            increment: ticket.quantity,
+        }),
+        // Fetch lister data for email
+        prisma.lister.findUnique({
+          where: { userId: ticket.ticketType.event.listerId },
+          select: {
+            InstagramLink: true,
+            FacebookLink: true,
+            XLink: true,
+            website: true,
+            user: {
+              select: { email: true },
+            },
           },
-          revenue: {
-            increment: actualRevenue,
-          },
-        },
-        create: {
-          eventId: ticket.ticketType.eventId,
-          ticketsSold: ticket.quantity,
-          revenue: actualRevenue,
-        },
-      });
+        }),
+      ]);
 
       // Send confirmation email to user
       try {
@@ -150,11 +146,11 @@ export class PaymentService {
                     .toISOString()
                     .split("T")[0],
                   venue: ticket.ticketType.event.location,
-                  InstagramLink: ticket?.Event?.lister?.InstagramLink,
-                  FacebookLink: ticket?.Event?.lister?.FacebookLink,
-                  XLink: ticket?.Event?.lister?.XLink,
-                  website: ticket?.Event?.lister?.website,
-                  email: ticket?.Event?.lister?.user?.email,
+                  InstagramLink: lister?.InstagramLink || null,
+                  FacebookLink: lister?.FacebookLink || null,
+                  XLink: lister?.XLink || null,
+                  website: lister?.website || null,
+                  email: lister?.user?.email || null,
                 },
               },
             },
@@ -200,6 +196,11 @@ export class PaymentService {
         where: { ticketId },
         data: { status: "FAILED" },
       });
+
+      // Invalidate ticket cache after status update
+      delTicketCache(ticketId).catch(() =>
+        logger.warn(`Failed to invalidate cache for ticket: ${ticketId}`),
+      );
 
       return ticket;
     } catch (error) {
