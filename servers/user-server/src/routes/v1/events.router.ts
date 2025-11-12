@@ -58,7 +58,7 @@ router.post(
 router.get(
   "/:eventId/analytics",
   authMiddleware,
-  requireRole(["LISTER"]),
+  requireRole(["LISTER", "ADMIN"]),
   eventController.getAnalytics.bind(eventController),
 );
 // DELETE /api/v1/event/:eventId

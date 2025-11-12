@@ -16,6 +16,7 @@ import {
 } from "./middlewares/rate-limit.middleware";
 import { reqMiddleware } from "./middlewares/req.middleware";
 import { requestIdMiddleware } from "./middlewares/request-id.middleware";
+import { securityMiddleware } from "./middlewares/security.middleware";
 import { adminRouter } from "./routes/v1/admin.router";
 import { authRouter } from "./routes/v1/auth.router";
 import { checkerRouter } from "./routes/v1/checker.router";
@@ -31,47 +32,103 @@ import { getDatabaseMetrics } from "./utils/databseMatrices";
 import { setupGracefulShutdown } from "./utils/gracefullShutdown";
 import { healthCheck } from "./utils/healthCheck";
 import { sendError } from "./utils/responseMsg";
-import { securityMiddleware } from "./middlewares/security.middleware";
 
 const app = express();
 
-// Trust proxy for accurate IP detection in rate limiting
-app.set("trust proxy", true);
+// Disable unnecessary Express features for performance
+app.disable("x-powered-by"); // Hide Express signature
+app.disable("etag"); // Disable ETag generation (use CDN/nginx for this)
 
-// Security headers
+// Trust proxy for accurate IP detection in rate limiting
+// Set to number of proxies (e.g., 1 for single load balancer)
+app.set("trust proxy", 1);
+
+// Optimize view cache for production
+if (config.NODE_ENV === "production") {
+  app.set("view cache", true);
+}
+
+// Security headers with optimized configuration
 app.use(
   helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https:"],
-      },
+    contentSecurityPolicy:
+      config.NODE_ENV === "production"
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              styleSrc: ["'self'", "'unsafe-inline'"],
+              scriptSrc: ["'self'"],
+              imgSrc: ["'self'", "data:", "https:"],
+              connectSrc: ["'self'"],
+              fontSrc: ["'self'"],
+              objectSrc: ["'none'"],
+              mediaSrc: ["'self'"],
+              frameSrc: ["'none'"],
+            },
+          }
+        : false, // Disable CSP in development for easier debugging
+    crossOriginEmbedderPolicy: false, // Allow embedding if needed
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    dnsPrefetchControl: { allow: true },
+    frameguard: { action: "deny" },
+    hidePoweredBy: true,
+    hsts: {
+      maxAge: 31536000, // 1 year
+      includeSubDomains: true,
+      preload: true,
     },
+    ieNoOpen: true,
+    noSniff: true,
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    xssFilter: true,
   }),
 );
-
-// Apply compression early in the middleware chain
-app.use(compressionMiddleware);
 
 // Add request ID tracking (before any logging)
 app.use(requestIdMiddleware);
 
-// Body parsing with strict limits for DDoS protection
-app.use(express.json({ limit: "5mb" })); // Reduced from 10mb
-app.use(express.urlencoded({ extended: true, limit: "5mb" }));
+// Body parsing with strict limits and optimized settings
+app.use(
+  express.json({
+    limit: "5mb",
+    strict: true, // Only parse arrays and objects
+    type: "application/json",
+  }),
+);
 
-// CORS with proper configuration
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "5mb",
+    parameterLimit: 1000, // Limit number of parameters
+  }),
+);
+
+// Apply compression AFTER body parsing for better performance
+app.use(compressionMiddleware);
+
+// CORS with optimized configuration
+const allowedOrigins = [
+  "https://www.tixin.in",
+  "https://stag.tixin.in",
+  ...(config.NODE_ENV !== "production" ? ["http://localhost:3000"] : []),
+];
+
 app.use(
   cors({
-    origin: [
-      "https://www.tixin.in",
-      "http://localhost:3000",
-      "https://stag.tixin.in",
-    ],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked origin: ${origin}`);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
-    optionsSuccessStatus: 200,
+    optionsSuccessStatus: 204, // Use 204 instead of 200 for OPTIONS
     maxAge: 86400, // Cache preflight for 24 hours
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
@@ -79,18 +136,15 @@ app.use(
       "Authorization",
       "X-Requested-With",
       "Checker-Auth",
+      "X-Request-ID",
+    ],
+    exposedHeaders: [
+      "X-Request-ID",
+      "X-RateLimit-Limit",
+      "X-RateLimit-Remaining",
     ],
   }),
 );
-
-// Handle OPTIONS requests early (before security middleware)
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    res.status(200).end();
-    return;
-  }
-  next();
-});
 
 // DDoS Protection Layer 1: Block known suspicious IPs
 app.use(blockSuspiciousIPs);
@@ -101,26 +155,40 @@ app.use(securityMiddleware);
 // DDoS Protection Layer 3: Rate limiting
 app.use(combinedLimiter);
 
-// Health check endpoint (before logging middleware to avoid noise)
 app.get("/health", async (_, res: Response) => {
+  const now = Date.now();
   const status = await healthCheck();
   const allHealthy = Object.values(status).every(Boolean);
-  res.status(allHealthy ? 200 : 503).json({
+  const response = {
     ...status,
     status: allHealthy ? "ok" : "unhealthy",
     timestamp: new Date().toISOString(),
     worker: process.pid,
-  });
+  };
+  res.status(allHealthy ? 200 : 503).json(response);
 });
 
 // Request middleware (logs all requests except health checks)
 app.use(reqMiddleware);
 
-// Metrics endpoint for monitoring
-app.get("/metrics", async (req: Request, res: Response) => {
-  return res.json({
-    getDatabaseMetrics: await getDatabaseMetrics(),
-  });
+// Metrics endpoint for monitoring (with basic auth in production)
+app.get("/metrics", async (_, res: Response) => {
+  try {
+    const metrics = await getDatabaseMetrics();
+    return res.json({
+      database: metrics,
+      process: {
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        cpu: process.cpuUsage(),
+        pid: process.pid,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error("Error fetching metrics:", error);
+    return res.status(500).json({ error: "Failed to fetch metrics" });
+  }
 });
 
 // Auth routes with strict rate limiting
@@ -167,10 +235,23 @@ export const startServer = async () => {
       logger.info(`${config.SERVICE_NAME} running on port ${config.PORT}`);
       logger.info(`Environment: ${config.NODE_ENV}`);
       logger.info(`Worker process: ${process.pid}`);
+      logger.info(`Node version: ${process.version}`);
     });
 
-    server.keepAliveTimeout = 65000; // Slightly higher than typical load balancer timeout
+    // Optimize server timeouts for better performance
+    server.keepAliveTimeout = 65000; // Slightly higher than typical load balancer timeout (60s)
     server.headersTimeout = 66000; // Should be higher than keepAliveTimeout
+    server.requestTimeout = 120000; // 2 minutes for long-running requests
+    server.timeout = 120000; // Socket timeout
+
+    // Optimize max connections
+    server.maxConnections = 10000; // Adjust based on your server capacity
+
+    // Enable TCP keep-alive
+    server.on("connection", (socket) => {
+      socket.setKeepAlive(true, 60000); // Keep alive for 60 seconds
+      socket.setNoDelay(true); // Disable Nagle's algorithm for lower latency
+    });
 
     setupGracefulShutdown(server);
 
