@@ -375,6 +375,7 @@ export class EventService {
             e."banner_horizontal",
             e."banner_vertical",
             e."banner_square",
+            e.canBuy,
             (
               6371 * acos(
                 cos(radians(${latitude})) *
@@ -530,6 +531,7 @@ export class EventService {
       tags: true,
       location: true,
       capacity: true,
+      canBuy: true,
       banner_horizontal: true,
       banner_vertical: true,
       banner_square: true,
@@ -632,6 +634,7 @@ export class EventService {
           longitude: true,
           latitude: true,
           tags: true,
+          canBuy: true,
           location: true,
           capacity: true,
           TicketType: {
