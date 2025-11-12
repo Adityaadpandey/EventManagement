@@ -19,10 +19,20 @@ export class TicketService {
     discountCode?: string,
   ) {
     try {
-      // Fetch ticket type with event in a single query (optimized)
+      // OPTIMIZED: Fetch ticket type with event in a single query
       const ticketType = await prisma.ticketType.findUnique({
         where: { ticketTypeId },
-        include: {
+        select: {
+          ticketTypeId: true,
+          eventId: true,
+          name: true,
+          price: true,
+          discountedPrice: true,
+          discountReason: true,
+          quantity: true,
+          soldCount: true,
+          salesCutoff: true,
+          platformfee: true,
           event: {
             select: {
               eventId: true,
@@ -31,10 +41,15 @@ export class TicketService {
               time: true,
               location: true,
               listerId: true,
+              canBuy: true,
             },
           },
         },
       });
+
+      if (!ticketType?.event.canBuy) {
+        throw new Error("Ticket Sales is Turned Off for Now");
+      }
 
       if (!ticketType || !ticketType.event) {
         throw new Error("Ticket type or event not found");
@@ -516,6 +531,7 @@ export class TicketService {
         return Cachedticket;
       }
 
+      // OPTIMIZED: Single query with all relations instead of 4 separate queries
       const ticket = await prisma.ticket.findUnique({
         where: { ticketId },
         select: {
@@ -529,24 +545,7 @@ export class TicketService {
           createdAt: true,
           updatedAt: true,
           eventEventId: true,
-        },
-      });
-
-      if (!ticket) {
-        throw new Error("Ticket not found");
-      }
-
-      // Check ownership before fetching additional data
-      if (userId && ticket.userId !== userId) {
-        throw new Error("Unauthorized access to ticket");
-      }
-
-      // Step 2: Fire all related queries in parallel
-      const [ticketType, user, attendeeResponses, scanLogs] = await Promise.all(
-        [
-          // Query 1: Ticket type with event
-          prisma.ticketType.findUnique({
-            where: { ticketTypeId: ticket.ticketTypeId },
+          ticketType: {
             select: {
               ticketTypeId: true,
               name: true,
@@ -569,21 +568,15 @@ export class TicketService {
                 },
               },
             },
-          }),
-
-          // Query 2: User info
-          prisma.user.findUnique({
-            where: { userId: ticket.userId },
+          },
+          user: {
             select: {
               name: true,
               email: true,
               phone: true,
             },
-          }),
-
-          // Query 3: Attendee field responses
-          prisma.attendeeFieldResponse.findMany({
-            where: { ticketId: ticket.ticketId },
+          },
+          AttendeeFieldResponse: {
             select: {
               responseId: true,
               value: true,
@@ -598,11 +591,8 @@ export class TicketService {
                 },
               },
             },
-          }),
-
-          // Query 4: Recent scan logs
-          prisma.ticketScanLog.findMany({
-            where: { ticketId: ticket.ticketId },
+          },
+          TicketScanLog: {
             select: {
               scanId: true,
               scannedAt: true,
@@ -610,26 +600,25 @@ export class TicketService {
             },
             orderBy: { scannedAt: "desc" },
             take: 5,
-          }),
-        ],
+          },
+        },
+      });
+
+      if (!ticket) {
+        throw new Error("Ticket not found");
+      }
+
+      // Check ownership
+      if (userId && ticket.userId !== userId) {
+        throw new Error("Unauthorized access to ticket");
+      }
+
+      // Cache the result
+      setTicketCache(ticketId, ticket).catch(() =>
+        logger.warn(`Error caching the Ticket:${ticketId}`),
       );
 
-      setTicketCache(ticketId, {
-        ...ticket,
-        ticketType,
-        user,
-        AttendeeFieldResponse: attendeeResponses,
-        TicketScanLog: scanLogs,
-      }).catch(() => logger.warn(`Error caching the Ticket:${ticketId}`));
-
-      // Step 3: Combine all data into final response
-      return {
-        ...ticket,
-        ticketType,
-        user,
-        AttendeeFieldResponse: attendeeResponses,
-        TicketScanLog: scanLogs,
-      };
+      return ticket;
     } catch (error) {
       logger.error("Error fetching ticket details:", error);
       throw error;
@@ -640,42 +629,97 @@ export class TicketService {
     tx: any,
     ticketType: any,
   ): Promise<string> {
-    // Use custom prefix if available, otherwise generate from event title
-    let prefix = ticketType.ticketPrefix;
+    const maxRetries = 5;
+    let attempt = 0;
 
-    if (!prefix) {
-      // Use event title from ticketType.event (already loaded in the main query)
-      if (ticketType.event?.title) {
-        // Extract initials from event title (e.g., "Code Caravan 3.0" -> "CC30")
-        prefix = ticketType.event.title
-          .split(" ")
-          .map((word: string) => word.charAt(0).toUpperCase())
-          .join("")
-          .replace(/[^A-Z0-9]/g, "") // Remove non-alphanumeric characters
-          .substring(0, 6); // Limit to 6 characters
-      }
+    while (attempt < maxRetries) {
+      try {
+        // Use custom prefix if available, otherwise generate from event title
+        let prefix = ticketType.ticketPrefix;
 
-      // Fallback if no event found or title is empty
-      if (!prefix || prefix.length < 2) {
-        prefix = "TKT";
+        if (!prefix) {
+          // Use event title from ticketType.event (already loaded in the main query)
+          if (ticketType.event?.title) {
+            const title = ticketType.event.title.trim();
+
+            // Extract initials from event title
+            const initials = title
+              .split(" ")
+              .map((word: string) => word.charAt(0).toUpperCase())
+              .join("")
+              .replace(/[^A-Z0-9]/g, ""); // Remove non-alphanumeric characters
+
+            // If initials are short (< 4 chars), use TKT-XXX format for better tracking
+            // Examples: "HANGOVER" -> "TKT-HAN", "DJ Night" -> "TKT-DJN"
+            if (initials.length < 4) {
+              // Take first 3 letters from the title (removing spaces and special chars)
+              const cleanTitle = title
+                .replace(/[^A-Za-z0-9]/g, "")
+                .toUpperCase()
+                .substring(0, 3);
+
+              prefix = cleanTitle.length >= 3 ? `TKT-${cleanTitle}` : "TKT";
+            } else {
+              // For longer initials, use them directly (limit to 6 chars)
+              // Examples: "Code Caravan 3.0" -> "CC30"
+              prefix = initials.substring(0, 6);
+            }
+          }
+
+          // Fallback if no event found or title is empty
+          if (!prefix || prefix.length < 2) {
+            prefix = "TKT";
+          }
+        }
+
+        // Ultra-fast sequential numbering using Event table counter
+        const updatedEvent = await tx.event.update({
+          where: { eventId: ticketType.eventId },
+          data: {
+            ticketCounter: { increment: 1 },
+          },
+          select: { ticketCounter: true },
+        });
+
+        const ticketNumber = updatedEvent.ticketCounter;
+        const formattedNumber = ticketNumber.toString().padStart(3, "0");
+        const qrCode = `${prefix}${formattedNumber}`;
+
+        // Verify uniqueness (should be guaranteed by counter, but double-check)
+        const existingTicket = await tx.ticket.findUnique({
+          where: { qrCode },
+          select: { ticketId: true },
+        });
+
+        if (!existingTicket) {
+          // Format: PREFIX + SEQUENTIAL_NUMBER
+          // Examples:
+          // - "Code Caravan 3.0" -> CC3001, CC3002, CC3003
+          // - "HANGOVER" -> TKT-HAN001, TKT-HAN002
+          // - "DJ Night" -> TKT-DJN001, TKT-DJN002
+          return qrCode;
+        }
+
+        // If collision detected (extremely rare), retry
+        logger.warn(
+          `QR code collision detected: ${qrCode}. Retrying... (attempt ${attempt + 1}/${maxRetries})`,
+        );
+        attempt++;
+      } catch (error) {
+        logger.error(
+          `Error generating ticket ID (attempt ${attempt + 1}/${maxRetries}):`,
+          error,
+        );
+        attempt++;
+
+        if (attempt >= maxRetries) {
+          throw new Error(
+            "Failed to generate unique ticket ID after multiple attempts",
+          );
+        }
       }
     }
 
-    // Ultra-fast sequential numbering using Event table counter
-    const updatedEvent = await tx.event.update({
-      where: { eventId: ticketType.eventId },
-      data: {
-        ticketCounter: { increment: 1 },
-      },
-      select: { ticketCounter: true },
-    });
-
-    const ticketNumber = updatedEvent.ticketCounter;
-    const formattedNumber = ticketNumber.toString().padStart(3, "0");
-    const ticketId = `${prefix}${formattedNumber}`;
-
-    // Format: PREFIX + SEQUENTIAL_NUMBER
-    // Examples: CC3001, CC3002, CC3003, HDN001, HDN002
-    return ticketId;
+    throw new Error("Failed to generate unique ticket ID");
   }
 }

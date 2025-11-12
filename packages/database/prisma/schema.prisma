@@ -126,6 +126,7 @@ model Event {
     tags              String[]
     chips             String[]
     restrictions      String?
+    canBuy Boolean @default(true)
 
     // Admin workflow
     status            Status  @default(NOT_VIEWED)
@@ -170,6 +171,7 @@ model Event {
     @@index([status, latitude, longitude]) // Composite: location queries on approved events
     @@index([listerId, status]) // Composite: lister's events by status
     @@index([date, status]) // Composite: upcoming approved events
+    @@index([listerId, createdAt]) // For lister's recent events - PERFORMANCE
 }
 
 model CustomField {
@@ -258,6 +260,8 @@ model Ticket {
     @@index([eventEventId, status]) // Composite: event tickets by status
     @@index([eventEventId, checkedIn]) // Composite: event check-in status
     @@index([qrCode]) // Fast QR code lookup (already unique, but explicit index helps)
+    @@index([eventEventId, status, createdAt]) // For event ticket queries with sorting - PERFORMANCE
+    @@index([ticketTypeId, status]) // For ticket type aggregations - PERFORMANCE
 }
 
 model AttendeeFieldResponse {
