@@ -879,7 +879,6 @@ export class EventService {
         `Fetched ${ticketedUsers.length} ticket holders for event "${event_data}"`,
       );
 
-      // Send email to each user (mocked here)
       // also not the one who has already been mailed
 
       for (const user of ticketedUsers) {
