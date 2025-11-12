@@ -56,6 +56,7 @@ type EventPublic = {
   CustomField: CustomField[];
   chips: string[];
   tags?: string[];
+  canBuy?: boolean;
   lister?: { bio?: string };
   _count?: { DiscountCode?: number };
 };
@@ -1100,7 +1101,15 @@ export default function EventClient({
         </div>
         <button
           onClick={openModal}
-          className="bg-[#FFE348] md:py-7 py-5 rounded-full w-full border-b-3 border-[#FFDA0A] cursor-pointer relative overflow-hidden"
+          className={`md:py-7 py-5 rounded-full w-full border-b-3 cursor-pointer relative overflow-hidden
+    ${
+      isPastEvent
+        ? "bg-[#D3D3D3] border-[#B0B0B0] text-[#666]"
+        : (ev.capacity !== null && ev.capacity <= 0) || ev.canBuy === false
+          ? "bg-[#FF6B6B] border-[#E60000] !text-white"
+          : "bg-[#FFE348] border-[#FFDA0A] text-black"
+    } 
+  `}
           style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
           disabled={!ev.TicketType || ev.TicketType.length === 0 || isPastEvent}
         >
@@ -1122,9 +1131,19 @@ export default function EventClient({
             />
           </motion.div>
           <div className="flex justify-center items-center gap-2">
-            <img src="/svgs/ticket.svg" alt="" width={24} height={24} />
-            <h2 className="z-10">
-              {isPastEvent ? "Event Ended" : "Book Ticket"}
+            {ev.capacity !== null && ev.capacity <= 0 ? null : ev.canBuy ===
+              false ? null : (
+              <img src="/svgs/ticket.svg" alt="" width={24} height={24} />
+            )}
+
+            <h2 className="z-10 ">
+              {isPastEvent
+                ? "Event Ended"
+                : ev.capacity !== null && ev.capacity <= 0
+                  ? "SOLD OUT"
+                  : ev.canBuy === false
+                    ? "SOLD OUT"
+                    : "Book Ticket"}
             </h2>
           </div>
         </button>
