@@ -13,6 +13,7 @@ interface Event {
   date: string;
   TicketType?: Array<{ price: number }>;
   discountedPrice?: string | number;
+  canBuy?: boolean;
 }
 
 interface EventsListProps {
@@ -40,6 +41,7 @@ export const EventsList = memo(
                     : 0
                 }
                 imageUrl={ev.banner_horizontal}
+                canBuy={ev.canBuy}
                 title={ev.title}
                 location={ev.location}
                 date={ev.date}
