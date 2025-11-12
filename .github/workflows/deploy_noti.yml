@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'servers/**'
 
 env:
   DOCKER_REPOSITORY: ${{ secrets.DOCKER_REPOSITORY }}
