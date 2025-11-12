@@ -41,7 +41,7 @@ const formatDate = (dateString: string): string => {
 };
 
 const EventCard: React.FC<EventCardProps> = memo(
-  ({ imageUrl, title, date, location, price, discountedPrice }) => {
+  ({ imageUrl, title, date, location, price, discountedPrice, canBuy }) => {
     // Memoize formatted date to prevent recalculation on re-renders
     const formattedDate = useMemo(() => formatDate(date), [date]);
 
@@ -69,7 +69,7 @@ const EventCard: React.FC<EventCardProps> = memo(
             r1={0.02}
             r2={0.1}
           >
-            <div className="md:h-[20.069vw] h-[50.256vw] overflow-hidden">
+            <div className="md:h-[20.069vw] h-[50.256vw] overflow-hidden relative">
               <Image
                 src={imageUrl}
                 alt={`${title} event image`}
@@ -80,6 +80,12 @@ const EventCard: React.FC<EventCardProps> = memo(
                 sizes="(max-width: 768px) 91.8vw, 36.25vw"
                 quality={85}
               />
+
+              {!canBuy && (
+                <span className="absolute top-0 right-0 text-white !text-xl bg-[#FF6363] px-4 py-2 rounded-l-full">
+                  SOLD OUT
+                </span>
+              )}
             </div>
           </Superellipse>
 
