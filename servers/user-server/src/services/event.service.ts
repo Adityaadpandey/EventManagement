@@ -375,7 +375,7 @@ export class EventService {
             e."banner_horizontal",
             e."banner_vertical",
             e."banner_square",
-            e.canBuy,
+            e."canBuy",
             (
               6371 * acos(
                 cos(radians(${latitude})) *
