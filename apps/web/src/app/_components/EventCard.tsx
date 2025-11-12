@@ -81,7 +81,7 @@ const EventCard: React.FC<EventCardProps> = memo(
                 quality={85}
               />
 
-              {!canBuy && (
+              {canBuy === false && (
                 <span className="absolute top-0 right-0 text-white !text-xl bg-[#FF6363] px-4 py-2 rounded-l-full">
                   SOLD OUT
                 </span>
