@@ -75,7 +75,7 @@ h1 {
 }
 
 h2 {
-  color: var(--color-neutral-dark3);
+  /* color: var(--color-neutral-dark3); */
   font-feature-settings: "liga" off;
   letter-spacing: -1%;
   line-height: none;
