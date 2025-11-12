@@ -1,8 +1,6 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { redis } from "../config/redis";
-import { sendEmail } from "../lib/mail";
-import { CreateEventRequest } from "../types/event";
 import {
   getEventAnalyticsCache,
   getListerEventsCache,
@@ -12,6 +10,8 @@ import {
   setListerEventsCache,
   setPublicEventCache,
 } from "../lib/cache";
+import { sendEmail } from "../lib/mail";
+import { CreateEventRequest } from "../types/event";
 
 export class EventService {
   async createEvent(userId: string, eventData: CreateEventRequest) {
@@ -274,7 +274,7 @@ export class EventService {
     const locationKey = hasValidLocation
       ? `${latitude!.toFixed(3)}_${longitude!.toFixed(3)}_${includeGlobalEvents}`
       : "all";
-    const cacheKey = `public-events:v2:${locationKey}:${cursor || "first"}:${limit}:${includeAll}`;
+    const cacheKey = `public-events:v3:${locationKey}:${cursor || "first"}:${limit}:${includeAll}`;
 
     try {
       // 1. Try cache first
@@ -289,20 +289,16 @@ export class EventService {
       // 2. Build query conditions
       const oneDayAgo = new Date();
       oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-      oneDayAgo.setHours(0, 0, 0, 0); // Reset to start of day
-
-      const baseWhere = {
-        status: "APPROVED" as const,
-        date: {
-          gte: oneDayAgo, // Show events from 1 day ago onwards
-        },
-      };
+      oneDayAgo.setHours(0, 0, 0, 0);
 
       // If includeAll is true, fetch all events without location filtering
       if (includeAll) {
         const allEvents = await prisma.event.findMany({
-          where: baseWhere,
-          take: limit + 1, // Fetch one extra to determine if there's a next page
+          where: {
+            status: "APPROVED",
+            date: { gte: oneDayAgo },
+          },
+          take: limit + 1,
           ...(cursor && {
             cursor: { eventId: cursor },
             skip: 1,
@@ -358,75 +354,89 @@ export class EventService {
       let locationEvents: any[] = [];
       let globalEvents: any[] = [];
 
-      // 3. Fetch location-based events if location is provided
+      // 3. Fetch location-based events using database distance calculation
       if (hasValidLocation) {
         const radiusKm = 300;
-        const latDelta = radiusKm / 111; // degrees latitude
-        const lonDelta =
-          radiusKm / (111 * Math.cos((latitude! * Math.PI) / 180)); // degrees longitude
 
-        const locationWhere = {
-          ...baseWhere,
-          latitude: {
-            gte: latitude! - latDelta,
-            lte: latitude! + latDelta,
-            not: null,
-          },
-          longitude: {
-            gte: longitude! - lonDelta,
-            lte: longitude! + lonDelta,
-            not: null,
-          },
-        };
+        locationEvents = await prisma.$queryRaw<any[]>`
+          SELECT
+            e."eventId",
+            e.title,
+            e.description,
+            e.date,
+            e.time,
+            e.chips,
+            e.restrictions,
+            e.longitude,
+            e.latitude,
+            e.tags,
+            e.location,
+            e.capacity,
+            e."banner_horizontal",
+            e."banner_vertical",
+            e."banner_square",
+            (
+              6371 * acos(
+                cos(radians(${latitude})) *
+                cos(radians(e.latitude)) *
+                cos(radians(e.longitude) - radians(${longitude})) +
+                sin(radians(${latitude})) *
+                sin(radians(e.latitude))
+              )
+            ) as distance
+          FROM "Event" e
+          WHERE e.status = 'APPROVED'
+            AND e.date >= ${oneDayAgo}
+            AND e.latitude IS NOT NULL
+            AND e.longitude IS NOT NULL
+            AND (
+              6371 * acos(
+                cos(radians(${latitude})) *
+                cos(radians(e.latitude)) *
+                cos(radians(e.longitude) - radians(${longitude})) +
+                sin(radians(${latitude})) *
+                sin(radians(e.latitude))
+              )
+            ) <= ${radiusKm}
+          ORDER BY distance ASC, e.date ASC
+          LIMIT ${limit * 2}
+        `;
 
-        locationEvents = await prisma.event.findMany({
-          where: locationWhere,
-          take: limit * 2, // Fetch more for distance filtering
-          ...(cursor && {
-            cursor: { eventId: cursor },
-            skip: 1,
-          }),
-          orderBy: [
-            { date: "asc" }, // Prioritize upcoming events
-            { eventId: "asc" },
-          ],
-          select: this.getEventSelectFields(),
-        });
+        // Fetch related data for location events
+        if (locationEvents.length > 0) {
+          const eventIds = locationEvents.map((e) => e.eventId);
+          const eventsWithRelations = await prisma.event.findMany({
+            where: { eventId: { in: eventIds } },
+            select: this.getEventSelectFields(),
+          });
 
-        // Filter by precise distance and add distance field
-        locationEvents = locationEvents
-          .map((event) => {
-            const distance = this.calculateDistance(
-              latitude!,
-              longitude!,
-              event.latitude!,
-              event.longitude!,
+          // Merge distance data with full event data
+          locationEvents = locationEvents.map((locEvent) => {
+            const fullEvent = eventsWithRelations.find(
+              (e) => e.eventId === locEvent.eventId,
             );
-            return { ...event, distance };
-          })
-          .filter((event) => event.distance <= radiusKm)
-          .sort((a, b) => a.distance - b.distance); // Sort by distance
+            return { ...fullEvent, distance: locEvent.distance };
+          });
+        }
 
         logger.info(
-          `Found ${locationEvents.length} location-based events within ${radiusKm}km`,
+          `Found ${locationEvents.length} location-based events within ${radiusKm}km using DB distance calc`,
         );
       }
 
       // 4. Fetch global events (events without coordinates) if requested
       if (includeGlobalEvents) {
-        const globalWhere = {
-          ...baseWhere,
-          OR: [{ latitude: null }, { longitude: null }],
-        };
-
         globalEvents = await prisma.event.findMany({
-          where: globalWhere,
-          take: hasValidLocation ? Math.ceil(limit / 3) : limit, // Fewer global events if location-based search
+          where: {
+            status: "APPROVED",
+            date: { gte: oneDayAgo },
+            OR: [{ latitude: null }, { longitude: null }],
+          },
+          take: hasValidLocation ? Math.ceil(limit / 3) : limit,
           orderBy: [{ date: "asc" }, { eventId: "asc" }],
           select: this.getEventSelectFields(),
         });
 
-        // Add distance field for consistency (null for global events)
         globalEvents = globalEvents.map((event) => ({
           ...event,
           distance: null,
@@ -438,19 +448,17 @@ export class EventService {
       // 5. Combine and sort events
       let allEvents = [...locationEvents, ...globalEvents];
 
-      // Sort combined events: location-based first (by distance), then global (by date)
+      // Sort: location-based first (by distance), then global (by date)
       allEvents.sort((a, b) => {
-        // Location events come first, sorted by distance
         if (a.distance !== null && b.distance !== null) {
           return a.distance - b.distance;
         }
         if (a.distance !== null && b.distance === null) {
-          return -1; // Location events before global
+          return -1;
         }
         if (a.distance === null && b.distance !== null) {
-          return 1; // Global events after location
+          return 1;
         }
-        // Both are global events, sort by date
         return new Date(a.date).getTime() - new Date(b.date).getTime();
       });
 
@@ -462,12 +470,10 @@ export class EventService {
           ? paginatedEvents[paginatedEvents.length - 1].eventId
           : null;
 
-      // 7. Enhance events with additional computed fields
+      // 7. Enhance events with computed fields
       const enhancedEvents = paginatedEvents.map((event) => ({
         ...event,
-        // Remove distance from final response (used only for sorting)
-        distance: undefined,
-        // Add computed fields
+        distance: undefined, // Remove from response
         isGlobalEvent: event.latitude === null || event.longitude === null,
         minPrice: Math.min(...event.TicketType.map((t: any) => t.price)),
         maxPrice: Math.max(...event.TicketType.map((t: any) => t.price)),
@@ -475,7 +481,6 @@ export class EventService {
           (sum: number, t: any) => sum + t.quantity,
           0,
         ),
-        // Format date for better UX
         formattedDate: new Date(event.date).toLocaleDateString(),
         formattedTime: new Date(event.time).toLocaleTimeString([], {
           hour: "2-digit",
@@ -497,7 +502,7 @@ export class EventService {
       };
 
       // 8. Cache with appropriate TTL
-      const ttl = hasValidLocation ? 60 : 120; // Longer cache for location searches
+      const ttl = hasValidLocation ? 60 : 120;
       await redis.set(cacheKey, JSON.stringify(result), "EX", ttl);
 
       logger.info(
@@ -557,7 +562,6 @@ export class EventService {
   async getListerEvents(userId: string) {
     try {
       // Try cache first
-
       const cached = await getListerEventsCache(userId);
       if (cached) {
         logger.info(`Lister events cache hit for user ${userId}`);
@@ -906,37 +910,16 @@ export class EventService {
     }
   }
 
-  // Helper method for calculating distance (Haversine formula)
-  private calculateDistance(
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number,
-  ): number {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
-
   async getEventAnalytics(userId: string, eventId: string) {
     try {
       // Try cache first (short TTL for analytics)
-
       const cached = await getEventAnalyticsCache(eventId);
       if (cached) {
         logger.info(`Event analytics cache hit for ${eventId}`);
         return cached;
       }
 
-      // Fetch event data with tickets to calculate real-time revenue
+      // OPTIMIZED: Lightweight ownership check first
       const event = await prisma.event.findUnique({
         where: { eventId },
         select: {
@@ -967,25 +950,6 @@ export class EventService {
               lastUpdated: true,
             },
           },
-          Ticket: {
-            where: { status: "SUCCESS" },
-            select: {
-              quantity: true,
-              totalPrice: true,
-              ticketType: {
-                select: {
-                  platformfee: true,
-                },
-              },
-            },
-          },
-          _count: {
-            select: {
-              Ticket: {
-                where: { status: "SUCCESS" },
-              },
-            },
-          },
         },
       });
 
@@ -999,20 +963,33 @@ export class EventService {
         );
       }
 
-      // Calculate real-time revenue with correct platform fee deduction
-      const realTimeRevenue = event.Ticket.reduce((sum, ticket) => {
-        // If platform fee exists, subtract it; if 0, subtract 5% of total price
-        const platformFee =
-          ticket.ticketType.platformfee > 0
-            ? ticket.ticketType.platformfee * ticket.quantity
-            : ticket.totalPrice * 0.05;
-        const actualRevenue = ticket.totalPrice - platformFee;
-        return sum + actualRevenue;
-      }, 0);
+      // OPTIMIZED: Use database aggregation for real-time revenue calculation
+      const ticketStats = await prisma.$queryRaw<
+        Array<{
+          totalTickets: bigint;
+          totalRevenue: number;
+          ticketRecords: bigint;
+        }>
+      >`
+        SELECT
+          COALESCE(SUM(t.quantity), 0)::bigint as "totalTickets",
+          COALESCE(SUM(
+            CASE
+              WHEN tt.platformfee > 0
+              THEN t."totalPrice" - (tt.platformfee * t.quantity)
+              ELSE t."totalPrice" * 0.95
+            END
+          ), 0)::float as "totalRevenue",
+          COUNT(t."ticketId")::bigint as "ticketRecords"
+        FROM "Ticket" t
+        INNER JOIN "TicketType" tt ON t."ticketTypeId" = tt."ticketTypeId"
+        WHERE tt."eventId" = ${eventId}
+          AND t.status = 'SUCCESS'
+      `;
 
-      const realTimeTicketsSold = event.Ticket.reduce(
-        (sum, ticket) => sum + ticket.quantity,
-        0,
+      const realTimeTicketsSold = Number(ticketStats[0]?.totalTickets || 0);
+      const realTimeRevenue = parseFloat(
+        (ticketStats[0]?.totalRevenue || 0).toFixed(2),
       );
 
       // Read from EventAnalytics table (kept in sync by worker)
@@ -1020,17 +997,15 @@ export class EventService {
 
       if (!analytics) {
         // If analytics don't exist yet, use real-time calculations
-        const conversionRate = 0; // No analytics record yet
-
         return {
           eventId: event.eventId,
           title: event.title,
-          views: 0, // No analytics record yet
+          views: 0,
           clicks: 0,
           ticketsSold: realTimeTicketsSold,
-          revenue: parseFloat(realTimeRevenue.toFixed(2)),
-          conversionRate,
-          totalTickets: event._count.Ticket,
+          revenue: realTimeRevenue,
+          conversionRate: 0,
+          totalTickets: Number(ticketStats[0]?.ticketRecords || 0),
           total_tickets: event.ticketCounter || 0,
           capacity: event.capacity,
           capacityUtilization: event.capacity
@@ -1040,7 +1015,6 @@ export class EventService {
             : null,
           eventDate: event.date,
           lastUpdated: new Date(),
-          // Daily analytics (empty if no analytics record)
           viewsByDay: {},
           clicksByDay: {},
           salesByDay: {},
@@ -1063,7 +1037,7 @@ export class EventService {
         views: analytics.views || 0,
         clicks: analytics.clicks || 0,
         ticketsSold: realTimeTicketsSold,
-        revenue: parseFloat(realTimeRevenue.toFixed(2)),
+        revenue: realTimeRevenue,
         conversionRate,
         total_tickets: event.ticketCounter || 0,
         capacity: event.capacity,
@@ -1074,7 +1048,6 @@ export class EventService {
           : null,
         eventDate: event.date,
         lastUpdated: analytics.lastUpdated || new Date(),
-        // Daily analytics data from EventAnalytics
         viewsByDay: analytics.viewsByDay || {},
         clicksByDay: analytics.clicksByDay || {},
         salesByDay: analytics.salesByDay || {},
