@@ -1,11 +1,11 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import {
-  setUserCache,
-  invalidateUserCaches,
-  getListerCache,
-  setListerCache,
   delListerCache,
+  getListerCache,
+  invalidateUserCaches,
+  setListerCache,
+  setUserCache,
 } from "../lib/cache";
 
 export class ListerServer {
@@ -358,76 +358,61 @@ export class ListerServer {
 
       const { listerId } = lister;
 
-      // Get all events with their tickets - calculate from real data
-      const events = await prisma.event.findMany({
-        where: { listerId },
-        select: {
-          eventId: true,
-          Ticket: {
-            where: { status: "SUCCESS" },
-            select: {
-              quantity: true,
-              totalPrice: true,
-              ticketType: {
-                select: {
-                  platformfee: true,
-                },
-              },
+      // OPTIMIZED: Aggregate from EventAnalytics (already kept in sync by payment.service)
+      // This is MUCH faster than querying all tickets
+      const [totalEvents, analyticsSum] = await Promise.all([
+        // Count total events
+        prisma.event.count({
+          where: { listerId },
+        }),
+        // Aggregate revenue and tickets from EventAnalytics
+        prisma.eventAnalytics.aggregate({
+          where: {
+            event: {
+              listerId,
             },
           },
-        },
-      });
+          _sum: {
+            revenue: true,
+            ticketsSold: true,
+          },
+        }),
+      ]);
 
-      // Calculate real-time totals from actual ticket data
-      let totalRevenue = 0;
-      let totalTicketsSold = 0;
+      const totalRevenue = parseFloat(
+        (analyticsSum._sum.revenue || 0).toFixed(2),
+      );
+      const totalTicketsSold = analyticsSum._sum.ticketsSold || 0;
 
-      events.forEach((event) => {
-        const eventTicketsSold = event.Ticket.reduce(
-          (sum, ticket) => sum + ticket.quantity,
-          0,
-        );
-        const eventRevenue = event.Ticket.reduce((sum, ticket) => {
-          // Calculate actual revenue by subtracting platform fees
-          // If platform fee exists, subtract it; if 0, subtract 5% of total price
-          const platformFee =
-            ticket.ticketType.platformfee > 0
-              ? ticket.ticketType.platformfee * ticket.quantity
-              : ticket.totalPrice * 0.05;
-          const actualRevenue = ticket.totalPrice - platformFee;
-          return sum + actualRevenue;
-        }, 0);
-
-        totalTicketsSold += eventTicketsSold;
-        totalRevenue += eventRevenue;
-      });
-
-      logger.info("Real-time Lister Stats:", {
-        totalEvents: events.length,
+      logger.info("Lister analytics aggregated from EventAnalytics:", {
+        totalEvents,
         totalTicketsSold,
         totalRevenue,
       });
 
-      // UPDATE: Sync calculated values back to ListerAnalytics table
-      await prisma.listerAnalytics.upsert({
-        where: { listerId },
-        create: {
-          listerId,
-          totalEvents: events.length,
-          totalRevenue: parseFloat(totalRevenue.toFixed(2)),
-          totalTicketsSold,
-        },
-        update: {
-          totalEvents: events.length,
-          totalRevenue: parseFloat(totalRevenue.toFixed(2)),
-          totalTicketsSold,
-          lastUpdated: new Date(),
-        },
-      });
+      prisma.listerAnalytics
+        .upsert({
+          where: { listerId },
+          create: {
+            listerId,
+            totalEvents,
+            totalRevenue,
+            totalTicketsSold,
+          },
+          update: {
+            totalEvents,
+            totalRevenue,
+            totalTicketsSold,
+            lastUpdated: new Date(),
+          },
+        })
+        .catch((err) =>
+          logger.warn("Failed to update ListerAnalytics cache:", err),
+        );
 
       return {
-        totalEvents: events.length,
-        totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+        totalEvents,
+        totalRevenue,
         totalTicketsSold,
         lastUpdated: new Date(),
         lister: {
@@ -445,6 +430,7 @@ export class ListerServer {
 
   async getEventAttendeeTicketsDetails(eventId: string, userId: string) {
     try {
+      // Verify event ownership first (lightweight query)
       const event = await prisma.event.findFirst({
         where: {
           eventId,
@@ -465,55 +451,6 @@ export class ListerServer {
               ticketTypeId: true,
             },
           },
-          TicketType: {
-            select: {
-              ticketTypeId: true,
-              name: true,
-              description: true,
-              price: true,
-              discountedPrice: true,
-              quantity: true,
-              soldCount: true,
-              platformfee: true,
-              Ticket: {
-                where: { status: "SUCCESS" },
-                select: {
-                  ticketId: true,
-                  quantity: true,
-                  totalPrice: true,
-                  qrCode: true,
-                  checkedIn: true,
-                  createdAt: true,
-                  user: {
-                    select: {
-                      userId: true,
-                      name: true,
-                      email: true,
-                      phone: true,
-                      avatar: true,
-                    },
-                  },
-                  AttendeeFieldResponse: {
-                    select: {
-                      responseId: true,
-                      value: true,
-                      createdAt: true,
-                      field: {
-                        select: {
-                          fieldId: true,
-                          label: true,
-                          fieldType: true,
-                          required: true,
-                        },
-                      },
-                    },
-                  },
-                },
-                orderBy: { createdAt: "desc" },
-              },
-            },
-            orderBy: { price: "asc" },
-          },
         },
       });
 
@@ -524,75 +461,140 @@ export class ListerServer {
         throw new Error("Access Denied or Event not found");
       }
 
-      // 🧠 Group by Ticket Type (already done by Prisma)
-      const ticketTypesSummary = event.TicketType.map((ticketType) => {
-        const tickets = ticketType.Ticket.map((ticket) => {
-          // Convert attendee responses into a key-value map
-          const attendeeResponses = ticket.AttendeeFieldResponse.reduce(
-            (acc, response) => {
-              acc[response.field.label] = {
-                fieldId: response.field.fieldId,
-                value: response.value,
-                fieldType: response.field.fieldType,
-                required: response.field.required,
-              };
-              return acc;
+      // OPTIMIZED: Get ticket types with aggregated statistics using raw SQL
+      let ticketTypesWithStats: Array<{
+        ticketTypeId: string;
+        name: string;
+        description: string | null;
+        price: number;
+        discountedPrice: number | null;
+        quantity: number;
+        platformfee: number;
+        totalTicketsSold: bigint;
+        totalTicketRecords: bigint;
+        checkedInCount: bigint;
+        totalRevenue: number;
+      }>;
+
+      ticketTypesWithStats = await prisma.$queryRaw`
+          SELECT
+            tt."ticketTypeId",
+            tt.name,
+            tt.description,
+            tt.price,
+            tt."discountedPrice",
+            tt.quantity,
+            tt.platformfee,
+            COALESCE(SUM(t.quantity), 0)::bigint as "totalTicketsSold",
+            COUNT(t."ticketId")::bigint as "totalTicketRecords",
+            COALESCE(SUM(CASE WHEN t."checkedIn" = true THEN t.quantity ELSE 0 END), 0)::bigint as "checkedInCount",
+            COALESCE(SUM(
+              CASE
+                WHEN tt.platformfee > 0
+                THEN t."totalPrice" - (tt.platformfee * t.quantity)
+                ELSE t."totalPrice" * 0.95
+              END
+            ), 0)::float as "totalRevenue"
+          FROM "TicketType" tt
+          LEFT JOIN "Ticket" t ON tt."ticketTypeId" = t."ticketTypeId" AND t.status = 'SUCCESS'
+          WHERE tt."eventId" = ${eventId}
+          GROUP BY tt."ticketTypeId", tt.name, tt.description, tt.price, tt."discountedPrice", tt.quantity, tt.platformfee
+          ORDER BY tt.price ASC
+        `;
+
+      // Calculate pagination (skip if fetchAll is true)
+
+      // Fetch tickets with details (all or paginated)
+      const ticketTypesSummary = await Promise.all(
+        ticketTypesWithStats.map(async (ticketType) => {
+          const tickets = await prisma.ticket.findMany({
+            where: {
+              ticketTypeId: ticketType.ticketTypeId,
+              status: "SUCCESS",
             },
-            {} as Record<string, any>,
-          );
+            select: {
+              ticketId: true,
+              quantity: true,
+              totalPrice: true,
+              qrCode: true,
+              checkedIn: true,
+              createdAt: true,
+              user: {
+                select: {
+                  userId: true,
+                  name: true,
+                  email: true,
+                  phone: true,
+                  avatar: true,
+                },
+              },
+              AttendeeFieldResponse: {
+                select: {
+                  responseId: true,
+                  value: true,
+                  createdAt: true,
+                  field: {
+                    select: {
+                      fieldId: true,
+                      label: true,
+                      fieldType: true,
+                      required: true,
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+          });
+
+          const totalTicketsForType = Number(ticketType.totalTicketRecords);
+
+          const formattedTickets = tickets.map((ticket) => {
+            const attendeeResponses = ticket.AttendeeFieldResponse.reduce(
+              (acc, response) => {
+                acc[response.field.label] = {
+                  fieldId: response.field.fieldId,
+                  value: response.value,
+                  fieldType: response.field.fieldType,
+                  required: response.field.required,
+                };
+                return acc;
+              },
+              {} as Record<string, any>,
+            );
+
+            return {
+              ticketId: ticket.ticketId,
+              qrCode: ticket.qrCode,
+              quantity: ticket.quantity,
+              totalPrice: ticket.totalPrice,
+              checkedIn: ticket.checkedIn,
+              purchaseDate: ticket.createdAt,
+              buyer: ticket.user,
+              attendeeFields: attendeeResponses,
+            };
+          });
 
           return {
-            ticketId: ticket.ticketId,
-            qrCode: ticket.qrCode,
-            quantity: ticket.quantity,
-            totalPrice: ticket.totalPrice,
-            checkedIn: ticket.checkedIn,
-            purchaseDate: ticket.createdAt,
-            buyer: ticket.user,
-            attendeeFields: attendeeResponses,
+            ticketTypeId: ticketType.ticketTypeId,
+            name: ticketType.name,
+            description: ticketType.description,
+            price: ticketType.price,
+            discountedPrice: ticketType.discountedPrice,
+            totalQuantity: ticketType.quantity,
+            soldCount: Number(ticketType.totalTicketsSold),
+            availableCount:
+              ticketType.quantity - Number(ticketType.totalTicketsSold),
+            totalTickets: Number(ticketType.totalTicketsSold),
+            totalTicketRecords: Number(ticketType.totalTicketRecords),
+            checkedInCount: Number(ticketType.checkedInCount),
+            totalRevenue: parseFloat(ticketType.totalRevenue.toFixed(2)),
+            tickets: formattedTickets,
           };
-        });
+        }),
+      );
 
-        // Calculate actual number of people checked in (considering ticket quantity)
-        const checkedInCount = tickets.reduce((sum, t) => {
-          return sum + (t.checkedIn ? t.quantity : 0);
-        }, 0);
-
-        // Calculate actual number of tickets sold for this ticket type
-        const actualTicketsSold = tickets.reduce(
-          (sum, t) => sum + t.quantity,
-          0,
-        );
-
-        const totalRevenue = tickets.reduce((sum, t) => {
-          // Calculate actual revenue by subtracting platform fees
-          // If platform fee exists, subtract it; if 0, subtract 5% of total price
-          const platformFee =
-            ticketType.platformfee > 0
-              ? ticketType.platformfee * t.quantity
-              : t.totalPrice * 0.05;
-          const actualRevenue = t.totalPrice - platformFee;
-          return sum + actualRevenue;
-        }, 0);
-
-        return {
-          ticketTypeId: ticketType.ticketTypeId,
-          name: ticketType.name,
-          description: ticketType.description,
-          price: ticketType.price,
-          discountedPrice: ticketType.discountedPrice,
-          totalQuantity: ticketType.quantity,
-          soldCount: actualTicketsSold, // Use calculated value instead of potentially stale soldCount
-          availableCount: ticketType.quantity - actualTicketsSold,
-          totalTickets: actualTicketsSold, // Actual tickets sold, not number of records
-          totalTicketRecords: tickets.length, // Number of purchase records
-          checkedInCount, // Number of people checked in
-          totalRevenue: parseFloat(totalRevenue.toFixed(2)),
-          tickets,
-        };
-      });
-
-      // 📊 Overall statistics
+      // Calculate overall statistics from aggregated data
       const totalTicketsSold = ticketTypesSummary.reduce(
         (sum, t) => sum + t.totalTickets,
         0,
@@ -631,7 +633,7 @@ export class ListerServer {
                 ? `${((totalCheckedIn / totalTicketsSold) * 100).toFixed(2)}%`
                 : "0%",
           },
-          ticketTypes: ticketTypesSummary, // 👈 grouped neatly by ticket type
+          ticketTypes: ticketTypesSummary,
         },
       };
     } catch (e) {
