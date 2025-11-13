@@ -236,15 +236,6 @@ export const startServer = async () => {
     server.requestTimeout = 120000; // 2 minutes for long-running requests
     server.timeout = 120000; // Socket timeout
 
-    // Optimize max connections
-    server.maxConnections = 10000; // Adjust based on your server capacity
-
-    // Enable TCP keep-alive
-    server.on("connection", (socket) => {
-      socket.setKeepAlive(true, 60000); // Keep alive for 60 seconds
-      socket.setNoDelay(true); // Disable Nagle's algorithm for lower latency
-    });
-
     setupGracefulShutdown(server);
 
     return server;

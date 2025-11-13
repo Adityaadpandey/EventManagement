@@ -1,4 +1,4 @@
-name: Build, Push, and Deploy with Notifications
+name: Build, Push, and Deploy with Notification on Staging Server
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'servers/**'
+      - 'packages/**'
 
 env:
   DOCKER_REPOSITORY: ${{ secrets.DOCKER_REPOSITORY }}
