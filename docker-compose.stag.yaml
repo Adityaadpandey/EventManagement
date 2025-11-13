@@ -35,6 +35,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
   postgres:
     image: postgres:17
     container_name: my_postgres
