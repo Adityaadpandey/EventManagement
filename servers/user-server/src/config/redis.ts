@@ -7,30 +7,13 @@ export const redis = new IORedis(
   config.REDIS_URL || "redis://:cantremember@localhost:6379",
   {
     retryStrategy: (times) => {
-      // Exponential backoff (min 50ms, max 2000ms)
-      const delay = Math.min(times * 50, 2000);
-      if (times > 10) {
-        logger.error("Redis retry limit reached, stopping retries");
-        return null; // Stop retrying after 10 attempts
-      }
+      // Exponential backoff (min 50ms, max 1000ms)
+      const delay = Math.min(times * 50, 1000);
       return delay;
     },
     connectTimeout: 10000,
-    commandTimeout: 5000, // Timeout for individual commands
     db: 0,
     maxRetriesPerRequest: null,
-    enableReadyCheck: true,
-    enableOfflineQueue: true, // Queue commands when disconnected
-    lazyConnect: false, // Connect immediately
-    keepAlive: 30000, // Keep connection alive
-    family: 4, // Use IPv4
-    // Connection pool settings
-    maxLoadingRetryTime: 10000,
-    autoResubscribe: true,
-    autoResendUnfulfilledCommands: true,
-    // Performance optimizations
-    enableAutoPipelining: true, // Automatically pipeline commands
-    autoPipeliningIgnoredCommands: ["ping"], // Don't pipeline ping commands
   },
 );
 
