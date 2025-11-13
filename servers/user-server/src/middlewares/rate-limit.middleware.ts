@@ -1,5 +1,5 @@
 // middlewares/rate-limit.middleware.ts - Enhanced DDoS/DoS Protection
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 import { config } from "../config";
@@ -252,7 +252,11 @@ export const adminLimiter = rateLimit({
   },
 });
 
-export const combinedLimiter = (req: Request, res: Response, next: any) => {
+export const combinedLimiter = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   // Apply burst protection first
   burstLimiter(req, res, (err: any) => {
     if (err) return next(err);
