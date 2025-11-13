@@ -1,7 +1,10 @@
 import { Job, Worker } from "bullmq";
-import logger from "../config/logger";
 import { redis } from "../config/redis";
 import { sendSMS } from "../lib/twilio-sms";
+
+import { getLogger } from "@repo/logger";
+
+const logger: any = getLogger("Phone OTP Worker", "debug");
 
 interface OtpJobData {
   to: string;

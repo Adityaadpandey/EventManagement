@@ -252,11 +252,7 @@ export const adminLimiter = rateLimit({
   },
 });
 
-export const combinedLimiter = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
+export const combinedLimiter = (req: Request, res: Response, next: any) => {
   // Apply burst protection first
   burstLimiter(req, res, (err: any) => {
     if (err) return next(err);

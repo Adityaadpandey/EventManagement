@@ -1,8 +1,10 @@
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import { getLogger } from "@repo/logger";
 import { Job, Worker } from "bullmq";
 import { config } from "../config";
-import logger from "../config/logger";
 import { redis } from "../config/redis";
+
+const logger: any = getLogger("Email Worker", "debug");
 
 // Configure AWS SES client
 const sesClient = new SESClient({
