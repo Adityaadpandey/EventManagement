@@ -156,7 +156,6 @@ app.use(securityMiddleware);
 app.use(combinedLimiter);
 
 app.get("/health", async (_, res: Response) => {
-  const now = Date.now();
   const status = await healthCheck();
   const allHealthy = Object.values(status).every(Boolean);
   const response = {
@@ -176,14 +175,7 @@ app.get("/metrics", async (_, res: Response) => {
   try {
     const metrics = await getDatabaseMetrics();
     return res.json({
-      database: metrics,
-      process: {
-        uptime: process.uptime(),
-        memory: process.memoryUsage(),
-        cpu: process.cpuUsage(),
-        pid: process.pid,
-      },
-      timestamp: new Date().toISOString(),
+      metrics,
     });
   } catch (error) {
     logger.error("Error fetching metrics:", error);
