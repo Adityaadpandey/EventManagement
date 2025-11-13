@@ -18,7 +18,7 @@ export const redis = new IORedis(
     connectTimeout: 10000,
     commandTimeout: 5000, // Timeout for individual commands
     db: 0,
-    maxRetriesPerRequest: 3, // Retry failed commands up to 3 times
+    maxRetriesPerRequest: null,
     enableReadyCheck: true,
     enableOfflineQueue: true, // Queue commands when disconnected
     lazyConnect: false, // Connect immediately
