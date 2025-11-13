@@ -1,10 +1,12 @@
 import "dotenv/config";
 
 import { PrismaClient } from "@repo/database";
+import { getLogger } from "@repo/logger";
 import { parentPort } from "worker_threads";
 import { config } from "../config";
-import logger from "../config/logger";
 import { redis } from "../config/redis";
+
+const logger: any = getLogger("Analytics Worker", "debug");
 
 const prisma = new PrismaClient({
   log: ["error"],

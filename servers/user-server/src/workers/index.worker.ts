@@ -1,7 +1,10 @@
 // src/workers/index.worker.ts
 import path from "path";
 import { Worker as NodeWorker } from "worker_threads";
-import logger from "../config/logger";
+
+import { getLogger } from "@repo/logger";
+
+const logger: any = getLogger("Worker", "debug");
 
 const startWorker = (workerPath: string) => {
   const worker = new NodeWorker(workerPath);
