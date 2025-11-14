@@ -118,6 +118,23 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis/redis-stack:6.2.6-v19
+    container_name: redis
+    environment:
+      REDIS_ARGS: "--requirepass cantremember"
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "cantremember", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
 networks:
   app-network:
     driver: bridge
@@ -137,3 +154,6 @@ volumes:
       o: bind
   nginx-logs:
     driver: local
+  redis_data:
+    driver: local
+    name: redis_data_prod

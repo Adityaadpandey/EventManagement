@@ -44,7 +44,37 @@ export const getLogger = (service: string, level = "debug") => {
 
           // Add remaining metadata
           if (Object.keys(metadata).length > 0) {
-            metaStr += chalk.gray(` ${JSON.stringify(metadata)}`);
+            try {
+              // Safe stringify that handles circular references and errors
+              const safeMetadata = JSON.parse(
+                JSON.stringify(metadata, (key, value) => {
+                  // Handle Error objects
+                  if (value instanceof Error) {
+                    return {
+                      name: value.name,
+                      message: value.message,
+                      stack: value.stack,
+                    };
+                  }
+                  // Skip circular references and complex objects
+                  if (typeof value === "object" && value !== null) {
+                    // Check for circular reference indicators
+                    if (
+                      value.constructor?.name === "IncomingMessage" ||
+                      value.constructor?.name === "ClientRequest" ||
+                      value.req ||
+                      value.res
+                    ) {
+                      return "[Circular]";
+                    }
+                  }
+                  return value;
+                }),
+              );
+              metaStr += chalk.gray(` ${JSON.stringify(safeMetadata)}`);
+            } catch (e) {
+              metaStr += chalk.gray(` [Unable to serialize metadata]`);
+            }
           }
         }
 

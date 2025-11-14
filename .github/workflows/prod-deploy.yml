@@ -1,9 +1,11 @@
-name: Build and Push Docker Image
+name: Pull and Deploy to Production Server
 
 on:
   push:
     branches:
       - production
+    paths:
+      - 'servers/**'
 
 jobs:
 
@@ -29,7 +31,7 @@ jobs:
         with:
           host: api.tixin.in
           username: root
-          key: ${{ secrets.PRODUCTION_SSH_KEY }} 
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
           port: 22
           script_stop: true
           script: |
