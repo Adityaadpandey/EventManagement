@@ -82,7 +82,7 @@ export class TicketService {
         );
 
         if (now >= oneDayBeforeEvent) {
-          throw new Error("Ticket sales close 1 day before the event starts");
+          throw new Error("Ticket sales close 1 day after the event starts");
         }
       } else if (event.date) {
         const eventDate = new Date(event.date);
@@ -92,7 +92,7 @@ export class TicketService {
         );
 
         if (now >= oneDayBeforeEvent) {
-          throw new Error("Ticket sales close 1 day before the event date");
+          throw new Error("Ticket sales close 1 day after the event date");
         }
       }
 
