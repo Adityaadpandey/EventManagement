@@ -1,5 +1,5 @@
 // middlewares/rate-limit.middleware.ts - Enhanced DDoS/DoS Protection
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 import { config } from "../config";

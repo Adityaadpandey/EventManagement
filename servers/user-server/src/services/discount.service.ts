@@ -57,10 +57,10 @@ export class DiscountService {
 
   async getCodeInfoById(code: string, eventId: string) {
     try {
-      // const cache = await getDiscountCache(code,eventId);
-      // if(cache) {
-      //   return cache;
-      // }
+      const cache = await getDiscountCache(code, eventId);
+      if (cache) {
+        return cache;
+      }
 
       const codeInfo = await prisma.discountCode.findFirst({
         where: {
