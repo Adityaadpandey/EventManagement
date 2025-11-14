@@ -347,6 +347,7 @@ export class ListerServer {
           user: {
             select: {
               name: true,
+              userId: true,
             },
           },
         },
@@ -354,6 +355,9 @@ export class ListerServer {
 
       if (!lister?.listerId) {
         throw new Error("User is not a Lister");
+      }
+      if (userId !== lister.user?.userId) {
+        throw new Error("Access Denied");
       }
 
       const { listerId } = lister;
