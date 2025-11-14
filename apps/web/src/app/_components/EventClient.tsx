@@ -212,6 +212,7 @@ export default function EventClient({
 
   const eventDate = new Date(ev.date);
   const currentDate = new Date();
+  currentDate.setDate(currentDate.getDate() + 1);
 
   // Check if the current date is after the event date
   const isPastEvent = currentDate > eventDate;
