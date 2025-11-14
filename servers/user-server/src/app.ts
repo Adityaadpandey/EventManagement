@@ -111,6 +111,7 @@ app.use(compressionMiddleware);
 const allowedOrigins = [
   "https://www.tixin.in",
   "https://stag.tixin.in",
+  "http://localhost:3000",
   ...(config.NODE_ENV !== "production" ? ["http://localhost:3000"] : []),
 ];
 
