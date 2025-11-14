@@ -21,7 +21,7 @@ router.get("/public", eventController.getPublicEvents.bind(eventController));
 router.get(
   "/lister",
   authMiddleware,
-  requireRole(["LISTER"]),
+  requireRole(["LISTER", "ADMIN"]),
   eventController.getListerEvents.bind(eventController),
 );
 
@@ -44,14 +44,14 @@ router.get(
 router.patch(
   "/:eventId",
   authMiddleware,
-  requireRole(["LISTER"]),
+  requireRole(["LISTER", "ADMIN"]),
   eventController.patchEvent.bind(eventController),
 );
 
 router.post(
   "/info-update/:eventId",
   authMiddleware,
-  requireRole(["LISTER"]),
+  requireRole(["LISTER", "ADMIN"]),
   eventController.updateInfo.bind(eventController),
 );
 
