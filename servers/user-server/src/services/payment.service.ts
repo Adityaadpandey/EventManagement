@@ -196,18 +196,47 @@ export class PaymentService {
 
   async handlePaymentFailure(ticketId: string) {
     try {
-      // Update ticket status to FAILED
-      const ticket = await prisma.ticket.update({
+      const ticket = await prisma.ticket.findUnique({
+        where: { ticketId },
+        select: { status: true, ticketId: true },
+      });
+
+      if (!ticket) {
+        logger.warn(
+          `Ticket ${ticketId} not found for payment failure handling`,
+        );
+        return null;
+      }
+
+      // Don't overwrite SUCCESS or FAILED status
+      if (ticket.status === "SUCCESS") {
+        logger.info(
+          `Ticket ${ticketId} already marked as SUCCESS, skipping failure update`,
+        );
+        return ticket;
+      }
+
+      if (ticket.status === "FAILED") {
+        logger.info(
+          `Ticket ${ticketId} already marked as FAILED, skipping duplicate update`,
+        );
+        return ticket;
+      }
+
+      // Only update if status is PENDING or other non-final state
+      const updatedTicket = await prisma.ticket.update({
         where: { ticketId },
         data: { status: "FAILED" },
       });
+
+      logger.info(`Ticket ${ticketId} marked as FAILED`);
 
       // Invalidate ticket cache after status update
       delTicketCache(ticketId).catch(() =>
         logger.warn(`Failed to invalidate cache for ticket: ${ticketId}`),
       );
 
-      return ticket;
+      return updatedTicket;
     } catch (error) {
       logger.error("Error handling payment failure:", error);
       throw error;
