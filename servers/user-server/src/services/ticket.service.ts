@@ -72,19 +72,27 @@ export class TicketService {
 
       // Validate event timing
       const now = new Date();
+
       if (event.date && event.time) {
         const eventStart = new Date(event.time);
-        if (now >= eventStart) {
-          throw new Error(
-            "Ticket sales have closed because the event has already started",
-          );
+
+        // Require eventStart to be at least 1 day from now
+        const oneDayBeforeEvent = new Date(
+          eventStart.getTime() + 24 * 60 * 60 * 1000,
+        );
+
+        if (now >= oneDayBeforeEvent) {
+          throw new Error("Ticket sales close 1 day before the event starts");
         }
       } else if (event.date) {
         const eventDate = new Date(event.date);
-        if (now >= eventDate) {
-          throw new Error(
-            "Ticket sales have closed because the event has already started",
-          );
+
+        const oneDayBeforeEvent = new Date(
+          eventDate.getTime() + 24 * 60 * 60 * 1000,
+        );
+
+        if (now >= oneDayBeforeEvent) {
+          throw new Error("Ticket sales close 1 day before the event date");
         }
       }
 
