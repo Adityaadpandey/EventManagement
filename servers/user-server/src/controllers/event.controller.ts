@@ -250,11 +250,15 @@ export class EventController {
       const eventId = req.params.eventId;
       if (!eventId) return sendError(res, "Event ID is required", 400);
 
-      const update = req.body.update;
+      const { update, imageUrl } = req.body;
       if (!update) return sendError(res, "Update data is required", 400);
 
-      logInfo(req, "Updating event info", { eventId });
-      const result = await this.eventService.updateInfo(eventId, update);
+      logInfo(req, "Updating event info", { eventId, hasImage: !!imageUrl });
+      const result = await this.eventService.updateInfo(
+        eventId,
+        update,
+        imageUrl,
+      );
       return sendSuccess(
         res,
         "Event info update processed",
