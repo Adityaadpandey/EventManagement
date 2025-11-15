@@ -63,6 +63,11 @@
         <blockquote>
             <%= eventUpdate.message %>
         </blockquote>
+        <% if (eventUpdate.imageUrl) { %>
+        <div style="margin: 20px 0; text-align: center;">
+            <img src="<%= eventUpdate.imageUrl %>" alt="Event Update Image" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);" />
+        </div>
+        <% } %>
         <p><em>Update time: <%= eventUpdate.updatedAt %></em></p>
     </div>
 </body>

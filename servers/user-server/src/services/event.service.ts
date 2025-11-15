@@ -854,7 +854,7 @@ export class EventService {
     }
   }
 
-  async updateInfo(eventId: string, update: string) {
+  async updateInfo(eventId: string, update: string, imageUrl?: string) {
     try {
       //  so we need to fetch event ticket bought users and send them the email update so we will need the emails of the users who bought tickets for this event
       const event = await prisma.event.findUnique({
@@ -876,7 +876,7 @@ export class EventService {
       const ticketedUsers = event.Ticket.map((t) => t.user);
       const event_data = event.title;
       logger.info(
-        `Fetched ${ticketedUsers.length} ticket holders for event "${event_data}"`,
+        `Fetched ${ticketedUsers.length} ticket holders for event "${event_data}"${imageUrl ? " with image" : ""}`,
       );
 
       // also not the one who has already been mailed
@@ -896,6 +896,7 @@ export class EventService {
               eventUpdate: {
                 message: update,
                 updatedAt: new Date().toISOString(),
+                imageUrl: imageUrl || undefined,
               },
             },
           },
@@ -904,7 +905,7 @@ export class EventService {
       }
       return {
         success: true,
-        message: `Update sent to ${ticketedUsers.length} ticket holders for event "${event_data}"`,
+        message: `Update sent to ${ticketedUsers.length} ticket holders for event "${event_data}"${imageUrl ? " with image" : ""}`,
       };
     } catch (error) {
       logger.error("Error in updateInfo:", error);
