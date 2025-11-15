@@ -21,6 +21,7 @@ export interface TicketEmailContent {
 export interface EventUpdate {
   message: string;
   updatedAt: string;
+  imageUrl?: string; // Optional image URL for event updates
 }
 
 export interface EventUpdateEmailContent {
