@@ -2,6 +2,9 @@ import type { Response } from "express";
 import { prisma } from "../config/db";
 import { PaymentService } from "../services/payment.service";
 import type { AuthenticatedRequest } from "../types/auth";
+import { isAppError, UnauthorizedError } from "../utils/errors";
+import { formatZodError } from "../utils/formatZodError";
+import { logError, logInfo } from "../utils/logger-context";
 import { sendError, sendSuccess } from "../utils/responseMsg";
 import {
   processRefundSchema,
@@ -9,8 +12,6 @@ import {
   verifyPaymentSchema,
 } from "../validators/payment.validator";
 import { handlePaymentFailureSchema } from "../validators/ticket.validator";
-import { formatZodError } from "../utils/formatZodError";
-import { logError, logInfo } from "../utils/logger-context";
 
 export class PaymentController {
   private paymentService: PaymentService;
@@ -33,6 +34,7 @@ export class PaymentController {
 
       return sendSuccess(res, "Payment verified and ticket confirmed", result);
     } catch (error: any) {
+      logError(req, "Failed to verify payment", error);
       if (error.name === "ZodError") {
         const formattedErrors = formatZodError(error);
         return sendError(
@@ -41,7 +43,9 @@ export class PaymentController {
           400,
         );
       }
-      logError(req, "Failed to verify payment", error);
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to verify payment", 500);
     }
   }
@@ -55,6 +59,10 @@ export class PaymentController {
 
       return sendSuccess(res, "Payment failure handled", result);
     } catch (error: any) {
+      logError(req, "Failed to handle payment failure", error, {
+        ticketId: req.body.ticketId,
+      });
+
       if (error.name === "ZodError") {
         const formattedErrors = formatZodError(error);
         return sendError(
@@ -63,9 +71,9 @@ export class PaymentController {
           400,
         );
       }
-      logError(req, "Failed to handle payment failure", error, {
-        ticketId: req.body.ticketId,
-      });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to handle payment failure", 500);
     }
   }
@@ -73,7 +81,7 @@ export class PaymentController {
   async requestRefund(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.userId;
-      if (!userId) return sendError(res, "User ID is required", 400);
+      if (!userId) throw new UnauthorizedError("User ID is required");
 
       const { ticketId, reason } = requestRefundSchema.parse(req.body);
       // Verify user owns the ticket
@@ -97,6 +105,9 @@ export class PaymentController {
 
       return sendSuccess(res, "Refund request created successfully", result);
     } catch (error: any) {
+      logError(req, "Failed to request refund", error, {
+        ticketId: req.body.ticketId,
+      });
       if (error.name === "ZodError") {
         const formattedErrors = formatZodError(error);
         return sendError(
@@ -105,9 +116,9 @@ export class PaymentController {
           400,
         );
       }
-      logError(req, "Failed to request refund", error, {
-        ticketId: req.body.ticketId,
-      });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to request refund", 500);
     }
   }
@@ -135,6 +146,9 @@ export class PaymentController {
 
       return sendSuccess(res, `Refund ${action}d successfully`, result);
     } catch (error: any) {
+      logError(req, "Failed to process refund", error, {
+        refundId: req.body.refundId,
+      });
       if (error.name === "ZodError") {
         const formattedErrors = formatZodError(error);
         return sendError(
@@ -143,9 +157,9 @@ export class PaymentController {
           400,
         );
       }
-      logError(req, "Failed to process refund", error, {
-        refundId: req.body.refundId,
-      });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to process refund", 500);
     }
   }
@@ -202,6 +216,9 @@ export class PaymentController {
       logError(req, "Failed to fetch refunds", error, {
         eventId: req.params.eventId,
       });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to fetch refunds", 500);
     }
   }

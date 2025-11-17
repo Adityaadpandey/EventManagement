@@ -1,5 +1,6 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { NotFoundError, UnauthorizedError } from "../utils/errors";
 
 export class AdminService {
   async changeUserToListerStatus(
@@ -13,7 +14,9 @@ export class AdminService {
       });
 
       if (!adminUser || adminUser.role !== "ADMIN") {
-        throw new Error("Unauthorized: Only admins can change user roles");
+        throw new UnauthorizedError(
+          "Unauthorized: Only admins can change user roles",
+        );
       }
 
       // Update the user's role
@@ -34,7 +37,7 @@ export class AdminService {
       });
 
       if (!updatedUser) {
-        throw new Error("User not found");
+        throw new NotFoundError("User not found");
       }
 
       return {
@@ -55,7 +58,7 @@ export class AdminService {
       });
 
       if (!adminUser || adminUser.role !== "ADMIN") {
-        throw new Error("Unauthorized: Only admins can view lister requests");
+        throw new UnauthorizedError("Only admins can view lister requests");
       }
 
       // Fetch all users with role 'LISTER'
@@ -104,7 +107,7 @@ export class AdminService {
       });
 
       if (!adminUser || adminUser.role !== "ADMIN") {
-        throw new Error("Unauthorized: Only admins can change event status");
+        throw new UnauthorizedError("Only admins can change event status");
       }
 
       // Update the event's status
@@ -127,7 +130,7 @@ export class AdminService {
       });
 
       if (!updatedEvent) {
-        throw new Error("Event not found");
+        throw new NotFoundError("Event not found");
       }
 
       return {
@@ -148,7 +151,9 @@ export class AdminService {
       });
 
       if (!adminUser || adminUser.role !== "ADMIN") {
-        throw new Error("Unauthorized: Only admins can view pending events");
+        throw new UnauthorizedError(
+          "Unauthorized: Only admins can view pending events",
+        );
       }
 
       // Fetch all events with status 'PENDING'
