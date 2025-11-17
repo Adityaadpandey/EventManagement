@@ -1,19 +1,22 @@
 import type { Request, Response } from "express";
 import { EventService } from "../services/event.service";
+import { PublicEventService } from "../services/publicEvent.service";
 import type { AuthenticatedRequest } from "../types/auth";
+import { formatZodError } from "../utils/formatZodError";
+import { logError, logInfo } from "../utils/logger-context";
 import { sendError, sendSuccess } from "../utils/responseMsg";
 import {
   createEventSchema,
   patchEventSchema,
 } from "../validators/event.validator";
-import { formatZodError } from "../utils/formatZodError";
-import { logError, logInfo } from "../utils/logger-context";
 
 export class EventController {
   private eventService: EventService;
+  private publicEventService: PublicEventService;
 
   constructor() {
     this.eventService = new EventService();
+    this.publicEventService = new PublicEventService();
   }
 
   async createEvent(req: AuthenticatedRequest, res: Response) {
@@ -85,7 +88,7 @@ export class EventController {
         return sendError(res, "Latitude must be between -90 and 90", 400);
       }
 
-      const result = await this.eventService.getPublicEvents(
+      const result = await this.publicEventService.getPublicEvents(
         cursor,
         limit,
         longitude,
