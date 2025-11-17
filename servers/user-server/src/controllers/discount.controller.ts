@@ -1,10 +1,15 @@
 import { Response } from "express";
 import { DiscountService } from "../services/discount.service";
 import { AuthenticatedRequest } from "../types/auth";
-import { sendError, sendSuccess } from "../utils/responseMsg";
-import { createDiscountSchema } from "../validators/discount.validator";
+import {
+  BadRequestError,
+  isAppError,
+  UnauthorizedError,
+} from "../utils/errors";
 import { formatZodError } from "../utils/formatZodError";
 import { logError, logInfo } from "../utils/logger-context";
+import { sendError, sendSuccess } from "../utils/responseMsg";
+import { createDiscountSchema } from "../validators/discount.validator";
 
 export class DiscountController {
   private discountService: DiscountService;
@@ -15,10 +20,10 @@ export class DiscountController {
 
   async createDiscountCode(req: AuthenticatedRequest, res: Response) {
     const userId = req.user?.userId;
-    const { eventId } = req.params;
+    if (!userId) throw new UnauthorizedError("User ID is required");
 
-    if (!userId) return sendError(res, "User ID is required", 400);
-    if (!eventId) return sendError(res, "Event ID is required", 400);
+    const { eventId } = req.params;
+    if (!eventId) throw new BadRequestError("Event ID is required");
 
     try {
       const validatedData = createDiscountSchema.parse(req.body);
@@ -34,6 +39,8 @@ export class DiscountController {
 
       return sendSuccess(res, "Discount code created successfully", result);
     } catch (error: any) {
+      logError(req, "Failed to create discount code", error, { eventId });
+
       if (error.name === "ZodError") {
         const formattedErrors = formatZodError(error);
         return sendError(
@@ -42,16 +49,18 @@ export class DiscountController {
           400,
         );
       }
-      logError(req, "Failed to create discount code", error, { eventId });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to create discount code", 500);
     }
   }
 
   async getDiscountCodesByEvent(req: AuthenticatedRequest, res: Response) {
     const userId = req.user?.userId;
-    const { eventId } = req.params;
+    if (!userId) throw new UnauthorizedError("User ID is required");
 
-    if (!userId) return sendError(res, "User ID is required", 400);
+    const { eventId } = req.params;
     if (!eventId) return sendError(res, "Event ID is required", 400);
 
     try {
@@ -61,15 +70,18 @@ export class DiscountController {
       return sendSuccess(res, "Fetched discount codes successfully", result);
     } catch (error: any) {
       logError(req, "Failed to get discount codes", error, { eventId });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to get discount codes", 500);
     }
   }
 
   async getCodeInfoByCode(req: AuthenticatedRequest, res: Response) {
     const userId = req.user?.userId;
-    const { code, eventId } = req.params;
+    if (!userId) throw new UnauthorizedError("User ID is required");
 
-    if (!userId) return sendError(res, "User ID is required", 400);
+    const { code, eventId } = req.params;
     if (!code) return sendError(res, "Code is required", 400);
     if (!eventId) return sendError(res, "Event ID is required", 400);
 
@@ -86,6 +98,9 @@ export class DiscountController {
         code,
         eventId,
       });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to get discount code info", 500);
     }
   }

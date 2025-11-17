@@ -1,10 +1,16 @@
 import { Response } from "express";
 import { prisma } from "../config/db";
-import logger from "../config/logger";
 import { PromotionsService } from "../services/promotions.service";
 import { AuthenticatedRequest } from "../types/auth";
+import {
+  BadRequestError,
+  ForbiddenError,
+  isAppError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../utils/errors";
+import { logError, logInfo } from "../utils/logger-context";
 import { sendError, sendSuccess } from "../utils/responseMsg";
-import { promotionSchema } from "../validators/promotions.validator";
 
 export class PromotionsController {
   private promotionsService: PromotionsService;
@@ -14,16 +20,17 @@ export class PromotionsController {
   }
 
   async sendPromotion(req: AuthenticatedRequest, res: Response) {
-    const userId = req.user?.userId;
-    if (!userId) return sendError(res, "User ID is required", 400);
-
-    const { eventId } = req.params;
-    if (!eventId) return sendError(res, "Event ID is required", 400);
-
     try {
-      const { content, toEventId, emailTemplate } = promotionSchema.parse(
-        req.body,
-      );
+      const userId = req.user?.userId;
+      if (!userId) throw new UnauthorizedError("User ID is required");
+
+      const { eventId } = req.params;
+      if (!eventId) throw new BadRequestError("Event ID is required");
+
+      // Body validation is now handled by middleware
+      const { content, toEventId, emailTemplate } = req.body;
+
+      logInfo(req, "Sending promotion", { eventId, toEventId });
 
       const result = await this.promotionsService.sendMailToPrev(
         eventId,
@@ -33,43 +40,66 @@ export class PromotionsController {
         userId,
       );
 
-      return sendSuccess(res, "Promotion sent", result);
-    } catch (error) {
-      logger.error("Error in sendPromotion controller:", error);
-      return sendError(res, "Internal server error", 500);
+      return sendSuccess(res, "Promotion sent successfully", result);
+    } catch (error: any) {
+      logError(req, "Failed to send promotion", error, {
+        eventId: req.params.eventId,
+      });
+
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
+      return sendError(res, "Failed to send promotion", 500);
     }
   }
 
   async getPromotionReach(req: AuthenticatedRequest, res: Response) {
-    const userId = req.user?.userId;
-    if (!userId) return sendError(res, "User ID is required", 400);
-
-    const { eventId } = req.params;
-    if (!eventId) return sendError(res, "Event ID is required", 400);
-
-    const { toEventId } = req.query;
-    if (toEventId && typeof toEventId !== "string") {
-      return sendError(res, "toEventId must be a string", 400);
-    }
     try {
+      const userId = req.user?.userId;
+      if (!userId) throw new UnauthorizedError("User ID is required");
+
+      const { eventId } = req.params;
+      if (!eventId) throw new BadRequestError("Event ID is required");
+
+      const { toEventId } = req.query;
+      if (toEventId && typeof toEventId !== "string") {
+        throw new BadRequestError("toEventId must be a string");
+      }
+
       const event = await prisma.event.findUnique({
         where: { eventId },
         select: { listerId: true, lister: { select: { userId: true } } },
       });
 
-      if (!event || event.lister.userId !== userId) {
-        return sendError(res, "Event not found or unauthorized", 404);
+      if (!event) {
+        throw new NotFoundError("Event not found");
       }
+
+      if (event.lister.userId !== userId) {
+        throw new ForbiddenError(
+          "You are not authorized to view this event's promotion reach",
+        );
+      }
+
+      logInfo(req, "Fetching promotion reach", { eventId, toEventId });
 
       const result = await this.promotionsService.getPromotionReach(
         event.listerId,
         toEventId as string | undefined,
       );
 
-      return sendSuccess(res, "Promotion reach fetched", result);
-    } catch (error) {
-      logger.error("Error in getPromotionReach controller:", error);
-      return sendError(res, "Internal server error", 500);
+      return sendSuccess(res, "Promotion reach fetched successfully", result);
+    } catch (error: any) {
+      logError(req, "Failed to get promotion reach", error, {
+        eventId: req.params.eventId,
+      });
+
+      // Let error middleware handle it
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
+
+      return sendError(res, "Failed to get promotion reach", 500);
     }
   }
 }

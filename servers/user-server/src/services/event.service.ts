@@ -12,6 +12,11 @@ import {
 } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
 import { CreateEventRequest } from "../types/event";
+import {
+  NotFoundError,
+  BadRequestError,
+  ForbiddenError,
+} from "../utils/errors";
 
 export class EventService {
   async createEvent(userId: string, eventData: CreateEventRequest) {
@@ -23,15 +28,15 @@ export class EventService {
       });
 
       if (!user) {
-        throw new Error("User not found");
+        throw new NotFoundError("User not found");
       }
 
       if (!user.Lister) {
-        throw new Error("User must be a lister to create events");
+        throw new BadRequestError("User must be a lister to create events");
       }
 
       if (user.Lister.status !== "COMPLETED") {
-        throw new Error(
+        throw new ForbiddenError(
           "Lister profile must be approved before creating events",
         );
       }
@@ -94,7 +99,7 @@ export class EventService {
 
       // Check if event date is in the future
       if (eventDate < new Date()) {
-        throw new Error("Event date must be in the future");
+        throw new BadRequestError("Event date must be in the future");
       }
 
       // Use transaction to ensure data consistency
@@ -738,11 +743,13 @@ export class EventService {
       });
 
       if (!event) {
-        throw new Error("Event not found");
+        throw new NotFoundError("Event not found");
       }
 
       if (event.lister.user.userId !== userId) {
-        throw new Error("You do not have permission to view this event");
+        throw new ForbiddenError(
+          "You do not have permission to view this event",
+        );
       }
 
       // Cache the event details
@@ -775,7 +782,7 @@ export class EventService {
       });
 
       if (!existingEvent) {
-        throw new Error(`Event with ID ${eventId} not found`);
+        throw new NotFoundError(`Event with ID ${eventId} not found`);
       }
 
       // Check if any ticket types have sold tickets
@@ -793,7 +800,7 @@ export class EventService {
         if (hasSoldTickets) {
           // If tickets have been sold, don't allow replacing ticket types
           // Only allow adding new ones
-          throw new Error(
+          throw new BadRequestError(
             "Cannot modify or delete ticket types after tickets have been sold. You can only add new ticket types.",
           );
         } else {
@@ -871,7 +878,7 @@ export class EventService {
       });
 
       if (!event) {
-        throw new Error("Event not found");
+        throw new NotFoundError("Event not found");
       }
 
       const eventTitle = event.title;

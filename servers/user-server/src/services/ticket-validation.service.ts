@@ -3,6 +3,11 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { delTicketCache } from "../lib/cache";
+import {
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../utils/errors";
 
 export class TicketValidationService {
   async checkerLogin(username: string, password: string) {
@@ -39,12 +44,14 @@ export class TicketValidationService {
       });
 
       if (!checker) {
-        throw new Error("Invalid credentials or checker is inactive/expired");
+        throw new UnauthorizedError(
+          "Invalid credentials or checker is inactive/expired",
+        );
       }
 
       const isPasswordValid = await bcrypt.compare(password, checker.password);
       if (!isPasswordValid) {
-        throw new Error("Invalid credentials");
+        throw new UnauthorizedError("Invalid credentials");
       }
 
       // Generate JWT token
@@ -92,7 +99,7 @@ export class TicketValidationService {
       });
 
       if (!checker) {
-        throw new Error("Invalid or expired checker credentials");
+        throw new UnauthorizedError("Invalid or expired checker credentials");
       }
 
       // Find the ticket by QR code
@@ -132,7 +139,7 @@ export class TicketValidationService {
           deviceInfo,
           ipAddress,
         );
-        throw new Error("Invalid ticket QR code");
+        throw new NotFoundError("Invalid ticket QR code");
       }
 
       // Verify ticket is for the correct event (if checker is event-specific)
@@ -149,7 +156,7 @@ export class TicketValidationService {
           deviceInfo,
           ipAddress,
         );
-        throw new Error("Ticket is not valid for this event");
+        throw new BadRequestError("Ticket is not valid for this event");
       }
 
       // Check if ticket payment is successful
@@ -163,7 +170,7 @@ export class TicketValidationService {
           deviceInfo,
           ipAddress,
         );
-        throw new Error("Ticket payment is not completed");
+        throw new NotFoundError("Ticket payment is not completed");
       }
 
       // Check if ticket is already checked in
@@ -259,7 +266,7 @@ export class TicketValidationService {
       });
 
       if (!checker) {
-        throw new Error("Invalid or expired checker credentials");
+        throw new UnauthorizedError("Invalid or expired checker credentials");
       }
 
       // Find and update the ticket
@@ -297,7 +304,6 @@ export class TicketValidationService {
       );
 
       return {
-        success: true,
         message: "Ticket scan reset successfully",
         ticketId: ticket.ticketId,
       };

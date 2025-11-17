@@ -174,9 +174,21 @@ app.use(reqMiddleware);
 // Metrics endpoint for monitoring (with basic auth in production)
 app.get("/metrics", async (_, res: Response) => {
   try {
-    const metrics = await getDatabaseMetrics();
+    const { collectMetrics, formatPrometheusMetrics } = await import(
+      "./utils/metrics"
+    );
+    const dbMetrics = await getDatabaseMetrics();
+    const appMetrics = collectMetrics();
+
+    // Support Prometheus format if requested
+    const acceptHeader = _.get("Accept") || "";
+    if (acceptHeader.includes("text/plain")) {
+      return res.type("text/plain").send(formatPrometheusMetrics(appMetrics));
+    }
+
     return res.json({
-      metrics,
+      database: dbMetrics,
+      application: appMetrics,
     });
   } catch (error) {
     logger.error("Error fetching metrics:", error);

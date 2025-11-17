@@ -1,6 +1,12 @@
 import type { Response } from "express";
 import { TicketService } from "../services/ticket.service";
 import type { AuthenticatedRequest } from "../types/auth";
+import {
+  BadRequestError,
+  ForbiddenError,
+  isAppError,
+  UnauthorizedError,
+} from "../utils/errors";
 import { formatZodError } from "../utils/formatZodError";
 import { logError, logInfo } from "../utils/logger-context";
 import { sendError, sendSuccess } from "../utils/responseMsg";
@@ -16,7 +22,7 @@ export class TicketController {
   async buyTicket(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.userId;
-      if (!userId) return sendError(res, "User ID is required", 400);
+      if (!userId) throw new UnauthorizedError("User ID is required");
 
       const { ticketTypeId, quantity, attendeeData, discountCode } =
         buyTicketSchema.parse(req.body);
@@ -47,14 +53,18 @@ export class TicketController {
       logError(req, "Failed to create ticket", error, {
         ticketTypeId: req.body.ticketTypeId,
       });
-      return sendError(res, "Failed to create ticket", 500, error.message);
+
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
+      return sendError(res, "Failed to create ticket", 500);
     }
   }
 
   async getUserTickets(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.userId;
-      if (!userId) return sendError(res, "User ID is required", 400);
+      if (!userId) throw new UnauthorizedError("User ID is required");
 
       const result = await this.ticketService.getUserTickets(userId);
       return sendSuccess(res, "User tickets fetched successfully", result);
@@ -62,19 +72,21 @@ export class TicketController {
       logError(req, "Failed to fetch user tickets", error, {
         userId: req.user?.userId,
       });
-      return sendError(res, "Failed to fetch user tickets", 500, error.message);
+
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
+      return sendError(res, "Failed to fetch user tickets", 500);
     }
   }
 
   async getTicketBuyersForEvent(req: AuthenticatedRequest, res: Response) {
     try {
-      const { eventId } = req.params;
       const userId = req.user?.userId;
+      if (!userId) throw new UnauthorizedError("User ID is required");
 
-      if (!eventId) {
-        return sendError(res, "Event ID is required", 400);
-      }
-      if (!userId) return sendError(res, "User ID is required", 400);
+      const { eventId } = req.params;
+      if (!eventId) throw new BadRequestError("Event ID is required");
 
       const result = await this.ticketService.getTicketBuyersForEvent(
         eventId,
@@ -86,12 +98,11 @@ export class TicketController {
       logError(req, "Failed to fetch ticket buyers", error, {
         eventId: req.params.eventId,
       });
-      return sendError(
-        res,
-        "Failed to fetch ticket buyers",
-        500,
-        error.message,
-      );
+
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
+      return sendError(res, "Failed to fetch ticket buyers", 500);
     }
   }
 
@@ -101,7 +112,7 @@ export class TicketController {
 
       // Only admins can access all ticket buyers
       if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
-        return sendError(res, "Access denied", 403);
+        throw new ForbiddenError("Access denied");
       }
 
       const result = await this.ticketService.getAllTicketBuyers();
@@ -109,12 +120,11 @@ export class TicketController {
       return sendSuccess(res, "All ticket buyers fetched successfully", result);
     } catch (error: any) {
       logError(req, "Failed to fetch all ticket buyers", error);
-      return sendError(
-        res,
-        "Failed to fetch all ticket buyers",
-        500,
-        error.message,
-      );
+
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
+      return sendError(res, "Failed to fetch all ticket buyers", 500);
     }
   }
 
@@ -122,14 +132,11 @@ export class TicketController {
     try {
       const { ticketId } = req.params;
       const userId = req.user?.userId;
-      if (!userId) {
-        return sendError(res, "User Id is required", 400);
-      }
+      if (!userId) throw new UnauthorizedError("User ID is required");
+
       const userRole = req.user?.role;
 
-      if (!ticketId) {
-        return sendError(res, "Ticket ID is required", 400);
-      }
+      if (!ticketId) throw new BadRequestError("Ticket ID is required");
 
       // Only allow users to see their own tickets unless they're admin
       const searchUserId =
@@ -145,12 +152,11 @@ export class TicketController {
       logError(req, "Failed to fetch ticket details", error, {
         ticketId: req.params.ticketId,
       });
-      return sendError(
-        res,
-        "Failed to fetch ticket details",
-        500,
-        error.message,
-      );
+
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
+      return sendError(res, "Failed to fetch ticket details", 500);
     }
   }
 }
