@@ -75,7 +75,7 @@ export class PromotionsService {
         tickets = await prisma.ticket.findMany({
           where: {
             eventEventId: toEventId,
-            status: "SUCCESS",
+            // status: "SUCCESS",
           },
           include: {
             user: true,
@@ -182,7 +182,6 @@ export class PromotionsService {
       );
 
       return {
-        success: true,
         message: "Promotional emails queued successfully",
         emailsSent: ticketBuyers.length,
         remainingMailUpdates: event.availableMailUpdates - 1,

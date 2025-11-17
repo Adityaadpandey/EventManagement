@@ -856,14 +856,14 @@ export class EventService {
 
   async updateInfo(eventId: string, update: string, imageUrl?: string) {
     try {
-      //  so we need to fetch event ticket bought users and send them the email update so we will need the emails of the users who bought tickets for this event
+      // Fetch event and ticket holders
       const event = await prisma.event.findUnique({
         where: { eventId },
         include: {
           Ticket: {
             include: {
               user: {
-                select: { email: true, name: true },
+                select: { email: true, name: true, userId: true },
               },
             },
           },
@@ -873,15 +873,41 @@ export class EventService {
       if (!event) {
         throw new Error("Event not found");
       }
+
+      const eventTitle = event.title;
+
+      // Extract users from tickets
       const ticketedUsers = event.Ticket.map((t) => t.user);
-      const event_data = event.title;
+
       logger.info(
-        `Fetched ${ticketedUsers.length} ticket holders for event "${event_data}"${imageUrl ? " with image" : ""}`,
+        `Fetched ${ticketedUsers.length} ticket holders for event "${eventTitle}"${
+          imageUrl ? " with image" : ""
+        }`,
       );
 
-      // also not the one who has already been mailed
+      const uniqueUsersMap = new Map<string, { email: string; name: string }>();
 
-      for (const user of ticketedUsers) {
+      ticketedUsers.forEach((u) => {
+        if (!uniqueUsersMap.has(u.userId) && u.email) {
+          uniqueUsersMap.set(u.userId, {
+            email: u.email,
+            name: u.name || "Unknown",
+          });
+        }
+      });
+
+      const uniqueUsers = Array.from(uniqueUsersMap.values());
+
+      if (uniqueUsers.length === 0) {
+        logger.info(`No ticket buyers to send emails to`);
+        return {
+          success: true,
+          message: "No previous buyers to send emails to",
+          emailsSent: 0,
+        };
+      }
+
+      for (const user of uniqueUsers) {
         if (!user.email) {
           logger.warn(`Skipping user ${user.name ?? "Unknown"} — no email`);
           continue;
@@ -889,7 +915,7 @@ export class EventService {
 
         await sendEmail(
           user.email,
-          `Important Update: ${event_data}`,
+          `Important Update: ${eventTitle}`,
           {
             type: "event-update",
             content: {
@@ -897,15 +923,19 @@ export class EventService {
                 message: update,
                 updatedAt: new Date().toISOString(),
                 imageUrl: imageUrl || undefined,
+                eventName: event.title,
+                eventDate: event.date.toISOString().split("T")[0],
+                eventVenue: event.location || undefined,
               },
             },
           },
           user.name ?? "Attendee",
         );
       }
+
       return {
-        success: true,
-        message: `Update sent to ${ticketedUsers.length} ticket holders for event "${event_data}"${imageUrl ? " with image" : ""}`,
+        message: `Update sent to ${uniqueUsers.length} ticket holders for event "${eventTitle}"`,
+        emailsSent: uniqueUsers.length,
       };
     } catch (error) {
       logger.error("Error in updateInfo:", error);
