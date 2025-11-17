@@ -1,6 +1,10 @@
-import { Request, Response } from "express";
+import { Response } from "express";
+import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { PromotionsService } from "../services/promotions.service";
+import { AuthenticatedRequest } from "../types/auth";
+import { sendError, sendSuccess } from "../utils/responseMsg";
+import { promotionSchema } from "../validators/promotions.validator";
 
 export class PromotionsController {
   private promotionsService: PromotionsService;
@@ -9,22 +13,17 @@ export class PromotionsController {
     this.promotionsService = new PromotionsService();
   }
 
-  /**
-   * POST /api/v1/event/:eventId/promote
-   * Send promotional emails to previous ticket buyers
-   */
-  async sendPromotion(req: Request, res: Response) {
-    try {
-      const { eventId } = req.params;
-      const { content, toEventId, emailTemplate } = req.body;
-      const userId = (req as any).user?.userId;
+  async sendPromotion(req: AuthenticatedRequest, res: Response) {
+    const userId = req.user?.userId;
+    if (!userId) return sendError(res, "User ID is required", 400);
 
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Unauthorized",
-        });
-      }
+    const { eventId } = req.params;
+    if (!eventId) return sendError(res, "Event ID is required", 400);
+
+    try {
+      const { content, toEventId, emailTemplate } = promotionSchema.parse(
+        req.body,
+      );
 
       const result = await this.promotionsService.sendMailToPrev(
         eventId,
@@ -34,49 +33,32 @@ export class PromotionsController {
         userId,
       );
 
-      if (!result.success) {
-        return res.status(400).json(result);
-      }
-
-      return res.status(200).json(result);
+      return sendSuccess(res, "Promotion sent", result);
     } catch (error) {
       logger.error("Error in sendPromotion controller:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      return sendError(res, "Internal server error", 500);
     }
   }
 
-  /**
-   * GET /api/v1/event/:eventId/promotion-reach
-   * Get count of potential recipients for a promotion
-   */
-  async getPromotionReach(req: Request, res: Response) {
+  async getPromotionReach(req: AuthenticatedRequest, res: Response) {
+    const userId = req.user?.userId;
+    if (!userId) return sendError(res, "User ID is required", 400);
+
+    const { eventId } = req.params;
+    if (!eventId) return sendError(res, "Event ID is required", 400);
+
+    const { toEventId } = req.query;
+    if (toEventId && typeof toEventId !== "string") {
+      return sendError(res, "toEventId must be a string", 400);
+    }
     try {
-      const { eventId } = req.params;
-      const { toEventId } = req.query;
-      const userId = (req as any).user?.userId;
-
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Unauthorized",
-        });
-      }
-
-      // Get lister ID from event
-      const { prisma } = await import("../config/db");
       const event = await prisma.event.findUnique({
         where: { eventId },
         select: { listerId: true, lister: { select: { userId: true } } },
       });
 
       if (!event || event.lister.userId !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: "Unauthorized to access this event",
-        });
+        return sendError(res, "Event not found or unauthorized", 404);
       }
 
       const result = await this.promotionsService.getPromotionReach(
@@ -84,13 +66,10 @@ export class PromotionsController {
         toEventId as string | undefined,
       );
 
-      return res.status(200).json(result);
+      return sendSuccess(res, "Promotion reach fetched", result);
     } catch (error) {
       logger.error("Error in getPromotionReach controller:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      return sendError(res, "Internal server error", 500);
     }
   }
 }
