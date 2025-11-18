@@ -1,14 +1,15 @@
 import type { Request, Response } from "express";
 import { prisma } from "../config/db";
 import { TicketValidationService } from "../services/ticket-validation.service";
+import { BadRequestError, isAppError } from "../utils/errors";
+import { formatZodError } from "../utils/formatZodError";
+import { logError, logInfo } from "../utils/logger-context";
 import { sendError, sendSuccess } from "../utils/responseMsg";
 import {
   checkerLoginSchema,
   resetTicketScanSchema,
   scanTicketSchema,
 } from "../validators/ticket-validation.validator";
-import { formatZodError } from "../utils/formatZodError";
-import { logError, logInfo } from "../utils/logger-context";
 
 interface CheckerRequest extends Request {
   checker?: {
@@ -37,6 +38,9 @@ export class TicketValidationController {
       );
       return sendSuccess(res, "Login successful", result);
     } catch (error: any) {
+      logError(req, "Checker login failed", error, {
+        username: req.body.username,
+      });
       if (error.name === "ZodError") {
         const formattedErrors = formatZodError(error);
         return sendError(
@@ -45,9 +49,9 @@ export class TicketValidationController {
           400,
         );
       }
-      logError(req, "Checker login failed", error, {
-        username: req.body.username,
-      });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Login failed", 401);
     }
   }
@@ -55,9 +59,8 @@ export class TicketValidationController {
   async scanTicket(req: CheckerRequest, res: Response) {
     try {
       const checkerId = req.checker?.checkerId;
-      if (!checkerId) {
-        return sendError(res, "Checker authentication required", 401);
-      }
+      if (!checkerId)
+        throw new BadRequestError("Checker authentication required");
 
       const { qrCode, deviceInfo, note } = scanTicketSchema.parse(req.body);
 
@@ -79,6 +82,9 @@ export class TicketValidationController {
       }
       return sendError(res, result.message, 400);
     } catch (error: any) {
+      logError(req, "Failed to scan ticket", error, {
+        checkerId: req.checker?.checkerId,
+      });
       if (error.name === "ZodError") {
         const formattedErrors = formatZodError(error);
         return sendError(
@@ -87,9 +93,9 @@ export class TicketValidationController {
           400,
         );
       }
-      logError(req, "Failed to scan ticket", error, {
-        checkerId: req.checker?.checkerId,
-      });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to scan ticket", 500);
     }
   }
@@ -98,10 +104,10 @@ export class TicketValidationController {
     try {
       const checkerId = req.checker?.checkerId;
       if (!checkerId)
-        return sendError(res, "Checker authentication required", 401);
+        throw new BadRequestError("Checker authentication required");
 
       const { ticketId } = req.params;
-      if (!ticketId) return sendError(res, "Ticket ID is required", 400);
+      if (!ticketId) throw new BadRequestError("Ticket ID is required");
 
       const { note } = resetTicketScanSchema.parse(req.body);
 
@@ -113,6 +119,9 @@ export class TicketValidationController {
       );
       return sendSuccess(res, result.message, result);
     } catch (error: any) {
+      logError(req, "Failed to reset ticket scan", error, {
+        ticketId: req.params.ticketId,
+      });
       if (error.name === "ZodError") {
         const formattedErrors = formatZodError(error);
         return sendError(
@@ -121,9 +130,9 @@ export class TicketValidationController {
           400,
         );
       }
-      logError(req, "Failed to reset ticket scan", error, {
-        ticketId: req.params.ticketId,
-      });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to reset ticket scan", 500);
     }
   }
@@ -131,9 +140,8 @@ export class TicketValidationController {
   async getScanHistory(req: CheckerRequest, res: Response) {
     try {
       const checkerId = req.checker?.checkerId;
-      if (!checkerId) {
-        return sendError(res, "Checker authentication required", 401);
-      }
+      if (!checkerId)
+        throw new BadRequestError("Checker authentication required");
 
       const page = Number.parseInt(req.query.page as string) || 1;
       const limit = Number.parseInt(req.query.limit as string) || 20;
@@ -148,6 +156,9 @@ export class TicketValidationController {
       logError(req, "Failed to get scan history", error, {
         checkerId: req.checker?.checkerId,
       });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to get scan history", 500);
     }
   }
@@ -155,9 +166,8 @@ export class TicketValidationController {
   async getCheckerProfile(req: CheckerRequest, res: Response) {
     try {
       const checkerId = req.checker?.checkerId;
-      if (!checkerId) {
-        return sendError(res, "Checker authentication required", 401);
-      }
+      if (!checkerId)
+        throw new BadRequestError("Checker authentication required");
 
       const checker = await prisma.ticketChecker.findUnique({
         where: {
@@ -199,6 +209,9 @@ export class TicketValidationController {
       logError(req, "Failed to get checker profile", error, {
         checkerId: req.checker?.checkerId,
       });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to get checker profile", 500);
     }
   }

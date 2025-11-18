@@ -2,9 +2,14 @@ import type { Response } from "express";
 import { randomUUID } from "node:crypto";
 import { CheckerService } from "../services/checker.service";
 import type { AuthenticatedRequest } from "../types/auth";
-import { sendError, sendSuccess } from "../utils/responseMsg";
+import {
+  BadRequestError,
+  isAppError,
+  UnauthorizedError,
+} from "../utils/errors";
 import { formatZodError } from "../utils/formatZodError";
 import { logError, logInfo } from "../utils/logger-context";
+import { sendError, sendSuccess } from "../utils/responseMsg";
 
 export class CheckerController {
   private checkerService: CheckerService;
@@ -16,12 +21,10 @@ export class CheckerController {
   async createChecker(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.userId;
-      if (!userId) return sendError(res, "User ID is required", 400);
+      if (!userId) throw new UnauthorizedError("User ID is required");
 
       const { eventId } = req.params;
-      if (!eventId) {
-        return sendError(res, "Event ID is required", 400);
-      }
+      if (!eventId) throw new BadRequestError("Event ID is required");
 
       logInfo(req, "Creating checker", { eventId, userId });
       const username = randomUUID().slice(0, 5);
@@ -35,9 +38,13 @@ export class CheckerController {
       );
       const checkerCopy: any = { ...checker };
 
-      checkerCopy.password = password; // Return plain password only on creation
+      checkerCopy.password = password;
       return sendSuccess(res, "Checker created successfully", checkerCopy, 201);
     } catch (error: any) {
+      logError(req, "Failed to create checker", error, {
+        eventId: req.params.eventId,
+      });
+
       if (error.name === "ZodError") {
         const formattedErrors = formatZodError(error);
         return sendError(
@@ -47,9 +54,9 @@ export class CheckerController {
         );
       }
 
-      logError(req, "Failed to create checker", error, {
-        eventId: req.params.eventId,
-      });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to create checker", 500);
     }
   }
@@ -57,12 +64,10 @@ export class CheckerController {
   async getCheckersByEvent(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.userId;
-      if (!userId) return sendError(res, "User ID is required", 400);
+      if (!userId) throw new UnauthorizedError("User ID is required");
 
       const { eventId } = req.params;
-      if (!eventId) {
-        return sendError(res, "Event ID is required", 400);
-      }
+      if (!eventId) throw new BadRequestError("Event ID is required");
 
       const checkers = await this.checkerService.getCheckersByEvent(
         eventId,
@@ -73,6 +78,9 @@ export class CheckerController {
       logError(req, "Failed to get checkers", error, {
         eventId: req.params.eventId,
       });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to get checkers", 500);
     }
   }
@@ -80,9 +88,7 @@ export class CheckerController {
   async getCheckerById(req: AuthenticatedRequest, res: Response) {
     try {
       const { checkerId } = req.params;
-      if (!checkerId) {
-        return sendError(res, "Checker ID is required", 400);
-      }
+      if (!checkerId) throw new BadRequestError("Checker ID is required");
 
       const checker = await this.checkerService.getCheckerById(checkerId);
       return sendSuccess(res, "Checker retrieved successfully", checker);
@@ -90,6 +96,9 @@ export class CheckerController {
       logError(req, "Failed to get checker", error, {
         checkerId: req.params.checkerId,
       });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to get checker", 500);
     }
   }
@@ -97,12 +106,10 @@ export class CheckerController {
   async deleteChecker(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.userId;
-      if (!userId) return sendError(res, "User ID is required", 400);
+      if (!userId) throw new UnauthorizedError("User ID is required");
 
       const { checkerId } = req.params;
-      if (!checkerId) {
-        return sendError(res, "Checker ID is required", 400);
-      }
+      if (!checkerId) throw new BadRequestError("Checker ID is required");
 
       logInfo(req, "Deleting checker", { checkerId, userId });
       const result = await this.checkerService.deleteChecker(checkerId, userId);
@@ -111,6 +118,9 @@ export class CheckerController {
       logError(req, "Failed to delete checker", error, {
         checkerId: req.params.checkerId,
       });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to delete checker", 500);
     }
   }
