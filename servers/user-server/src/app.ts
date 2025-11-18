@@ -32,6 +32,12 @@ import { getDatabaseMetrics } from "./utils/databseMatrices";
 import { setupGracefulShutdown } from "./utils/gracefullShutdown";
 import { healthCheck } from "./utils/healthCheck";
 import { sendError } from "./utils/responseMsg";
+if (process.env.NEW_RELIC_LICENSE_KEY) {
+  require("newrelic");
+  console.log("New Relic agent loaded");
+} else {
+  console.log("New Relic not configured (no license key found)");
+}
 
 const app = express();
 

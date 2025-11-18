@@ -42,6 +42,9 @@ export class TicketController {
         result,
       );
     } catch (error: any) {
+      logError(req, "Failed to create ticket", error, {
+        ticketTypeId: req.body.ticketTypeId,
+      });
       if (error.name === "ZodError") {
         const formattedErrors = formatZodError(error);
         return sendError(
@@ -50,9 +53,6 @@ export class TicketController {
           400,
         );
       }
-      logError(req, "Failed to create ticket", error, {
-        ticketTypeId: req.body.ticketTypeId,
-      });
 
       if (isAppError(error)) {
         return sendError(res, error.message, error.statusCode);
