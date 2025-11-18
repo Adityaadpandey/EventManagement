@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "chalk": "^5.4.1",
+    "newrelic": "^13.6.5",
     "winston": "^3.17.0"
   },
   "devDependencies": {

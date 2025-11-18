@@ -45,11 +45,13 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
       errorId,
       requestId: req.requestId,
       message: err.message,
+      error: err, // Pass the error object for New Relic
       statusCode: err.statusCode,
       isOperational: err.isOperational,
       url: req.originalUrl,
       method: req.method,
       ip: req.ip,
+      userId: (req as any).user?.userId,
       userAgent: req.get("User-Agent"),
       ...(err.statusCode >= 500 && { stack: err.stack }),
     });
@@ -76,6 +78,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     errorId,
     requestId: req.requestId,
     message: err.message,
+    error: err, // Pass the error object for New Relic
     stack: err.stack,
     code: err.code,
     isOperational,
@@ -83,17 +86,22 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     url: req.originalUrl,
     method: req.method,
     ip: req.ip,
+    userId: (req as any).user?.userId,
     userAgent: req.get("User-Agent"),
   });
 
-  // For non-operational errors in production, consider alerting/monitoring
+  // For non-operational errors in production, log as critical
   if (!isOperational && config.NODE_ENV === "production") {
-    // TODO: Send alert to monitoring service (e.g., Sentry, DataDog)
     logger.error("CRITICAL: Non-operational error in production", {
       errorId,
       message: err.message,
+      error: err, // Pass the error object for New Relic
       stack: err.stack,
       code: err.code,
+      critical: true,
+      isOperational: false,
+      requestId: req.requestId,
+      userId: (req as any).user?.userId,
     });
   }
 
