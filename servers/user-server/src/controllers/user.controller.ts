@@ -4,6 +4,7 @@ import type { AuthenticatedRequest } from "../types/auth";
 import { sendError, sendSuccess } from "../utils/responseMsg";
 import { updateUserProfileSchema } from "../validators/user.validator";
 import { logError, logInfo } from "../utils/logger-context";
+import { UnauthorizedError, isAppError } from "../utils/errors";
 
 export class UserController {
   private userService: UserService;
@@ -13,12 +14,10 @@ export class UserController {
   }
 
   async getUserProfile(req: AuthenticatedRequest, res: Response) {
-    const userId = req.user?.userId;
-    if (!userId) {
-      return sendError(res, "User ID is required", 400);
-    }
-
     try {
+      const userId = req.user?.userId;
+      if (!userId) throw new UnauthorizedError("User ID is required");
+
       const userProfile = await this.userService.getUserProfile(userId);
       return sendSuccess(
         res,
@@ -26,20 +25,24 @@ export class UserController {
         userProfile,
       );
     } catch (error: any) {
-      logError(req, "Failed to retrieve user profile", error, { userId });
+      logError(req, "Failed to retrieve user profile", error, {
+        userId: req.user?.userId,
+      });
+
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to retrieve user profile", 500);
     }
   }
 
   async updateUserProfile(req: AuthenticatedRequest, res: Response) {
-    const userId = req.user?.userId;
-    if (!userId) {
-      return sendError(res, "User ID is required", 400);
-    }
-
-    const updateData = updateUserProfileSchema.parse(req.body);
-
     try {
+      const userId = req.user?.userId;
+      if (!userId) throw new UnauthorizedError("User ID is required");
+
+      const updateData = updateUserProfileSchema.parse(req.body);
+
       logInfo(req, "Updating user profile", { userId });
       const updatedUser = await this.userService.updateUserProfile(
         userId,
@@ -47,7 +50,13 @@ export class UserController {
       );
       return sendSuccess(res, "User profile updated successfully", updatedUser);
     } catch (error: any) {
-      logError(req, "Failed to update user profile", error, { userId });
+      logError(req, "Failed to update user profile", error, {
+        userId: req.user?.userId,
+      });
+
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to update user profile", 500);
     }
   }

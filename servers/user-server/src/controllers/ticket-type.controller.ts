@@ -1,13 +1,18 @@
 import { Response } from "express";
 import { TicketTypeService } from "../services/ticket-type.service";
 import { AuthenticatedRequest } from "../types/auth";
+import {
+  BadRequestError,
+  isAppError,
+  UnauthorizedError,
+} from "../utils/errors";
+import { formatZodError } from "../utils/formatZodError";
+import { logError, logInfo } from "../utils/logger-context";
 import { sendError, sendSuccess } from "../utils/responseMsg";
 import {
   patchTicketType,
   ticketTypeSchema,
 } from "../validators/ticket-type.validator";
-import { formatZodError } from "../utils/formatZodError";
-import { logError, logInfo } from "../utils/logger-context";
 
 export class TicketTypeController {
   private ticketTypeService: TicketTypeService;
@@ -19,10 +24,10 @@ export class TicketTypeController {
   async Create(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.userId;
-      if (!userId) return sendError(res, "User ID is required", 400);
+      if (!userId) throw new UnauthorizedError("User ID is required");
 
       const { eventId } = req.params;
-      if (!eventId) return sendError(res, "Event ID is required", 400);
+      if (!eventId) throw new BadRequestError("Event ID is required");
 
       const parsedBody = ticketTypeSchema.parse(req.body);
       logInfo(req, "Creating ticket type", { eventId, name: parsedBody.name });
@@ -34,6 +39,9 @@ export class TicketTypeController {
 
       return sendSuccess(res, "Ticket Type created successfully", result, 201);
     } catch (error: any) {
+      logError(req, "Failed to create ticket type", error, {
+        eventId: req.params.eventId,
+      });
       if (error.name === "ZodError") {
         const formattedErrors = formatZodError(error);
         return sendError(
@@ -42,9 +50,9 @@ export class TicketTypeController {
           400,
         );
       }
-      logError(req, "Failed to create ticket type", error, {
-        eventId: req.params.eventId,
-      });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to create the Ticket Type", 400);
     }
   }
@@ -52,12 +60,13 @@ export class TicketTypeController {
   async Update(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.userId;
-      if (!userId) return sendError(res, "User ID is required", 400);
+      if (!userId) throw new UnauthorizedError("User ID is required");
 
       const { eventId, ticketTypeId } = req.params;
-      if (!eventId) return sendError(res, "Event ID is required", 400);
+      if (!eventId) throw new BadRequestError("Event ID is required");
+
       if (!ticketTypeId)
-        return sendError(res, "Ticket Type ID is required", 400);
+        throw new BadRequestError("Ticket Type ID is required");
 
       const parsedBody = patchTicketType.parse(req.body);
 
@@ -76,6 +85,10 @@ export class TicketTypeController {
 
       return sendSuccess(res, "Ticket Type updated successfully", result, 200);
     } catch (error: any) {
+      logError(req, "Failed to update ticket type", error, {
+        ticketTypeId: req.params.ticketTypeId,
+      });
+
       if (error.name === "ZodError") {
         const formattedErrors = formatZodError(error);
         return sendError(
@@ -84,9 +97,9 @@ export class TicketTypeController {
           400,
         );
       }
-      logError(req, "Failed to update ticket type", error, {
-        ticketTypeId: req.params.ticketTypeId,
-      });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to update the Ticket Type", 400);
     }
   }
@@ -94,12 +107,13 @@ export class TicketTypeController {
   async Delete(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.userId;
-      if (!userId) return sendError(res, "User ID is required", 400);
+      if (!userId) throw new UnauthorizedError("User ID is required");
 
       const { eventId, ticketTypeId } = req.params;
-      if (!eventId) return sendError(res, "Event ID is required", 400);
+      if (!eventId) throw new BadRequestError("Event ID is required");
+
       if (!ticketTypeId)
-        return sendError(res, "Ticket Type ID is required", 400);
+        throw new BadRequestError("Ticket Type ID is required");
 
       logInfo(req, "Deleting ticket type", { eventId, ticketTypeId });
       const result = await this.ticketTypeService.DeleteTicketType(
@@ -113,6 +127,9 @@ export class TicketTypeController {
       logError(req, "Failed to delete ticket type", error, {
         ticketTypeId: req.params.ticketTypeId,
       });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to delete the Ticket Type", 400);
     }
   }

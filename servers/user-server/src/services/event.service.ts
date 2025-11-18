@@ -12,6 +12,11 @@ import {
 } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
 import { CreateEventRequest } from "../types/event";
+import {
+  NotFoundError,
+  BadRequestError,
+  ForbiddenError,
+} from "../utils/errors";
 
 export class EventService {
   async createEvent(userId: string, eventData: CreateEventRequest) {
@@ -23,15 +28,15 @@ export class EventService {
       });
 
       if (!user) {
-        throw new Error("User not found");
+        throw new NotFoundError("User not found");
       }
 
       if (!user.Lister) {
-        throw new Error("User must be a lister to create events");
+        throw new BadRequestError("User must be a lister to create events");
       }
 
       if (user.Lister.status !== "COMPLETED") {
-        throw new Error(
+        throw new ForbiddenError(
           "Lister profile must be approved before creating events",
         );
       }
@@ -94,7 +99,7 @@ export class EventService {
 
       // Check if event date is in the future
       if (eventDate < new Date()) {
-        throw new Error("Event date must be in the future");
+        throw new BadRequestError("Event date must be in the future");
       }
 
       // Use transaction to ensure data consistency
@@ -738,11 +743,13 @@ export class EventService {
       });
 
       if (!event) {
-        throw new Error("Event not found");
+        throw new NotFoundError("Event not found");
       }
 
       if (event.lister.user.userId !== userId) {
-        throw new Error("You do not have permission to view this event");
+        throw new ForbiddenError(
+          "You do not have permission to view this event",
+        );
       }
 
       // Cache the event details
@@ -775,7 +782,7 @@ export class EventService {
       });
 
       if (!existingEvent) {
-        throw new Error(`Event with ID ${eventId} not found`);
+        throw new NotFoundError(`Event with ID ${eventId} not found`);
       }
 
       // Check if any ticket types have sold tickets
@@ -793,7 +800,7 @@ export class EventService {
         if (hasSoldTickets) {
           // If tickets have been sold, don't allow replacing ticket types
           // Only allow adding new ones
-          throw new Error(
+          throw new BadRequestError(
             "Cannot modify or delete ticket types after tickets have been sold. You can only add new ticket types.",
           );
         } else {
@@ -856,14 +863,14 @@ export class EventService {
 
   async updateInfo(eventId: string, update: string, imageUrl?: string) {
     try {
-      //  so we need to fetch event ticket bought users and send them the email update so we will need the emails of the users who bought tickets for this event
+      // Fetch event and ticket holders
       const event = await prisma.event.findUnique({
         where: { eventId },
         include: {
           Ticket: {
             include: {
               user: {
-                select: { email: true, name: true },
+                select: { email: true, name: true, userId: true },
               },
             },
           },
@@ -871,17 +878,43 @@ export class EventService {
       });
 
       if (!event) {
-        throw new Error("Event not found");
+        throw new NotFoundError("Event not found");
       }
+
+      const eventTitle = event.title;
+
+      // Extract users from tickets
       const ticketedUsers = event.Ticket.map((t) => t.user);
-      const event_data = event.title;
+
       logger.info(
-        `Fetched ${ticketedUsers.length} ticket holders for event "${event_data}"${imageUrl ? " with image" : ""}`,
+        `Fetched ${ticketedUsers.length} ticket holders for event "${eventTitle}"${
+          imageUrl ? " with image" : ""
+        }`,
       );
 
-      // also not the one who has already been mailed
+      const uniqueUsersMap = new Map<string, { email: string; name: string }>();
 
-      for (const user of ticketedUsers) {
+      ticketedUsers.forEach((u) => {
+        if (!uniqueUsersMap.has(u.userId) && u.email) {
+          uniqueUsersMap.set(u.userId, {
+            email: u.email,
+            name: u.name || "Unknown",
+          });
+        }
+      });
+
+      const uniqueUsers = Array.from(uniqueUsersMap.values());
+
+      if (uniqueUsers.length === 0) {
+        logger.info(`No ticket buyers to send emails to`);
+        return {
+          success: true,
+          message: "No previous buyers to send emails to",
+          emailsSent: 0,
+        };
+      }
+
+      for (const user of uniqueUsers) {
         if (!user.email) {
           logger.warn(`Skipping user ${user.name ?? "Unknown"} — no email`);
           continue;
@@ -889,7 +922,7 @@ export class EventService {
 
         await sendEmail(
           user.email,
-          `Important Update: ${event_data}`,
+          `Important Update: ${eventTitle}`,
           {
             type: "event-update",
             content: {
@@ -897,15 +930,19 @@ export class EventService {
                 message: update,
                 updatedAt: new Date().toISOString(),
                 imageUrl: imageUrl || undefined,
+                eventName: event.title,
+                eventDate: event.date.toISOString().split("T")[0],
+                eventVenue: event.location || undefined,
               },
             },
           },
           user.name ?? "Attendee",
         );
       }
+
       return {
-        success: true,
-        message: `Update sent to ${ticketedUsers.length} ticket holders for event "${event_data}"${imageUrl ? " with image" : ""}`,
+        message: `Update sent to ${uniqueUsers.length} ticket holders for event "${eventTitle}"`,
+        emailsSent: uniqueUsers.length,
       };
     } catch (error) {
       logger.error("Error in updateInfo:", error);

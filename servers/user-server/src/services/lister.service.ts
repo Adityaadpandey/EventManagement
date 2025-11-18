@@ -7,6 +7,11 @@ import {
   setListerCache,
   setUserCache,
 } from "../lib/cache";
+import {
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../utils/errors";
 
 export class ListerServer {
   async applyForLister(
@@ -23,11 +28,11 @@ export class ListerServer {
       });
 
       if (!existingUser) {
-        throw new Error("User not found.");
+        throw new NotFoundError("User not found.");
       }
 
       if (existingUser.Lister) {
-        throw new Error("User is already a lister.");
+        throw new BadRequestError("User is already a lister.");
       }
 
       // Create new lister
@@ -129,7 +134,7 @@ export class ListerServer {
       });
 
       if (!lister) {
-        throw new Error("Lister not found for given userId");
+        throw new UnauthorizedError("Lister not found for given userId");
       }
 
       // Calculate real-time analytics
@@ -221,7 +226,7 @@ export class ListerServer {
       });
 
       if (!existingLister) {
-        throw new Error("Lister not found for given userId");
+        throw new NotFoundError("Lister not found for given userId");
       }
 
       // Update the lister
@@ -323,7 +328,7 @@ export class ListerServer {
       });
 
       if (!lister) {
-        throw new Error("Lister not found for given listerId");
+        throw new NotFoundError("Lister not found for given listerId");
       }
 
       // Cache the lister
@@ -354,10 +359,10 @@ export class ListerServer {
       });
 
       if (!lister?.listerId) {
-        throw new Error("User is not a Lister");
+        throw new UnauthorizedError("User is not a Lister");
       }
       if (userId !== lister.user?.userId) {
-        throw new Error("Access Denied");
+        throw new UnauthorizedError("Access Denied");
       }
 
       const { listerId } = lister;
@@ -462,7 +467,7 @@ export class ListerServer {
         logger.warn(
           `Event not found or access denied for eventId: ${eventId} and userId: ${userId}`,
         );
-        throw new Error("Access Denied or Event not found");
+        throw new NotFoundError("Access Denied or Event not found");
       }
 
       // OPTIMIZED: Get ticket types with aggregated statistics using raw SQL

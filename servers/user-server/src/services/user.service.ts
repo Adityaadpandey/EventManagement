@@ -1,11 +1,12 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
-import { createToken } from "../lib/jwt-token";
 import {
   getUserProfileCache,
-  setUserProfileCache,
   invalidateUserCaches,
+  setUserProfileCache,
 } from "../lib/cache";
+import { createToken } from "../lib/jwt-token";
+import { NotFoundError } from "../utils/errors";
 
 export class UserService {
   async getUserProfile(userId: string) {
@@ -38,7 +39,7 @@ export class UserService {
       });
 
       if (!userProfile) {
-        throw new Error("User not found");
+        throw new NotFoundError("User not found");
       }
 
       // Cache the profile (without token)
@@ -75,7 +76,7 @@ export class UserService {
       });
 
       if (!updatedUser) {
-        throw new Error("User not found or update failed");
+        throw new NotFoundError("User not found or update failed");
       }
 
       // Invalidate all user-related caches

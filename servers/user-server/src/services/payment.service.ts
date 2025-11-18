@@ -5,6 +5,9 @@ import logger from "../config/logger";
 import { delTicketCache } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
 import { razorpay } from "../lib/razorpay";
+import { razorpayCircuitBreaker } from "../utils/circuitBreaker";
+import { NotFoundError, BadRequestError } from "../utils/errors";
+import { withTimeout } from "../utils/timeout";
 
 export class PaymentService {
   async verifyPayment(
@@ -27,8 +30,14 @@ export class PaymentService {
         }
       }
 
-      // Get payment details from Razorpay
-      const payment = await razorpay.payments.fetch(razorpayPaymentId);
+      // Get payment details from Razorpay with circuit breaker and timeout
+      const payment = await razorpayCircuitBreaker.execute(() =>
+        withTimeout(
+          razorpay.payments.fetch(razorpayPaymentId),
+          10000,
+          "Razorpay payment fetch timed out",
+        ),
+      );
 
       if (payment.status !== "captured") {
         logger.error(`Payment ${razorpayPaymentId} not captured`);
@@ -273,11 +282,11 @@ export class PaymentService {
       });
 
       if (!ticket) {
-        throw new Error("Ticket not found");
+        throw new NotFoundError("Ticket not found");
       }
 
       if (ticket.status !== "SUCCESS") {
-        throw new Error("Only successful tickets can be refunded");
+        throw new BadRequestError("Only successful tickets can be refunded");
       }
 
       // Check if refund already exists
@@ -289,7 +298,7 @@ export class PaymentService {
       });
 
       if (existingRefund) {
-        throw new Error("Refund already exists for this ticket");
+        throw new BadRequestError("Refund already exists for this ticket");
       }
 
       // Create refund record

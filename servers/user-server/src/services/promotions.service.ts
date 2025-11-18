@@ -3,6 +3,11 @@ import path from "path";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { emailQueue } from "../lib/queues";
+import {
+  NotFoundError,
+  ForbiddenError,
+  BadRequestError,
+} from "../utils/errors";
 
 export class PromotionsService {
   /**
@@ -44,28 +49,22 @@ export class PromotionsService {
       });
 
       if (!event) {
-        logger.error(`Event ${eventId} not found`);
-        return { success: false, message: "Event not found" };
+        throw new NotFoundError("Event not found");
       }
 
       // Verify the user is the lister of this event
       if (event.lister.userId !== userId) {
-        logger.error(
-          `User ${userId} is not authorized to send promotions for event ${eventId}`,
+        throw new ForbiddenError(
+          "You are not authorized to send promotions for this event",
         );
-        return { success: false, message: "Unauthorized" };
       }
 
       // Check available mail updates
-      // if (event.availableMailUpdates <= 0) {
-      //   logger.warn(
-      //     `Event ${eventId} has no available mail updates remaining`,
-      //   );
-      //   return {
-      //     success: false,
-      //     message: "No promotional emails remaining for this event",
-      //   };
-      // }
+      if (event.availableMailUpdates <= 0) {
+        throw new BadRequestError(
+          "No promotional emails remaining for this event",
+        );
+      }
 
       // Get all previous ticket buyers
       let tickets;
@@ -75,7 +74,7 @@ export class PromotionsService {
         tickets = await prisma.ticket.findMany({
           where: {
             eventEventId: toEventId,
-            status: "SUCCESS",
+            // status: "SUCCESS",
           },
           include: {
             user: true,
@@ -116,11 +115,7 @@ export class PromotionsService {
 
       if (ticketBuyers.length === 0) {
         logger.info(`No previous ticket buyers found for promotion`);
-        return {
-          success: true,
-          message: "No previous buyers to send emails to",
-          emailsSent: 0,
-        };
+        return { message: "" };
       }
 
       // Prepare email template data
@@ -182,18 +177,13 @@ export class PromotionsService {
       );
 
       return {
-        success: true,
         message: "Promotional emails queued successfully",
         emailsSent: ticketBuyers.length,
         remainingMailUpdates: event.availableMailUpdates - 1,
       };
     } catch (error) {
       logger.error("Error sending promotional emails:", error);
-      return {
-        success: false,
-        message: "Failed to send promotional emails",
-        error,
-      };
+      throw error;
     }
   }
 
@@ -239,16 +229,11 @@ export class PromotionsService {
       const ticketCount = uniqueUserIds.size;
 
       return {
-        success: true,
         potentialRecipients: ticketCount,
       };
     } catch (error) {
       logger.error("Error getting promotion reach:", error);
-      return {
-        success: false,
-        message: "Failed to get promotion reach",
-        error,
-      };
+      throw error;
     }
   }
 }

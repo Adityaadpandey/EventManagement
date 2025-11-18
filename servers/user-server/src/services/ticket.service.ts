@@ -9,6 +9,11 @@ import {
 import { sendEmail } from "../lib/mail";
 import { razorpay } from "../lib/razorpay";
 import { trackCTAClickWithEventId } from "../middlewares/analytics.middleware";
+import {
+  NotFoundError,
+  BadRequestError,
+  ForbiddenError,
+} from "../utils/errors";
 
 export class TicketService {
   async buyTicket(
@@ -47,12 +52,14 @@ export class TicketService {
         },
       });
 
-      if (!ticketType?.event.canBuy) {
-        throw new Error("Ticket Sales is Turned Off for Now");
+      if (!ticketType || !ticketType.event) {
+        throw new NotFoundError("Ticket type or event not found");
       }
 
-      if (!ticketType || !ticketType.event) {
-        throw new Error("Ticket type or event not found");
+      if (!ticketType.event.canBuy) {
+        throw new ForbiddenError(
+          "Ticket sales are currently disabled for this event",
+        );
       }
 
       const event = ticketType.event;
@@ -67,7 +74,9 @@ export class TicketService {
       // Check availability
       const availableQuantity = ticketType.quantity - ticketType.soldCount;
       if (availableQuantity < quantity) {
-        throw new Error(`Only ${availableQuantity} tickets available`);
+        throw new BadRequestError(
+          `Only ${availableQuantity} tickets available`,
+        );
       }
 
       // Validate event timing
@@ -82,7 +91,9 @@ export class TicketService {
         );
 
         if (now >= oneDayBeforeEvent) {
-          throw new Error("Ticket sales close 1 day after the event starts");
+          throw new BadRequestError(
+            "Ticket sales close 1 day after the event starts",
+          );
         }
       } else if (event.date) {
         const eventDate = new Date(event.date);
@@ -92,13 +103,15 @@ export class TicketService {
         );
 
         if (now >= oneDayBeforeEvent) {
-          throw new Error("Ticket sales close 1 day after the event date");
+          throw new BadRequestError(
+            "Ticket sales close 1 day after the event date",
+          );
         }
       }
 
       // Check sales cutoff
       if (ticketType.salesCutoff && now > ticketType.salesCutoff) {
-        throw new Error("Ticket sales have ended");
+        throw new BadRequestError("Ticket sales have ended");
       }
 
       // Calculate pricing
@@ -144,26 +157,26 @@ export class TicketService {
         }
 
         if (!discount) {
-          throw new Error("Invalid discount code");
+          throw new BadRequestError("Invalid discount code");
         }
 
         // Validate discount
         if (discount.validFrom && now < discount.validFrom) {
-          throw new Error("This discount code is not yet active");
+          throw new BadRequestError("This discount code is not yet active");
         }
         if (discount.validTo && now > discount.validTo) {
-          throw new Error("This discount code has expired");
+          throw new BadRequestError("This discount code has expired");
         }
         if (
           discount.maxUses !== null &&
           discount.usesCount >= discount.maxUses
         ) {
-          throw new Error(
+          throw new BadRequestError(
             "This discount code has reached its maximum usage limit",
           );
         }
         if (discount.minOrderAmt && basePrice < discount.minOrderAmt) {
-          throw new Error(
+          throw new BadRequestError(
             `Minimum order amount of ₹${discount.minOrderAmt} required to use this discount code`,
           );
         }
@@ -430,7 +443,7 @@ export class TicketService {
       });
 
       if (!lister) {
-        throw new Error("Lister profile not found");
+        throw new NotFoundError("Lister profile not found");
       }
 
       const listerId = lister.listerId;
@@ -445,7 +458,7 @@ export class TicketService {
         });
 
         if (!event) {
-          throw new Error("Event not found or access denied");
+          throw new ForbiddenError("Event not found or access denied");
         }
       }
 
@@ -613,12 +626,12 @@ export class TicketService {
       });
 
       if (!ticket) {
-        throw new Error("Ticket not found");
+        throw new NotFoundError("Ticket not found");
       }
 
       // Check ownership
       if (userId && ticket.userId !== userId) {
-        throw new Error("Unauthorized access to ticket");
+        throw new ForbiddenError("Unauthorized access to ticket");
       }
 
       // Cache the result
