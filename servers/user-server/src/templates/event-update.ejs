@@ -8,7 +8,6 @@
         body {
             font-family: 'Inter', Arial, sans-serif;
             background-color: #fff8cc;
-            /* very light yellow background */
             margin: 0;
             padding: 0;
         }
@@ -21,12 +20,10 @@
             border-radius: 16px;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
             border: 1px solid #ffeb7d;
-            /* soft yellow border */
         }
 
         h2 {
             color: #b68700;
-            /* warm dark yellow */
             font-size: 24px;
             margin-bottom: 15px;
         }
@@ -39,9 +36,7 @@
 
         blockquote {
             border-left: 4px solid #ffda0a;
-            /* bright yellow */
             background: #fff8b3;
-            /* pale yellow background */
             padding: 15px 20px;
             margin: 20px 0;
             font-size: 16px;
@@ -53,16 +48,94 @@
             font-size: 14px;
             color: #777;
         }
+
+        .event-details {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-left: 4px solid #ffda0a;
+        }
+
+        .event-details p {
+            margin: 8px 0;
+            font-size: 15px;
+        }
+
+        .event-details strong {
+            color: #b68700;
+        }
+
+        .action-button {
+            display: inline-block;
+            background-color: #ffda0a;
+            color: #2e2e2e;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+            box-shadow: 0 4px 10px rgba(255, 218, 10, 0.3);
+            transition: background-color 0.3s;
+        }
+
+        .action-button:hover {
+            background-color: #e6c400;
+        }
+
+        .important-badge {
+            display: inline-block;
+            background-color: #ff6b6b;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <h2>Hello <%= name %>,</h2>
-        <p>There’s an update regarding your event:</p>
+        
+        <% if (eventUpdate.updateType === 'important' || eventUpdate.actionRequired) { %>
+        <span class="important-badge">⚠️ IMPORTANT</span>
+        <% } %>
+        
+        <p>There's an update regarding your event:</p>
+        
+        <% if (eventUpdate.eventName || eventUpdate.eventDate || eventUpdate.eventVenue) { %>
+        <div class="event-details">
+            <% if (eventUpdate.eventName) { %>
+            <p><strong>Event:</strong> <%= eventUpdate.eventName %></p>
+            <% } %>
+            <% if (eventUpdate.eventDate) { %>
+            <p><strong>Date:</strong> <%= eventUpdate.eventDate %></p>
+            <% } %>
+            <% if (eventUpdate.eventVenue) { %>
+            <p><strong>Venue:</strong> <%= eventUpdate.eventVenue %></p>
+            <% } %>
+        </div>
+        <% } %>
+        
         <blockquote>
             <%= eventUpdate.message %>
         </blockquote>
+        
+        <% if (eventUpdate.imageUrl) { %>
+        <div style="margin: 20px 0; text-align: center;">
+            <img src="<%= eventUpdate.imageUrl %>" alt="Event Update Image" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);" />
+        </div>
+        <% } %>
+        
+        <% if (eventUpdate.actionRequired && eventUpdate.actionUrl && eventUpdate.actionText) { %>
+        <div style="text-align: center; margin: 25px 0;">
+            <a href="<%= eventUpdate.actionUrl %>" class="action-button"><%= eventUpdate.actionText %></a>
+        </div>
+        <% } %>
+        
         <p><em>Update time: <%= eventUpdate.updatedAt %></em></p>
     </div>
 </body>

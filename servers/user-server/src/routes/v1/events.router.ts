@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { EventController } from "../../controllers/event.controller";
+import { PromotionsController } from "../../controllers/promotions.controller";
 import { trackEventView } from "../../middlewares/analytics.middleware";
 import { authMiddleware, requireRole } from "../../middlewares/auth.middleware";
 
 const router = Router();
 const eventController = new EventController();
+const promotionsController = new PromotionsController();
 
 // POST /api/v1/event
 router.post(
@@ -21,7 +23,7 @@ router.get("/public", eventController.getPublicEvents.bind(eventController));
 router.get(
   "/lister",
   authMiddleware,
-  requireRole(["LISTER"]),
+  requireRole(["LISTER", "ADMIN"]),
   eventController.getListerEvents.bind(eventController),
 );
 
@@ -44,14 +46,14 @@ router.get(
 router.patch(
   "/:eventId",
   authMiddleware,
-  requireRole(["LISTER"]),
+  requireRole(["LISTER", "ADMIN"]),
   eventController.patchEvent.bind(eventController),
 );
 
 router.post(
   "/info-update/:eventId",
   authMiddleware,
-  requireRole(["LISTER"]),
+  requireRole(["LISTER", "ADMIN"]),
   eventController.updateInfo.bind(eventController),
 );
 
@@ -61,6 +63,23 @@ router.get(
   requireRole(["LISTER", "ADMIN"]),
   eventController.getAnalytics.bind(eventController),
 );
+
+// POST /api/v1/event/:eventId/promote
+router.post(
+  "/:eventId/promote",
+  authMiddleware,
+  requireRole(["LISTER", "ADMIN"]),
+  promotionsController.sendPromotion.bind(promotionsController),
+);
+
+// GET /api/v1/event/:eventId/promotion-reach
+router.get(
+  "/:eventId/promotion-reach",
+  authMiddleware,
+  requireRole(["LISTER", "ADMIN"]),
+  promotionsController.getPromotionReach.bind(promotionsController),
+);
+
 // DELETE /api/v1/event/:eventId
 
 // GET /api/v1/event/:eventId/attendees

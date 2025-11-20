@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { BadRequestError, NotFoundError } from "../utils/errors";
 
 export class CheckerService {
   async createChecker(
@@ -24,7 +25,7 @@ export class CheckerService {
       });
 
       if (!event) {
-        throw new Error(
+        throw new NotFoundError(
           "Event not found or you are not authorized to create a checker for this event",
         );
       }
@@ -38,7 +39,7 @@ export class CheckerService {
       });
 
       if (existingChecker) {
-        throw new Error(
+        throw new BadRequestError(
           "Checker with this username already exists for this event",
         );
       }
@@ -103,7 +104,7 @@ export class CheckerService {
       });
 
       if (!checker) {
-        throw new Error("Checker not found");
+        throw new NotFoundError("Checker not found");
       }
 
       // Remove password from response
@@ -128,7 +129,9 @@ export class CheckerService {
       });
 
       if (!event) {
-        throw new Error("Event not found or unauthorized");
+        throw new NotFoundError(
+          "Event not found or you are not authorized to view its checkers",
+        );
       }
 
       const checkers = await prisma.ticketChecker.findMany({
@@ -166,7 +169,7 @@ export class CheckerService {
       });
 
       if (!checker) {
-        throw new Error("Checker not found or unauthorized");
+        throw new BadRequestError("Checker not found or unauthorized");
       }
 
       await prisma.ticketChecker.update({

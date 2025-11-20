@@ -5,34 +5,34 @@ meta {
 }
 
 post {
-  url: 
+  url: {{host}}/ticket-type/e5d8dea8-d922-4eb1-9543-5f1438b8a934
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "name": "Team of 1",
-    "description": "Single Entry",
-    "price": 249,
-    "discountedPrice": 199,
-    "discountReason": "Early bird discount",
+    "name": "Girls Duo Pass",
+    "description": "Only @ girls",
+    "price": 499,
+  //   "discountedPrice": 199,
+  //   "discountReason": "Early bird discount",
     "quantity": 10000,
-    "platformfee": 0,
-    "soldCount": 0,
-    "customField": [
-      {
-        "label": "Reg. No.",
-        "fieldType": "number",
-        "required": true
-      },
-      {
-        "label": "Hostel",
-        "fieldType": "dropdown",
-        "required": true,
-        "options": "Day Scholars,BH-1,BH-2,BH-3,BH-4,BH-5,BH-6,BH-7,BH-8,BH-9,BH-10,Apartments,GH-1,GH-2,GH-3,GH-4,GH-5,GH-6,GH-7,GH-8,GH-9"
-      }
-    ]
+    "platformfee": 26
+  //   "soldCount": 0,
+  //   "customField": [
+  //     {
+  //       "label": "Reg. No.",
+  //       "fieldType": "number",
+  //       "required": true
+  //     },
+  //     {
+  //       "label": "Hostel",
+  //       "fieldType": "dropdown",
+  //       "required": true,
+  //       "options": "Day Scholars,BH-1,BH-2,BH-3,BH-4,BH-5,BH-6,BH-7,BH-8,BH-9,BH-10,Apartments,GH-1,GH-2,GH-3,GH-4,GH-5,GH-6,GH-7,GH-8,GH-9"
+  //     }
+  //   ]
   }
   
 }

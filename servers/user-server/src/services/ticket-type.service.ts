@@ -1,5 +1,6 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { BadRequestError, NotFoundError } from "../utils/errors";
 
 export class TicketTypeService {
   async CreateTicketType(userId: string, eventId: string, payload: any) {
@@ -18,26 +19,32 @@ export class TicketTypeService {
       });
 
       if (!event) {
-        throw new Error(
+        throw new NotFoundError(
           "Event not found or you don't have permission to add ticket types",
         );
       }
 
       // Check if event is in a valid state to add tickets
       if (event.status === "CANCELLED") {
-        throw new Error("Cannot add ticket types to a cancelled event");
+        throw new BadRequestError(
+          "Cannot add ticket types to a cancelled event",
+        );
       }
 
       // Validate discounted price is less than regular price
       if (payload.discountedPrice && payload.discountedPrice >= payload.price) {
-        throw new Error("Discounted price must be less than regular price");
+        throw new BadRequestError(
+          "Discounted price must be less than regular price",
+        );
       }
 
       // Validate salesCutoff is before event date
       if (payload.salesCutoff) {
         const cutoffDate = new Date(payload.salesCutoff);
         if (cutoffDate >= event.date) {
-          throw new Error("Sales cutoff must be before the event date");
+          throw new BadRequestError(
+            "Sales cutoff must be before the event date",
+          );
         }
       }
 
@@ -129,7 +136,7 @@ export class TicketTypeService {
       });
 
       if (!ticketType) {
-        throw new Error(
+        throw new NotFoundError(
           "Ticket type not found or you don't have permission to update it",
         );
       }
@@ -139,7 +146,7 @@ export class TicketTypeService {
         payload.quantity !== undefined &&
         payload.quantity < ticketType.soldCount
       ) {
-        throw new Error(
+        throw new BadRequestError(
           `Cannot reduce quantity below sold count (${ticketType.soldCount})`,
         );
       }
@@ -147,14 +154,18 @@ export class TicketTypeService {
       // Validate discounted price is less than regular price
       const newPrice = payload.price ?? ticketType.price;
       if (payload.discountedPrice && payload.discountedPrice >= newPrice) {
-        throw new Error("Discounted price must be less than regular price");
+        throw new BadRequestError(
+          "Discounted price must be less than regular price",
+        );
       }
 
       // Validate salesCutoff is before event date
       if (payload.salesCutoff) {
         const cutoffDate = new Date(payload.salesCutoff);
         if (cutoffDate >= ticketType.event.date) {
-          throw new Error("Sales cutoff must be before the event date");
+          throw new BadRequestError(
+            "Sales cutoff must be before the event date",
+          );
         }
       }
 
@@ -258,7 +269,7 @@ export class TicketTypeService {
       });
 
       if (!ticketType) {
-        throw new Error(
+        throw new NotFoundError(
           "Ticket type not found or you don't have permission to delete it",
         );
       }

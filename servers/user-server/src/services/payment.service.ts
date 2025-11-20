@@ -5,6 +5,9 @@ import logger from "../config/logger";
 import { delTicketCache } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
 import { razorpay } from "../lib/razorpay";
+import { razorpayCircuitBreaker } from "../utils/circuitBreaker";
+import { NotFoundError, BadRequestError } from "../utils/errors";
+import { withTimeout } from "../utils/timeout";
 
 export class PaymentService {
   async verifyPayment(
@@ -27,8 +30,14 @@ export class PaymentService {
         }
       }
 
-      // Get payment details from Razorpay
-      const payment = await razorpay.payments.fetch(razorpayPaymentId);
+      // Get payment details from Razorpay with circuit breaker and timeout
+      const payment = await razorpayCircuitBreaker.execute(() =>
+        withTimeout(
+          razorpay.payments.fetch(razorpayPaymentId),
+          10000,
+          "Razorpay payment fetch timed out",
+        ),
+      );
 
       if (payment.status !== "captured") {
         logger.error(`Payment ${razorpayPaymentId} not captured`);
@@ -196,18 +205,47 @@ export class PaymentService {
 
   async handlePaymentFailure(ticketId: string) {
     try {
-      // Update ticket status to FAILED
-      const ticket = await prisma.ticket.update({
+      const ticket = await prisma.ticket.findUnique({
+        where: { ticketId },
+        select: { status: true, ticketId: true },
+      });
+
+      if (!ticket) {
+        logger.warn(
+          `Ticket ${ticketId} not found for payment failure handling`,
+        );
+        return null;
+      }
+
+      // Don't overwrite SUCCESS or FAILED status
+      if (ticket.status === "SUCCESS") {
+        logger.info(
+          `Ticket ${ticketId} already marked as SUCCESS, skipping failure update`,
+        );
+        return ticket;
+      }
+
+      if (ticket.status === "FAILED") {
+        logger.info(
+          `Ticket ${ticketId} already marked as FAILED, skipping duplicate update`,
+        );
+        return ticket;
+      }
+
+      // Only update if status is PENDING or other non-final state
+      const updatedTicket = await prisma.ticket.update({
         where: { ticketId },
         data: { status: "FAILED" },
       });
+
+      logger.info(`Ticket ${ticketId} marked as FAILED`);
 
       // Invalidate ticket cache after status update
       delTicketCache(ticketId).catch(() =>
         logger.warn(`Failed to invalidate cache for ticket: ${ticketId}`),
       );
 
-      return ticket;
+      return updatedTicket;
     } catch (error) {
       logger.error("Error handling payment failure:", error);
       throw error;
@@ -244,11 +282,11 @@ export class PaymentService {
       });
 
       if (!ticket) {
-        throw new Error("Ticket not found");
+        throw new NotFoundError("Ticket not found");
       }
 
       if (ticket.status !== "SUCCESS") {
-        throw new Error("Only successful tickets can be refunded");
+        throw new BadRequestError("Only successful tickets can be refunded");
       }
 
       // Check if refund already exists
@@ -260,7 +298,7 @@ export class PaymentService {
       });
 
       if (existingRefund) {
-        throw new Error("Refund already exists for this ticket");
+        throw new BadRequestError("Refund already exists for this ticket");
       }
 
       // Create refund record
