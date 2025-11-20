@@ -1,6 +1,7 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { getDiscountCache, setDiscountCache } from "../lib/cache";
+import { NotFoundError } from "../utils/errors";
 
 interface CreateDiscountParams {
   eventId: string;
@@ -69,7 +70,7 @@ export class DiscountService {
         },
       });
       if (!codeInfo) {
-        throw new Error("Discount code not found");
+        throw new NotFoundError("Discount code not found");
       }
       setDiscountCache(code, eventId, codeInfo).catch((err) =>
         logger.warn("Failed to cache discount code:", err),

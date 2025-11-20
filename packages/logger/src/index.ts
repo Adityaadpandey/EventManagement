@@ -1,5 +1,6 @@
 import chalk from "chalk";
 import winston from "winston";
+import NewRelicTransport from "./newrelic-transport.js";
 
 const levelStyles: Record<string, any> = {
   error: chalk.bgRed.white.bold,
@@ -12,7 +13,15 @@ const levelStyles: Record<string, any> = {
 };
 
 export const getLogger = (service: string, level = "debug") => {
-  return winston.createLogger({
+  // Create transports array
+  const transports: winston.transport[] = [new winston.transports.Console()];
+
+  // Add New Relic transport if license key is present
+  if (process.env.NEW_RELIC_LICENSE_KEY) {
+    transports.push(new NewRelicTransport());
+  }
+
+  const logger = winston.createLogger({
     level: level,
     defaultMeta: { service },
     format: winston.format.combine(
@@ -81,8 +90,10 @@ export const getLogger = (service: string, level = "debug") => {
         return `${time} ${tag} ${serviceName}: ${message}${metaStr}`;
       }),
     ),
-    transports: [new winston.transports.Console()],
+    transports,
   });
+
+  return logger;
 };
 
 winston.addColors({

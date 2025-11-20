@@ -2,15 +2,23 @@ import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { redis } from "../config/redis";
+import {
+  buildCacheKey,
+  CACHE_PREFIX,
+  setTokenCache,
+  setUserCache,
+} from "../lib/cache";
 import { createToken } from "../lib/jwt-token";
 import { sendEmail } from "../lib/mail";
 import { otpQueue } from "../lib/queues";
 import {
-  setUserCache,
-  setTokenCache,
-  buildCacheKey,
-  CACHE_PREFIX,
-} from "../lib/cache";
+  DatabaseError,
+  ExternalServiceError,
+  ForbiddenError,
+  TooManyRequestsError,
+  UnauthorizedError,
+  ValidationError,
+} from "../utils/errors";
 
 class AuthService {
   async requestOtp(identifier: string): Promise<{ message: string }> {
@@ -19,7 +27,7 @@ class AuthService {
       const isPhoneType = this.isPhone(identifier);
 
       if (!isEmailType && !isPhoneType) {
-        throw new Error("Invalid email or phone number format");
+        throw new ValidationError("Invalid email or phone number format");
       }
 
       // Normalize email or phone
@@ -43,7 +51,7 @@ class AuthService {
       // Limit total OTP requests per hour
       const requestCount = await redis.get(countKey);
       if (requestCount && Number.parseInt(requestCount, 10) >= 5) {
-        throw new Error(
+        throw new TooManyRequestsError(
           "Too many OTP requests. Please try again after 1 hour.",
         );
       }
@@ -51,7 +59,7 @@ class AuthService {
       // Check resend cooldown (30s)
       const onCooldown = await redis.get(resendCooldownKey);
       if (onCooldown) {
-        throw new Error(
+        throw new TooManyRequestsError(
           "Please wait a few seconds before requesting OTP again.",
         );
       }
@@ -97,7 +105,7 @@ class AuthService {
         // If sending fails, clean up if it was a newly generated OTP
         const existingOtp = await redis.get(otpKey);
         if (!existingOtp) await redis.del(otpKey);
-        throw new Error(
+        throw new ExternalServiceError(
           `Failed to send OTP via ${isEmailType ? "Email" : "SMS"}`,
         );
       }
@@ -113,7 +121,7 @@ class AuthService {
       const isPhoneType = this.isPhone(identifier);
 
       if (!isEmailType && !isPhoneType) {
-        throw new Error("Invalid email or phone number format");
+        throw new ValidationError("Invalid email or phone number format");
       }
 
       // Normalize email or phone number
@@ -161,11 +169,11 @@ class AuthService {
 
       // Validate OTP
       if (!storedOtp) {
-        throw new Error("OTP not found or expired");
+        throw new UnauthorizedError("OTP not found or expired");
       }
 
       if (storedOtp !== otp) {
-        throw new Error("Invalid OTP");
+        throw new UnauthorizedError("Invalid OTP");
       }
 
       let user: any;
@@ -236,11 +244,11 @@ class AuthService {
 
       // Validate user
       if (!user || !user.userId) {
-        throw new Error("Failed to create or retrieve user");
+        throw new DatabaseError("Failed to create or retrieve user");
       }
 
       if (!user.isActive) {
-        throw new Error("Account has been deactivated");
+        throw new ForbiddenError("Account has been deactivated");
       }
 
       // Create token
@@ -276,6 +284,7 @@ class AuthService {
       throw error;
     }
   }
+
   private isEmail(input: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(input);
@@ -288,11 +297,10 @@ class AuthService {
 
   private normalizePhone(rawPhone: string): string {
     const phone = parsePhoneNumberFromString(rawPhone, "IN");
-    if (!phone?.isValid()) throw new Error("Invalid phone number");
+    if (!phone?.isValid()) throw new ValidationError("Invalid phone number");
     return phone.number;
   }
 
-  // Add email normalization method
   private normalizeEmail(email: string): string {
     return email.toLowerCase().trim();
   }

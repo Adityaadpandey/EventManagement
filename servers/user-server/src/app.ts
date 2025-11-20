@@ -32,6 +32,12 @@ import { getDatabaseMetrics } from "./utils/databseMatrices";
 import { setupGracefulShutdown } from "./utils/gracefullShutdown";
 import { healthCheck } from "./utils/healthCheck";
 import { sendError } from "./utils/responseMsg";
+if (process.env.NEW_RELIC_LICENSE_KEY) {
+  require("newrelic");
+  console.log("New Relic agent loaded");
+} else {
+  console.log("New Relic not configured (no license key found)");
+}
 
 const app = express();
 
@@ -111,6 +117,7 @@ app.use(compressionMiddleware);
 const allowedOrigins = [
   "https://www.tixin.in",
   "https://stag.tixin.in",
+  "http://localhost:3000",
   ...(config.NODE_ENV !== "production" ? ["http://localhost:3000"] : []),
 ];
 
@@ -173,9 +180,21 @@ app.use(reqMiddleware);
 // Metrics endpoint for monitoring (with basic auth in production)
 app.get("/metrics", async (_, res: Response) => {
   try {
-    const metrics = await getDatabaseMetrics();
+    const { collectMetrics, formatPrometheusMetrics } = await import(
+      "./utils/metrics"
+    );
+    const dbMetrics = await getDatabaseMetrics();
+    const appMetrics = collectMetrics();
+
+    // Support Prometheus format if requested
+    const acceptHeader = _.get("Accept") || "";
+    if (acceptHeader.includes("text/plain")) {
+      return res.type("text/plain").send(formatPrometheusMetrics(appMetrics));
+    }
+
     return res.json({
-      metrics,
+      database: dbMetrics,
+      application: appMetrics,
     });
   } catch (error) {
     logger.error("Error fetching metrics:", error);

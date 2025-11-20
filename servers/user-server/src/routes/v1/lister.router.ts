@@ -43,7 +43,7 @@ router.get(
 router.get(
   "/ticket-attendes/:eventId",
   authMiddleware,
-  requireRole(["LISTER"]),
+  requireRole(["LISTER", "ADMIN"]),
   listerController.getTicketAttendes.bind(listerController),
 );
 

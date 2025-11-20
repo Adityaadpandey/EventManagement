@@ -21,13 +21,45 @@ export interface TicketEmailContent {
 export interface EventUpdate {
   message: string;
   updatedAt: string;
+  imageUrl?: string;
+  eventName?: string;
+  eventDate?: string;
+  eventVenue?: string;
+  updateType?: "venue" | "time" | "cancellation" | "general" | "important";
+  actionRequired?: boolean;
+  actionUrl?: string;
+  actionText?: string;
 }
 
 export interface EventUpdateEmailContent {
   eventUpdate: EventUpdate;
 }
+
 export interface OtpEmailContent {
   otp: string;
+  message?: string;
 }
 
-export type EmailType = "ticket" | "event-update" | "otp";
+export interface Promotion {
+  eventTitle: string; // Event being promoted
+  eventDescription?: string; // Event description
+  eventDate: string; // Event date
+  eventTime: string; // Event time
+  eventLocation: string; // Event location/venue
+  eventBanner?: string; // Event banner image URL
+  customContent?: string; // Custom promotional message
+  listerName: string; // Lister/organizer name
+  eventLink: string; // Link to event page
+  listerWebsite?: string; // Lister website
+  listerInstagram?: string; // Instagram link
+  listerFacebook?: string; // Facebook link
+  listerX?: string; // X/Twitter link
+  chips?: string[]; // Event tags/categories
+  tags?: string[]; // Additional tags
+}
+
+export interface PromotionEmailContent {
+  promotion: Promotion;
+}
+
+export type EmailType = "ticket" | "event-update" | "otp" | "promotion";
