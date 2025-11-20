@@ -1071,9 +1071,11 @@ export default function EventClient({
               >
                 <EventCard
                   discountedPrice={
-                    ev.TicketType && ev.TicketType.length > 0
+                    ev.TicketType && recEvent.TicketType.length > 0
                       ? Math.min(
-                          ...ev.TicketType.map((t: any) => t.discountedPrice),
+                          ...recEvent.TicketType.map(
+                            (t: any) => t.discountedPrice,
+                          ),
                         )
                       : 0
                   }
@@ -1112,7 +1114,13 @@ export default function EventClient({
     } 
   `}
           style={{ boxShadow: "inset 0 0 15px 2px #FFF" }}
-          disabled={!ev.TicketType || ev.TicketType.length === 0 || isPastEvent}
+          disabled={
+            !ev.TicketType ||
+            ev.TicketType.length === 0 ||
+            isPastEvent ||
+            (ev.capacity !== null && ev.capacity <= 0) ||
+            ev.canBuy === false
+          }
         >
           <motion.div
             className="absolute top-0 h-full w-full pointer-events-none overflow-hidden rounded-full"
