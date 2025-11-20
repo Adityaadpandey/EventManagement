@@ -34,6 +34,7 @@ const FILTERS = [
   "All",
   "Fest",
   "Tech",
+  "ESports",
   "Hackathon",
   "Cultural",
   "EDM",
