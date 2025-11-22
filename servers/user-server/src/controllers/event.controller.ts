@@ -339,4 +339,41 @@ export class EventController {
       );
     }
   }
+
+  async patchEventStatus(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) throw new UnauthorizedError("User ID is required");
+
+      const eventId = req.params.eventId;
+      if (!eventId) throw new BadRequestError("Event ID is required");
+      const { canBuy } = req.body;
+      if (typeof canBuy !== "boolean") {
+        return sendError(res, "canBuy must be a boolean", 400);
+      }
+
+      logInfo(req, "Patching event status", { eventId, userId, canBuy });
+
+      const updatedEvent = await this.eventService.changeEventStatus(
+        userId,
+        eventId,
+        canBuy,
+      );
+
+      return sendSuccess(
+        res,
+        `Event status updated successfully for eventId: ${eventId}`,
+        updatedEvent,
+        200,
+      );
+    } catch (error: any) {
+      logError(req, "Failed to patch event status", error, {
+        eventId: req.params.eventId,
+      });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
+      return sendError(res, "Failed to patch event status", 500, error.message);
+    }
+  }
 }

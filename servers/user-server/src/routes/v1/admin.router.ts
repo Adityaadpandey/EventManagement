@@ -5,22 +5,6 @@ import { authMiddleware, requireRole } from "../../middlewares/auth.middleware";
 const router = Router();
 const adminController = new AdminController();
 
-// for the approval or rejection of user -> lister
-router.post(
-  "/change-user-to-lister-status",
-  authMiddleware,
-  requireRole(["ADMIN"]),
-  adminController.changeUserToListerStatus.bind(adminController),
-);
-
-// for getting all the users who have applied for lister role
-router.get(
-  "/get-all-lister-requests",
-  authMiddleware,
-  requireRole(["ADMIN"]),
-  adminController.getAllListerRequests.bind(adminController),
-);
-
 // for the approval or rejection of event
 router.post(
   "/change-event-status",
@@ -35,6 +19,41 @@ router.get(
   authMiddleware,
   requireRole(["ADMIN"]),
   adminController.getAllPendingEvents.bind(adminController),
+);
+
+router.patch(
+  "/event/canBuy/:eventId",
+  authMiddleware,
+  requireRole(["ADMIN"]),
+  adminController.changeEventBuyStatus.bind(adminController),
+);
+
+router.get(
+  "/event/all",
+  authMiddleware,
+  requireRole(["ADMIN"]),
+  adminController.getAllEvents.bind(adminController),
+);
+
+router.get(
+  "/event/:eventId",
+  authMiddleware,
+  requireRole(["ADMIN"]),
+  adminController.getEventById.bind(adminController),
+);
+
+router.get(
+  "/event/analytics/:eventId",
+  authMiddleware,
+  requireRole(["ADMIN"]),
+  adminController.getEventAnalytics.bind(adminController),
+);
+
+router.get(
+  "/event/attendee/:eventId",
+  authMiddleware,
+  requireRole(["ADMIN"]),
+  adminController.getEventTicketAttendees.bind(adminController),
 );
 
 export { router as adminRouter };
