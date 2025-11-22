@@ -13,7 +13,7 @@ import {
   UnauthorizedError,
 } from "../utils/errors";
 
-export class ListerServer {
+export class ListerService {
   async applyForLister(
     userId: string,
     listerData: { companyName: string; companyLogo?: string; bio: string },
@@ -437,16 +437,24 @@ export class ListerServer {
     }
   }
 
-  async getEventAttendeeTicketsDetails(eventId: string, userId: string) {
+  async getEventAttendeeTicketsDetails(
+    eventId: string,
+    userId: string,
+    isAdmin: boolean = false,
+  ) {
     try {
       // Verify event ownership first (lightweight query)
       const event = await prisma.event.findFirst({
         where: {
           eventId,
-          lister: { userId },
         },
         select: {
           eventId: true,
+          lister: {
+            select: {
+              userId: true,
+            },
+          },
           title: true,
           date: true,
           time: true,
@@ -462,12 +470,17 @@ export class ListerServer {
           },
         },
       });
+      console.log(event);
 
       if (!event) {
+        logger.warn(`Event not found for eventId: ${eventId} `);
+        throw new NotFoundError("Event not found");
+      }
+      if (event.lister.userId !== userId && !isAdmin) {
         logger.warn(
-          `Event not found or access denied for eventId: ${eventId} and userId: ${userId}`,
+          `Access Denied for userId: ${userId} and eventId: ${eventId} `,
         );
-        throw new NotFoundError("Access Denied or Event not found");
+        throw new NotFoundError("Access Denied");
       }
 
       // OPTIMIZED: Get ticket types with aggregated statistics using raw SQL
@@ -592,6 +605,7 @@ export class ListerServer {
             discountedPrice: ticketType.discountedPrice,
             totalQuantity: ticketType.quantity,
             soldCount: Number(ticketType.totalTicketsSold),
+            totalTicketsForType: totalTicketsForType,
             availableCount:
               ticketType.quantity - Number(ticketType.totalTicketsSold),
             totalTickets: Number(ticketType.totalTicketsSold),
@@ -625,13 +639,13 @@ export class ListerServer {
         success: true,
         data: {
           event: {
-            eventId: event.eventId,
-            title: event.title,
-            date: event.date,
-            time: event.time,
-            location: event.location,
+            eventId: event?.eventId,
+            title: event?.title,
+            date: event?.date,
+            time: event?.time,
+            location: event?.location,
           },
-          customFields: event.CustomField,
+          customFields: event?.CustomField,
           statistics: {
             totalTicketsSold,
             totalCheckedIn,

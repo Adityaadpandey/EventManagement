@@ -6,11 +6,16 @@ import logger from "../config/logger";
 import {
   getTokenDataAndBlacklistStatus,
   getUserCache,
-  setUserCache,
   setTokenCache,
+  setUserCache,
 } from "../lib/cache";
 import type { AuthenticatedRequest, JwtPayload } from "../types/auth";
-import { sendError } from "../utils/responseMsg";
+import {
+  ForbiddenError,
+  NotFoundError,
+  ServiceUnavailableError,
+  UnauthorizedError,
+} from "../utils/errors";
 
 export const authMiddleware = async (
   req: AuthenticatedRequest,
@@ -22,12 +27,12 @@ export const authMiddleware = async (
     const token = authHeader?.replace("Bearer ", "");
 
     if (!token) {
-      return sendError(res, "No token provided", 401);
+      throw new NotFoundError("No token provided");
     }
 
     if (!config.JWT_SECRET) {
       logger.error("JWT_SECRET is not defined");
-      return sendError(res, "Server configuration error", 500);
+      throw new NotFoundError("Server configuration error");
     }
 
     // Check blacklist early - fastest check
@@ -35,7 +40,7 @@ export const authMiddleware = async (
       await getTokenDataAndBlacklistStatus(token);
 
     if (isBlacklisted) {
-      return sendError(res, "Token has been blacklisted", 401);
+      throw new ForbiddenError("Token has been blacklisted");
     }
 
     let userId = cachedUserId;
@@ -47,7 +52,7 @@ export const authMiddleware = async (
         decoded = jwt.verify(token, config.JWT_SECRET) as JwtPayload;
         userId = decoded.userId;
       } catch (_jwtError) {
-        return sendError(res, "Invalid Authorization token", 401);
+        throw new UnauthorizedError("Invalid Authorization token");
       }
     }
 
@@ -70,12 +75,12 @@ export const authMiddleware = async (
       });
 
       if (!user) {
-        return sendError(res, "User not found", 404);
+        throw new NotFoundError("User not found");
       }
 
       // Check if user is active
       if (!(user as any).isActive) {
-        return sendError(res, "Account has been deactivated", 401);
+        throw new UnauthorizedError("Account has been deactivated");
       }
 
       // Cache both user and token (only if we had to fetch from DB)
@@ -90,7 +95,7 @@ export const authMiddleware = async (
     } else {
       // Even if user is cached, check if active (this is a fast in-memory check)
       if (!(user as any).isActive) {
-        return sendError(res, "Account has been deactivated", 401);
+        throw new ForbiddenError("Account has been deactivated");
       }
 
       // If user was cached but token wasn't, cache the token
@@ -103,7 +108,7 @@ export const authMiddleware = async (
     next();
   } catch (error) {
     logger.error("Auth Middleware Error:", error);
-    return sendError(res, "Authentication failed", 500);
+    throw new ServiceUnavailableError("Authentication failed");
   }
 };
 
@@ -114,11 +119,11 @@ export const requireRole = (roles: string[]) => {
 
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return sendError(res, "Authentication required", 401);
+      throw new UnauthorizedError("Authentication required");
     }
 
     if (!roleSet.has(req.user.role)) {
-      return sendError(res, "Access denied", 403);
+      throw new ForbiddenError("Access denied");
     }
 
     next();

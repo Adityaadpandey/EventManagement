@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import { ListerServer } from "../services/lister.service";
+import { ListerService } from "../services/lister.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import {
   BadRequestError,
@@ -14,10 +14,10 @@ import {
 } from "../validators/lister.validator";
 
 export class ListerController {
-  private listerService: ListerServer;
+  private listerService: ListerService;
 
   constructor() {
-    this.listerService = new ListerServer();
+    this.listerService = new ListerService();
   }
 
   async applyForLister(req: AuthenticatedRequest, res: Response) {
