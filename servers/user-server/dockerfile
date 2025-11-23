@@ -16,7 +16,7 @@ WORKDIR /workspace
 
 COPY servers/user-server/package*.json ./servers/user-server/
 COPY servers/user-server/tsconfig.json ./servers/user-server/
-COPY servers/user-server/src ./servers/user-server/src
+COPY servers/user-server/ ./servers/user-server/
 
 WORKDIR /workspace/servers/user-server
 RUN pnpm install
