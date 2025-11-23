@@ -20,6 +20,7 @@ COPY servers/user-server/src ./servers/user-server/src
 
 WORKDIR /workspace/servers/user-server
 RUN pnpm install
+RUN npx prisma generate
 RUN pnpm run build
 
 # ------------------------------------------------------------
@@ -45,7 +46,6 @@ ARG BUILD_DATE
 ENV BUILD_DATE=${BUILD_DATE}
 
 RUN npm install -g pnpm
-RUN npx prisma generate
 RUN pnpm install --prod
 
 EXPOSE 7001
