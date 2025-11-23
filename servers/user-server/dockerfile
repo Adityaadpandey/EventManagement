@@ -6,8 +6,8 @@ WORKDIR /workspace
 COPY packages ./packages
 RUN npm install -g pnpm
 
-WORKDIR /workspace/packages/database
-RUN pnpm install && pnpm run build
+# WORKDIR /workspace/packages/database
+# RUN pnpm install && pnpm run build
 
 WORKDIR /workspace/packages/logger
 RUN pnpm install && pnpm run build
