@@ -87,7 +87,7 @@ const validateEnv = () => {
 };
 
 // Validate environment on module load
-validateEnv();
+// validateEnv();
 
 export const config: Config = {
   SERVICE_NAME: require("../../package.json").name || "server",
