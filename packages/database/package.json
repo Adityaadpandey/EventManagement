@@ -27,13 +27,17 @@
     "postinstall": "npm run generate"
   },
   "dependencies": {
-    "@prisma/client": "^6.14.0"
+    "@prisma/adapter-pg": "^7.0.0",
+    "@prisma/client": "latest",
+    "dotenv": "^16.6.1",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
     "@repo/typescript-config": "../config-typescript",
-    "@types/node": "^22.13.13",
+    "@types/node": "^22.15.3",
+    "@types/pg": "^8.15.6",
     "eslint": "^8.57.0",
-    "prisma": "6.15.0",
+    "prisma": "latest",
     "tsx": "4.19.1",
     "typescript": "5.5.4"
   }

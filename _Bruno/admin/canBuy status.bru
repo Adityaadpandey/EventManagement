@@ -1,0 +1,22 @@
+meta {
+  name: canBuy status
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{host}}/admin/event/canBuy/1edc63ac-30b1-42f3-8342-f008eb42439a
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "canBuy":false
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
