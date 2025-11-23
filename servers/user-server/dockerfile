@@ -45,6 +45,7 @@ ARG BUILD_DATE
 ENV BUILD_DATE=${BUILD_DATE}
 
 RUN npm install -g pnpm
+RUN npx prisma generate
 RUN pnpm install --prod
 
 EXPOSE 7001
