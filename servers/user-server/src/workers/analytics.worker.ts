@@ -96,6 +96,7 @@ async function processAnalyticsQueue() {
                       ticketTypeId: true,
                       name: true,
                       platformfee: true,
+                      platformfeePerc: true,
                     },
                   },
                 },
@@ -132,9 +133,10 @@ async function processAnalyticsQueue() {
                 ticket.ticketType.platformfee * ticket.quantity;
               actualRevenue = ticket.totalPrice - platformFee;
             } else {
-              // If no platform fee, subtract 5% as default platform fee
-              const defaultPlatformFee = ticket.totalPrice * 0.05;
-              actualRevenue = ticket.totalPrice - defaultPlatformFee;
+              // If no platform fee, use platformfeePerc
+              const platformFeeFromPerc =
+                ticket.totalPrice * ticket.ticketType.platformfeePerc;
+              actualRevenue = ticket.totalPrice - platformFeeFromPerc;
             }
 
             return sum + actualRevenue;
@@ -182,8 +184,6 @@ async function processAnalyticsQueue() {
           // Update today's data (increment existing or set new)
           viewsByDay[today] = (viewsByDay[today] || 0) + stats.views;
           clicksByDay[today] = (clicksByDay[today] || 0) + stats.ctaClicks;
-          salesByDay[today] = realTicketsSold; // Set to real current value
-          revenueByDay[today] = parseFloat(realRevenue.toFixed(2)); // Set to real current value
 
           // Calculate ticket type sales by day - group all tickets by date and type
           const ticketsByDate: Record<
@@ -217,15 +217,31 @@ async function processAnalyticsQueue() {
                 ticket.ticketType.platformfee * ticket.quantity;
               ticketRevenue = ticket.totalPrice - platformFee;
             } else {
-              // Default 5% platform fee
-              const defaultPlatformFee = ticket.totalPrice * 0.05;
-              ticketRevenue = ticket.totalPrice - defaultPlatformFee;
+              // Use platformfeePerc
+              const platformFeeFromPerc =
+                ticket.totalPrice * ticket.ticketType.platformfeePerc;
+              ticketRevenue = ticket.totalPrice - platformFeeFromPerc;
             }
 
             ticketsByDate[ticketDate][ticketTypeId].revenue += parseFloat(
               ticketRevenue.toFixed(2),
             );
           }
+
+          // Calculate salesByDay and revenueByDay from ticketsByDate
+          Object.keys(ticketsByDate).forEach((date) => {
+            const dateTickets = ticketsByDate[date];
+            let dateTotalQuantity = 0;
+            let dateTotalRevenue = 0;
+
+            Object.values(dateTickets).forEach((ticketTypeData) => {
+              dateTotalQuantity += ticketTypeData.quantity;
+              dateTotalRevenue += ticketTypeData.revenue;
+            });
+
+            salesByDay[date] = dateTotalQuantity;
+            revenueByDay[date] = parseFloat(dateTotalRevenue.toFixed(2));
+          });
 
           // Update ticket types sales by day with complete data
           Object.assign(ticketTypesSalesByDay, ticketsByDate);

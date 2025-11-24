@@ -8,5 +8,5 @@ services:
     restart: always
     ports:
       - "7001:7001"
-    env_file:
-      - ./servers/user-server/.env
+    # env_file:
+    #   - ./servers/user-server/.env

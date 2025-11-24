@@ -41,9 +41,21 @@ const validateEnv = () => {
     value: string | undefined;
     productionOnly?: boolean;
   }> = [
-    // { key: "DATABASE_URL", value: process.env.DATABASE_URL },
-    { key: "REDIS_URL", value: process.env.REDIS_URL },
-    { key: "JWT_SECRET", value: process.env.JWT_SECRET, productionOnly: true },
+    {
+      key: "DATABASE_URL",
+      value: process.env.DATABASE_URL,
+      productionOnly: true,
+    },
+    {
+      key: "REDIS_URL",
+      value: process.env.REDIS_URL,
+      productionOnly: true,
+    },
+    {
+      key: "JWT_SECRET",
+      value: process.env.JWT_SECRET,
+      productionOnly: true,
+    },
     {
       key: "RAZORPAY_KEY_ID",
       value: process.env.RAZORPAY_KEY_ID,

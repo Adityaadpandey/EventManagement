@@ -109,6 +109,7 @@ export class ListerService {
                   ticketType: {
                     select: {
                       platformfee: true,
+                      platformfeePerc: true,
                     },
                   },
                 },
@@ -148,11 +149,11 @@ export class ListerService {
         );
         const eventRevenue = event.Ticket.reduce((sum, ticket) => {
           // Calculate actual revenue by subtracting platform fees
-          // If platform fee exists, subtract it; if 0, subtract 5% of total price
+          // If platform fee exists, subtract it; if 0, use platformfeePerc
           const platformFee =
             ticket.ticketType.platformfee > 0
               ? ticket.ticketType.platformfee * ticket.quantity
-              : ticket.totalPrice * 0.05;
+              : ticket.totalPrice * ticket.ticketType.platformfeePerc;
           const actualRevenue = ticket.totalPrice - platformFee;
           return sum + actualRevenue;
         }, 0);
@@ -492,6 +493,7 @@ export class ListerService {
         discountedPrice: number | null;
         quantity: number;
         platformfee: number;
+        platformfeePerc: number;
         totalTicketsSold: bigint;
         totalTicketRecords: bigint;
         checkedInCount: bigint;
@@ -507,6 +509,7 @@ export class ListerService {
             tt."discountedPrice",
             tt.quantity,
             tt.platformfee,
+            tt."platformfeePerc",
             COALESCE(SUM(t.quantity), 0)::bigint as "totalTicketsSold",
             COUNT(t."ticketId")::bigint as "totalTicketRecords",
             COALESCE(SUM(CASE WHEN t."checkedIn" = true THEN t.quantity ELSE 0 END), 0)::bigint as "checkedInCount",
@@ -514,13 +517,13 @@ export class ListerService {
               CASE
                 WHEN tt.platformfee > 0
                 THEN t."totalPrice" - (tt.platformfee * t.quantity)
-                ELSE t."totalPrice" * 0.95
+                ELSE t."totalPrice" * (1 - tt."platformfeePerc")
               END
             ), 0)::float as "totalRevenue"
           FROM "TicketType" tt
           LEFT JOIN "Ticket" t ON tt."ticketTypeId" = t."ticketTypeId" AND t.status = 'SUCCESS'
           WHERE tt."eventId" = ${eventId}
-          GROUP BY tt."ticketTypeId", tt.name, tt.description, tt.price, tt."discountedPrice", tt.quantity, tt.platformfee
+          GROUP BY tt."ticketTypeId", tt.name, tt.description, tt.price, tt."discountedPrice", tt.quantity, tt.platformfee, tt."platformfeePerc"
           ORDER BY tt.price ASC
         `;
 
