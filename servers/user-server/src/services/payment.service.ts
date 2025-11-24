@@ -6,7 +6,11 @@ import { delTicketCache } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
 import { razorpay } from "../lib/razorpay";
 import { razorpayCircuitBreaker } from "../utils/circuitBreaker";
-import { NotFoundError, BadRequestError } from "../utils/errors";
+import {
+  BadRequestError,
+  ExternalServiceError,
+  NotFoundError,
+} from "../utils/errors";
 import { withTimeout } from "../utils/timeout";
 
 export class PaymentService {
@@ -26,7 +30,7 @@ export class PaymentService {
           .digest("hex");
 
         if (expectedSignature !== razorpaySignature) {
-          throw new Error("Invalid payment signature");
+          throw new ExternalServiceError("Invalid payment signature");
         }
       }
 
@@ -41,7 +45,7 @@ export class PaymentService {
 
       if (payment.status !== "captured") {
         logger.error(`Payment ${razorpayPaymentId} not captured`);
-        throw new Error("Payment not captured");
+        throw new ExternalServiceError("Payment not captured");
       }
 
       // Check if ticket exists and get current status
@@ -66,7 +70,12 @@ export class PaymentService {
         data: { status: "SUCCESS" },
         include: {
           ticketType: {
-            include: {
+            select: {
+              ticketTypeId: true,
+              eventId: true,
+              name: true,
+              platformfee: true,
+              platformfeePerc: true,
               event: {
                 select: {
                   eventId: true,
@@ -99,7 +108,7 @@ export class PaymentService {
       const platformFee =
         ticket.ticketType.platformfee > 0
           ? ticket.ticketType.platformfee * ticket.quantity
-          : ticket.totalPrice * 0.05;
+          : ticket.totalPrice * ticket.ticketType.platformfeePerc;
       const actualRevenue = ticket.totalPrice - platformFee;
 
       // Parallel updates and lister fetch for better performance (optimized)
@@ -274,7 +283,11 @@ export class PaymentService {
         where: { ticketId },
         include: {
           ticketType: {
-            include: {
+            select: {
+              ticketTypeId: true,
+              eventId: true,
+              platformfee: true,
+              platformfeePerc: true,
               event: true,
             },
           },
@@ -333,18 +346,24 @@ export class PaymentService {
         include: {
           ticket: {
             include: {
-              ticketType: true,
+              ticketType: {
+                select: {
+                  ticketTypeId: true,
+                  platformfee: true,
+                  platformfeePerc: true,
+                },
+              },
             },
           },
         },
       });
 
       // Calculate actual revenue impact (refund amount minus platform fees that were included)
-      // If platform fee exists, subtract it; if 0, subtract 5% of refund amount
+      // If platform fee exists, subtract it; if 0, use platformfeePerc
       const platformFee =
         refund.ticket.ticketType.platformfee > 0
           ? refund.ticket.ticketType.platformfee * refund.ticket.quantity
-          : refund.amount * 0.05;
+          : refund.amount * refund.ticket.ticketType.platformfeePerc;
       const actualRevenueImpact = refund.amount - platformFee;
 
       // Update analytics (decrease revenue and ticket count)

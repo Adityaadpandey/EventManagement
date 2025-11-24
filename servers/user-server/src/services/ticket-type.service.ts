@@ -276,7 +276,7 @@ export class TicketTypeService {
 
       // Prevent deletion if tickets have been sold
       if (ticketType.soldCount > 0) {
-        throw new Error(
+        throw new BadRequestError(
           `Cannot delete ticket type with ${ticketType.soldCount} sold tickets`,
         );
       }

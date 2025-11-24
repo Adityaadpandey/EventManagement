@@ -38,6 +38,7 @@ export class TicketService {
           soldCount: true,
           salesCutoff: true,
           platformfee: true,
+          platformfeePerc: true,
           event: {
             select: {
               eventId: true,

@@ -207,6 +207,8 @@ model TicketType {
     salesCutoff     DateTime?
 
     platformfee Int @default(0)
+    platformfeePerc Float @default(0.05) // 5% by default
+
     ticketPrefix String?
 
     createdAt DateTime @default(now())

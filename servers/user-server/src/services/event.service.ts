@@ -17,6 +17,7 @@ import {
   BadRequestError,
   ForbiddenError,
   NotFoundError,
+  UnauthorizedError,
 } from "../utils/errors";
 
 export class EventService {
@@ -55,13 +56,13 @@ export class EventService {
       ] as const;
       for (const field of requiredFields) {
         if (!eventData[field as keyof CreateEventRequest]) {
-          throw new Error(`${field} is required`);
+          throw new BadRequestError(`${field} is required`);
         }
       }
 
       // Validate ticket types
       if (!eventData.ticketTypes || eventData.ticketTypes.length === 0) {
-        throw new Error("At least one ticket type is required");
+        throw new BadRequestError("At least one ticket type is required");
       }
 
       for (const ticketType of eventData.ticketTypes) {
@@ -70,7 +71,7 @@ export class EventService {
           ticketType.price < 0 ||
           ticketType.quantity <= 0
         ) {
-          throw new Error(
+          throw new BadRequestError(
             "Invalid ticket type data. Name, valid price, and positive quantity are required",
           );
         }
@@ -79,7 +80,7 @@ export class EventService {
         if (ticketType.customField && ticketType.customField.length > 0) {
           for (const field of ticketType.customField) {
             if (!field.label || !field.fieldType) {
-              throw new Error(
+              throw new BadRequestError(
                 `Invalid custom field for ticket type "${ticketType.name}". Label and fieldType are required`,
               );
             }
@@ -95,7 +96,7 @@ export class EventService {
         Number.isNaN(eventDate.getTime()) ||
         Number.isNaN(eventTime.getTime())
       ) {
-        throw new Error("Invalid date or time format");
+        throw new BadRequestError("Invalid date or time format");
       }
 
       // Check if event date is in the future
@@ -377,7 +378,7 @@ export class EventService {
       });
 
       if (!event) {
-        throw new Error("Event not found");
+        throw new NotFoundError("Event not found");
       }
 
       // Store in cache
@@ -403,7 +404,9 @@ export class EventService {
         // Verify ownership from cache
         const cachedEvent = cached as any;
         if (cachedEvent.lister?.user?.userId !== userId && !isAdmin) {
-          throw new Error("You do not have permission to view this event");
+          throw new UnauthorizedError(
+            "You do not have permission to view this event",
+          );
         }
         logger.info(`Event details cache hit for ${eventId}`);
         return cached;
@@ -656,7 +659,7 @@ export class EventService {
           // Verify ownership from cache
           const cachedEvent = cached as any;
           if (cachedEvent.lister?.user?.userId !== userId) {
-            throw new Error(
+            throw new UnauthorizedError(
               "You do not have permission to view this event's analytics",
             );
           }
@@ -699,11 +702,11 @@ export class EventService {
       });
 
       if (!event) {
-        throw new Error("Event not found");
+        throw new NotFoundError("Event not found");
       }
 
-      if (event.lister.user.userId !== userId && !isAdmin) {
-        throw new Error(
+      if (!isAdmin && event.lister.user.userId !== userId) {
+        throw new UnauthorizedError(
           "You do not have permission to view this event's analytics",
         );
       }

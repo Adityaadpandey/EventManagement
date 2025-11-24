@@ -2,6 +2,7 @@ import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { Twilio } from "twilio";
 import { config } from "../config";
 import logger from "../config/logger";
+import { BadRequestError, ExternalServiceError } from "../utils/errors";
 
 const client = new Twilio(config.TWILIO_ACCOUNT_SID, config.TWILIO_AUTH_TOKEN);
 
@@ -10,7 +11,7 @@ export const sendSMS = async (otp: string, phone: string) => {
 
   if (!parsed?.isValid()) {
     logger.error(`Invalid phone number format for SMS: ${phone}`);
-    throw new Error("Invalid phone number format");
+    throw new BadRequestError("Invalid phone number format");
   }
 
   try {
@@ -26,6 +27,6 @@ export const sendSMS = async (otp: string, phone: string) => {
     return message.sid;
   } catch (error) {
     logger.error("Error sending SMS:", error);
-    throw new Error("Failed to send SMS");
+    throw new ExternalServiceError("Failed to send SMS");
   }
 };
