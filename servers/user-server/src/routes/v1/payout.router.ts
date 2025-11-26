@@ -5,7 +5,6 @@ import { authMiddleware, requireRole } from "../../middlewares/auth.middleware";
 const router = Router();
 const payoutController = new PayoutController();
 
-// Lister routes
 router.post(
   "/request",
   authMiddleware,
@@ -46,42 +45,6 @@ router.patch(
   authMiddleware,
   requireRole(["LISTER"]),
   payoutController.cancelPayout.bind(payoutController),
-);
-
-// Admin routes
-router.get(
-  "/admin/all",
-  authMiddleware,
-  requireRole(["ADMIN", "SUPER_ADMIN"]),
-  payoutController.getAllPayouts.bind(payoutController),
-);
-
-router.patch(
-  "/admin/:payoutId/approve",
-  authMiddleware,
-  requireRole(["ADMIN", "SUPER_ADMIN"]),
-  payoutController.approvePayout.bind(payoutController),
-);
-
-router.patch(
-  "/admin/:payoutId/complete",
-  authMiddleware,
-  requireRole(["ADMIN", "SUPER_ADMIN"]),
-  payoutController.completePayout.bind(payoutController),
-);
-
-router.patch(
-  "/admin/:payoutId/reject",
-  authMiddleware,
-  requireRole(["ADMIN", "SUPER_ADMIN"]),
-  payoutController.rejectPayout.bind(payoutController),
-);
-
-router.patch(
-  "/admin/:payoutId/reverse",
-  authMiddleware,
-  requireRole(["ADMIN", "SUPER_ADMIN"]),
-  payoutController.reversePayout.bind(payoutController),
 );
 
 export { router as payoutRouter };

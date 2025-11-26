@@ -62,9 +62,6 @@ export class PayoutController {
       if (!userId) throw new UnauthorizedError("User ID is required");
 
       const { status } = req.query;
-      if (!status) {
-        throw new NotFoundError("Status query parameter is required");
-      }
 
       const payouts = await this.payoutService.getPayouts(
         userId,
