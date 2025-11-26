@@ -1,15 +1,16 @@
 meta {
-  name: get all events
+  name: get payout req
   type: http
   seq: 2
 }
 
 get {
-  url: {{host}}/admin/event/all
+  url: {{host}}/payout
   body: none
   auth: inherit
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

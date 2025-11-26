@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { Prisma } from "../generated/prisma/client";
 import { delTicketCache } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
 import { razorpay } from "../lib/razorpay";
@@ -135,6 +136,7 @@ export class PaymentService {
         prisma.lister.findUnique({
           where: { userId: ticket.ticketType.event.listerId },
           select: {
+            listerId: true,
             InstagramLink: true,
             FacebookLink: true,
             XLink: true,
@@ -145,9 +147,65 @@ export class PaymentService {
             user: {
               select: { email: true },
             },
+            Account: {
+              select: {
+                accountId: true,
+                balance: true,
+              },
+            },
           },
         }),
       ]);
+
+      // Create ledger entry for revenue (create account if doesn't exist)
+      if (lister) {
+        try {
+          let account = lister.Account;
+
+          // Create account if it doesn't exist
+          if (!account) {
+            account = await prisma.account.create({
+              data: {
+                listerId: lister.listerId,
+                balance: 0,
+              },
+            });
+            logger.info(`Created account for lister ${lister.listerId}`);
+          }
+
+          const newBalance = new Prisma.Decimal(account.balance).plus(
+            actualRevenue,
+          );
+
+          await prisma.$transaction([
+            prisma.ledgerEntry.create({
+              data: {
+                accountId: account.accountId,
+                entryType: "CREDIT",
+                amount: actualRevenue,
+                balanceAfter: newBalance,
+                referenceType: "EVENT_REVENUE",
+                referenceId: ticket.ticketType.eventId,
+              },
+            }),
+            prisma.account.update({
+              where: { accountId: account.accountId },
+              data: { balance: newBalance },
+            }),
+          ]);
+
+          logger.info(
+            `Ledger entry created for ticket ${ticket.ticketId}: ${actualRevenue}, new balance: ${newBalance}`,
+          );
+        } catch (ledgerError) {
+          logger.error("Error creating ledger entry:", ledgerError);
+          // Don't fail the payment if ledger fails
+        }
+      } else {
+        logger.warn(
+          `Lister not found for event ${ticket.ticketType.eventId}, skipping ledger entry`,
+        );
+      }
 
       // Send confirmation email to user
       try {
@@ -351,6 +409,11 @@ export class PaymentService {
                   ticketTypeId: true,
                   platformfee: true,
                   platformfeePerc: true,
+                  event: {
+                    select: {
+                      listerId: true,
+                    },
+                  },
                 },
               },
             },
@@ -387,6 +450,65 @@ export class PaymentService {
           },
         },
       });
+
+      // Create DEBIT ledger entry for refund
+      const lister = await prisma.lister.findUnique({
+        where: { listerId: refund.ticket.ticketType.event.listerId },
+        include: {
+          Account: true,
+        },
+      });
+
+      if (lister) {
+        try {
+          let account = lister.Account;
+
+          // Create account if it doesn't exist
+          if (!account) {
+            account = await prisma.account.create({
+              data: {
+                listerId: lister.listerId,
+                balance: 0,
+              },
+            });
+            logger.info(
+              `Created account for lister ${lister.listerId} during refund`,
+            );
+          }
+
+          const newBalance = new Prisma.Decimal(account.balance).minus(
+            actualRevenueImpact,
+          );
+
+          await prisma.$transaction([
+            prisma.ledgerEntry.create({
+              data: {
+                accountId: account.accountId,
+                entryType: "DEBIT",
+                amount: actualRevenueImpact,
+                balanceAfter: newBalance,
+                referenceType: "REFUND",
+                referenceId: refundId,
+              },
+            }),
+            prisma.account.update({
+              where: { accountId: account.accountId },
+              data: { balance: newBalance },
+            }),
+          ]);
+
+          logger.info(
+            `Ledger entry created for refund ${refundId}: -${actualRevenueImpact}, new balance: ${newBalance}`,
+          );
+        } catch (ledgerError) {
+          logger.error("Error creating ledger entry for refund:", ledgerError);
+          // Don't fail the refund if ledger fails
+        }
+      } else {
+        logger.warn(
+          `Lister not found for refund ${refundId}, skipping ledger entry`,
+        );
+      }
 
       return refund;
     } catch (error) {

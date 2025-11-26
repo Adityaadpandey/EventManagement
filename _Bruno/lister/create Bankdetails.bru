@@ -1,0 +1,25 @@
+meta {
+  name: create Bankdetails
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{host}}/lister/bank/details
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "bankName":"HDFC Bank",
+    "accountNumber": "11234567890113",
+    "ifscCode": "HDFCLX",
+    "accountHolderName":"Avinash Dutt Pandey"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

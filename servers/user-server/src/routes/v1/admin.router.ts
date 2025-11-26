@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { AdminController } from "../../controllers/admin.controller";
+import { PayoutController } from "../../controllers/payout.controller";
 import { authMiddleware, requireRole } from "../../middlewares/auth.middleware";
 
 const router = Router();
 const adminController = new AdminController();
+const payoutController = new PayoutController();
+
+// Event management routes
 
 // for the approval or rejection of event
 router.post(
@@ -54,6 +58,43 @@ router.get(
   authMiddleware,
   requireRole(["ADMIN"]),
   adminController.getEventTicketAttendees.bind(adminController),
+);
+
+// Payout management routes
+
+router.get(
+  "/payout/all",
+  authMiddleware,
+  requireRole(["ADMIN", "SUPER_ADMIN"]),
+  payoutController.getAllPayouts.bind(payoutController),
+);
+
+router.patch(
+  "/payout/:payoutId/approve",
+  authMiddleware,
+  requireRole(["ADMIN", "SUPER_ADMIN"]),
+  payoutController.approvePayout.bind(payoutController),
+);
+
+router.patch(
+  "/payout/:payoutId/complete",
+  authMiddleware,
+  requireRole(["ADMIN", "SUPER_ADMIN"]),
+  payoutController.completePayout.bind(payoutController),
+);
+
+router.patch(
+  "/payout/:payoutId/reject",
+  authMiddleware,
+  requireRole(["ADMIN", "SUPER_ADMIN"]),
+  payoutController.rejectPayout.bind(payoutController),
+);
+
+router.patch(
+  "/payout/:payoutId/reverse",
+  authMiddleware,
+  requireRole(["ADMIN", "SUPER_ADMIN"]),
+  payoutController.reversePayout.bind(payoutController),
 );
 
 export { router as adminRouter };

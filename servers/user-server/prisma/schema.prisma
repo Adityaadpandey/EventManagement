@@ -99,12 +99,107 @@ model Lister {
     Event           Event[]
     TicketChecker   TicketChecker[]
     ListerAnalytics ListerAnalytics?
+    BankDetails    BankDetails?
+    Account        Account?
+    Payout         Payout[]
 
     // INDEXES
     @@index([status]) // Filter by approval status
     @@index([createdAt]) // Sort by registration date
     @@index([status, createdAt]) // Composite: pending listers sorted by date
+    @@index([userId]) // Query lister by user
+    @@index([listerId])
 }
+
+model BankDetails{
+  bankDetailsId String @id @default(uuid())
+  listerId String @unique
+  lister   Lister @relation(fields: [listerId], references: [listerId])
+
+  bankName String
+  accountNumber String
+  ifscCode String
+  accountHolderName String
+  branchCode String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listerId])
+}
+
+model Account {
+  accountId String @id @default(uuid())
+  listerId  String @unique
+  lister    Lister @relation(fields: [listerId], references: [listerId])
+
+  balance Decimal @default("0")
+  LedgerEntry LedgerEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PayoutType {
+  FULL
+  PARTIAL
+
+}
+
+model Payout {
+  payoutId   String   @id @default(uuid())
+  listerId   String
+  lister     Lister   @relation(fields: [listerId], references: [listerId])
+
+  eventId    String?
+  event      Event?   @relation(fields: [eventId], references: [eventId])
+
+  type       PayoutType  @default(FULL)
+  amount     Decimal      // amount requested by lister
+  approvedAmount Decimal? // amount admin decides to pay (can differ)
+  status     PayoutStatus @default(PENDING)
+
+  remark     String? // Reason like "50% pre-event", "Final settlement"
+
+  requestedAt DateTime @default(now())
+  approvedAt  DateTime?
+  paidAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listerId])
+  @@index([eventId])
+  @@index([status])
+}
+
+model LedgerEntry {
+  id        String   @id @default(uuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [accountId])
+
+  entryType String   // "CREDIT" or "DEBIT"
+  amount    Decimal
+  balanceAfter Decimal
+
+  referenceType String? // "EVENT_REVENUE" or "PAYOUT"
+  referenceId   String? // eventId or payoutId
+
+  createdAt DateTime @default(now())
+
+  @@index([accountId])
+  @@index([createdAt])
+}
+
+
 
 model Event {
     eventId  String @id @default(uuid())
@@ -150,6 +245,8 @@ model Event {
     ticketCounter  Int   @default(0) // Fast counter for sequential ticket numbering
 
     availableMailUpdates Int @default(2)
+
+    Payout        Payout[]
 
     // Relations
     TicketType     TicketType[]
@@ -384,7 +481,7 @@ model EventAnalytics {
     views          Int   @default(0)
     clicks         Int   @default(0)
     ticketsSold    Int   @default(0)
-    revenue        Float @default(0)
+    revenue        Decimal @default("0")
     conversionRate Float @default(0)
 
     lastUpdated DateTime @default(now()) @updatedAt
