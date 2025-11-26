@@ -303,26 +303,9 @@ export class ListerService {
               banner_vertical: true,
               banner_square: true,
               status: true,
-              EventAnalytics: {
-                select: {
-                  views: true,
-                  clicks: true,
-                  ticketsSold: true,
-                  revenue: true,
-                  conversionRate: true,
-                },
-              },
             },
             orderBy: {
               createdAt: "desc",
-            },
-          },
-          ListerAnalytics: {
-            select: {
-              totalEvents: true,
-              totalRevenue: true,
-              totalTicketsSold: true,
-              lastUpdated: true,
             },
           },
         },

@@ -1,0 +1,22 @@
+meta {
+  name: Admin Complete a Payout
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{host}}/admin/payout/2b4f12a2-ec42-42b5-a9e6-153d4e69e9bf/complete
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+     "remark": "Approved"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

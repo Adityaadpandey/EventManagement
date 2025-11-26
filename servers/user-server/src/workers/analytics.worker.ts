@@ -247,7 +247,7 @@ async function processAnalyticsQueue() {
           Object.assign(ticketTypesSalesByDay, ticketsByDate);
 
           // Update EventAnalytics with REAL values and daily tracking
-          await prisma.eventAnalytics.upsert({
+          const updatedAnalytics = await prisma.eventAnalytics.upsert({
             where: { eventId },
             create: {
               eventId,
@@ -279,6 +279,99 @@ async function processAnalyticsQueue() {
               lastUpdated: new Date(),
             },
           });
+
+          // Sync ledger with EventAnalytics revenue
+          // This ensures ledger stays in sync even if payment service missed some entries
+          try {
+            const event = await prisma.event.findUnique({
+              where: { eventId },
+              select: {
+                listerId: true,
+                lister: {
+                  select: {
+                    listerId: true,
+                    Account: {
+                      select: {
+                        accountId: true,
+                        balance: true,
+                      },
+                    },
+                  },
+                },
+              },
+            });
+
+            if (event?.lister) {
+              let account = event.lister.Account;
+
+              // Create account if doesn't exist
+              if (!account) {
+                account = await prisma.account.create({
+                  data: {
+                    listerId: event.lister.listerId,
+                    balance: 0,
+                  },
+                });
+                logger.info(
+                  `Created account for lister ${event.lister.listerId} in analytics worker`,
+                );
+              }
+
+              // Check if we need to sync ledger
+              // Get sum of all EVENT_REVENUE ledger entries for this event
+              const existingLedgerRevenue = await prisma.ledgerEntry.aggregate({
+                where: {
+                  accountId: account.accountId,
+                  referenceType: "EVENT_REVENUE",
+                  referenceId: eventId,
+                  entryType: "CREDIT",
+                },
+                _sum: {
+                  amount: true,
+                },
+              });
+
+              const ledgerRevenue = existingLedgerRevenue._sum.amount || 0;
+              const analyticRevenue = updatedAnalytics.revenue;
+
+              // If there's a discrepancy, create adjustment entry
+              if (ledgerRevenue !== analyticRevenue) {
+                const difference =
+                  Number(analyticRevenue) - Number(ledgerRevenue);
+
+                if (difference !== 0) {
+                  const newBalance = Number(account.balance) + difference;
+
+                  await prisma.$transaction([
+                    prisma.ledgerEntry.create({
+                      data: {
+                        accountId: account.accountId,
+                        entryType: difference > 0 ? "CREDIT" : "DEBIT",
+                        amount: Math.abs(difference),
+                        balanceAfter: newBalance,
+                        referenceType: "EVENT_REVENUE",
+                        referenceId: eventId,
+                      },
+                    }),
+                    prisma.account.update({
+                      where: { accountId: account.accountId },
+                      data: { balance: newBalance },
+                    }),
+                  ]);
+
+                  logger.info(
+                    `Synced ledger for event ${eventId}: ${difference > 0 ? "+" : ""}${difference.toFixed(2)}`,
+                  );
+                }
+              }
+            }
+          } catch (ledgerError) {
+            logger.error(
+              `Failed to sync ledger for event ${eventId}:`,
+              ledgerError,
+            );
+            // Don't fail analytics update if ledger sync fails
+          }
 
           logger.info(
             `✅ Event ${eventId}: +${stats.views} views, +${stats.ctaClicks} CTA, ` +

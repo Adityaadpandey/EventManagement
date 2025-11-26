@@ -1,12 +1,12 @@
 meta {
-  name: all events
+  name: get all events
   type: http
-  seq: 4
+  seq: 6
 }
 
 get {
   url: {{host}}/admin/event/all
-  body: json
+  body: none
   auth: inherit
 }
 

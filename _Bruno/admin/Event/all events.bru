@@ -1,11 +1,11 @@
 meta {
-  name: getting all the events
+  name: all events
   type: http
-  seq: 2
+  seq: 1
 }
 
 get {
-  url: {{host}}/admin/get-all-pending-events
+  url: {{host}}/admin/event/all
   body: json
   auth: inherit
 }

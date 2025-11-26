@@ -24,6 +24,7 @@ import { discountRouter } from "./routes/v1/discount.router";
 import { eventsRouter } from "./routes/v1/events.router";
 import { listerRouter } from "./routes/v1/lister.router";
 import { paymentRouter } from "./routes/v1/payment.router";
+import { payoutRouter } from "./routes/v1/payout.router";
 import { TicketTypeRouter } from "./routes/v1/ticket-type.router";
 import { ticketValidationRouter } from "./routes/v1/ticket-validation.router";
 import { ticketRouter } from "./routes/v1/ticket.router";
@@ -224,6 +225,7 @@ app.use("/api/v1/ticket", ticketRouter);
 app.use("/api/v1/checker", checkerRouter);
 app.use("/api/v1/discount", discountRouter);
 app.use("/api/v1/ticket-type", TicketTypeRouter);
+app.use("/api/v1/payout", payoutRouter);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
