@@ -13,9 +13,25 @@ export class BankDetailsService {
       // Check if the lister exists for the given userId
       const lister = await prisma.lister.findUnique({
         where: { userId },
+        include: {
+          Account: true,
+        },
       });
       if (!lister) {
         throw new NotFoundError("Lister not found for the given user ID");
+      }
+
+      // Create account if it doesn't exist (when adding bank details, lister is ready for payouts)
+      if (!lister.Account) {
+        await prisma.account.create({
+          data: {
+            listerId: lister.listerId,
+            balance: 0,
+          },
+        });
+        logger.info(
+          `Created account for lister ${lister.listerId} when adding bank details`,
+        );
       }
 
       // Upsert bank details for the lister

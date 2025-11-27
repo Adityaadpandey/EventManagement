@@ -3,7 +3,7 @@ import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { Prisma } from "../generated/prisma/client";
-import { delTicketCache } from "../lib/cache";
+import { delTicketCache, delAccountCache } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
 import { razorpay } from "../lib/razorpay";
 import { razorpayCircuitBreaker } from "../utils/circuitBreaker";
@@ -196,6 +196,11 @@ export class PaymentService {
 
           logger.info(
             `Ledger entry created for ticket ${ticket.ticketId}: ${actualRevenue}, new balance: ${newBalance}`,
+          );
+
+          // Invalidate account cache
+          await delAccountCache(ticket.ticketType.event.listerId).catch(() =>
+            logger.warn("Failed to invalidate account cache"),
           );
         } catch (ledgerError) {
           logger.error("Error creating ledger entry:", ledgerError);
@@ -499,6 +504,11 @@ export class PaymentService {
 
           logger.info(
             `Ledger entry created for refund ${refundId}: -${actualRevenueImpact}, new balance: ${newBalance}`,
+          );
+
+          // Invalidate account cache
+          await delAccountCache(refund.ticket.ticketType.event.listerId).catch(
+            () => logger.warn("Failed to invalidate account cache"),
           );
         } catch (ledgerError) {
           logger.error("Error creating ledger entry for refund:", ledgerError);

@@ -15,6 +15,7 @@ export class PayoutService {
   async initializeLedger(accountId: string, listerId: string) {
     try {
       // Check if ledger is already initialized
+
       const existingEntries = await prisma.ledgerEntry.count({
         where: { accountId },
       });
@@ -135,6 +136,7 @@ export class PayoutService {
 
   /**
    * Request a payout for a specific event or across all events
+   * OPTIMIZED: Simplified balance checks, trusts ledger worker for reconciliation
    */
   async requestPayout(
     userId: string,
@@ -146,12 +148,22 @@ export class PayoutService {
     },
   ) {
     try {
-      // Get lister details
+      // Optimized query with selective fields
       const lister = await prisma.lister.findUnique({
         where: { userId },
-        include: {
-          Account: true,
-          BankDetails: true,
+        select: {
+          listerId: true,
+          Account: {
+            select: {
+              accountId: true,
+              balance: true,
+            },
+          },
+          BankDetails: {
+            select: {
+              bankDetailsId: true,
+            },
+          },
         },
       });
 
@@ -166,19 +178,12 @@ export class PayoutService {
         );
       }
 
-      // Initialize account if it doesn't exist
-      let account = lister.Account;
-      if (!account) {
-        account = await prisma.account.create({
-          data: {
-            listerId: lister.listerId,
-            balance: 0,
-          },
-        });
+      // Check if account exists
+      if (!lister.Account) {
+        throw new BadRequestError(
+          "Account not initialized. Please contact support.",
+        );
       }
-
-      // Initialize ledger if needed
-      await this.initializeLedger(account.accountId, lister.listerId);
 
       // Validate amount
       const requestedAmount = new Prisma.Decimal(data.amount);
@@ -187,34 +192,10 @@ export class PayoutService {
         throw new BadRequestError("Payout amount must be greater than 0");
       }
 
-      // COMPREHENSIVE BALANCE CHECK FROM MULTIPLE SOURCES
-      const [
-        updatedAccount,
-        totalRevenue,
-        completedPayouts,
-        pendingPayouts,
-        ledgerBalance,
-      ] = await Promise.all([
-        // Source 1: Account balance
-        prisma.account.findUnique({
-          where: { accountId: account.accountId },
-        }),
-        // Source 2: Total revenue from EventAnalytics
-        prisma.eventAnalytics.aggregate({
-          where: {
-            event: { listerId: lister.listerId },
-          },
-          _sum: { revenue: true },
-        }),
-        // Source 3: Completed payouts
-        prisma.payout.aggregate({
-          where: {
-            listerId: lister.listerId,
-            status: "COMPLETED",
-          },
-          _sum: { approvedAmount: true },
-        }),
-        // Source 4: Pending/Processing payouts (locked funds)
+      // SIMPLIFIED BALANCE CHECK - Trust ledger worker for reconciliation
+      // Only check account balance and locked funds
+      const [pendingPayouts, eventCheck] = await Promise.all([
+        // Get locked funds (PENDING + PROCESSING)
         prisma.payout.aggregate({
           where: {
             listerId: lister.listerId,
@@ -222,118 +203,31 @@ export class PayoutService {
           },
           _sum: { amount: true },
         }),
-        // Source 5: Ledger balance (most accurate)
-        prisma.ledgerEntry.findFirst({
-          where: { accountId: account.accountId },
-          orderBy: { createdAt: "desc" },
-          select: { balanceAfter: true },
-        }),
+        // If event-specific, verify event exists and belongs to lister
+        data.eventId
+          ? prisma.event.findFirst({
+              where: {
+                eventId: data.eventId,
+                listerId: lister.listerId,
+              },
+              select: { eventId: true },
+            })
+          : Promise.resolve(null),
       ]);
 
-      if (!updatedAccount) {
-        throw new NotFoundError("Account not found after initialization");
+      // Verify event ownership if event-specific payout
+      if (data.eventId && !eventCheck) {
+        throw new NotFoundError("Event not found or access denied");
       }
 
-      // Calculate balances from different sources
-      const accountBalance = updatedAccount.balance;
-      const ledgerBalanceValue =
-        ledgerBalance?.balanceAfter || new Prisma.Decimal(0);
-      const revenueTotal = new Prisma.Decimal(totalRevenue._sum.revenue || 0);
-      const payoutsTotal = new Prisma.Decimal(
-        completedPayouts._sum.approvedAmount || 0,
-      );
-      const computedBalance = revenueTotal.minus(payoutsTotal);
+      const accountBalance = lister.Account.balance;
       const lockedFunds = new Prisma.Decimal(pendingPayouts._sum.amount || 0);
-
-      // Cross-verify balances (they should all match)
-      const balanceMismatch =
-        !accountBalance.equals(ledgerBalanceValue) ||
-        !accountBalance.equals(computedBalance);
-
-      if (balanceMismatch) {
-        logger.warn("Balance mismatch detected", {
-          listerId: lister.listerId,
-          accountBalance: accountBalance.toString(),
-          ledgerBalance: ledgerBalanceValue.toString(),
-          computedBalance: computedBalance.toString(),
-          revenue: revenueTotal.toString(),
-          payouts: payoutsTotal.toString(),
-        });
-
-        // Use the most conservative (lowest) balance for safety
-        const safeBalance = Prisma.Decimal.min(
-          accountBalance,
-          ledgerBalanceValue,
-          computedBalance,
-        );
-
-        logger.info(`Using safe balance: ${safeBalance.toString()}`);
-
-        // Update account to match safe balance
-        await prisma.account.update({
-          where: { accountId: account.accountId },
-          data: { balance: safeBalance },
-        });
-
-        const availableBalance = safeBalance.minus(lockedFunds);
-
-        if (requestedAmount.greaterThan(availableBalance)) {
-          throw new BadRequestError(
-            `Insufficient available balance (verified from multiple sources). Total Balance: ${safeBalance}, Locked: ${lockedFunds}, Available: ${availableBalance}, Requested: ${requestedAmount}`,
-          );
-        }
-      }
-
       const availableBalance = accountBalance.minus(lockedFunds);
 
-      // Check if event-specific payout
-      if (data.eventId) {
-        // Verify event belongs to lister
-        const event = await prisma.event.findFirst({
-          where: {
-            eventId: data.eventId,
-            listerId: lister.listerId,
-          },
-          include: {
-            EventAnalytics: true,
-          },
-        });
-
-        if (!event) {
-          throw new NotFoundError("Event not found or access denied");
-        }
-
-        // Calculate available balance for this event
-        const eventRevenue =
-          event.EventAnalytics?.revenue || new Prisma.Decimal(0);
-
-        // Get total payouts already made/requested for this event
-        const existingPayouts = await prisma.payout.aggregate({
-          where: {
-            eventId: data.eventId,
-            status: { in: ["COMPLETED", "PROCESSING", "PENDING"] },
-          },
-          _sum: {
-            amount: true,
-          },
-        });
-
-        const totalRequestedForEvent = new Prisma.Decimal(
-          existingPayouts._sum.amount || 0,
-        );
-        const availableForEvent = eventRevenue.minus(totalRequestedForEvent);
-
-        if (requestedAmount.greaterThan(availableForEvent)) {
-          throw new BadRequestError(
-            `Insufficient balance for this event. Available: ${availableForEvent}, Requested: ${requestedAmount}, Already requested: ${totalRequestedForEvent}`,
-          );
-        }
-      }
-
-      // Global balance check (applies to both event-specific and global payouts)
+      // Simple balance check - trust ledger worker for reconciliation
       if (requestedAmount.greaterThan(availableBalance)) {
         throw new BadRequestError(
-          `Insufficient available balance. Total Balance: ${updatedAccount.balance}, Locked in pending payouts: ${lockedFunds}, Available: ${availableBalance}, Requested: ${requestedAmount}`,
+          `Insufficient available balance. Total Balance: ${accountBalance}, Locked: ${lockedFunds}, Available: ${availableBalance}, Requested: ${requestedAmount}`,
         );
       }
 
@@ -381,7 +275,7 @@ export class PayoutService {
       return payout;
     } catch (error) {
       logger.error(`Payout request failed for user ${userId}: ${error}`);
-      throw new Error("Payout request failed");
+      throw error;
     }
   }
 
@@ -594,7 +488,7 @@ export class PayoutService {
       return updatedPayout;
     } catch (error) {
       logger.error(`Failed to complete payout ${payoutId}: ${error}`);
-      throw new Error("Payout completion failed");
+      throw error;
     }
   }
 
@@ -807,7 +701,6 @@ export class PayoutService {
           where: { accountId: lister.Account.accountId },
         }),
       ]);
-
       // Enrich entries with reference details
       const enrichedEntries = await Promise.all(
         entries.map(async (entry) => {

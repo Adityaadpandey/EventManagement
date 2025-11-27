@@ -38,8 +38,8 @@ export class PayoutController {
       });
 
       if (error.name === "ZodError") {
-        logError(req, "Failed to send OTP", error, {
-          identifier: req.body.identifier,
+        logError(req, "Failed to Validate the body", error, {
+          userId: req.user?.userId,
         });
         const formattedErrors = formatZodError(error);
         return sendError(
