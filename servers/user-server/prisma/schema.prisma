@@ -179,6 +179,7 @@ model Payout {
   @@index([listerId])
   @@index([eventId])
   @@index([status])
+  @@index([listerId, status])
 }
 
 model LedgerEntry {
@@ -197,6 +198,8 @@ model LedgerEntry {
 
   @@index([accountId])
   @@index([createdAt])
+  @@index([accountId, entryType])
+  @@index([accountId, createdAt])
 }
 
 
@@ -502,6 +505,7 @@ model EventAnalytics {
     @@index([lastUpdated]) // Recently updated analytics
     @@index([revenue]) // Top revenue events
     @@index([ticketsSold]) // Most popular events
+
 }
 
 model ListerAnalytics {

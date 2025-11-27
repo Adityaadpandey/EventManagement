@@ -1,40 +1,36 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { Prisma } from "../generated/prisma/client";
-import { PayoutService } from "./payout.service";
+import { getAccountCache, setAccountCache } from "../lib/cache";
 
 export class AccountService {
-  private payoutService: PayoutService;
-  constructor() {
-    this.payoutService = new PayoutService();
-  }
   async getAccountDetails(userId: string) {
     try {
-      // Single query to get lister with account and bank details
+      // Try cache first
+      const cached = await getAccountCache(userId);
+      if (cached) {
+        logger.debug(`Account cache hit for user ${userId}`);
+        return cached;
+      }
+      // Optimized query with select to fetch only needed fields
       const lister = await prisma.lister.findUnique({
         where: { userId },
-        include: {
-          Account: true,
+        select: {
+          listerId: true,
+          Account: {
+            select: {
+              accountId: true,
+              balance: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
           BankDetails: true,
         },
       });
 
       if (!lister) {
         throw new Error("Lister profile not found");
-      }
-
-      // Run reconciliation before fetching details to ensure data is accurate
-      if (lister.Account) {
-        try {
-          await this.payoutService.reconcileBalance(lister.listerId);
-          logger.info(`Account reconciled for lister ${lister.listerId}`);
-        } catch (reconcileError) {
-          logger.warn(
-            `Failed to reconcile account for lister ${lister.listerId}:`,
-            reconcileError,
-          );
-          // Continue even if reconciliation fails
-        }
       }
 
       // COMPREHENSIVE BALANCE CHECK FROM MULTIPLE SOURCES
@@ -210,7 +206,6 @@ export class AccountService {
         // Balance is correct, just attach lister data
         account;
       }
-
       // Calculate discrepancies
       const revenueVsCredits = totalRevenue.minus(totalLedgerCredits);
       const payoutsVsDebits = totalLedgerDebits.minus(totalPayouts);
@@ -255,7 +250,7 @@ export class AccountService {
       const lockedFunds = pendingPayoutsAmount.plus(processingPayoutsAmount);
       const availableBalance = currentBalance.minus(pendingPayoutsAmount);
 
-      return {
+      const result = {
         ...account,
         totalRevenue: totalRevenue.toString(),
         totalPayouts: totalPayouts.toString(),
@@ -288,6 +283,11 @@ export class AccountService {
           },
         },
       };
+
+      // Cache the result for 30 seconds
+      await setAccountCache(userId, result);
+
+      return result;
     } catch (error) {
       logger.error(
         `Failed to fetch account details for user ${userId}: ${error}`,
