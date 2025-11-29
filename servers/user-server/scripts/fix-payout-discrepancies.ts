@@ -147,27 +147,4 @@ async function fixPayoutDiscrepancies() {
   console.log("\n\nDone!");
 }
 
-async function makeLedgers() {
-  const listers = await prisma.lister.findMany({
-    include: {
-      Account: true,
-    },
-  });
-
-  for (const lister of listers) {
-    if (!lister.Account) continue;
-
-    const payoutService = new (
-      await import("../src/services/payout.service")
-    ).PayoutService();
-    console.log(`Initializing ledger for lister ${lister.listerId}...`);
-    const _ = await payoutService.initializeLedger(
-      lister.Account.accountId,
-      lister.listerId,
-    );
-    console.log(`Done for lister ${lister.listerId}`);
-  }
-}
-
 fixPayoutDiscrepancies();
-makeLedgers();

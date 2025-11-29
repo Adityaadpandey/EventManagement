@@ -68,11 +68,11 @@ model User {
     Notification     Notification[]
     PushSubscription PushSubscription[]
 
-    // INDEXES
-    @@index([role]) // Filter users by role
-    @@index([isActive]) // Find active/inactive users
-    @@index([createdAt]) // Sort by registration date
-    @@index([role, isActive]) // Composite: active users by role
+    // OPTIMIZED INDEXES
+    @@index([role, isActive]) // Composite covers both individual queries
+    @@index([createdAt(sort: Desc)]) // DESC for recent users
+    @@index([email, isActive]) // Login queries
+    @@index([phone, isActive]) // Phone login queries
 }
 
 model Lister {
@@ -82,7 +82,7 @@ model Lister {
 
     companyName String?
     companyLogo String?
-    bio         String  ?
+    bio         String?
     InstagramLink String?
     FacebookLink  String?
     XLink   String?
@@ -103,17 +103,13 @@ model Lister {
     Account        Account?
     Payout         Payout[]
 
-    // INDEXES
-    @@index([status]) // Filter by approval status
-    @@index([createdAt]) // Sort by registration date
-    @@index([status, createdAt]) // Composite: pending listers sorted by date
-    @@index([userId]) // Query lister by user
-    @@index([listerId])
+    // OPTIMIZED INDEXES - userId already indexed via @unique
+    @@index([status, createdAt(sort: Desc)]) // Combined for pending approvals
 }
 
 model BankDetails{
   bankDetailsId String @id @default(uuid())
-  listerId String @unique
+  listerId String @unique // Already indexed via @unique
   lister   Lister @relation(fields: [listerId], references: [listerId])
 
   bankName String
@@ -123,13 +119,11 @@ model BankDetails{
   branchCode String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([listerId])
 }
 
 model Account {
   accountId String @id @default(uuid())
-  listerId  String @unique
+  listerId  String @unique // Already indexed via @unique
   lister    Lister @relation(fields: [listerId], references: [listerId])
 
   balance Decimal @default("0")
@@ -137,8 +131,10 @@ model Account {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
 
+  // OPTIMIZED INDEX
+  @@index([balance]) // For finding accounts by balance thresholds
+}
 
 enum PayoutStatus {
   PENDING
@@ -151,7 +147,6 @@ enum PayoutStatus {
 enum PayoutType {
   FULL
   PARTIAL
-
 }
 
 model Payout {
@@ -163,11 +158,11 @@ model Payout {
   event      Event?   @relation(fields: [eventId], references: [eventId])
 
   type       PayoutType  @default(FULL)
-  amount     Decimal      // amount requested by lister
-  approvedAmount Decimal? // amount admin decides to pay (can differ)
+  amount     Decimal
+  approvedAmount Decimal?
   status     PayoutStatus @default(PENDING)
 
-  remark     String? // Reason like "50% pre-event", "Final settlement"
+  remark     String?
 
   requestedAt DateTime @default(now())
   approvedAt  DateTime?
@@ -176,10 +171,10 @@ model Payout {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([listerId])
-  @@index([eventId])
-  @@index([status])
-  @@index([listerId, status])
+  // OPTIMIZED INDEXES
+  @@index([status, requestedAt(sort: Desc)]) // Admin dashboard - pending payouts
+  @@index([listerId, status]) // Lister's payout history
+  @@index([eventId, status]) // Event-specific payouts
 }
 
 model LedgerEntry {
@@ -187,29 +182,25 @@ model LedgerEntry {
   accountId String
   account   Account  @relation(fields: [accountId], references: [accountId])
 
-  entryType String   // "CREDIT" or "DEBIT"
+  entryType String
   amount    Decimal
   balanceAfter Decimal
 
-  referenceType String? // "EVENT_REVENUE" or "PAYOUT"
-  referenceId   String? // eventId or payoutId
+  referenceType String?
+  referenceId   String?
 
   createdAt DateTime @default(now())
 
-  @@index([accountId])
-  @@index([createdAt])
-  @@index([accountId, entryType])
-  @@index([accountId, createdAt])
+  // OPTIMIZED INDEXES
+  @@index([accountId, createdAt(sort: Desc)]) // Account statement with DESC
+  @@index([referenceType, referenceId]) // Lookup by reference
 }
-
-
 
 model Event {
     eventId  String @id @default(uuid())
     listerId String
     lister   Lister @relation(fields: [listerId], references: [listerId])
 
-    // User-facing details
     title             String
     description       String
     banner_horizontal String
@@ -226,12 +217,10 @@ model Event {
     restrictions      String?
     canBuy Boolean @default(true)
 
-    // Admin workflow
     status            Status  @default(NOT_VIEWED)
     rejection_comment String?
     cancellation_note String?
 
-    // Admin-only details
     samplePoster       String?
     socialMediaGraphic String?
     eventFormat        String?
@@ -244,9 +233,7 @@ model Event {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    // Only keep ticket counter for sequential numbering - all other analytics in EventAnalytics table
-    ticketCounter  Int   @default(0) // Fast counter for sequential ticket numbering
-
+    ticketCounter  Int   @default(0)
     availableMailUpdates Int @default(2)
 
     Payout        Payout[]
@@ -261,17 +248,13 @@ model Event {
     EventAnalytics EventAnalytics?
     Refund         Refund[]
 
-    // INDEXES - Most critical for performance
-    @@index([status]) // Filter by status (APPROVED, PENDING, etc)
-    @@index([latitude, longitude]) // Location-based bounding box queries
-    @@index([date]) // Sort/filter by event date
-    @@index([listerId]) // Query events by specific lister
-    @@index([createdAt]) // Recent events, admin dashboard
-    @@index([status, date]) // Composite: approved events sorted by date
-    @@index([status, latitude, longitude]) // Composite: location queries on approved events
-    @@index([listerId, status]) // Composite: lister's events by status
-    @@index([date, status]) // Composite: upcoming approved events
-    @@index([listerId, createdAt]) // For lister's recent events - PERFORMANCE
+    // OPTIMIZED INDEXES - Most critical for performance
+    @@index([status, date]) // Primary query: approved upcoming events
+    @@index([listerId, status, createdAt(sort: Desc)]) // Lister dashboard
+    @@index([date, status]) // Date filtering with status
+    @@index([tags]) // Tag-based search (GIN index in PostgreSQL)
+    // Spatial index for location queries - use raw SQL for better performance:
+    // CREATE INDEX idx_event_location ON "Event" USING GIST (ll_to_earth(latitude, longitude));
 }
 
 model CustomField {
@@ -286,11 +269,9 @@ model CustomField {
     options               String?
     AttendeeFieldResponse AttendeeFieldResponse[]
 
-    // INDEXES
-    @@index([eventId]) // Query fields for specific event
-    @@index([required]) // Find required fields
-    @@index([ticketTypeId])
-
+    // OPTIMIZED INDEXES
+    @@index([eventId, required]) // Get all required fields for event
+    @@index([ticketTypeId]) // Fields by ticket type
 }
 
 model TicketType {
@@ -307,7 +288,7 @@ model TicketType {
     salesCutoff     DateTime?
 
     platformfee Int @default(0)
-    platformfeePerc Float @default(0.05) // 5% by default
+    platformfeePerc Float @default(0.05)
 
     ticketPrefix String?
 
@@ -320,10 +301,9 @@ model TicketType {
     Ticket Ticket[]
     CustomField CustomField[]
 
-    // INDEXES
-    @@index([eventId]) // Query ticket types for event
-    @@index([salesCutoff]) // Find expiring ticket types
-    @@index([eventId, price]) // Composite: ticket types sorted by price
+    // OPTIMIZED INDEXES
+    @@index([eventId, price]) // Event tickets sorted by price
+    @@index([salesCutoff]) // Expiring tickets (WHERE salesCutoff IS NOT NULL)
 }
 
 model Ticket {
@@ -337,7 +317,7 @@ model Ticket {
     status     TicketPaymentStatus @default(PENDING)
     quantity   Int
     totalPrice Float
-    qrCode     String              @unique
+    qrCode     String              @unique // Already indexed via @unique
     checkedIn  Boolean             @default(false)
 
     createdAt DateTime @default(now())
@@ -350,20 +330,12 @@ model Ticket {
     TicketScanLog         TicketScanLog[]
     Refund                Refund[]
 
-    // INDEXES - Critical for ticket operations
-    @@index([userId]) // User's tickets
-    @@index([ticketTypeId]) // Tickets by type
-    @@index([eventEventId]) // All tickets for an event
-    @@index([status]) // Filter by payment status
-    @@index([checkedIn]) // Find unchecked tickets
-    @@index([ticketId,userId])
-    @@index([createdAt]) // Recent purchases
-    @@index([userId, status]) // Composite: user's tickets by status
-    @@index([eventEventId, status]) // Composite: event tickets by status
-    @@index([eventEventId, checkedIn]) // Composite: event check-in status
-    @@index([qrCode]) // Fast QR code lookup (already unique, but explicit index helps)
-    @@index([eventEventId, status, createdAt]) // For event ticket queries with sorting - PERFORMANCE
-    @@index([ticketTypeId, status]) // For ticket type aggregations - PERFORMANCE
+    // OPTIMIZED INDEXES - Critical for ticket operations
+    @@index([userId, status, createdAt(sort: Desc)]) // User's ticket history
+    @@index([eventEventId, status]) // Event tickets by status
+    @@index([eventEventId, checkedIn]) // Check-in tracking
+    @@index([ticketTypeId, status]) // Ticket type sales analytics
+    @@index([status, createdAt(sort: Desc)]) // Recent purchases by status
 }
 
 model AttendeeFieldResponse {
@@ -375,9 +347,9 @@ model AttendeeFieldResponse {
     value      String
     createdAt  DateTime    @default(now())
 
-    // INDEXES
+    // OPTIMIZED INDEXES
     @@index([ticketId]) // Get all responses for a ticket
-    @@index([fieldId]) // Analytics on field responses
+    @@index([fieldId, value]) // Analytics on specific field values
 }
 
 model TicketChecker {
@@ -402,12 +374,10 @@ model TicketChecker {
     TicketScanLog TicketScanLog[]
 
     @@unique([eventId, username])
-    @@index([listerId])
-    // INDEXES
-    @@index([active]) // Find active checkers
-    @@index([eventId]) // Checkers for specific event
-    @@index([expiresAt]) // Find expiring credentials
-    @@index([listerId, active]) // Composite: lister's active checkers
+    // OPTIMIZED INDEXES
+    @@index([listerId, active]) // Lister's active checkers
+    @@index([eventId, active]) // Event's active checkers
+    @@index([expiresAt]) // WHERE expiresAt IS NOT NULL AND expiresAt < NOW()
 }
 
 model TicketScanLog {
@@ -431,30 +401,25 @@ model TicketScanLog {
     Event        Event?  @relation(fields: [eventEventId], references: [eventId])
     eventEventId String?
 
-    // INDEXES - Critical for audit trails and analytics
-    @@index([ticketId]) // All scans for a ticket
-    @@index([eventEventId]) // All scans for an event
-    @@index([checkerId]) // Scans by specific checker
-    @@index([scannedAt]) // Time-based queries
-    @@index([success]) // Filter successful/failed scans
-    @@index([eventEventId, scannedAt]) // Composite: event scans over time
-    @@index([ticketId, scannedAt]) // Composite: ticket scan history
-    @@index([performedByUserId]) // Scans by user
+    // OPTIMIZED INDEXES - Critical for audit trails
+    @@index([eventEventId, scannedAt(sort: Desc)]) // Event scan history
+    @@index([ticketId, scannedAt(sort: Desc)]) // Ticket scan history
+    @@index([checkerId, scannedAt(sort: Desc)]) // Checker activity
+    @@index([success, scannedAt(sort: Desc)]) // Failed scans
 }
 
 model DiscountCode {
     codeId      String  @id @default(uuid())
     eventId     String
     event       Event   @relation(fields: [eventId], references: [eventId])
-    code        String  @unique
+    code        String  @unique // Already indexed via @unique
     description String?
 
-    // Discount configuration
-    discountType DiscountType // PERCENTAGE or FLAT
-    discountPct  Float? // For percentage discounts (e.g., 50 for 50%)
-    discountAmt  Float? // For flat discounts (e.g., 100 for ₹100 off)
-    maxDiscount  Float? // Maximum discount cap (e.g., 50 for max ₹50 off)
-    minOrderAmt  Float? // Minimum order amount to apply discount
+    discountType DiscountType
+    discountPct  Float?
+    discountAmt  Float?
+    maxDiscount  Float?
+    minOrderAmt  Float?
 
     maxUses   Int?
     usesCount Int       @default(0)
@@ -463,12 +428,9 @@ model DiscountCode {
     createdAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt
 
-    // INDEXES
-    @@index([eventId])
-    @@index([code, eventId])
-    @@index([validFrom, validTo])
-    @@index([code])
-    @@index([eventId, validFrom, validTo])
+    // OPTIMIZED INDEXES
+    @@index([eventId, validFrom, validTo]) // Active codes for event
+    @@index([code, eventId]) // Code lookup with event context
 }
 
 enum DiscountType {
@@ -478,7 +440,7 @@ enum DiscountType {
 
 model EventAnalytics {
     analyticsId String @id @default(uuid())
-    eventId     String @unique
+    eventId     String @unique // Already indexed via @unique
     event       Event  @relation(fields: [eventId], references: [eventId])
 
     views          Int   @default(0)
@@ -493,24 +455,22 @@ model EventAnalytics {
     clicksByDay  Json?
     salesByDay   Json?
     revenueByDay Json?
-    ticketTypesSalesByDay Json? // { "2024-01-15": { "ticketTypeId1": { "quantity": 10, "revenue": 1000 }, "ticketTypeId2": { "quantity": 5, "revenue": 500 } } }
+    ticketTypesSalesByDay Json?
 
     trafficSources Json?
-
     deviceBreakdown Json?
 
     createdAt DateTime @default(now())
 
-    @@index([eventId])
-    @@index([lastUpdated]) // Recently updated analytics
-    @@index([revenue]) // Top revenue events
-    @@index([ticketsSold]) // Most popular events
-
+    // OPTIMIZED INDEXES
+    @@index([revenue(sort: Desc)]) // Top revenue events
+    @@index([ticketsSold(sort: Desc)]) // Most popular events
+    @@index([lastUpdated(sort: Desc)]) // Recently updated
 }
 
 model ListerAnalytics {
     id       String @id @default(uuid())
-    listerId String @unique
+    listerId String @unique // Already indexed via @unique
     lister   Lister @relation(fields: [listerId], references: [listerId])
 
     totalEvents      Int   @default(0)
@@ -519,10 +479,9 @@ model ListerAnalytics {
 
     lastUpdated DateTime @default(now()) @updatedAt
 
-    // INDEXES
-    @@index([totalRevenue]) // Top revenue listers
-    @@index([totalTicketsSold]) // Most tickets sold
-    @@index([lastUpdated]) // Recently active listers
+    // OPTIMIZED INDEXES
+    @@index([totalRevenue(sort: Desc)]) // Leaderboard
+    @@index([totalTicketsSold(sort: Desc)]) // Leaderboard
 }
 
 model Refund {
@@ -543,14 +502,11 @@ model Refund {
     Event        Event?   @relation(fields: [eventEventId], references: [eventId])
     eventEventId String?
 
-    // INDEXES
-    @@index([ticketId]) // Refunds for specific ticket
-    @@index([status]) // Filter by refund status
-    @@index([eventEventId]) // Refunds for specific event
-    @@index([userUserId]) // User's refund history
-    @@index([createdAt]) // Recent refund requests
-    @@index([status, createdAt]) // Composite: pending refunds sorted by date
-    @@index([processedBy]) // Refunds processed by admin
+    // OPTIMIZED INDEXES
+    @@index([status, createdAt(sort: Desc)]) // Admin: pending refunds
+    @@index([eventEventId, status]) // Event refunds
+    @@index([userUserId, createdAt(sort: Desc)]) // User refund history
+    @@index([ticketId]) // Ticket refunds
 }
 
 model Notification {
@@ -560,19 +516,16 @@ model Notification {
     title          String
     message        String
     link           String?
-    type           String?   @default("info") // info, success, warning, error
+    type           String?   @default("info")
     read           Boolean   @default(false)
-    sent           Boolean   @default(false) // Track if push notification was sent
+    sent           Boolean   @default(false)
     createdAt      DateTime  @default(now())
     readAt         DateTime?
-    sentAt         DateTime? // When push notification was sent
+    sentAt         DateTime?
 
-    // INDEXES
-    @@index([userId])
-    @@index([read])
-    @@index([createdAt])
-    @@index([userId, read])
-    @@index([sent]) // Track unsent notifications
+    // OPTIMIZED INDEXES
+    @@index([userId, read, createdAt(sort: Desc)]) // User's unread notifications
+    @@index([sent, createdAt]) // Unsent notifications queue
 }
 
 model PushSubscription {
@@ -580,21 +533,16 @@ model PushSubscription {
     userId         String
     user           User   @relation(fields: [userId], references: [userId])
 
-    // Push subscription data
-    endpoint String @unique
-    p256dh   String // Encryption key
-    auth     String // Authentication secret
+    endpoint String @unique // Already indexed via @unique
+    p256dh   String
+    auth     String
 
-    // Metadata
-    userAgent  String? // Browser/device info
+    userAgent  String?
     isActive   Boolean  @default(true)
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
     lastUsedAt DateTime @default(now())
 
-    // INDEXES
-    @@index([userId])
-    @@index([endpoint])
-    @@index([isActive])
-    @@index([userId, isActive]) // Get user's active subscriptions
+    // OPTIMIZED INDEXES
+    @@index([userId, isActive]) // User's active subscriptions
 }

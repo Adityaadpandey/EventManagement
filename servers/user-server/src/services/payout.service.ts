@@ -688,7 +688,7 @@ export class PayoutService {
       }
 
       // Initialize ledger if needed
-      await this.initializeLedger(lister.Account.accountId, lister.listerId);
+      // await this.initializeLedger(lister.Account.accountId, lister.listerId);
 
       const [entries, total] = await Promise.all([
         prisma.ledgerEntry.findMany({
