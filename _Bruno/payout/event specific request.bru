@@ -1,0 +1,25 @@
+meta {
+  name: event specific request
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{host}}/payout/request
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "amount": 30000,
+  //   "eventId": "1edc63ac-30b1-42f3-8342-f008eb42439a",
+    "type": "FULL"
+  //   "remark": "50% pre-event settlement"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

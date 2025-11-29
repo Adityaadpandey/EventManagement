@@ -10,9 +10,10 @@ import { sendEmail } from "../lib/mail";
 import { razorpay } from "../lib/razorpay";
 import { trackCTAClickWithEventId } from "../middlewares/analytics.middleware";
 import {
-  NotFoundError,
   BadRequestError,
+  ExternalServiceError,
   ForbiddenError,
+  NotFoundError,
 } from "../utils/errors";
 
 export class TicketService {
@@ -38,6 +39,7 @@ export class TicketService {
           soldCount: true,
           salesCutoff: true,
           platformfee: true,
+          platformfeePerc: true,
           event: {
             select: {
               eventId: true,
@@ -734,7 +736,7 @@ export class TicketService {
         attempt++;
 
         if (attempt >= maxRetries) {
-          throw new Error(
+          throw new ExternalServiceError(
             "Failed to generate unique ticket ID after multiple attempts",
           );
         }

@@ -46,28 +46,6 @@ export const detectAttackPatterns = (
       return res.status(403).json({ error: "Access denied" });
     }
 
-    // Block SQL injection attempts
-    const sqlPatterns = [
-      /union.*select/i,
-      /insert.*into/i,
-      /delete.*from/i,
-      /drop.*table/i,
-      /update.*set/i,
-      /exec.*\(/i,
-      /script.*>/i,
-    ];
-
-    // if (
-    //   sqlPatterns.some((pattern) => pattern.test(url) || pattern.test(body))
-    // ) {
-    //   logger.error("SQL injection attempt detected", {
-    //     ip: req.ip,
-    //     url: req.url,
-    //     userAgent,
-    //   });
-    //   return res.status(403).json({ error: "Invalid request" });
-    // }
-
     // Block XSS attempts
     const xssPatterns = [
       /<script/i,

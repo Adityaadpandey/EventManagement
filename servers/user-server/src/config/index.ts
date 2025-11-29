@@ -41,9 +41,21 @@ const validateEnv = () => {
     value: string | undefined;
     productionOnly?: boolean;
   }> = [
-    { key: "DATABASE_URL", value: process.env.DATABASE_URL },
-    { key: "REDIS_URL", value: process.env.REDIS_URL },
-    { key: "JWT_SECRET", value: process.env.JWT_SECRET, productionOnly: true },
+    {
+      key: "DATABASE_URL",
+      value: process.env.DATABASE_URL,
+      productionOnly: true,
+    },
+    {
+      key: "REDIS_URL",
+      value: process.env.REDIS_URL,
+      productionOnly: true,
+    },
+    {
+      key: "JWT_SECRET",
+      value: process.env.JWT_SECRET,
+      productionOnly: true,
+    },
     {
       key: "RAZORPAY_KEY_ID",
       value: process.env.RAZORPAY_KEY_ID,
@@ -93,7 +105,7 @@ export const config: Config = {
   SERVICE_NAME: require("../../package.json").name || "server",
   PORT: Number.parseInt(process.env.PORT || "7001", 10),
   CORS_ORIGIN: process.env.CORS_ORIGIN || "https://www.tixin.in",
-  DATABASE_URL: process.env.DATABASE_URL!,
+  DATABASE_URL: process.env.DATABASE_URL || "",
   LOG_LEVEL: process.env.LOG_LEVEL || "info",
   NODE_ENV: process.env.NODE_ENV || "development",
   REDIS_URL: process.env.REDIS_URL!,

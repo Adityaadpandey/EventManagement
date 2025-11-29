@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { config } from "../config";
 import logger from "../config/logger";
+import { ServiceUnavailableError } from "../utils/errors";
 import { setTokenCache } from "./cache";
 
 export const createToken = (
@@ -11,7 +12,9 @@ export const createToken = (
   try {
     const secret = config.JWT_SECRET;
     if (!secret) {
-      throw new Error("JWT_SECRET environment variable is not set");
+      throw new ServiceUnavailableError(
+        "JWT_SECRET environment variable is not set",
+      );
     }
 
     const token = jwt.sign({ userId, role }, secret, {
