@@ -96,6 +96,20 @@ jobs:
             *Image:* `${{ needs.build-and-push.outputs.image_tag }}`
             ⏳ Deploying...
 
+      - name: 🔐 Setup database certificate
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: api.tixin.in
+          username: ubuntu
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          port: 22
+          script: |
+            cd EventManagement
+            mkdir -p certs
+            echo "${{ secrets.DB_CA_CERTIFICATE }}" > certs/ca-certificate.crt
+            chmod 600 certs/ca-certificate.crt
+            echo "✅ Certificate installed"
+
       - name: ⚡ Deploy to staging server
         id: deploy
         uses: appleboy/ssh-action@v1.0.3
