@@ -34,6 +34,9 @@ COPY --from=builder /workspace/servers/user-server/package*.json ./servers/user-
 
 WORKDIR /workspace/servers/user-server
 
+# Create directory for SSL certificates
+RUN mkdir -p /workspace/certs
+
 ENV NODE_ENV=production
 
 ARG APP_VERSION=unknown
