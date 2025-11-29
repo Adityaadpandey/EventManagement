@@ -2,11 +2,16 @@ import crypto from "node:crypto";
 import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
-import { delTicketCache } from "../lib/cache";
+import { Prisma } from "../generated/prisma/client";
+import { delTicketCache, delAccountCache } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
 import { razorpay } from "../lib/razorpay";
 import { razorpayCircuitBreaker } from "../utils/circuitBreaker";
-import { NotFoundError, BadRequestError } from "../utils/errors";
+import {
+  BadRequestError,
+  ExternalServiceError,
+  NotFoundError,
+} from "../utils/errors";
 import { withTimeout } from "../utils/timeout";
 
 export class PaymentService {
@@ -26,7 +31,7 @@ export class PaymentService {
           .digest("hex");
 
         if (expectedSignature !== razorpaySignature) {
-          throw new Error("Invalid payment signature");
+          throw new ExternalServiceError("Invalid payment signature");
         }
       }
 
@@ -41,7 +46,7 @@ export class PaymentService {
 
       if (payment.status !== "captured") {
         logger.error(`Payment ${razorpayPaymentId} not captured`);
-        throw new Error("Payment not captured");
+        throw new ExternalServiceError("Payment not captured");
       }
 
       // Check if ticket exists and get current status
@@ -66,7 +71,12 @@ export class PaymentService {
         data: { status: "SUCCESS" },
         include: {
           ticketType: {
-            include: {
+            select: {
+              ticketTypeId: true,
+              eventId: true,
+              name: true,
+              platformfee: true,
+              platformfeePerc: true,
               event: {
                 select: {
                   eventId: true,
@@ -99,7 +109,7 @@ export class PaymentService {
       const platformFee =
         ticket.ticketType.platformfee > 0
           ? ticket.ticketType.platformfee * ticket.quantity
-          : ticket.totalPrice * 0.05;
+          : ticket.totalPrice * ticket.ticketType.platformfeePerc;
       const actualRevenue = ticket.totalPrice - platformFee;
 
       // Parallel updates and lister fetch for better performance (optimized)
@@ -126,6 +136,7 @@ export class PaymentService {
         prisma.lister.findUnique({
           where: { userId: ticket.ticketType.event.listerId },
           select: {
+            listerId: true,
             InstagramLink: true,
             FacebookLink: true,
             XLink: true,
@@ -136,9 +147,70 @@ export class PaymentService {
             user: {
               select: { email: true },
             },
+            Account: {
+              select: {
+                accountId: true,
+                balance: true,
+              },
+            },
           },
         }),
       ]);
+
+      // Create ledger entry for revenue (create account if doesn't exist)
+      if (lister) {
+        try {
+          let account = lister.Account;
+
+          // Create account if it doesn't exist
+          if (!account) {
+            account = await prisma.account.create({
+              data: {
+                listerId: lister.listerId,
+                balance: 0,
+              },
+            });
+            logger.info(`Created account for lister ${lister.listerId}`);
+          }
+
+          const newBalance = new Prisma.Decimal(account.balance).plus(
+            actualRevenue,
+          );
+
+          await prisma.$transaction([
+            prisma.ledgerEntry.create({
+              data: {
+                accountId: account.accountId,
+                entryType: "CREDIT",
+                amount: actualRevenue,
+                balanceAfter: newBalance,
+                referenceType: "EVENT_REVENUE",
+                referenceId: ticket.ticketType.eventId,
+              },
+            }),
+            prisma.account.update({
+              where: { accountId: account.accountId },
+              data: { balance: newBalance },
+            }),
+          ]);
+
+          logger.info(
+            `Ledger entry created for ticket ${ticket.ticketId}: ${actualRevenue}, new balance: ${newBalance}`,
+          );
+
+          // Invalidate account cache
+          await delAccountCache(ticket.ticketType.event.listerId).catch(() =>
+            logger.warn("Failed to invalidate account cache"),
+          );
+        } catch (ledgerError) {
+          logger.error("Error creating ledger entry:", ledgerError);
+          // Don't fail the payment if ledger fails
+        }
+      } else {
+        logger.warn(
+          `Lister not found for event ${ticket.ticketType.eventId}, skipping ledger entry`,
+        );
+      }
 
       // Send confirmation email to user
       try {
@@ -274,7 +346,11 @@ export class PaymentService {
         where: { ticketId },
         include: {
           ticketType: {
-            include: {
+            select: {
+              ticketTypeId: true,
+              eventId: true,
+              platformfee: true,
+              platformfeePerc: true,
               event: true,
             },
           },
@@ -333,18 +409,29 @@ export class PaymentService {
         include: {
           ticket: {
             include: {
-              ticketType: true,
+              ticketType: {
+                select: {
+                  ticketTypeId: true,
+                  platformfee: true,
+                  platformfeePerc: true,
+                  event: {
+                    select: {
+                      listerId: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
       });
 
       // Calculate actual revenue impact (refund amount minus platform fees that were included)
-      // If platform fee exists, subtract it; if 0, subtract 5% of refund amount
+      // If platform fee exists, subtract it; if 0, use platformfeePerc
       const platformFee =
         refund.ticket.ticketType.platformfee > 0
           ? refund.ticket.ticketType.platformfee * refund.ticket.quantity
-          : refund.amount * 0.05;
+          : refund.amount * refund.ticket.ticketType.platformfeePerc;
       const actualRevenueImpact = refund.amount - platformFee;
 
       // Update analytics (decrease revenue and ticket count)
@@ -368,6 +455,70 @@ export class PaymentService {
           },
         },
       });
+
+      // Create DEBIT ledger entry for refund
+      const lister = await prisma.lister.findUnique({
+        where: { listerId: refund.ticket.ticketType.event.listerId },
+        include: {
+          Account: true,
+        },
+      });
+
+      if (lister) {
+        try {
+          let account = lister.Account;
+
+          // Create account if it doesn't exist
+          if (!account) {
+            account = await prisma.account.create({
+              data: {
+                listerId: lister.listerId,
+                balance: 0,
+              },
+            });
+            logger.info(
+              `Created account for lister ${lister.listerId} during refund`,
+            );
+          }
+
+          const newBalance = new Prisma.Decimal(account.balance).minus(
+            actualRevenueImpact,
+          );
+
+          await prisma.$transaction([
+            prisma.ledgerEntry.create({
+              data: {
+                accountId: account.accountId,
+                entryType: "DEBIT",
+                amount: actualRevenueImpact,
+                balanceAfter: newBalance,
+                referenceType: "REFUND",
+                referenceId: refundId,
+              },
+            }),
+            prisma.account.update({
+              where: { accountId: account.accountId },
+              data: { balance: newBalance },
+            }),
+          ]);
+
+          logger.info(
+            `Ledger entry created for refund ${refundId}: -${actualRevenueImpact}, new balance: ${newBalance}`,
+          );
+
+          // Invalidate account cache
+          await delAccountCache(refund.ticket.ticketType.event.listerId).catch(
+            () => logger.warn("Failed to invalidate account cache"),
+          );
+        } catch (ledgerError) {
+          logger.error("Error creating ledger entry for refund:", ledgerError);
+          // Don't fail the refund if ledger fails
+        }
+      } else {
+        logger.warn(
+          `Lister not found for refund ${refundId}, skipping ledger entry`,
+        );
+      }
 
       return refund;
     } catch (error) {

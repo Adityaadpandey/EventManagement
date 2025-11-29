@@ -30,3 +30,4 @@ const startWorker = (workerPath: string) => {
 startWorker(path.resolve(__dirname, "./phoneOtp.worker.js"));
 startWorker(path.resolve(__dirname, "./email.worker.js"));
 startWorker(path.resolve(__dirname, "./analytics.worker.js"));
+startWorker(path.resolve(__dirname, "./ledger.worker.js"));

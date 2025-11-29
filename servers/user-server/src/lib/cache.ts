@@ -17,6 +17,7 @@ export const CACHE_PREFIX = {
   LISTER: "lister",
   DISCOUNT: "discount",
   OTP: "otp",
+  ACCOUNT: "account",
 } as const;
 
 // Cache TTL (Time To Live) in seconds
@@ -34,6 +35,7 @@ export const CACHE_TTL = {
   LISTER: 1800, // 30 minutes
   DISCOUNT: 300, // 5 minutes
   OTP: 300, // 5 minutes
+  ACCOUNT: 30, // 30 sec
 } as const;
 
 /**
@@ -389,6 +391,25 @@ export const setCheckerByIdCache = async (
 
 export const delCheckerByIdCache = async (checkerId: string) => {
   const key = buildCacheKey("checker", "id", checkerId);
+  await cacheDel(key);
+};
+
+// ============================================================================
+// ACCOUNT CACHING
+// ============================================================================
+
+export const getAccountCache = async (userId: string) => {
+  const key = buildCacheKey(CACHE_PREFIX.ACCOUNT, userId);
+  return cacheGet(key);
+};
+
+export const setAccountCache = async (userId: string, accountData: any) => {
+  const key = buildCacheKey(CACHE_PREFIX.ACCOUNT, userId);
+  await cacheSet(key, accountData, CACHE_TTL.ACCOUNT);
+};
+
+export const delAccountCache = async (userId: string) => {
+  const key = buildCacheKey(CACHE_PREFIX.ACCOUNT, userId);
   await cacheDel(key);
 };
 

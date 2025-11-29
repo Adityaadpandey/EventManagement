@@ -13,7 +13,7 @@ import {
   UnauthorizedError,
 } from "../utils/errors";
 
-export class ListerServer {
+export class ListerService {
   async applyForLister(
     userId: string,
     listerData: { companyName: string; companyLogo?: string; bio: string },
@@ -109,6 +109,7 @@ export class ListerServer {
                   ticketType: {
                     select: {
                       platformfee: true,
+                      platformfeePerc: true,
                     },
                   },
                 },
@@ -148,11 +149,11 @@ export class ListerServer {
         );
         const eventRevenue = event.Ticket.reduce((sum, ticket) => {
           // Calculate actual revenue by subtracting platform fees
-          // If platform fee exists, subtract it; if 0, subtract 5% of total price
+          // If platform fee exists, subtract it; if 0, use platformfeePerc
           const platformFee =
             ticket.ticketType.platformfee > 0
               ? ticket.ticketType.platformfee * ticket.quantity
-              : ticket.totalPrice * 0.05;
+              : ticket.totalPrice * ticket.ticketType.platformfeePerc;
           const actualRevenue = ticket.totalPrice - platformFee;
           return sum + actualRevenue;
         }, 0);
@@ -302,26 +303,9 @@ export class ListerServer {
               banner_vertical: true,
               banner_square: true,
               status: true,
-              EventAnalytics: {
-                select: {
-                  views: true,
-                  clicks: true,
-                  ticketsSold: true,
-                  revenue: true,
-                  conversionRate: true,
-                },
-              },
             },
             orderBy: {
               createdAt: "desc",
-            },
-          },
-          ListerAnalytics: {
-            select: {
-              totalEvents: true,
-              totalRevenue: true,
-              totalTicketsSold: true,
-              lastUpdated: true,
             },
           },
         },
@@ -437,16 +421,24 @@ export class ListerServer {
     }
   }
 
-  async getEventAttendeeTicketsDetails(eventId: string, userId: string) {
+  async getEventAttendeeTicketsDetails(
+    eventId: string,
+    userId: string,
+    isAdmin: boolean = false,
+  ) {
     try {
       // Verify event ownership first (lightweight query)
       const event = await prisma.event.findFirst({
         where: {
           eventId,
-          lister: { userId },
         },
         select: {
           eventId: true,
+          lister: {
+            select: {
+              userId: true,
+            },
+          },
           title: true,
           date: true,
           time: true,
@@ -462,12 +454,17 @@ export class ListerServer {
           },
         },
       });
+      console.log(event);
 
       if (!event) {
+        logger.warn(`Event not found for eventId: ${eventId} `);
+        throw new NotFoundError("Event not found");
+      }
+      if (event.lister.userId !== userId && !isAdmin) {
         logger.warn(
-          `Event not found or access denied for eventId: ${eventId} and userId: ${userId}`,
+          `Access Denied for userId: ${userId} and eventId: ${eventId} `,
         );
-        throw new NotFoundError("Access Denied or Event not found");
+        throw new NotFoundError("Access Denied");
       }
 
       // OPTIMIZED: Get ticket types with aggregated statistics using raw SQL
@@ -479,6 +476,7 @@ export class ListerServer {
         discountedPrice: number | null;
         quantity: number;
         platformfee: number;
+        platformfeePerc: number;
         totalTicketsSold: bigint;
         totalTicketRecords: bigint;
         checkedInCount: bigint;
@@ -494,6 +492,7 @@ export class ListerServer {
             tt."discountedPrice",
             tt.quantity,
             tt.platformfee,
+            tt."platformfeePerc",
             COALESCE(SUM(t.quantity), 0)::bigint as "totalTicketsSold",
             COUNT(t."ticketId")::bigint as "totalTicketRecords",
             COALESCE(SUM(CASE WHEN t."checkedIn" = true THEN t.quantity ELSE 0 END), 0)::bigint as "checkedInCount",
@@ -501,13 +500,13 @@ export class ListerServer {
               CASE
                 WHEN tt.platformfee > 0
                 THEN t."totalPrice" - (tt.platformfee * t.quantity)
-                ELSE t."totalPrice" * 0.95
+                ELSE t."totalPrice" * (1 - tt."platformfeePerc")
               END
             ), 0)::float as "totalRevenue"
           FROM "TicketType" tt
           LEFT JOIN "Ticket" t ON tt."ticketTypeId" = t."ticketTypeId" AND t.status = 'SUCCESS'
           WHERE tt."eventId" = ${eventId}
-          GROUP BY tt."ticketTypeId", tt.name, tt.description, tt.price, tt."discountedPrice", tt.quantity, tt.platformfee
+          GROUP BY tt."ticketTypeId", tt.name, tt.description, tt.price, tt."discountedPrice", tt.quantity, tt.platformfee, tt."platformfeePerc"
           ORDER BY tt.price ASC
         `;
 
@@ -592,6 +591,7 @@ export class ListerServer {
             discountedPrice: ticketType.discountedPrice,
             totalQuantity: ticketType.quantity,
             soldCount: Number(ticketType.totalTicketsSold),
+            totalTicketsForType: totalTicketsForType,
             availableCount:
               ticketType.quantity - Number(ticketType.totalTicketsSold),
             totalTickets: Number(ticketType.totalTicketsSold),
@@ -625,13 +625,13 @@ export class ListerServer {
         success: true,
         data: {
           event: {
-            eventId: event.eventId,
-            title: event.title,
-            date: event.date,
-            time: event.time,
-            location: event.location,
+            eventId: event?.eventId,
+            title: event?.title,
+            date: event?.date,
+            time: event?.time,
+            location: event?.location,
           },
-          customFields: event.CustomField,
+          customFields: event?.CustomField,
           statistics: {
             totalTicketsSold,
             totalCheckedIn,

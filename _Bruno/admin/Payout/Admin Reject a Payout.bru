@@ -1,0 +1,22 @@
+meta {
+  name: Admin Reject a Payout
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{host}}/admin/payout/7e0cb44a-6cde-425d-85bf-9285b8f321bd/reject
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+     "remark": "Approved"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,22 @@
+meta {
+  name: admin view all payout
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{host}}/admin/payout/all?status=PENDING
+  body: json
+  auth: inherit
+}
+
+params:query {
+  status: PENDING
+  ~status: COMPLETED
+  ~status: PROCESSING
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,16 @@
+meta {
+  name: getting all the events
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{host}}/admin/get-all-pending-events
+  body: json
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
