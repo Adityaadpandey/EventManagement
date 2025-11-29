@@ -24,7 +24,7 @@ const prisma = new PrismaClient({
   log: [
     { level: "warn", emit: "event" },
     { level: "error", emit: "event" },
-    // { level: 'info', emit: 'event' },
+    { level: "info", emit: "event" },
   ],
 });
 
@@ -33,7 +33,6 @@ export { prisma };
 // Graceful shutdown for Prisma + pool
 process.on("beforeExit", async () => {
   try {
-    clearInterval(poolMetricsInterval);
     await prisma.$disconnect();
     await pool.end();
   } catch (err) {
@@ -49,24 +48,3 @@ prisma.$on("warn", (e) => {
     logger.warn("Prisma warning", e);
   }
 });
-
-// Helper to get pool stats
-function getPoolMetrics() {
-  return {
-    totalCount: pool.totalCount, // total clients
-    idleCount: pool.idleCount, // idle clients
-    waitingCount: pool.waitingCount, // queued requests
-    activeCount: pool.totalCount - pool.idleCount, // active connections
-    maxPool: pool.options.max, // configured max
-  };
-}
-
-// Periodically log pool stats
-const poolMetricsInterval = setInterval(() => {
-  try {
-    const metrics = getPoolMetrics();
-    logger.info("Prisma pool stats", metrics);
-  } catch (err) {
-    logger.error("Failed to fetch pool metrics", err);
-  }
-}, 60_000);

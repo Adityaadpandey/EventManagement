@@ -658,9 +658,9 @@ export class EventService {
         if (!isAdmin) {
           // Verify ownership from cache
           const cachedEvent = cached as any;
-          if (cachedEvent.lister?.user?.userId !== userId) {
+          if (cachedEvent.ownerId !== userId) {
             throw new UnauthorizedError(
-              "You do not have permission to view this event's analytics",
+              "You do not have permission to view this event's analyticsxxx",
             );
           }
         }
@@ -801,6 +801,7 @@ export class EventService {
         salesByDay: analytics.salesByDay || {},
         revenueByDay: analytics.revenueByDay || {},
         ticketTypesSalesByDay: analytics.ticketTypesSalesByDay || {},
+        ownerId: event.lister.user.userId,
       };
 
       // Cache analytics with short TTL (1 minute)

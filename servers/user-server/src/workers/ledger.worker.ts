@@ -123,53 +123,89 @@ async function syncListerLedger(lister: any): Promise<LedgerSyncResult> {
   for (const event of eventsWithRevenue) {
     const eventRevenue = new Prisma.Decimal(event.EventAnalytics.revenue);
 
-    // Get existing ledger entries for this event
+    // Get ALL existing ledger entries for this event (both CREDIT and DEBIT)
     const existingEntries = await prisma.ledgerEntry.findMany({
       where: {
         accountId: account.accountId,
         referenceType: "EVENT_REVENUE",
         referenceId: event.eventId,
-        entryType: "CREDIT",
       },
+      orderBy: { createdAt: "asc" },
     });
 
-    // Calculate total ledger revenue for this event
-    const ledgerRevenue = existingEntries.reduce(
-      (sum, entry) => sum.plus(entry.amount),
-      new Prisma.Decimal(0),
-    );
+    // Calculate net ledger revenue for this event (credits - debits)
+    const ledgerRevenue = existingEntries.reduce((sum, entry) => {
+      if (entry.entryType === "CREDIT") {
+        return sum.plus(entry.amount);
+      } else if (entry.entryType === "DEBIT") {
+        return sum.minus(entry.amount);
+      }
+      return sum;
+    }, new Prisma.Decimal(0));
 
-    // Check if there's a discrepancy
+    // Check if there's a discrepancy (with tolerance for floating point)
     const difference = eventRevenue.minus(ledgerRevenue);
 
-    if (!difference.equals(0)) {
-      // Need to create adjustment entry
+    // Only create adjustment if difference is significant (> 0.01)
+    if (difference.abs().greaterThan(0.01)) {
       const currentBalance = await getCurrentBalance(account.accountId);
-      const newBalance = currentBalance.plus(difference);
 
-      await prisma.$transaction([
-        prisma.ledgerEntry.create({
-          data: {
-            accountId: account.accountId,
-            entryType: difference.greaterThan(0) ? "CREDIT" : "DEBIT",
-            amount: difference.abs(),
-            balanceAfter: newBalance,
-            referenceType: "EVENT_REVENUE",
-            referenceId: event.eventId,
-          },
-        }),
-        prisma.account.update({
-          where: { accountId: account.accountId },
-          data: { balance: newBalance },
-        }),
-      ]);
+      if (difference.greaterThan(0)) {
+        // Ledger is LESS than analytics - missing revenue (create CREDIT)
+        const newBalance = currentBalance.plus(difference);
 
-      result.entriesCreated++;
-      result.adjustmentAmount += Number(difference);
+        await prisma.$transaction([
+          prisma.ledgerEntry.create({
+            data: {
+              accountId: account.accountId,
+              entryType: "CREDIT",
+              amount: difference,
+              balanceAfter: newBalance,
+              referenceType: "EVENT_REVENUE",
+              referenceId: event.eventId,
+            },
+          }),
+          prisma.account.update({
+            where: { accountId: account.accountId },
+            data: { balance: newBalance },
+          }),
+        ]);
 
-      logger.info(
-        `Synced ledger for event ${event.eventId}: ${difference.greaterThan(0) ? "+" : ""}${difference.toString()}`,
-      );
+        result.entriesCreated++;
+        result.adjustmentAmount += Number(difference);
+
+        logger.info(
+          `✅ Created adjustment (CREDIT) for event ${event.eventId}: +${difference}`,
+        );
+      } else {
+        // Ledger is MORE than analytics - platform fee changed or duplicate (create DEBIT adjustment)
+        const adjustmentAmount = difference.abs();
+        const newBalance = currentBalance.minus(adjustmentAmount);
+
+        await prisma.$transaction([
+          prisma.ledgerEntry.create({
+            data: {
+              accountId: account.accountId,
+              entryType: "DEBIT",
+              amount: adjustmentAmount,
+              balanceAfter: newBalance,
+              referenceType: "EVENT_REVENUE",
+              referenceId: event.eventId,
+            },
+          }),
+          prisma.account.update({
+            where: { accountId: account.accountId },
+            data: { balance: newBalance },
+          }),
+        ]);
+
+        result.entriesCreated++;
+        result.adjustmentAmount += Number(difference);
+
+        logger.info(
+          `✅ Created adjustment (DEBIT) for event ${event.eventId}: ${difference} (platform fee change or correction)`,
+        );
+      }
     }
   }
 
@@ -187,31 +223,32 @@ async function syncListerLedger(lister: any): Promise<LedgerSyncResult> {
 }
 
 /**
- * Get current balance from latest ledger entry
+ * Get current balance by recalculating from ALL ledger entries
+ * This ensures we always have the correct balance even if balanceAfter is wrong
  */
 async function getCurrentBalance(accountId: string): Promise<Prisma.Decimal> {
-  const latestEntry = await prisma.ledgerEntry.findFirst({
+  const allEntries = await prisma.ledgerEntry.findMany({
     where: { accountId },
-    orderBy: { createdAt: "desc" },
-    select: { balanceAfter: true },
+    orderBy: { createdAt: "asc" },
+    select: { entryType: true, amount: true },
   });
 
-  if (latestEntry) {
-    return latestEntry.balanceAfter;
+  let balance = new Prisma.Decimal(0);
+
+  for (const entry of allEntries) {
+    if (entry.entryType === "CREDIT") {
+      balance = balance.plus(entry.amount);
+    } else if (entry.entryType === "DEBIT") {
+      balance = balance.minus(entry.amount);
+    }
   }
 
-  // If no ledger entries, get from account
-  const account = await prisma.account.findUnique({
-    where: { accountId },
-    select: { balance: true },
-  });
-
-  return account?.balance || new Prisma.Decimal(0);
+  return balance;
 }
 
 /**
- * Verify ledger integrity for all accounts
- * Checks that account balance matches latest ledger entry
+ * Verify and fix ledger integrity for all accounts
+ * Recalculates all balanceAfter values and ensures account balance matches
  */
 async function verifyLedgerIntegrity() {
   try {
@@ -224,61 +261,68 @@ async function verifyLedgerIntegrity() {
             companyName: true,
           },
         },
+        LedgerEntry: {
+          orderBy: { createdAt: "asc" },
+        },
       },
     });
 
-    const mismatches: Array<{
-      accountId: string;
-      companyName: string;
-      accountBalance: string;
-      ledgerBalance: string;
-      difference: string;
-    }> = [];
+    let fixedAccounts = 0;
+    let fixedEntries = 0;
 
     for (const account of accounts) {
-      const latestEntry = await prisma.ledgerEntry.findFirst({
-        where: { accountId: account.accountId },
-        orderBy: { createdAt: "desc" },
-        select: { balanceAfter: true },
-      });
+      if (account.LedgerEntry.length === 0) {
+        continue;
+      }
 
-      if (latestEntry) {
-        if (!account.balance.equals(latestEntry.balanceAfter)) {
-          const difference = account.balance.minus(latestEntry.balanceAfter);
-          mismatches.push({
-            accountId: account.accountId,
-            companyName: account.lister.companyName || "Unknown",
-            accountBalance: account.balance.toString(),
-            ledgerBalance: latestEntry.balanceAfter.toString(),
-            difference: difference.toString(),
-          });
+      // Recalculate balance from scratch
+      let runningBalance = new Prisma.Decimal(0);
+      let needsUpdate = false;
 
-          logger.warn("Balance mismatch detected:", {
-            accountId: account.accountId,
-            accountBalance: account.balance.toString(),
-            ledgerBalance: latestEntry.balanceAfter.toString(),
-          });
-
-          // Fix the mismatch by updating account balance to match ledger
-          await prisma.account.update({
-            where: { accountId: account.accountId },
-            data: { balance: latestEntry.balanceAfter },
-          });
-
-          logger.info(
-            `Fixed balance mismatch for account ${account.accountId}`,
-          );
+      for (const entry of account.LedgerEntry) {
+        // Calculate what the balance should be
+        if (entry.entryType === "CREDIT") {
+          runningBalance = runningBalance.plus(entry.amount);
+        } else if (entry.entryType === "DEBIT") {
+          runningBalance = runningBalance.minus(entry.amount);
         }
+
+        // Check if balanceAfter is wrong
+        if (!entry.balanceAfter.equals(runningBalance)) {
+          needsUpdate = true;
+          // Fix the balanceAfter
+          await prisma.ledgerEntry.update({
+            where: { id: entry.id },
+            data: { balanceAfter: runningBalance },
+          });
+          fixedEntries++;
+        }
+      }
+
+      // Check if account balance matches final calculated balance
+      if (!account.balance.equals(runningBalance)) {
+        needsUpdate = true;
+        await prisma.account.update({
+          where: { accountId: account.accountId },
+          data: { balance: runningBalance },
+        });
+        fixedAccounts++;
+
+        logger.info(
+          `Fixed account ${account.lister.companyName || account.accountId}: ${account.balance} → ${runningBalance}`,
+        );
       }
     }
 
-    if (mismatches.length > 0) {
-      logger.warn(`Found and fixed ${mismatches.length} balance mismatches`);
+    if (fixedAccounts > 0 || fixedEntries > 0) {
+      logger.info(
+        `✅ Fixed ${fixedAccounts} accounts and ${fixedEntries} ledger entries`,
+      );
     } else {
-      logger.info("✅ All account balances match ledger entries");
+      logger.info("✅ All account balances and ledger entries are correct");
     }
 
-    return mismatches;
+    return { fixedAccounts, fixedEntries };
   } catch (error) {
     logger.error("Ledger integrity verification failed:", error);
     throw error;
