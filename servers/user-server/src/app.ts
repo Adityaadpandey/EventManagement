@@ -253,7 +253,6 @@ export const startServer = async () => {
       logger.info(`Node version: ${process.version}`);
     });
 
-    // Optimize server timeouts for better performance
     server.keepAliveTimeout = 65000; // Slightly higher than typical load balancer timeout (60s)
     server.headersTimeout = 66000; // Should be higher than keepAliveTimeout
     server.requestTimeout = 120000; // 2 minutes for long-running requests
