@@ -28,10 +28,7 @@ export const paginationQuerySchema = z.object({
   limit: z
     .string()
     .optional()
-    .transform((val) => (val ? parseInt(val, 10) : 10))
-    .refine((val) => val > 0 && val <= 100, {
-      message: "Limit must be between 1 and 100",
-    }),
+    .transform((val) => (val ? parseInt(val, 10) : 10)),
 });
 
 // Location query validation
@@ -39,17 +36,11 @@ export const locationQuerySchema = z.object({
   longitude: z
     .string()
     .optional()
-    .transform((val) => (val ? parseFloat(val) : undefined))
-    .refine((val) => val === undefined || (val >= -180 && val <= 180), {
-      message: "Longitude must be between -180 and 180",
-    }),
+    .transform((val) => (val ? parseFloat(val) : undefined)),
   latitude: z
     .string()
     .optional()
-    .transform((val) => (val ? parseFloat(val) : undefined))
-    .refine((val) => val === undefined || (val >= -90 && val <= 90), {
-      message: "Latitude must be between -90 and 90",
-    }),
+    .transform((val) => (val ? parseFloat(val) : undefined)),
 });
 
 // Email validation
