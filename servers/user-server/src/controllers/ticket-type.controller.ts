@@ -26,7 +26,7 @@ export class TicketTypeController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { eventId } = req.params;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
 
       const parsedBody = ticketTypeSchema.parse(req.body);
@@ -40,7 +40,7 @@ export class TicketTypeController {
       return sendSuccess(res, "Ticket Type created successfully", result, 201);
     } catch (error: any) {
       logError(req, "Failed to create ticket type", error, {
-        eventId: req.params.eventId,
+        eventId: req.params.eventId as string,
       });
       if (error.name === "ZodError") {
         const formattedErrors = formatZodError(error);
@@ -59,10 +59,11 @@ export class TicketTypeController {
 
   async Update(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.userId as string;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { eventId, ticketTypeId } = req.params;
+      const eventId = req.params.eventId as string;
+      const ticketTypeId = req.params.ticketTypeId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
 
       if (!ticketTypeId)
@@ -106,10 +107,11 @@ export class TicketTypeController {
 
   async Delete(req: AuthenticatedRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.userId as string;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { eventId, ticketTypeId } = req.params;
+      const eventId = req.params.eventId as string;
+      const ticketTypeId = req.params.ticketTypeId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
 
       if (!ticketTypeId)

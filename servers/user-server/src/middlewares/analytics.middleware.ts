@@ -23,7 +23,7 @@ export const trackEventView = async (
   next: NextFunction,
 ) => {
   try {
-    const eventId = req.params.eventId;
+    const eventId = req.params.eventId as string;
 
     if (eventId) {
       const analyticsData: AnalyticsData = {

@@ -23,7 +23,7 @@ export class CheckerController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { eventId } = req.params;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
 
       logInfo(req, "Creating checker", { eventId, userId });
@@ -42,7 +42,7 @@ export class CheckerController {
       return sendSuccess(res, "Checker created successfully", checkerCopy, 201);
     } catch (error: any) {
       logError(req, "Failed to create checker", error, {
-        eventId: req.params.eventId,
+        eventId: req.params.eventId as string,
       });
 
       if (error.name === "ZodError") {
@@ -66,7 +66,7 @@ export class CheckerController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { eventId } = req.params;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
 
       const checkers = await this.checkerService.getCheckersByEvent(
@@ -76,7 +76,7 @@ export class CheckerController {
       return sendSuccess(res, "Checkers retrieved successfully", checkers);
     } catch (error: any) {
       logError(req, "Failed to get checkers", error, {
-        eventId: req.params.eventId,
+        eventId: req.params.eventId as string,
       });
       if (isAppError(error)) {
         return sendError(res, error.message, error.statusCode);
@@ -87,14 +87,14 @@ export class CheckerController {
 
   async getCheckerById(req: AuthenticatedRequest, res: Response) {
     try {
-      const { checkerId } = req.params;
+      const checkerId = req.params.checkerId as string;
       if (!checkerId) throw new BadRequestError("Checker ID is required");
 
       const checker = await this.checkerService.getCheckerById(checkerId);
       return sendSuccess(res, "Checker retrieved successfully", checker);
     } catch (error: any) {
       logError(req, "Failed to get checker", error, {
-        checkerId: req.params.checkerId,
+        checkerId: req.params.checkerId as string,
       });
       if (isAppError(error)) {
         return sendError(res, error.message, error.statusCode);
@@ -108,7 +108,7 @@ export class CheckerController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { checkerId } = req.params;
+      const checkerId = req.params.checkerId as string;
       if (!checkerId) throw new BadRequestError("Checker ID is required");
 
       logInfo(req, "Deleting checker", { checkerId, userId });
@@ -116,7 +116,7 @@ export class CheckerController {
       return sendSuccess(res, result.message);
     } catch (error: any) {
       logError(req, "Failed to delete checker", error, {
-        checkerId: req.params.checkerId,
+        checkerId: req.params.checkerId as string,
       });
       if (isAppError(error)) {
         return sendError(res, error.message, error.statusCode);
