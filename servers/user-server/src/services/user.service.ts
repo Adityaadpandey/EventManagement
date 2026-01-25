@@ -12,7 +12,7 @@ export class UserService {
   async getUserProfile(userId: string) {
     try {
       // Try cache first
-      const cached = await getUserProfileCache(userId);
+      const cached: any = await getUserProfileCache(userId);
       if (cached) {
         logger.info(`User profile cache hit for ${userId}`);
         // Generate fresh token

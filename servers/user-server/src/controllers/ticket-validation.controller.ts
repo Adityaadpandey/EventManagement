@@ -106,7 +106,7 @@ export class TicketValidationController {
       if (!checkerId)
         throw new BadRequestError("Checker authentication required");
 
-      const { ticketId } = req.params;
+      const ticketId = req.params.ticketId as string;
       if (!ticketId) throw new BadRequestError("Ticket ID is required");
 
       const { note } = resetTicketScanSchema.parse(req.body);

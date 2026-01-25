@@ -24,7 +24,7 @@ export class PromotionsController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { eventId } = req.params;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
 
       // Body validation is now handled by middleware
@@ -58,7 +58,7 @@ export class PromotionsController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { eventId } = req.params;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
 
       const { toEventId } = req.query;
@@ -75,7 +75,7 @@ export class PromotionsController {
         throw new NotFoundError("Event not found");
       }
 
-      if (event.lister.userId !== userId) {
+      if (event.lister?.userId !== userId) {
         throw new ForbiddenError(
           "You are not authorized to view this event's promotion reach",
         );
@@ -91,7 +91,7 @@ export class PromotionsController {
       return sendSuccess(res, "Promotion reach fetched successfully", result);
     } catch (error: any) {
       logError(req, "Failed to get promotion reach", error, {
-        eventId: req.params.eventId,
+        eventId: req.params.eventId as string,
       });
 
       // Let error middleware handle it
