@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
 import ClientLayout from "./_components/ClientLayout";
 import PwaPrompt from "./_components/PwaPrompt";
+import NotificationModalWrapper from "@/components/NotificationModalWrapper";
 import "./globals.css";
 import Providers from "./providers";
 
@@ -592,6 +593,7 @@ export default async function RootLayout({
           <ClientLayout>
             {children}
             <PwaPrompt />
+            <NotificationModalWrapper />
             <SpeedInsights />
             <Analytics />
           </ClientLayout>
