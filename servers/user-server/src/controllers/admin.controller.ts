@@ -68,7 +68,7 @@ export class AdminController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { eventId } = req.params;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new NotFoundError("Event ID is required");
 
       const { canBuy } = req.body;
@@ -118,7 +118,7 @@ export class AdminController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { eventId } = req.params;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new NotFoundError("Event ID is required");
 
       // Call the service method to get event by ID
@@ -145,7 +145,7 @@ export class AdminController {
       // Call the service method to get event statistics
       const result = await this.eventService.getEventAnalytics(
         userId,
-        req.params.eventId,
+        req.params.eventId as string,
         true,
       );
       return sendSuccess(res, "Event Analysis fetched", result, 200);
@@ -163,7 +163,7 @@ export class AdminController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { eventId } = req.params;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new NotFoundError("Event Id not found");
 
       // Call the service method to get event statistics

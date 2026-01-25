@@ -157,7 +157,7 @@ export class EventController {
   // for getting specific event details
   async getPublicEventDetails(req: Request, res: Response) {
     try {
-      const eventId = req.params.eventId;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
       const eventDetails =
         await this.eventService.getPublicEventDetails(eventId);
@@ -174,7 +174,7 @@ export class EventController {
       );
     } catch (error: any) {
       logError(req, "Failed to get public event details", error, {
-        eventId: req.params.eventId,
+        eventId: req.params.eventId as string,
       });
 
       if (isAppError(error)) {
@@ -194,7 +194,7 @@ export class EventController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const eventId = req.params.eventId;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
 
       const eventDetails = await this.eventService.getEventDetails(
@@ -214,7 +214,7 @@ export class EventController {
     } catch (error: any) {
       if (error.name === "ZodError") {
         logError(req, "Failed to get event details", error, {
-          eventId: req.params.eventId,
+          eventId: req.params.eventId as string,
         });
         const formattedErrors = formatZodError(error);
         return sendError(
@@ -235,7 +235,7 @@ export class EventController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const eventId = req.params.eventId;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
 
       const validatedData = patchEventSchema.parse(req.body);
@@ -276,7 +276,7 @@ export class EventController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const eventId = req.params.eventId;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
 
       const { update, imageUrl } = req.body;
@@ -296,7 +296,7 @@ export class EventController {
       );
     } catch (error: any) {
       logError(req, "Failed to update event info", error, {
-        eventId: req.params.eventId,
+        eventId: req.params.eventId as string,
       });
       if (isAppError(error)) {
         return sendError(res, error.message, error.statusCode);
@@ -310,7 +310,7 @@ export class EventController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const eventId = req.params.eventId;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
 
       const analytics = await this.eventService.getEventAnalytics(
@@ -325,7 +325,7 @@ export class EventController {
       );
     } catch (error: any) {
       logError(req, "Failed to get event analytics", error, {
-        eventId: req.params.eventId,
+        eventId: req.params.eventId as string,
       });
 
       if (isAppError(error)) {
@@ -345,7 +345,7 @@ export class EventController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const eventId = req.params.eventId;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
       const { canBuy } = req.body;
       if (typeof canBuy !== "boolean") {

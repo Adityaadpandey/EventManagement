@@ -22,7 +22,7 @@ export class DiscountController {
     const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedError("User ID is required");
 
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     if (!eventId) throw new BadRequestError("Event ID is required");
 
     try {
@@ -60,7 +60,7 @@ export class DiscountController {
     const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedError("User ID is required");
 
-    const { eventId } = req.params;
+    const eventId = req.params.eventId as string;
     if (!eventId) return sendError(res, "Event ID is required", 400);
 
     try {
@@ -80,8 +80,8 @@ export class DiscountController {
   async getCodeInfoByCode(req: AuthenticatedRequest, res: Response) {
     const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedError("User ID is required");
-
-    const { code, eventId } = req.params;
+    const eventId = req.params.eventId as string;
+    const code = req.params.code as string;
     if (!code) return sendError(res, "Code is required", 400);
     if (!eventId) return sendError(res, "Event ID is required", 400);
 
