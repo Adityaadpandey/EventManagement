@@ -85,7 +85,7 @@ export class TicketController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { eventId } = req.params;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
 
       const result = await this.ticketService.getTicketBuyersForEvent(
@@ -96,7 +96,7 @@ export class TicketController {
       return sendSuccess(res, "Ticket buyers fetched successfully", result);
     } catch (error: any) {
       logError(req, "Failed to fetch ticket buyers", error, {
-        eventId: req.params.eventId,
+        eventId: req.params.eventId as string,
       });
 
       if (isAppError(error)) {
@@ -130,7 +130,7 @@ export class TicketController {
 
   async getTicketDetails(req: AuthenticatedRequest, res: Response) {
     try {
-      const { ticketId } = req.params;
+      const ticketId = req.params.ticketId as string;
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 

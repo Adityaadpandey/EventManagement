@@ -168,7 +168,7 @@ export class PaymentController {
     try {
       const userId = req.user?.userId;
       const userRole = req.user?.role;
-      const eventId = req.params.eventId;
+      const eventId = req.params.eventId as string;
 
       let searchUserId: string | undefined;
       let searchEventId: string | undefined;
@@ -214,7 +214,7 @@ export class PaymentController {
       return sendSuccess(res, "Refunds fetched successfully", result);
     } catch (error) {
       logError(req, "Failed to fetch refunds", error, {
-        eventId: req.params.eventId,
+        eventId: req.params.eventId as string,
       });
       if (isAppError(error)) {
         return sendError(res, error.message, error.statusCode);

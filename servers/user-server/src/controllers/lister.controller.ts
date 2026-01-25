@@ -94,7 +94,7 @@ export class ListerController {
 
   async getLister(req: AuthenticatedRequest, res: Response) {
     try {
-      const listerId = req.params.listerId;
+      const listerId = req.params.listerId as string;
       if (!listerId) throw new BadRequestError("Lister ID is required");
 
       const lister = await this.listerService.getLister(listerId);
@@ -135,7 +135,7 @@ export class ListerController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { eventId } = req.params;
+      const eventId = req.params.eventId as string;
       if (!eventId) throw new BadRequestError("Event ID is required");
 
       const ticketsDetails =
@@ -150,7 +150,7 @@ export class ListerController {
       );
     } catch (error: any) {
       logError(req, "Failed to get event attendee tickets details", error, {
-        eventId: req.params.eventId,
+        eventId: req.params.eventId as string,
         userId: req.user?.userId,
       });
 

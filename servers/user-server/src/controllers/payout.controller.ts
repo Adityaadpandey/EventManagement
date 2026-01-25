@@ -86,7 +86,7 @@ export class PayoutController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { payoutId } = req.params;
+      const payoutId = req.params.payoutId as string;
       if (!payoutId) throw new NotFoundError("Payout ID is required");
 
       const payout = await this.payoutService.getPayoutById(payoutId, userId);
@@ -110,7 +110,7 @@ export class PayoutController {
       const userId = req.user?.userId;
       if (!userId) throw new UnauthorizedError("User ID is required");
 
-      const { payoutId } = req.params;
+      const payoutId = req.params.payoutId as string;
       if (!payoutId) throw new NotFoundError("Payout ID is required");
 
       const payout = await this.payoutService.cancelPayout(payoutId, userId);
@@ -210,7 +210,7 @@ export class PayoutController {
 
   async approvePayout(req: AuthenticatedRequest, res: Response) {
     try {
-      const { payoutId } = req.params;
+      const payoutId = req.params.payoutId as string;
       if (!payoutId) throw new NotFoundError("Payout ID is required");
       const { approvedAmount, remark } = approvePayoutSchema.parse(req.body);
 
@@ -236,7 +236,7 @@ export class PayoutController {
 
   async completePayout(req: AuthenticatedRequest, res: Response) {
     try {
-      const { payoutId } = req.params;
+      const payoutId = req.params.payoutId as string;
       if (!payoutId) throw new NotFoundError("Payout ID is required");
 
       const payout = await this.payoutService.completePayout(payoutId);
@@ -257,7 +257,7 @@ export class PayoutController {
 
   async rejectPayout(req: AuthenticatedRequest, res: Response) {
     try {
-      const { payoutId } = req.params;
+      const payoutId = req.params.payoutId as string;
       const { reason } = req.body;
 
       const payout = await this.payoutService.rejectPayout(payoutId, reason);
@@ -278,7 +278,7 @@ export class PayoutController {
 
   async reversePayout(req: AuthenticatedRequest, res: Response) {
     try {
-      const { payoutId } = req.params;
+      const payoutId = req.params.payoutId as string;
       const { reason } = req.body;
 
       if (!reason) {
