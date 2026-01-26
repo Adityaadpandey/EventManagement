@@ -32,9 +32,33 @@ export default function NotificationModal({
     try {
       await onEnable();
       setShow(false);
-    } catch (error) {
-      console.error("Failed:", error);
-      alert("Please allow notifications in your browser settings");
+      // Mark as dismissed so it doesn't show again
+      localStorage.setItem("notification-modal-dismissed", "true");
+    } catch (error: any) {
+      console.error("Failed to enable notifications:", error);
+
+      // Check if it's a localhost issue
+      if (
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+      ) {
+        alert(
+          "⚠️ Push notifications don't work on localhost.\n\nThey require HTTPS. Please test on your production domain or use ngrok/tunneling.",
+        );
+      } else if (error.message?.includes("permission denied")) {
+        alert(
+          "❌ Notification permission was denied.\n\nPlease enable notifications in your browser settings and try again.",
+        );
+      } else if (error.message?.includes("Service Worker")) {
+        alert(
+          "❌ Service Worker failed to register.\n\nPlease refresh the page and try again.",
+        );
+      } else {
+        alert(
+          "❌ Failed to enable notifications.\n\nError: " +
+            (error.message || "Unknown error"),
+        );
+      }
     } finally {
       setLoading(false);
     }

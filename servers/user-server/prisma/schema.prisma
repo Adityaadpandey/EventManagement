@@ -7,118 +7,117 @@ datasource db {
   provider = "postgresql"
 }
 
-
 enum Role {
-    USER
-    LISTER
-    ADMIN
-    SUPER_ADMIN
+  USER
+  LISTER
+  ADMIN
+  SUPER_ADMIN
 }
 
 enum Status {
-    NOT_VIEWED
-    PENDING
-    APPROVED
-    REJECTED
-    CANCELLATION_REQUESTED
-    CANCELLED
+  NOT_VIEWED
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLATION_REQUESTED
+  CANCELLED
 }
 
 enum TicketPaymentStatus {
-    PENDING
-    SUCCESS
-    FAILED
+  PENDING
+  SUCCESS
+  FAILED
 }
 
 enum RefundStatus {
-    PENDING
-    COMPLETED
-    REJECTED
+  PENDING
+  COMPLETED
+  REJECTED
 }
 
 enum ListerStatus {
-    PENDING
-    COMPLETED
-    REJECTED
+  PENDING
+  COMPLETED
+  REJECTED
 }
 
 model User {
-    userId   String  @id @default(uuid())
-    phone    String? @unique
-    email    String? @unique
-    password String?
-    name     String?
-    avatar   String?
+  userId   String  @id @default(uuid())
+  phone    String? @unique
+  email    String? @unique
+  password String?
+  name     String?
+  avatar   String?
 
-    isActive        Boolean @default(true)
-    phoneVerified   Boolean @default(false)
-    emailVerified   Boolean @default(false)
-    profileComplete Boolean @default(false)
+  isActive        Boolean @default(true)
+  phoneVerified   Boolean @default(false)
+  emailVerified   Boolean @default(false)
+  profileComplete Boolean @default(false)
 
-    role Role @default(USER)
+  role Role @default(USER)
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    // Relations
-    Lister           Lister?
-    Ticket           Ticket[]
-    TicketScanLog    TicketScanLog[]
-    Refund           Refund[]
-    Notification     Notification[]
-    PushSubscription PushSubscription[]
+  // Relations
+  Lister           Lister?
+  Ticket           Ticket[]
+  TicketScanLog    TicketScanLog[]
+  Refund           Refund[]
+  Notification     Notification[]
+  PushSubscription PushSubscription[]
 
-    // OPTIMIZED INDEXES
-    @@index([role, isActive]) // Composite covers both individual queries
-    @@index([createdAt(sort: Desc)]) // DESC for recent users
-    @@index([email, isActive]) // Login queries
-    @@index([phone, isActive]) // Phone login queries
+  // OPTIMIZED INDEXES
+  @@index([role, isActive]) // Composite covers both individual queries
+  @@index([createdAt(sort: Desc)]) // DESC for recent users
+  @@index([email, isActive]) // Login queries
+  @@index([phone, isActive]) // Phone login queries
 }
 
 model Lister {
-    listerId String @id @default(uuid())
-    userId   String @unique
-    user     User   @relation(fields: [userId], references: [userId])
+  listerId String @id @default(uuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [userId])
 
-    companyName String?
-    companyLogo String?
-    bio         String?
-    InstagramLink String?
-    FacebookLink  String?
-    XLink   String?
-    website   String?
+  companyName   String?
+  companyLogo   String?
+  bio           String?
+  InstagramLink String?
+  FacebookLink  String?
+  XLink         String?
+  website       String?
 
-    contactPhone String?
-    contactEmail String?
+  contactPhone String?
+  contactEmail String?
 
-    createdAt DateTime     @default(now())
-    updatedAt DateTime     @updatedAt
-    status    ListerStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  status    ListerStatus @default(PENDING)
 
-    // Relations
-    Event           Event[]
-    TicketChecker   TicketChecker[]
-    ListerAnalytics ListerAnalytics?
-    BankDetails    BankDetails?
-    Account        Account?
-    Payout         Payout[]
+  // Relations
+  Event           Event[]
+  TicketChecker   TicketChecker[]
+  ListerAnalytics ListerAnalytics?
+  BankDetails     BankDetails?
+  Account         Account?
+  Payout          Payout[]
 
-    // OPTIMIZED INDEXES - userId already indexed via @unique
-    @@index([status, createdAt(sort: Desc)]) // Combined for pending approvals
+  // OPTIMIZED INDEXES - userId already indexed via @unique
+  @@index([status, createdAt(sort: Desc)]) // Combined for pending approvals
 }
 
-model BankDetails{
+model BankDetails {
   bankDetailsId String @id @default(uuid())
-  listerId String @unique // Already indexed via @unique
-  lister   Lister @relation(fields: [listerId], references: [listerId])
+  listerId      String @unique // Already indexed via @unique
+  lister        Lister @relation(fields: [listerId], references: [listerId])
 
-  bankName String
-  accountNumber String
-  ifscCode String
+  bankName          String
+  accountNumber     String
+  ifscCode          String
   accountHolderName String
-  branchCode String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  branchCode        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model Account {
@@ -126,7 +125,7 @@ model Account {
   listerId  String @unique // Already indexed via @unique
   lister    Lister @relation(fields: [listerId], references: [listerId])
 
-  balance Decimal @default("0")
+  balance     Decimal       @default("0")
   LedgerEntry LedgerEntry[]
 
   createdAt DateTime @default(now())
@@ -150,21 +149,21 @@ enum PayoutType {
 }
 
 model Payout {
-  payoutId   String   @id @default(uuid())
-  listerId   String
-  lister     Lister   @relation(fields: [listerId], references: [listerId])
+  payoutId String @id @default(uuid())
+  listerId String
+  lister   Lister @relation(fields: [listerId], references: [listerId])
 
-  eventId    String?
-  event      Event?   @relation(fields: [eventId], references: [eventId])
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [eventId])
 
-  type       PayoutType  @default(FULL)
-  amount     Decimal
+  type           PayoutType   @default(FULL)
+  amount         Decimal
   approvedAmount Decimal?
-  status     PayoutStatus @default(PENDING)
+  status         PayoutStatus @default(PENDING)
 
-  remark     String?
+  remark String?
 
-  requestedAt DateTime @default(now())
+  requestedAt DateTime  @default(now())
   approvedAt  DateTime?
   paidAt      DateTime?
 
@@ -178,12 +177,12 @@ model Payout {
 }
 
 model LedgerEntry {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   accountId String
-  account   Account  @relation(fields: [accountId], references: [accountId])
+  account   Account @relation(fields: [accountId], references: [accountId])
 
-  entryType String
-  amount    Decimal
+  entryType    String
+  amount       Decimal
   balanceAfter Decimal
 
   referenceType String?
@@ -197,352 +196,352 @@ model LedgerEntry {
 }
 
 model Event {
-    eventId  String @id @default(uuid())
-    listerId String
-    lister   Lister @relation(fields: [listerId], references: [listerId])
+  eventId  String @id @default(uuid())
+  listerId String
+  lister   Lister @relation(fields: [listerId], references: [listerId])
 
-    title             String
-    description       String
-    banner_horizontal String
-    banner_vertical   String
-    banner_square     String
-    date              DateTime
-    time              DateTime
-    location          String
-    longitude         Float?
-    latitude          Float?
-    capacity          Int?
-    tags              String[]
-    chips             String[]
-    restrictions      String?
-    canBuy Boolean @default(true)
+  title             String
+  description       String
+  banner_horizontal String
+  banner_vertical   String
+  banner_square     String
+  date              DateTime
+  time              DateTime
+  location          String
+  longitude         Float?
+  latitude          Float?
+  capacity          Int?
+  tags              String[]
+  chips             String[]
+  restrictions      String?
+  canBuy            Boolean  @default(true)
 
-    status            Status  @default(NOT_VIEWED)
-    rejection_comment String?
-    cancellation_note String?
+  status            Status  @default(NOT_VIEWED)
+  rejection_comment String?
+  cancellation_note String?
 
-    samplePoster       String?
-    socialMediaGraphic String?
-    eventFormat        String?
-    requestedVenue     String?
-    termsConditions    String?
-    rulesRegulations   String?
-    policies           String?
-    dutyLeavesDetails  String?
+  samplePoster       String?
+  socialMediaGraphic String?
+  eventFormat        String?
+  requestedVenue     String?
+  termsConditions    String?
+  rulesRegulations   String?
+  policies           String?
+  dutyLeavesDetails  String?
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    ticketCounter  Int   @default(0)
-    availableMailUpdates Int @default(2)
+  ticketCounter        Int @default(0)
+  availableMailUpdates Int @default(2)
 
-    Payout        Payout[]
+  Payout Payout[]
 
-    // Relations
-    TicketType     TicketType[]
-    CustomField    CustomField[]
-    TicketChecker  TicketChecker[]
-    Ticket         Ticket[]
-    DiscountCode   DiscountCode[]
-    TicketScanLog  TicketScanLog[]
-    EventAnalytics EventAnalytics?
-    Refund         Refund[]
+  // Relations
+  TicketType     TicketType[]
+  CustomField    CustomField[]
+  TicketChecker  TicketChecker[]
+  Ticket         Ticket[]
+  DiscountCode   DiscountCode[]
+  TicketScanLog  TicketScanLog[]
+  EventAnalytics EventAnalytics?
+  Refund         Refund[]
+  // Spatial index for location queries - use raw SQL for better performance:
+  // CREATE INDEX idx_event_location ON "Event" USING GIST (ll_to_earth(latitude, longitude));
 
-    // OPTIMIZED INDEXES - Most critical for performance
-    @@index([status, date]) // Primary query: approved upcoming events
-    @@index([listerId, status, createdAt(sort: Desc)]) // Lister dashboard
-    @@index([date, status]) // Date filtering with status
-    @@index([tags]) // Tag-based search (GIN index in PostgreSQL)
-    // Spatial index for location queries - use raw SQL for better performance:
-    // CREATE INDEX idx_event_location ON "Event" USING GIST (ll_to_earth(latitude, longitude));
+  // OPTIMIZED INDEXES - Most critical for performance
+  @@index([status, date]) // Primary query: approved upcoming events
+  @@index([listerId, status, createdAt(sort: Desc)]) // Lister dashboard
+  @@index([date, status]) // Date filtering with status
+  @@index([tags]) // Tag-based search (GIN index in PostgreSQL)
 }
 
 model CustomField {
-    fieldId               String                  @id @default(uuid())
-    eventId               String
-    event                 Event                   @relation(fields: [eventId], references: [eventId])
-    ticketTypeId         String?
-    ticketType           TicketType?             @relation(fields: [ticketTypeId], references:[ticketTypeId])
-    label                 String
-    fieldType             String
-    required              Boolean                 @default(false)
-    options               String?
-    AttendeeFieldResponse AttendeeFieldResponse[]
+  fieldId               String                  @id @default(uuid())
+  eventId               String
+  event                 Event                   @relation(fields: [eventId], references: [eventId])
+  ticketTypeId          String?
+  ticketType            TicketType?             @relation(fields: [ticketTypeId], references: [ticketTypeId])
+  label                 String
+  fieldType             String
+  required              Boolean                 @default(false)
+  options               String?
+  AttendeeFieldResponse AttendeeFieldResponse[]
 
-    // OPTIMIZED INDEXES
-    @@index([eventId, required]) // Get all required fields for event
-    @@index([ticketTypeId]) // Fields by ticket type
+  // OPTIMIZED INDEXES
+  @@index([eventId, required]) // Get all required fields for event
+  @@index([ticketTypeId]) // Fields by ticket type
 }
 
 model TicketType {
-    ticketTypeId String @id @default(uuid())
-    eventId      String
-    event        Event  @relation(fields: [eventId], references: [eventId])
+  ticketTypeId String @id @default(uuid())
+  eventId      String
+  event        Event  @relation(fields: [eventId], references: [eventId])
 
-    name            String
-    description     String?
-    price           Float
-    discountedPrice Float?
-    discountReason  String?
-    quantity        Int
-    salesCutoff     DateTime?
+  name            String
+  description     String?
+  price           Float
+  discountedPrice Float?
+  discountReason  String?
+  quantity        Int
+  salesCutoff     DateTime?
 
-    platformfee Int @default(0)
-    platformfeePerc Float @default(0.05)
+  platformfee     Int   @default(0)
+  platformfeePerc Float @default(0.05)
 
-    ticketPrefix String?
+  ticketPrefix String?
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    soldCount Int @default(0)
+  soldCount Int @default(0)
 
-    // Relations
-    Ticket Ticket[]
-    CustomField CustomField[]
+  // Relations
+  Ticket      Ticket[]
+  CustomField CustomField[]
 
-    // OPTIMIZED INDEXES
-    @@index([eventId, price]) // Event tickets sorted by price
-    @@index([salesCutoff]) // Expiring tickets (WHERE salesCutoff IS NOT NULL)
+  // OPTIMIZED INDEXES
+  @@index([eventId, price]) // Event tickets sorted by price
+  @@index([salesCutoff]) // Expiring tickets (WHERE salesCutoff IS NOT NULL)
 }
 
 model Ticket {
-    ticketId     String     @id @default(uuid())
-    ticketTypeId String
-    ticketType   TicketType @relation(fields: [ticketTypeId], references: [ticketTypeId])
+  ticketId     String     @id @default(uuid())
+  ticketTypeId String
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [ticketTypeId])
 
-    userId String
-    user   User   @relation(fields: [userId], references: [userId])
+  userId String
+  user   User   @relation(fields: [userId], references: [userId])
 
-    status     TicketPaymentStatus @default(PENDING)
-    quantity   Int
-    totalPrice Float
-    qrCode     String              @unique // Already indexed via @unique
-    checkedIn  Boolean             @default(false)
+  status     TicketPaymentStatus @default(PENDING)
+  quantity   Int
+  totalPrice Float
+  qrCode     String              @unique // Already indexed via @unique
+  checkedIn  Boolean             @default(false)
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    // Relations
-    AttendeeFieldResponse AttendeeFieldResponse[]
-    Event                 Event?                  @relation(fields: [eventEventId], references: [eventId])
-    eventEventId          String?
-    TicketScanLog         TicketScanLog[]
-    Refund                Refund[]
+  // Relations
+  AttendeeFieldResponse AttendeeFieldResponse[]
+  Event                 Event?                  @relation(fields: [eventEventId], references: [eventId])
+  eventEventId          String?
+  TicketScanLog         TicketScanLog[]
+  Refund                Refund[]
 
-    // OPTIMIZED INDEXES - Critical for ticket operations
-    @@index([userId, status, createdAt(sort: Desc)]) // User's ticket history
-    @@index([eventEventId, status]) // Event tickets by status
-    @@index([eventEventId, checkedIn]) // Check-in tracking
-    @@index([ticketTypeId, status]) // Ticket type sales analytics
-    @@index([status, createdAt(sort: Desc)]) // Recent purchases by status
+  // OPTIMIZED INDEXES - Critical for ticket operations
+  @@index([userId, status, createdAt(sort: Desc)]) // User's ticket history
+  @@index([eventEventId, status]) // Event tickets by status
+  @@index([eventEventId, checkedIn]) // Check-in tracking
+  @@index([ticketTypeId, status]) // Ticket type sales analytics
+  @@index([status, createdAt(sort: Desc)]) // Recent purchases by status
 }
 
 model AttendeeFieldResponse {
-    responseId String      @id @default(uuid())
-    ticketId   String
-    ticket     Ticket      @relation(fields: [ticketId], references: [ticketId])
-    fieldId    String
-    field      CustomField @relation(fields: [fieldId], references: [fieldId])
-    value      String
-    createdAt  DateTime    @default(now())
+  responseId String      @id @default(uuid())
+  ticketId   String
+  ticket     Ticket      @relation(fields: [ticketId], references: [ticketId])
+  fieldId    String
+  field      CustomField @relation(fields: [fieldId], references: [fieldId])
+  value      String
+  createdAt  DateTime    @default(now())
 
-    // OPTIMIZED INDEXES
-    @@index([ticketId]) // Get all responses for a ticket
-    @@index([fieldId, value]) // Analytics on specific field values
+  // OPTIMIZED INDEXES
+  @@index([ticketId]) // Get all responses for a ticket
+  @@index([fieldId, value]) // Analytics on specific field values
 }
 
 model TicketChecker {
-    checkerId String @id @default(uuid())
+  checkerId String @id @default(uuid())
 
-    listerId String
-    lister   Lister @relation(fields: [listerId], references: [listerId])
+  listerId String
+  lister   Lister @relation(fields: [listerId], references: [listerId])
 
-    eventId String?
-    event   Event?  @relation(fields: [eventId], references: [eventId])
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [eventId])
 
-    username String
-    password String
+  username String
+  password String
 
-    active     Boolean   @default(true)
-    deprecated Boolean   @default(false)
-    expiresAt  DateTime?
-    revokedAt  DateTime?
+  active     Boolean   @default(true)
+  deprecated Boolean   @default(false)
+  expiresAt  DateTime?
+  revokedAt  DateTime?
 
-    createdAt     DateTime        @default(now())
-    createdBy     String?
-    TicketScanLog TicketScanLog[]
+  createdAt     DateTime        @default(now())
+  createdBy     String?
+  TicketScanLog TicketScanLog[]
 
-    @@unique([eventId, username])
-    // OPTIMIZED INDEXES
-    @@index([listerId, active]) // Lister's active checkers
-    @@index([eventId, active]) // Event's active checkers
-    @@index([expiresAt]) // WHERE expiresAt IS NOT NULL AND expiresAt < NOW()
+  @@unique([eventId, username])
+  // OPTIMIZED INDEXES
+  @@index([listerId, active]) // Lister's active checkers
+  @@index([eventId, active]) // Event's active checkers
+  @@index([expiresAt]) // WHERE expiresAt IS NOT NULL AND expiresAt < NOW()
 }
 
 model TicketScanLog {
-    scanId   String @id @default(uuid())
-    ticketId String
-    ticket   Ticket @relation(fields: [ticketId], references: [ticketId])
+  scanId   String @id @default(uuid())
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [ticketId])
 
-    checkerId String?
-    checker   TicketChecker? @relation(fields: [checkerId], references: [checkerId])
+  checkerId String?
+  checker   TicketChecker? @relation(fields: [checkerId], references: [checkerId])
 
-    performedByUserId String?
-    performedByUser   User?   @relation(fields: [performedByUserId], references: [userId])
+  performedByUserId String?
+  performedByUser   User?   @relation(fields: [performedByUserId], references: [userId])
 
-    scannedAt DateTime @default(now())
-    action    String
-    success   Boolean
-    note      String?
+  scannedAt DateTime @default(now())
+  action    String
+  success   Boolean
+  note      String?
 
-    deviceInfo   String?
-    ipAddress    String?
-    Event        Event?  @relation(fields: [eventEventId], references: [eventId])
-    eventEventId String?
+  deviceInfo   String?
+  ipAddress    String?
+  Event        Event?  @relation(fields: [eventEventId], references: [eventId])
+  eventEventId String?
 
-    // OPTIMIZED INDEXES - Critical for audit trails
-    @@index([eventEventId, scannedAt(sort: Desc)]) // Event scan history
-    @@index([ticketId, scannedAt(sort: Desc)]) // Ticket scan history
-    @@index([checkerId, scannedAt(sort: Desc)]) // Checker activity
-    @@index([success, scannedAt(sort: Desc)]) // Failed scans
+  // OPTIMIZED INDEXES - Critical for audit trails
+  @@index([eventEventId, scannedAt(sort: Desc)]) // Event scan history
+  @@index([ticketId, scannedAt(sort: Desc)]) // Ticket scan history
+  @@index([checkerId, scannedAt(sort: Desc)]) // Checker activity
+  @@index([success, scannedAt(sort: Desc)]) // Failed scans
 }
 
 model DiscountCode {
-    codeId      String  @id @default(uuid())
-    eventId     String
-    event       Event   @relation(fields: [eventId], references: [eventId])
-    code        String  @unique // Already indexed via @unique
-    description String?
+  codeId      String  @id @default(uuid())
+  eventId     String
+  event       Event   @relation(fields: [eventId], references: [eventId])
+  code        String  @unique // Already indexed via @unique
+  description String?
 
-    discountType DiscountType
-    discountPct  Float?
-    discountAmt  Float?
-    maxDiscount  Float?
-    minOrderAmt  Float?
+  discountType DiscountType
+  discountPct  Float?
+  discountAmt  Float?
+  maxDiscount  Float?
+  minOrderAmt  Float?
 
-    maxUses   Int?
-    usesCount Int       @default(0)
-    validFrom DateTime?
-    validTo   DateTime?
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
+  maxUses   Int?
+  usesCount Int       @default(0)
+  validFrom DateTime?
+  validTo   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-    // OPTIMIZED INDEXES
-    @@index([eventId, validFrom, validTo]) // Active codes for event
-    @@index([code, eventId]) // Code lookup with event context
+  // OPTIMIZED INDEXES
+  @@index([eventId, validFrom, validTo]) // Active codes for event
+  @@index([code, eventId]) // Code lookup with event context
 }
 
 enum DiscountType {
-    PERCENTAGE
-    FLAT
+  PERCENTAGE
+  FLAT
 }
 
 model EventAnalytics {
-    analyticsId String @id @default(uuid())
-    eventId     String @unique // Already indexed via @unique
-    event       Event  @relation(fields: [eventId], references: [eventId])
+  analyticsId String @id @default(uuid())
+  eventId     String @unique // Already indexed via @unique
+  event       Event  @relation(fields: [eventId], references: [eventId])
 
-    views          Int   @default(0)
-    clicks         Int   @default(0)
-    ticketsSold    Int   @default(0)
-    revenue        Decimal @default("0")
-    conversionRate Float @default(0)
+  views          Int     @default(0)
+  clicks         Int     @default(0)
+  ticketsSold    Int     @default(0)
+  revenue        Decimal @default("0")
+  conversionRate Float   @default(0)
 
-    lastUpdated DateTime @default(now()) @updatedAt
+  lastUpdated DateTime @default(now()) @updatedAt
 
-    viewsByDay   Json?
-    clicksByDay  Json?
-    salesByDay   Json?
-    revenueByDay Json?
-    ticketTypesSalesByDay Json?
+  viewsByDay            Json?
+  clicksByDay           Json?
+  salesByDay            Json?
+  revenueByDay          Json?
+  ticketTypesSalesByDay Json?
 
-    trafficSources Json?
-    deviceBreakdown Json?
+  trafficSources  Json?
+  deviceBreakdown Json?
 
-    createdAt DateTime @default(now())
+  createdAt DateTime @default(now())
 
-    // OPTIMIZED INDEXES
-    @@index([revenue(sort: Desc)]) // Top revenue events
-    @@index([ticketsSold(sort: Desc)]) // Most popular events
-    @@index([lastUpdated(sort: Desc)]) // Recently updated
+  // OPTIMIZED INDEXES
+  @@index([revenue(sort: Desc)]) // Top revenue events
+  @@index([ticketsSold(sort: Desc)]) // Most popular events
+  @@index([lastUpdated(sort: Desc)]) // Recently updated
 }
 
 model ListerAnalytics {
-    id       String @id @default(uuid())
-    listerId String @unique // Already indexed via @unique
-    lister   Lister @relation(fields: [listerId], references: [listerId])
+  id       String @id @default(uuid())
+  listerId String @unique // Already indexed via @unique
+  lister   Lister @relation(fields: [listerId], references: [listerId])
 
-    totalEvents      Int   @default(0)
-    totalRevenue     Float @default(0)
-    totalTicketsSold Int   @default(0)
+  totalEvents      Int   @default(0)
+  totalRevenue     Float @default(0)
+  totalTicketsSold Int   @default(0)
 
-    lastUpdated DateTime @default(now()) @updatedAt
+  lastUpdated DateTime @default(now()) @updatedAt
 
-    // OPTIMIZED INDEXES
-    @@index([totalRevenue(sort: Desc)]) // Leaderboard
-    @@index([totalTicketsSold(sort: Desc)]) // Leaderboard
+  // OPTIMIZED INDEXES
+  @@index([totalRevenue(sort: Desc)]) // Leaderboard
+  @@index([totalTicketsSold(sort: Desc)]) // Leaderboard
 }
 
 model Refund {
-    refundId String @id @default(uuid())
-    ticketId String
-    ticket   Ticket @relation(fields: [ticketId], references: [ticketId])
+  refundId String @id @default(uuid())
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [ticketId])
 
-    amount      Float
-    reason      String?
-    status      RefundStatus @default(PENDING)
-    processedBy String?
-    processedAt DateTime?
+  amount      Float
+  reason      String?
+  status      RefundStatus @default(PENDING)
+  processedBy String?
+  processedAt DateTime?
 
-    createdAt    DateTime @default(now())
-    updatedAt    DateTime @updatedAt
-    User         User?    @relation(fields: [userUserId], references: [userId])
-    userUserId   String?
-    Event        Event?   @relation(fields: [eventEventId], references: [eventId])
-    eventEventId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  User         User?    @relation(fields: [userUserId], references: [userId])
+  userUserId   String?
+  Event        Event?   @relation(fields: [eventEventId], references: [eventId])
+  eventEventId String?
 
-    // OPTIMIZED INDEXES
-    @@index([status, createdAt(sort: Desc)]) // Admin: pending refunds
-    @@index([eventEventId, status]) // Event refunds
-    @@index([userUserId, createdAt(sort: Desc)]) // User refund history
-    @@index([ticketId]) // Ticket refunds
+  // OPTIMIZED INDEXES
+  @@index([status, createdAt(sort: Desc)]) // Admin: pending refunds
+  @@index([eventEventId, status]) // Event refunds
+  @@index([userUserId, createdAt(sort: Desc)]) // User refund history
+  @@index([ticketId]) // Ticket refunds
 }
 
 model Notification {
-    notificationId String    @id @default(uuid())
-    userId         String
-    user           User      @relation(fields: [userId], references: [userId])
-    title          String
-    message        String
-    link           String?
-    type           String?   @default("info")
-    read           Boolean   @default(false)
-    sent           Boolean   @default(false)
-    createdAt      DateTime  @default(now())
-    readAt         DateTime?
-    sentAt         DateTime?
+  notificationId String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [userId])
+  title          String
+  message        String
+  link           String?
+  type           String?   @default("info")
+  read           Boolean   @default(false)
+  sent           Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  readAt         DateTime?
+  sentAt         DateTime?
 
-    // OPTIMIZED INDEXES
-    @@index([userId, read, createdAt(sort: Desc)]) // User's unread notifications
-    @@index([sent, createdAt]) // Unsent notifications queue
+  // OPTIMIZED INDEXES
+  @@index([userId, read, createdAt(sort: Desc)]) // User's unread notifications
+  @@index([sent, createdAt]) // Unsent notifications queue
 }
 
 model PushSubscription {
-    subscriptionId String @id @default(uuid())
-    userId         String
-    user           User   @relation(fields: [userId], references: [userId])
+  subscriptionId String @id @default(uuid())
+  userId         String
+  user           User   @relation(fields: [userId], references: [userId])
 
-    endpoint String @unique // Already indexed via @unique
-    p256dh   String
-    auth     String
+  endpoint String @unique // Already indexed via @unique
+  p256dh   String
+  auth     String
 
-    userAgent  String?
-    isActive   Boolean  @default(true)
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
-    lastUsedAt DateTime @default(now())
+  userAgent  String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  lastUsedAt DateTime @default(now())
 
-    // OPTIMIZED INDEXES
-    @@index([userId, isActive]) // User's active subscriptions
+  // OPTIMIZED INDEXES
+  @@index([userId, isActive]) // User's active subscriptions
 }
