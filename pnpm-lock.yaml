@@ -356,6 +356,9 @@ importers:
       '@types/node':
         specifier: ^22.15.3
         version: 22.15.3
+      '@types/node-cron':
+        specifier: ^3.0.11
+        version: 3.0.11
       '@types/nodemailer':
         specifier: ^6.4.17
         version: 6.4.18
@@ -389,6 +392,9 @@ importers:
       eslint-plugin-prettier:
         specifier: ^5.2.3
         version: 5.5.4(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.33.0(jiti@2.5.1)))(eslint@9.33.0(jiti@2.5.1))(prettier@3.6.2)
+      node-cron:
+        specifier: ^4.2.1
+        version: 4.2.1
       prettier:
         specifier: ^3.5.3
         version: 3.6.2
@@ -2818,6 +2824,9 @@ packages:
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
+
+  '@types/node-cron@3.0.11':
+    resolution: {integrity: sha512-0ikrnug3/IyneSHqCBeslAhlK2aBfYek1fGo4bP4QnZPmiqSGRK+Oy7ZMisLWkesffJvQ1cqAcBnJC+8+nxIAg==}
 
   '@types/node@20.19.11':
     resolution: {integrity: sha512-uug3FEEGv0r+jrecvUUpbY8lLisvIjg6AAic6a2bSP5OEOLeJsDSnvhCDov7ipFFMXS3orMpzlmi0ZcuGkBbow==}
@@ -5856,6 +5865,10 @@ packages:
   node-addon-api@8.5.0:
     resolution: {integrity: sha512-/bRZty2mXUIFY/xU5HLvveNHlswNJej+RnxBjOMkidWfwZzgTbPG1E3K5TOxRLOR+5hX7bSofy8yf1hZevMS8A==}
     engines: {node: ^18 || ^20 || >= 21}
+
+  node-cron@4.2.1:
+    resolution: {integrity: sha512-lgimEHPE/QDgFlywTd8yTR61ptugX3Qer29efeyWw2rv259HtGBNn1vZVmp8lB9uo9wC0t/AT4iGqXxia+CJFg==}
+    engines: {node: '>=6.0.0'}
 
   node-domexception@1.0.0:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
@@ -11234,6 +11247,8 @@ snapshots:
 
   '@types/ms@2.1.0': {}
 
+  '@types/node-cron@3.0.11': {}
+
   '@types/node@20.19.11':
     dependencies:
       undici-types: 6.21.0
@@ -14687,6 +14702,8 @@ snapshots:
   node-abort-controller@3.1.1: {}
 
   node-addon-api@8.5.0: {}
+
+  node-cron@4.2.1: {}
 
   node-domexception@1.0.0: {}
 

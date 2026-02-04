@@ -4,9 +4,9 @@ import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { emailQueue } from "../lib/queues";
 import {
-  NotFoundError,
-  ForbiddenError,
   BadRequestError,
+  ForbiddenError,
+  NotFoundError,
 } from "../utils/errors";
 
 export class PromotionsService {
@@ -73,7 +73,8 @@ export class PromotionsService {
         // Target specific event's buyers
         tickets = await prisma.ticket.findMany({
           where: {
-            eventEventId: toEventId,
+            // eventEventId: toEventId,
+            eventId: toEventId,
             // status: "SUCCESS",
           },
           include: {
@@ -95,7 +96,7 @@ export class PromotionsService {
 
         tickets = await prisma.ticket.findMany({
           where: {
-            eventEventId: { in: eventIds },
+            eventId: { in: eventIds },
             status: "SUCCESS",
           },
           include: {
@@ -198,7 +199,7 @@ export class PromotionsService {
         // Get buyers from specific event
         tickets = await prisma.ticket.findMany({
           where: {
-            eventEventId: toEventId,
+            eventId: toEventId,
             status: "SUCCESS",
           },
           select: { userId: true },
@@ -217,7 +218,7 @@ export class PromotionsService {
 
         tickets = await prisma.ticket.findMany({
           where: {
-            eventEventId: { in: eventIds },
+            eventId: { in: eventIds },
             status: "SUCCESS",
           },
           select: { userId: true },
