@@ -34,7 +34,7 @@ export default function NotificationsPage() {
       }
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/notification/list`,
+        `${process.env.NEXT_PUBLIC_API_URL}/notification`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
