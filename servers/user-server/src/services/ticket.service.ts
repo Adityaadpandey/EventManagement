@@ -247,7 +247,7 @@ export class TicketService {
             totalPrice: finalPrice,
             qrCode,
             status: ticketStatus,
-            eventEventId: ticketType.eventId,
+            eventId: ticketType.eventId,
           },
         });
 
@@ -466,7 +466,7 @@ export class TicketService {
 
       const tickets = await prisma.ticket.findMany({
         where: {
-          Event: {
+          event: {
             eventId,
           },
           status: "SUCCESS",
@@ -523,7 +523,7 @@ export class TicketService {
               price: true,
             },
           },
-          Event: {
+          event: {
             select: {
               eventId: true,
               title: true,
@@ -567,7 +567,7 @@ export class TicketService {
           status: true,
           createdAt: true,
           updatedAt: true,
-          eventEventId: true,
+          eventId: true,
           ticketType: {
             select: {
               ticketTypeId: true,
