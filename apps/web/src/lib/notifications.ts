@@ -12,10 +12,27 @@ const API_BASE_URL = (
  * Check if push notifications are supported
  */
 export function isPushNotificationSupported(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
   return (
     "serviceWorker" in navigator &&
     "PushManager" in window &&
     "Notification" in window
+  );
+}
+
+/**
+ * Detect if user is on mobile device
+ */
+export function isMobileDevice(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent,
   );
 }
 
@@ -38,8 +55,27 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
     return "denied";
   }
 
-  const permission = await Notification.requestPermission();
-  return permission;
+  // Check if already denied
+  if (Notification.permission === "denied") {
+    throw new Error(
+      "Notification permission was previously denied. Please enable it in your browser settings.",
+    );
+  }
+
+  try {
+    const permission = await Notification.requestPermission();
+
+    if (permission === "denied") {
+      throw new Error(
+        "Notification permission denied. Please enable notifications in your browser settings.",
+      );
+    }
+
+    return permission;
+  } catch (error) {
+    console.error("Error requesting notification permission:", error);
+    throw error;
+  }
 }
 
 /**
@@ -68,11 +104,27 @@ async function getVapidPublicKey(): Promise<string> {
     const response = await fetch(
       `${API_BASE_URL}/api/v1/notification/vapid-public-key`,
     );
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch VAPID public key: ${response.status} ${response.statusText}`,
+      );
+    }
+
     const data = await response.json();
+
+    if (!data.data?.publicKey) {
+      throw new Error(
+        "VAPID public key not configured on server. Please run: node scripts/generate-vapid-keys.js",
+      );
+    }
+
     return data.data.publicKey;
   } catch (error) {
     console.error("Error fetching VAPID public key:", error);
-    throw error;
+    throw new Error(
+      `Failed to fetch VAPID public key: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
   }
 }
 
@@ -92,10 +144,24 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     });
 
     console.log("Service Worker registered successfully");
+
+    // Wait for service worker to be ready with timeout
+    const readyPromise = navigator.serviceWorker.ready;
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error("Service Worker ready timeout")),
+        10000,
+      ),
+    );
+
+    await Promise.race([readyPromise, timeoutPromise]);
+
     return registration;
   } catch (error) {
     console.error("Service Worker registration failed:", error);
-    return null;
+    throw new Error(
+      `Service Worker registration failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
   }
 }
 
@@ -108,7 +174,12 @@ export async function subscribeToPushNotifications(
   try {
     // Check if notifications are supported
     if (!isPushNotificationSupported()) {
-      throw new Error("Push notifications are not supported");
+      const isMobile = isMobileDevice();
+      throw new Error(
+        isMobile
+          ? "Push notifications are not supported on this browser. Try using Chrome or Safari."
+          : "Push notifications are not supported on this browser. Please use a modern browser.",
+      );
     }
 
     // Request permission
@@ -123,18 +194,44 @@ export async function subscribeToPushNotifications(
       throw new Error("Service Worker registration failed");
     }
 
-    // Wait for service worker to be ready
-    await navigator.serviceWorker.ready;
-
     // Get VAPID public key
+    console.log("Fetching VAPID public key...");
     const vapidPublicKey = await getVapidPublicKey();
+    console.log("VAPID public key received");
+
     const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
-    // Subscribe to push notifications
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: convertedVapidKey,
-    });
+    // Subscribe to push notifications with retry
+    console.log("Subscribing to push notifications...");
+    let subscription: PushSubscription | null = null;
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    while (!subscription && retryCount < maxRetries) {
+      try {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedVapidKey,
+        });
+      } catch (error) {
+        retryCount++;
+        if (retryCount >= maxRetries) {
+          throw new Error(
+            `Failed to subscribe to push notifications after ${maxRetries} attempts: ${error instanceof Error ? error.message : "Unknown error"}`,
+          );
+        }
+        console.warn(
+          `Retry ${retryCount}/${maxRetries} for push subscription...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+      }
+    }
+
+    if (!subscription) {
+      throw new Error("Failed to create push subscription");
+    }
+
+    console.log("Push subscription created, saving to server...");
 
     // Send subscription to server
     const response = await fetch(
@@ -150,7 +247,10 @@ export async function subscribeToPushNotifications(
     );
 
     if (!response.ok) {
-      throw new Error("Failed to save subscription on server");
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        `Failed to save subscription on server: ${errorData.message || response.statusText}`,
+      );
     }
 
     console.log("Successfully subscribed to push notifications");
