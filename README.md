@@ -45,11 +45,11 @@ Tixin.in is not just another "BookMyShow-lite"—it's a systems experiment that 
 
 ## 🎬 Demo
 
-| Platform | Link |
-|----------|------|
-| 🌐 Production | [tixin.in](https://tixin.in) |
-| 📱 Mobile App | Available via Expo |
-| 📚 API Docs | Bruno Collection (see `/docs/bruno`) |
+| Platform      | Link                                 |
+| ------------- | ------------------------------------ |
+| 🌐 Production | [tixin.in](https://tixin.in)         |
+| 📱 Mobile App | Available via Expo                   |
+| 📚 API Docs   | Bruno Collection (see `/docs/bruno`) |
 
 ---
 
@@ -57,25 +57,25 @@ Tixin.in is not just another "BookMyShow-lite"—it's a systems experiment that 
 
 ### Core Platform Features
 
-| Feature | Description |
-|---------|-------------|
-| **🎟️ Event Ticketing** | Complete ticket purchase flow with payment integration |
-| **📊 Lister Analytics** | Dashboard with real-time metrics for event organizers |
-| **💰 Payout System** | Automated payouts with ledger-based accounting |
-| **🔄 Refund Management** | Request → Admin approval → Processing workflow |
-| **🗺️ Geolocation Events** | Local events within 300km radius, global discovery |
-| **👥 Attendee Management** | Listers can view and manage ticket holders |
+| Feature                    | Description                                            |
+| -------------------------- | ------------------------------------------------------ |
+| **🎟️ Event Ticketing**     | Complete ticket purchase flow with payment integration |
+| **📊 Lister Analytics**    | Dashboard with real-time metrics for event organizers  |
+| **💰 Payout System**       | Automated payouts with ledger-based accounting         |
+| **🔄 Refund Management**   | Request → Admin approval → Processing workflow         |
+| **🗺️ Geolocation Events**  | Local events within 300km radius, global discovery     |
+| **👥 Attendee Management** | Listers can view and manage ticket holders             |
 
 ### Technical Excellence
 
-| Area | Implementation |
-|------|----------------|
-| **🏗️ Infrastructure** | Docker, k3s (Kubernetes), Terraform |
+| Area                  | Implementation                               |
+| --------------------- | -------------------------------------------- |
+| **🏗️ Infrastructure** | Docker, k3s (Kubernetes), Terraform          |
 | **🔄 CI/CD Pipeline** | GitHub Actions with staging/production flows |
-| **📈 Monitoring** | New Relic APM integration |
-| **🔐 Security** | JWT authentication, container hardening |
-| **📦 Caching** | Redis for sessions and event data |
-| **🗃️ Database** | PostgreSQL with Prisma ORM |
+| **📈 Monitoring**     | New Relic APM integration                    |
+| **🔐 Security**       | JWT authentication, container hardening      |
+| **📦 Caching**        | Redis for sessions and event data            |
+| **🗃️ Database**       | PostgreSQL with Prisma ORM                   |
 
 ### Role-Based Access Control
 
@@ -103,34 +103,34 @@ Tixin.in is not just another "BookMyShow-lite"—it's a systems experiment that 
 
 ### Languages & Frameworks
 
-| Technology | Purpose |
-|------------|---------|
-| ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white) | Primary language |
-| ![Node.js](https://img.shields.io/badge/Node.js-≥18-339933?logo=node.js&logoColor=white) | Runtime environment |
-| ![Express](https://img.shields.io/badge/Express.js-4.x-000000?logo=express&logoColor=white) | Backend framework |
-| ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black) | Web frontend |
-| ![React Native](https://img.shields.io/badge/React_Native-Expo-61DAFB?logo=react&logoColor=black) | Mobile app |
-| ![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=next.js&logoColor=white) | Web framework |
+| Technology                                                                                        | Purpose             |
+| ------------------------------------------------------------------------------------------------- | ------------------- |
+| ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white) | Primary language    |
+| ![Node.js](https://img.shields.io/badge/Node.js-≥18-339933?logo=node.js&logoColor=white)          | Runtime environment |
+| ![Express](https://img.shields.io/badge/Express.js-4.x-000000?logo=express&logoColor=white)       | Backend framework   |
+| ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)                 | Web frontend        |
+| ![React Native](https://img.shields.io/badge/React_Native-Expo-61DAFB?logo=react&logoColor=black) | Mobile app          |
+| ![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=next.js&logoColor=white)           | Web framework       |
 
 ### Infrastructure & DevOps
 
-| Technology | Purpose |
-|------------|---------|
-| ![Docker](https://img.shields.io/badge/Docker-Containers-2496ED?logo=docker&logoColor=white) | Containerization |
-| ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791?logo=postgresql&logoColor=white) | Primary database |
-| ![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?logo=redis&logoColor=white) | Caching & sessions |
-| ![k3s](https://img.shields.io/badge/k3s-Kubernetes-326CE5?logo=kubernetes&logoColor=white) | Container orchestration |
-| ![Terraform](https://img.shields.io/badge/Terraform-IaC-7B42BC?logo=terraform&logoColor=white) | Infrastructure as Code |
-| ![AWS](https://img.shields.io/badge/AWS-Cloud-232F3E?logo=amazon-aws&logoColor=white) | Cloud provider |
+| Technology                                                                                             | Purpose                 |
+| ------------------------------------------------------------------------------------------------------ | ----------------------- |
+| ![Docker](https://img.shields.io/badge/Docker-Containers-2496ED?logo=docker&logoColor=white)           | Containerization        |
+| ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791?logo=postgresql&logoColor=white) | Primary database        |
+| ![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?logo=redis&logoColor=white)                   | Caching & sessions      |
+| ![k3s](https://img.shields.io/badge/k3s-Kubernetes-326CE5?logo=kubernetes&logoColor=white)             | Container orchestration |
+| ![Terraform](https://img.shields.io/badge/Terraform-IaC-7B42BC?logo=terraform&logoColor=white)         | Infrastructure as Code  |
+| ![AWS](https://img.shields.io/badge/AWS-Cloud-232F3E?logo=amazon-aws&logoColor=white)                  | Cloud provider          |
 
 ### Monitoring & Quality
 
-| Technology | Purpose |
-|------------|---------|
-| ![New Relic](https://img.shields.io/badge/New_Relic-APM-008C99?logo=newrelic&logoColor=white) | Application monitoring |
-| ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI/CD-2088FF?logo=github-actions&logoColor=white) | Automation |
-| ![Biome](https://img.shields.io/badge/Biome-Linter-60A5FA?logo=biome&logoColor=white) | Code quality |
-| ![Prettier](https://img.shields.io/badge/Prettier-Formatting-F7B93E?logo=prettier&logoColor=black) | Code formatting |
+| Technology                                                                                                      | Purpose                |
+| --------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| ![New Relic](https://img.shields.io/badge/New_Relic-APM-008C99?logo=newrelic&logoColor=white)                   | Application monitoring |
+| ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI/CD-2088FF?logo=github-actions&logoColor=white) | Automation             |
+| ![Biome](https://img.shields.io/badge/Biome-Linter-60A5FA?logo=biome&logoColor=white)                           | Code quality           |
+| ![Prettier](https://img.shields.io/badge/Prettier-Formatting-F7B93E?logo=prettier&logoColor=black)              | Code formatting        |
 
 ---
 
@@ -222,12 +222,12 @@ Tixin.in is not just another "BookMyShow-lite"—it's a systems experiment that 
 
 ### Caching Strategy
 
-| Cache Type | Purpose | TTL |
-|------------|---------|-----|
-| **Sessions** | User authentication state | Per session |
-| **Global Events** | Home page event listings | Configurable |
-| **Local Events** | Geo-filtered events (300km) | Configurable |
-| **Event Details** | Individual event data | Configurable |
+| Cache Type        | Purpose                     | TTL          |
+| ----------------- | --------------------------- | ------------ |
+| **Sessions**      | User authentication state   | Per session  |
+| **Global Events** | Home page event listings    | Configurable |
+| **Local Events**  | Geo-filtered events (300km) | Configurable |
+| **Event Details** | Individual event data       | Configurable |
 
 ---
 
@@ -235,29 +235,29 @@ Tixin.in is not just another "BookMyShow-lite"—it's a systems experiment that 
 
 ### Required Software
 
-| Software | Version | Installation |
-|----------|---------|--------------|
-| Node.js | ≥18.x | [nodejs.org](https://nodejs.org/) |
-| pnpm | ≥8.x | `npm install -g pnpm` |
-| Docker | ≥20.x | [docker.com](https://www.docker.com/) |
-| Docker Compose | ≥2.x | Included with Docker Desktop |
-| Git | ≥2.x | [git-scm.com](https://git-scm.com/) |
+| Software       | Version | Installation                          |
+| -------------- | ------- | ------------------------------------- |
+| Node.js        | ≥18.x   | [nodejs.org](https://nodejs.org/)     |
+| pnpm           | ≥8.x    | `npm install -g pnpm`                 |
+| Docker         | ≥20.x   | [docker.com](https://www.docker.com/) |
+| Docker Compose | ≥2.x    | Included with Docker Desktop          |
+| Git            | ≥2.x    | [git-scm.com](https://git-scm.com/)   |
 
 ### Optional (for Kubernetes deployment)
 
-| Software | Version | Installation |
-|----------|---------|--------------|
-| kubectl | Latest | [kubernetes.io](https://kubernetes.io/docs/tasks/tools/) |
-| k3s | Latest | [k3s.io](https://k3s.io/) |
-| Terraform | ≥1.x | [terraform.io](https://www.terraform.io/) |
+| Software  | Version | Installation                                             |
+| --------- | ------- | -------------------------------------------------------- |
+| kubectl   | Latest  | [kubernetes.io](https://kubernetes.io/docs/tasks/tools/) |
+| k3s       | Latest  | [k3s.io](https://k3s.io/)                                |
+| Terraform | ≥1.x    | [terraform.io](https://www.terraform.io/)                |
 
 ### System Requirements
 
 | Resource | Minimum | Recommended |
-|----------|---------|-------------|
-| RAM | 4 GB | 8 GB |
-| CPU | 2 cores | 4 cores |
-| Storage | 20 GB | 50 GB |
+| -------- | ------- | ----------- |
+| RAM      | 4 GB    | 8 GB        |
+| CPU      | 2 cores | 4 cores     |
+| Storage  | 20 GB   | 50 GB       |
 
 ---
 
@@ -304,3 +304,7 @@ cd packages/database
 ---
 
 <h2 align="center"> Made with ❤️ using <strong>NOVA</strong><br> by <a href="https://adpandey.com">Aditya</a> </h2>
+
+
+
+docker run -it --rm -v "$(pwd)/letsencrypt/conf:/etc/letsencrypt" -v "$(pwd)/letsencrypt/www:/var/www/certbot" certbot/certbot certonly --webroot -w /var/www/certbot -d api.tixin.in --email adityapandeyadp@gmail.com --agree-tos --no-eff-email

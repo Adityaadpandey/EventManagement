@@ -411,8 +411,8 @@ export class PaymentService {
           reason,
           status: "PENDING",
           processedBy,
-          userUserId: ticket.userId,
-          eventEventId: ticket.ticketType.eventId,
+          userId: ticket.userId,
+          eventId: ticket.ticketType.eventId,
         },
       });
 
@@ -462,7 +462,7 @@ export class PaymentService {
 
       // Update analytics (decrease revenue and ticket count)
       await prisma.eventAnalytics.update({
-        where: { eventId: refund.eventEventId! },
+        where: { eventId: refund.eventId! },
         data: {
           ticketsSold: {
             decrement: refund.ticket.quantity,
@@ -596,14 +596,14 @@ export class PaymentService {
               },
             },
           },
-          User: {
+          user: {
             select: {
               name: true,
               email: true,
               phone: true,
             },
           },
-          Event: {
+          event: {
             select: {
               title: true,
               date: true,
