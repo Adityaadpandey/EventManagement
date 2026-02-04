@@ -150,9 +150,9 @@ export class PaymentService {
           where: { userId: ticket.ticketType.event.listerId },
           select: {
             listerId: true,
-            instagramLink: true,
-            facebookLink: true,
-            xLink: true,
+            InstagramLink: true,
+            FacebookLink: true,
+            XLink: true,
             website: true,
             companyName: true,
             contactPhone: true,
@@ -244,9 +244,9 @@ export class PaymentService {
                     .split("T")[0],
                   venue: ticket.ticketType.event.location,
                   CompanyName: lister?.companyName,
-                  instagramLink: lister?.instagramLink || null,
-                  facebookLink: lister?.facebookLink || null,
-                  xLink: lister?.xLink || null,
+                  instagramLink: lister?.InstagramLink || null,
+                  facebookLink: lister?.FacebookLink || null,
+                  xLink: lister?.XLink || null,
                   website: lister?.website || null,
                   contactPhone: lister?.contactPhone || null,
                   contactEmail: lister?.contactEmail || null,
@@ -411,8 +411,8 @@ export class PaymentService {
           reason,
           status: "PENDING",
           processedBy,
-          userId: ticket.userId,
-          eventId: ticket.ticketType.eventId,
+          userUserId: ticket.userId,
+          eventEventId: ticket.ticketType.eventId,
         },
       });
 
@@ -462,7 +462,7 @@ export class PaymentService {
 
       // Update analytics (decrease revenue and ticket count)
       await prisma.eventAnalytics.update({
-        where: { eventId: refund.eventId! },
+        where: { eventId: refund.eventEventId! },
         data: {
           ticketsSold: {
             decrement: refund.ticket.quantity,
@@ -596,14 +596,14 @@ export class PaymentService {
               },
             },
           },
-          user: {
+          User: {
             select: {
               name: true,
               email: true,
               phone: true,
             },
           },
-          event: {
+          Event: {
             select: {
               title: true,
               date: true,

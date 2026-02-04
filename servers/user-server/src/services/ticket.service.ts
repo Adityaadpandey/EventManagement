@@ -247,7 +247,7 @@ export class TicketService {
             totalPrice: finalPrice,
             qrCode,
             status: ticketStatus,
-            eventId: ticketType.eventId,
+            eventEventId: ticketType.eventId,
           },
         });
 
@@ -315,9 +315,9 @@ export class TicketService {
                 where: { listerId: event.listerId },
                 select: {
                   companyName: true,
-                  instagramLink: true,
-                  facebookLink: true,
-                  xLink: true,
+                  InstagramLink: true,
+                  FacebookLink: true,
+                  XLink: true,
                   website: true,
                   contactEmail: true,
                   contactPhone: true,
@@ -341,9 +341,9 @@ export class TicketService {
                       date: event.date.toISOString().split("T")[0],
                       venue: event.location,
                       CompanyName: listerData?.companyName,
-                      instagramLink: listerData?.instagramLink,
-                      facebookLink: listerData?.facebookLink,
-                      xLink: listerData?.xLink,
+                      instagramLink: listerData?.InstagramLink,
+                      facebookLink: listerData?.FacebookLink,
+                      xLink: listerData?.XLink,
                       website: listerData?.website,
                       contactPhone: listerData?.contactPhone || null,
                       contactEmail: listerData?.contactEmail || null,
@@ -466,7 +466,7 @@ export class TicketService {
 
       const tickets = await prisma.ticket.findMany({
         where: {
-          event: {
+          Event: {
             eventId,
           },
           status: "SUCCESS",
@@ -523,7 +523,7 @@ export class TicketService {
               price: true,
             },
           },
-          event: {
+          Event: {
             select: {
               eventId: true,
               title: true,
@@ -567,7 +567,7 @@ export class TicketService {
           status: true,
           createdAt: true,
           updatedAt: true,
-          eventId: true,
+          eventEventId: true,
           ticketType: {
             select: {
               ticketTypeId: true,
