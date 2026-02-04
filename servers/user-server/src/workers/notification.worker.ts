@@ -7,9 +7,31 @@ import { redis } from "../config/redis";
 
 const logger: any = getLogger("Notification Worker", "debug");
 
+// Validate VAPID keys are configured
+if (!config.VAPID_PUBLIC_KEY || !config.VAPID_PRIVATE_KEY) {
+  logger.error(
+    "❌ VAPID keys not configured! Generate with: node scripts/generate-vapid-keys.js",
+  );
+  throw new Error(
+    "VAPID keys required for push notifications. Run: node scripts/generate-vapid-keys.js",
+  );
+}
+
+if (
+  config.VAPID_PUBLIC_KEY.length < 50 ||
+  config.VAPID_PRIVATE_KEY.length < 50
+) {
+  logger.error("❌ VAPID keys appear to be invalid (too short)");
+  throw new Error(
+    "Invalid VAPID keys detected. Please regenerate: node scripts/generate-vapid-keys.js",
+  );
+}
+
+logger.info("✅ VAPID keys validated successfully");
+
 // Configure VAPID details
 webpush.setVapidDetails(
-  "mailto:support@tixin.in",
+  "mailto:noreply@tixin.in",
   config.VAPID_PUBLIC_KEY!,
   config.VAPID_PRIVATE_KEY!,
 );

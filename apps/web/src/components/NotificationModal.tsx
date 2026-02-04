@@ -6,11 +6,17 @@ import { Bell } from "lucide-react";
 interface NotificationModalProps {
   token?: string;
   onEnable: () => Promise<void>;
+  error?: string | null;
+  onRetry?: () => void;
+  isRetrying?: boolean;
 }
 
 export default function NotificationModal({
   token,
   onEnable,
+  error,
+  onRetry,
+  isRetrying,
 }: NotificationModalProps) {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -90,11 +96,14 @@ export default function NotificationModal({
 
         {/* Content */}
         <h2 className="text-2xl font-bold text-center mb-3 text-black">
-          Enable Notifications?
+          {error ? "Notification Setup Failed" : "Enable Notifications?"}
         </h2>
         <p className="text-gray-600 text-center mb-6 text-sm">
-          Get instant updates about your tickets, events, and exclusive offers.
-          Never miss important information!
+          {error ? (
+            <span className="text-red-600 font-medium">{error}</span>
+          ) : (
+            "Get instant updates about your tickets, events, and exclusive offers. Never miss important information!"
+          )}
         </p>
 
         {/* Benefits */}
@@ -119,42 +128,87 @@ export default function NotificationModal({
 
         {/* Buttons */}
         <div className="space-y-3">
-          <button
-            onClick={handleEnable}
-            disabled={loading}
-            className="w-full py-4 bg-black text-white font-semibold rounded-xl hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                Enabling...
-              </span>
-            ) : (
-              "🔔 Enable Notifications"
-            )}
-          </button>
+          {isRetrying ? (
+            <>
+              <button
+                onClick={() => {
+                  onRetry?.();
+                  handleEnable();
+                }}
+                disabled={loading}
+                className="w-full py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Retrying...
+                  </span>
+                ) : (
+                  "🔄 Try Again"
+                )}
+              </button>
+              <button
+                onClick={handleDismiss}
+                className="w-full py-3 text-gray-600 hover:text-black font-medium transition-colors rounded-xl hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleEnable}
+                disabled={loading}
+                className="w-full py-4 bg-black text-white font-semibold rounded-xl hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Enabling...
+                  </span>
+                ) : (
+                  "🔔 Enable Notifications"
+                )}
+              </button>
 
-          <button
-            onClick={() => setShow(false)}
-            className="w-full py-3 text-gray-600 hover:text-black font-medium transition-colors rounded-xl hover:bg-gray-50"
-          >
-            Maybe Later
-          </button>
+              <button
+                onClick={() => setShow(false)}
+                className="w-full py-3 text-gray-600 hover:text-black font-medium transition-colors rounded-xl hover:bg-gray-50"
+              >
+                Maybe Later
+              </button>
+            </>
+          )}
         </div>
 
         {/* Dismiss link */}
