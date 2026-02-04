@@ -147,4 +147,154 @@ export class NotificationController {
       return sendError(res, "Failed to get VAPID public key", 500);
     }
   }
+
+  /**
+   * Get user's notifications
+   * GET /api/v1/notification
+   */
+  async getNotifications(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        return sendError(res, "Unauthorized", 401);
+      }
+
+      // Parse pagination parameters
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      // Validate pagination
+      if (limit < 1 || limit > 100) {
+        return sendError(res, "Limit must be between 1 and 100", 400);
+      }
+
+      if (offset < 0) {
+        return sendError(res, "Offset must be non-negative", 400);
+      }
+
+      const result = await notificationService.getUserNotifications(userId, {
+        limit,
+        offset,
+      });
+
+      return sendSuccess(res, "Notifications retrieved successfully", {
+        notifications: result.notifications,
+        total: result.total,
+        pagination: {
+          limit,
+          offset,
+          count: result.notifications.length,
+        },
+      });
+    } catch (error) {
+      logger.error("Error getting notifications:", error);
+      return sendError(res, "Failed to get notifications", 500);
+    }
+  }
+
+  /**
+   * Mark notification as read
+   * PATCH /api/v1/notification/:id/read
+   */
+  async markAsRead(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      const notificationId = Array.isArray(req.params.id)
+        ? req.params.id[0]
+        : req.params.id;
+
+      if (!userId) {
+        return sendError(res, "Unauthorized", 401);
+      }
+
+      if (!notificationId) {
+        return sendError(res, "Notification ID is required", 400);
+      }
+
+      const result = await notificationService.markAsRead(
+        notificationId,
+        userId,
+      );
+
+      return sendSuccess(res, "Notification marked as read", result);
+    } catch (error: any) {
+      logger.error("Error marking notification as read:", error);
+
+      // Handle specific error cases
+      if (error.message && error.message.includes("not found")) {
+        return sendError(res, "Notification not found", 404);
+      }
+      if (error.message && error.message.includes("unauthorized")) {
+        return sendError(res, "Unauthorized to modify this notification", 403);
+      }
+
+      return sendError(res, "Failed to mark notification as read", 500);
+    }
+  }
+
+  /**
+   * Mark all notifications as read
+   * PATCH /api/v1/notification/read-all
+   */
+  async markAllAsRead(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        return sendError(res, "Unauthorized", 401);
+      }
+
+      const result = await notificationService.markAllAsRead(userId);
+
+      return sendSuccess(
+        res,
+        `Marked ${result.count} notifications as read`,
+        result,
+      );
+    } catch (error) {
+      logger.error("Error marking all notifications as read:", error);
+      return sendError(res, "Failed to mark all notifications as read", 500);
+    }
+  }
+
+  /**
+   * Delete notification
+   * DELETE /api/v1/notification/:id
+   */
+  async deleteNotification(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      const notificationId = Array.isArray(req.params.id)
+        ? req.params.id[0]
+        : req.params.id;
+
+      if (!userId) {
+        return sendError(res, "Unauthorized", 401);
+      }
+
+      if (!notificationId) {
+        return sendError(res, "Notification ID is required", 400);
+      }
+
+      const result = await notificationService.deleteNotification(
+        notificationId,
+        userId,
+      );
+
+      return sendSuccess(res, "Notification deleted successfully", result);
+    } catch (error: any) {
+      logger.error("Error deleting notification:", error);
+
+      // Handle specific error cases
+      if (error.message && error.message.includes("not found")) {
+        return sendError(res, "Notification not found", 404);
+      }
+      if (error.message && error.message.includes("unauthorized")) {
+        return sendError(res, "Unauthorized to delete this notification", 403);
+      }
+
+      return sendError(res, "Failed to delete notification", 500);
+    }
+  }
 }

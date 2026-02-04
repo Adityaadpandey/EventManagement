@@ -141,7 +141,7 @@ export class NotificationService {
    */
   async markAsRead(notificationId: string, userId: string) {
     try {
-      const notification = await prisma.notification.updateMany({
+      const result = await prisma.notification.updateMany({
         where: {
           notificationId,
           userId, // Ensure user owns this notification
@@ -152,12 +152,12 @@ export class NotificationService {
         },
       });
 
-      if (notification.count === 0) {
+      if (result.count === 0) {
         throw new Error("Notification not found or unauthorized");
       }
 
       logger.info(`Notification ${notificationId} marked as read`);
-      return { success: true };
+      return result;
     } catch (error) {
       logger.error(`Error marking notification as read:`, error);
       throw error;
@@ -195,19 +195,19 @@ export class NotificationService {
    */
   async deleteNotification(notificationId: string, userId: string) {
     try {
-      const notification = await prisma.notification.deleteMany({
+      const result = await prisma.notification.deleteMany({
         where: {
           notificationId,
           userId, // Ensure user owns this notification
         },
       });
 
-      if (notification.count === 0) {
+      if (result.count === 0) {
         throw new Error("Notification not found or unauthorized");
       }
 
       logger.info(`Notification ${notificationId} deleted`);
-      return { success: true };
+      return result;
     } catch (error) {
       logger.error(`Error deleting notification:`, error);
       throw error;
