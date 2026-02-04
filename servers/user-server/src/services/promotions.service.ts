@@ -74,7 +74,7 @@ export class PromotionsService {
         tickets = await prisma.ticket.findMany({
           where: {
             // eventEventId: toEventId,
-            eventId: toEventId,
+            eventEventId: toEventId,
             // status: "SUCCESS",
           },
           include: {
@@ -96,7 +96,7 @@ export class PromotionsService {
 
         tickets = await prisma.ticket.findMany({
           where: {
-            eventId: { in: eventIds },
+            eventEventId: { in: eventIds },
             status: "SUCCESS",
           },
           include: {
@@ -131,9 +131,9 @@ export class PromotionsService {
         listerName: event.lister.companyName || event.lister.user.name,
         eventLink: `https://tixin.in/event/${eventId}`,
         listerWebsite: event.lister.website,
-        listerInstagram: event.lister.instagramLink,
-        listerFacebook: event.lister.facebookLink,
-        listerX: event.lister.xLink,
+        listerInstagram: event.lister.InstagramLink,
+        listerFacebook: event.lister.FacebookLink,
+        listerX: event.lister.XLink,
         chips: event.chips || [],
         tags: event.tags || [],
       };
@@ -199,7 +199,7 @@ export class PromotionsService {
         // Get buyers from specific event
         tickets = await prisma.ticket.findMany({
           where: {
-            eventId: toEventId,
+            eventEventId: toEventId,
             status: "SUCCESS",
           },
           select: { userId: true },
@@ -218,7 +218,7 @@ export class PromotionsService {
 
         tickets = await prisma.ticket.findMany({
           where: {
-            eventId: { in: eventIds },
+            eventEventId: { in: eventIds },
             status: "SUCCESS",
           },
           select: { userId: true },

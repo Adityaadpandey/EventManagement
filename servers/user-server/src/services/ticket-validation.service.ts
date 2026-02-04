@@ -333,7 +333,7 @@ export class TicketValidationService {
           note,
           deviceInfo,
           ipAddress,
-          eventId: eventId,
+          eventEventId: eventId,
           scannedAt: new Date(),
         },
       });
