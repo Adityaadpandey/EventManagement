@@ -130,9 +130,9 @@ export class PromotionsService {
         listerName: event.lister.companyName || event.lister.user.name,
         eventLink: `https://tixin.in/event/${eventId}`,
         listerWebsite: event.lister.website,
-        listerInstagram: event.lister.InstagramLink,
-        listerFacebook: event.lister.FacebookLink,
-        listerX: event.lister.XLink,
+        listerInstagram: event.lister.instagramLink,
+        listerFacebook: event.lister.facebookLink,
+        listerX: event.lister.xLink,
         chips: event.chips || [],
         tags: event.tags || [],
       };

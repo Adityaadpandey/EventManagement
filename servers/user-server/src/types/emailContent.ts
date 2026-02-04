@@ -6,9 +6,9 @@ export interface Ticket {
   date: string;
   venue?: string;
   CompanyName?: string | null;
-  InstagramLink?: string | null;
-  FacebookLink?: string | null;
-  XLink?: string | null;
+  instagramLink?: string | null;
+  facebookLink?: string | null;
+  xLink?: string | null;
   website?: string | null;
   contactEmail?: string | null;
   contactPhone?: string | null;

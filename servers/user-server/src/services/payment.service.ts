@@ -3,7 +3,7 @@ import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { Prisma } from "../generated/prisma/client";
-import { delTicketCache, delAccountCache } from "../lib/cache";
+import { delAccountCache, delTicketCache } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
 import { razorpay } from "../lib/razorpay";
 import { razorpayCircuitBreaker } from "../utils/circuitBreaker";
@@ -137,9 +137,9 @@ export class PaymentService {
           where: { userId: ticket.ticketType.event.listerId },
           select: {
             listerId: true,
-            InstagramLink: true,
-            FacebookLink: true,
-            XLink: true,
+            instagramLink: true,
+            facebookLink: true,
+            xLink: true,
             website: true,
             companyName: true,
             contactPhone: true,
@@ -231,9 +231,9 @@ export class PaymentService {
                     .split("T")[0],
                   venue: ticket.ticketType.event.location,
                   CompanyName: lister?.companyName,
-                  InstagramLink: lister?.InstagramLink || null,
-                  FacebookLink: lister?.FacebookLink || null,
-                  XLink: lister?.XLink || null,
+                  instagramLink: lister?.instagramLink || null,
+                  facebookLink: lister?.facebookLink || null,
+                  xLink: lister?.xLink || null,
                   website: lister?.website || null,
                   contactPhone: lister?.contactPhone || null,
                   contactEmail: lister?.contactEmail || null,
