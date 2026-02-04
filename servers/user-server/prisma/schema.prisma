@@ -1006,6 +1006,7 @@ model Notification {
 
     read           Boolean   @default(false)
     sent           Boolean   @default(false)
+    metadata       Json?
 
     createdAt      DateTime  @default(now())
     readAt         DateTime?
