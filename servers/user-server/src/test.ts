@@ -31,7 +31,7 @@ const TicketEmail = async () => {
           seatNumber: "A12",
           date: "2025-08-15",
           venue: "Grand Arena",
-          InstagramLink: "https://instagram.com/eventlister",
+          instagramLink: "https://instagram.com/eventlister",
           contactEmail: "myName@gmail.com",
         },
       },
