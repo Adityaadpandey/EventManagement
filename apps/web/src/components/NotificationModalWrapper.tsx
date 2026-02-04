@@ -20,10 +20,21 @@ export default function NotificationModalWrapper() {
   if (!token || !user) return null;
 
   const handleEnableNotifications = async () => {
+    console.log("🔔 Starting notification subscription...");
+    console.log("Token available:", !!token);
+    console.log("Hostname:", window.location.hostname);
+
     if (!token) {
       throw new Error("No auth token available");
     }
-    await subscribeToPushNotifications(token);
+
+    try {
+      const result = await subscribeToPushNotifications(token);
+      console.log("✅ Subscription successful:", result);
+    } catch (error) {
+      console.error("❌ Subscription failed:", error);
+      throw error;
+    }
   };
 
   return (

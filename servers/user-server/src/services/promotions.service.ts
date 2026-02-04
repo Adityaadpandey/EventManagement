@@ -4,9 +4,9 @@ import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { emailQueue } from "../lib/queues";
 import {
-  NotFoundError,
-  ForbiddenError,
   BadRequestError,
+  ForbiddenError,
+  NotFoundError,
 } from "../utils/errors";
 
 export class PromotionsService {
@@ -73,6 +73,7 @@ export class PromotionsService {
         // Target specific event's buyers
         tickets = await prisma.ticket.findMany({
           where: {
+            // eventEventId: toEventId,
             eventEventId: toEventId,
             // status: "SUCCESS",
           },

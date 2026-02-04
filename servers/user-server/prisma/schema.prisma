@@ -1,12 +1,11 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+    provider = "prisma-client"
+    output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+    provider = "postgresql"
 }
-
 
 enum Role {
     USER
@@ -80,13 +79,13 @@ model Lister {
     userId   String @unique
     user     User   @relation(fields: [userId], references: [userId])
 
-    companyName String?
-    companyLogo String?
-    bio         String?
+    companyName   String?
+    companyLogo   String?
+    bio           String?
     InstagramLink String?
     FacebookLink  String?
-    XLink   String?
-    website   String?
+    XLink         String?
+    website       String?
 
     contactPhone String?
     contactEmail String?
@@ -99,101 +98,101 @@ model Lister {
     Event           Event[]
     TicketChecker   TicketChecker[]
     ListerAnalytics ListerAnalytics?
-    BankDetails    BankDetails?
-    Account        Account?
-    Payout         Payout[]
+    BankDetails     BankDetails?
+    Account         Account?
+    Payout          Payout[]
 
     // OPTIMIZED INDEXES - userId already indexed via @unique
     @@index([status, createdAt(sort: Desc)]) // Combined for pending approvals
 }
 
-model BankDetails{
-  bankDetailsId String @id @default(uuid())
-  listerId String @unique // Already indexed via @unique
-  lister   Lister @relation(fields: [listerId], references: [listerId])
+model BankDetails {
+    bankDetailsId String @id @default(uuid())
+    listerId      String @unique // Already indexed via @unique
+    lister        Lister @relation(fields: [listerId], references: [listerId])
 
-  bankName String
-  accountNumber String
-  ifscCode String
-  accountHolderName String
-  branchCode String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    bankName          String
+    accountNumber     String
+    ifscCode          String
+    accountHolderName String
+    branchCode        String?
+    createdAt         DateTime @default(now())
+    updatedAt         DateTime @updatedAt
 }
 
 model Account {
-  accountId String @id @default(uuid())
-  listerId  String @unique // Already indexed via @unique
-  lister    Lister @relation(fields: [listerId], references: [listerId])
+    accountId String @id @default(uuid())
+    listerId  String @unique // Already indexed via @unique
+    lister    Lister @relation(fields: [listerId], references: [listerId])
 
-  balance Decimal @default("0")
-  LedgerEntry LedgerEntry[]
+    balance     Decimal       @default("0")
+    LedgerEntry LedgerEntry[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  // OPTIMIZED INDEX
-  @@index([balance]) // For finding accounts by balance thresholds
+    // OPTIMIZED INDEX
+    @@index([balance]) // For finding accounts by balance thresholds
 }
 
 enum PayoutStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-  CANCELLED
+    PENDING
+    PROCESSING
+    COMPLETED
+    FAILED
+    CANCELLED
 }
 
 enum PayoutType {
-  FULL
-  PARTIAL
+    FULL
+    PARTIAL
 }
 
 model Payout {
-  payoutId   String   @id @default(uuid())
-  listerId   String
-  lister     Lister   @relation(fields: [listerId], references: [listerId])
+    payoutId String @id @default(uuid())
+    listerId String
+    lister   Lister @relation(fields: [listerId], references: [listerId])
 
-  eventId    String?
-  event      Event?   @relation(fields: [eventId], references: [eventId])
+    eventId String?
+    event   Event?  @relation(fields: [eventId], references: [eventId])
 
-  type       PayoutType  @default(FULL)
-  amount     Decimal
-  approvedAmount Decimal?
-  status     PayoutStatus @default(PENDING)
+    type           PayoutType   @default(FULL)
+    amount         Decimal
+    approvedAmount Decimal?
+    status         PayoutStatus @default(PENDING)
 
-  remark     String?
+    remark String?
 
-  requestedAt DateTime @default(now())
-  approvedAt  DateTime?
-  paidAt      DateTime?
+    requestedAt DateTime  @default(now())
+    approvedAt  DateTime?
+    paidAt      DateTime?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-  // OPTIMIZED INDEXES
-  @@index([status, requestedAt(sort: Desc)]) // Admin dashboard - pending payouts
-  @@index([listerId, status]) // Lister's payout history
-  @@index([eventId, status]) // Event-specific payouts
+    // OPTIMIZED INDEXES
+    @@index([status, requestedAt(sort: Desc)]) // Admin dashboard - pending payouts
+    @@index([listerId, status]) // Lister's payout history
+    @@index([eventId, status]) // Event-specific payouts
 }
 
 model LedgerEntry {
-  id        String   @id @default(uuid())
-  accountId String
-  account   Account  @relation(fields: [accountId], references: [accountId])
+    id        String  @id @default(uuid())
+    accountId String
+    account   Account @relation(fields: [accountId], references: [accountId])
 
-  entryType String
-  amount    Decimal
-  balanceAfter Decimal
+    entryType    String
+    amount       Decimal
+    balanceAfter Decimal
 
-  referenceType String?
-  referenceId   String?
+    referenceType String?
+    referenceId   String?
 
-  createdAt DateTime @default(now())
+    createdAt DateTime @default(now())
 
-  // OPTIMIZED INDEXES
-  @@index([accountId, createdAt(sort: Desc)]) // Account statement with DESC
-  @@index([referenceType, referenceId]) // Lookup by reference
+    // OPTIMIZED INDEXES
+    @@index([accountId, createdAt(sort: Desc)]) // Account statement with DESC
+    @@index([referenceType, referenceId]) // Lookup by reference
 }
 
 model Event {
@@ -215,7 +214,7 @@ model Event {
     tags              String[]
     chips             String[]
     restrictions      String?
-    canBuy Boolean @default(true)
+    canBuy            Boolean  @default(true)
 
     status            Status  @default(NOT_VIEWED)
     rejection_comment String?
@@ -233,10 +232,10 @@ model Event {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    ticketCounter  Int   @default(0)
+    ticketCounter        Int @default(0)
     availableMailUpdates Int @default(2)
 
-    Payout        Payout[]
+    Payout Payout[]
 
     // Relations
     TicketType     TicketType[]
@@ -247,22 +246,22 @@ model Event {
     TicketScanLog  TicketScanLog[]
     EventAnalytics EventAnalytics?
     Refund         Refund[]
+    // Spatial index for location queries - use raw SQL for better performance:
+    // CREATE INDEX idx_event_location ON "Event" USING GIST (ll_to_earth(latitude, longitude));
 
     // OPTIMIZED INDEXES - Most critical for performance
     @@index([status, date]) // Primary query: approved upcoming events
     @@index([listerId, status, createdAt(sort: Desc)]) // Lister dashboard
     @@index([date, status]) // Date filtering with status
     @@index([tags]) // Tag-based search (GIN index in PostgreSQL)
-    // Spatial index for location queries - use raw SQL for better performance:
-    // CREATE INDEX idx_event_location ON "Event" USING GIST (ll_to_earth(latitude, longitude));
 }
 
 model CustomField {
     fieldId               String                  @id @default(uuid())
     eventId               String
     event                 Event                   @relation(fields: [eventId], references: [eventId])
-    ticketTypeId         String?
-    ticketType           TicketType?             @relation(fields: [ticketTypeId], references:[ticketTypeId])
+    ticketTypeId          String?
+    ticketType            TicketType?             @relation(fields: [ticketTypeId], references: [ticketTypeId])
     label                 String
     fieldType             String
     required              Boolean                 @default(false)
@@ -287,7 +286,7 @@ model TicketType {
     quantity        Int
     salesCutoff     DateTime?
 
-    platformfee Int @default(0)
+    platformfee     Int   @default(0)
     platformfeePerc Float @default(0.05)
 
     ticketPrefix String?
@@ -298,7 +297,7 @@ model TicketType {
     soldCount Int @default(0)
 
     // Relations
-    Ticket Ticket[]
+    Ticket      Ticket[]
     CustomField CustomField[]
 
     // OPTIMIZED INDEXES
@@ -443,21 +442,21 @@ model EventAnalytics {
     eventId     String @unique // Already indexed via @unique
     event       Event  @relation(fields: [eventId], references: [eventId])
 
-    views          Int   @default(0)
-    clicks         Int   @default(0)
-    ticketsSold    Int   @default(0)
+    views          Int     @default(0)
+    clicks         Int     @default(0)
+    ticketsSold    Int     @default(0)
     revenue        Decimal @default("0")
-    conversionRate Float @default(0)
+    conversionRate Float   @default(0)
 
     lastUpdated DateTime @default(now()) @updatedAt
 
-    viewsByDay   Json?
-    clicksByDay  Json?
-    salesByDay   Json?
-    revenueByDay Json?
+    viewsByDay            Json?
+    clicksByDay           Json?
+    salesByDay            Json?
+    revenueByDay          Json?
     ticketTypesSalesByDay Json?
 
-    trafficSources Json?
+    trafficSources  Json?
     deviceBreakdown Json?
 
     createdAt DateTime @default(now())
@@ -515,6 +514,7 @@ model Notification {
     user           User      @relation(fields: [userId], references: [userId])
     title          String
     message        String
+    metadata       Json?
     link           String?
     type           String?   @default("info")
     read           Boolean   @default(false)

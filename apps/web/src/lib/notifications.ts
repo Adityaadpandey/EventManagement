@@ -86,15 +86,12 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 
   try {
-    // Use different service worker for development vs production
-    const swPath =
-      process.env.NODE_ENV === "development" ? "/sw-dev.js" : "/sw.js";
-
-    const registration = await navigator.serviceWorker.register(swPath, {
+    // Always use production service worker which includes push notification handlers
+    const registration = await navigator.serviceWorker.register("/sw.js", {
       scope: "/",
     });
 
-    console.log(`Service Worker registered successfully (${swPath})`);
+    console.log("Service Worker registered successfully");
     return registration;
   } catch (error) {
     console.error("Service Worker registration failed:", error);
