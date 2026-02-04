@@ -19,6 +19,13 @@ router.patch(
   notificationController.markAllAsRead.bind(notificationController),
 );
 
+// Clear all notifications
+router.delete(
+  "/clear-all",
+  authMiddleware,
+  notificationController.clearAllNotifications.bind(notificationController),
+);
+
 // Mark notification as read
 router.patch(
   "/:id/read",
