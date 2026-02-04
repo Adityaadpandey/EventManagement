@@ -297,4 +297,26 @@ export class NotificationController {
       return sendError(res, "Failed to delete notification", 500);
     }
   }
+
+  /**
+   * Clear all notifications
+   * DELETE /api/v1/notification/clear-all
+   */
+  async clearAllNotifications(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        return sendError(res, "Unauthorized", 401);
+      }
+
+      const result = await notificationService.clearAllNotifications(userId);
+      return sendSuccess(res, "All notifications cleared", {
+        count: result.count,
+      });
+    } catch (error) {
+      logger.error("Error clearing all notifications:", error);
+      return sendError(res, "Failed to clear all notifications", 500);
+    }
+  }
 }

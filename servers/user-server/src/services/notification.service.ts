@@ -215,6 +215,23 @@ export class NotificationService {
   }
 
   /**
+   * Clear all notifications for a user (delete all)
+   */
+  async clearAllNotifications(userId: string) {
+    try {
+      const result = await prisma.notification.deleteMany({
+        where: { userId },
+      });
+
+      logger.info(`Cleared ${result.count} notifications for user ${userId}`);
+      return result;
+    } catch (error) {
+      logger.error("Error clearing all notifications:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Cleanup stale push subscriptions (older than 90 days)
    */
   async cleanupStaleSubscriptions() {
