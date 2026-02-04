@@ -12,6 +12,7 @@ import {
   setPublicEventCache,
 } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
+import { notificationQueue } from "../lib/queues";
 import { CreateEventRequest } from "../types/event";
 import {
   BadRequestError,
@@ -633,6 +634,20 @@ export class EventService {
           },
           user.name ?? "Attendee",
         );
+      }
+
+      // Send notifications to all ticket holders
+      for (const user of uniqueUsers) {
+        await notificationQueue.add("send-notification", {
+          userId: ticketedUsers.find((u) => u.email === user.email)?.userId,
+          type: "EVENT_UPDATE",
+          title: `Update: ${eventTitle}`,
+          message: update,
+          metadata: {
+            eventId,
+            imageUrl: imageUrl || undefined,
+          },
+        });
       }
 
       return {
