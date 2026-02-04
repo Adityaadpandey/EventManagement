@@ -70,6 +70,185 @@ export class NotificationService {
   }
 
   /**
+   * Create an in-app notification
+   */
+  async createNotification(data: {
+    userId: string;
+    type: string;
+    title: string;
+    message: string;
+    metadata?: any;
+    link?: string;
+  }) {
+    try {
+      const notification = await prisma.notification.create({
+        data: {
+          userId: data.userId,
+          type: data.type,
+          title: data.title,
+          message: data.message,
+          metadata: data.metadata,
+          link: data.link,
+          read: false,
+        },
+      });
+
+      logger.info(`In-app notification created for user ${data.userId}`);
+      return notification;
+    } catch (error) {
+      logger.error("Error creating in-app notification:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user notifications with pagination
+   */
+  async getUserNotifications(
+    userId: string,
+    options: { limit?: number; offset?: number } = {},
+  ) {
+    try {
+      const limit = options.limit || 50;
+      const offset = options.offset || 0;
+
+      const where = { userId };
+
+      const [notifications, total] = await Promise.all([
+        prisma.notification.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          skip: offset,
+          take: limit,
+        }),
+        prisma.notification.count({ where }),
+      ]);
+
+      return {
+        notifications,
+        total,
+        limit,
+        offset,
+      };
+    } catch (error) {
+      logger.error(`Error fetching notifications for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark a notification as read
+   */
+  async markAsRead(notificationId: string, userId: string) {
+    try {
+      const result = await prisma.notification.updateMany({
+        where: {
+          notificationId,
+          userId, // Ensure user owns this notification
+        },
+        data: {
+          read: true,
+          readAt: new Date(),
+        },
+      });
+
+      if (result.count === 0) {
+        throw new Error("Notification not found or unauthorized");
+      }
+
+      logger.info(`Notification ${notificationId} marked as read`);
+      return result;
+    } catch (error) {
+      logger.error(`Error marking notification as read:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Mark all user notifications as read
+   */
+  async markAllAsRead(userId: string) {
+    try {
+      const result = await prisma.notification.updateMany({
+        where: {
+          userId,
+          read: false,
+        },
+        data: {
+          read: true,
+          readAt: new Date(),
+        },
+      });
+
+      logger.info(
+        `Marked ${result.count} notifications as read for user ${userId}`,
+      );
+      return { success: true, count: result.count };
+    } catch (error) {
+      logger.error(`Error marking all notifications as read:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a notification
+   */
+  async deleteNotification(notificationId: string, userId: string) {
+    try {
+      const result = await prisma.notification.deleteMany({
+        where: {
+          notificationId,
+          userId, // Ensure user owns this notification
+        },
+      });
+
+      if (result.count === 0) {
+        throw new Error("Notification not found or unauthorized");
+      }
+
+      logger.info(`Notification ${notificationId} deleted`);
+      return result;
+    } catch (error) {
+      logger.error(`Error deleting notification:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cleanup stale push subscriptions (older than 90 days)
+   */
+  async cleanupStaleSubscriptions() {
+    try {
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+      const result = await prisma.pushSubscription.deleteMany({
+        where: {
+          OR: [
+            {
+              isActive: false,
+              updatedAt: {
+                lt: ninetyDaysAgo,
+              },
+            },
+            {
+              lastUsedAt: {
+                lt: ninetyDaysAgo,
+              },
+            },
+          ],
+        },
+      });
+
+      logger.info(`Cleaned up ${result.count} stale push subscriptions`);
+      return { success: true, count: result.count };
+    } catch (error) {
+      logger.error("Error cleaning up stale subscriptions:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Unsubscribe a user from push notifications
    */
   async unsubscribe(userId: string, endpoint: string) {

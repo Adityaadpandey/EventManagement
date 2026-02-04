@@ -5,6 +5,34 @@ import { authMiddleware, requireRole } from "../../middlewares/auth.middleware";
 const router = Router();
 const notificationController = new NotificationController();
 
+// Get user's notifications
+router.get(
+  "/",
+  authMiddleware,
+  notificationController.getNotifications.bind(notificationController),
+);
+
+// Mark all notifications as read
+router.patch(
+  "/read-all",
+  authMiddleware,
+  notificationController.markAllAsRead.bind(notificationController),
+);
+
+// Mark notification as read
+router.patch(
+  "/:id/read",
+  authMiddleware,
+  notificationController.markAsRead.bind(notificationController),
+);
+
+// Delete notification
+router.delete(
+  "/:id",
+  authMiddleware,
+  notificationController.deleteNotification.bind(notificationController),
+);
+
 // Public route - Get VAPID public key
 router.get(
   "/vapid-public-key",
