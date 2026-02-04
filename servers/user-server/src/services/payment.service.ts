@@ -5,6 +5,7 @@ import logger from "../config/logger";
 import { Prisma } from "../generated/prisma/client";
 import { delAccountCache, delTicketCache } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
+import { notificationQueue } from "../lib/queues";
 import { razorpay } from "../lib/razorpay";
 import { razorpayCircuitBreaker } from "../utils/circuitBreaker";
 import {
@@ -104,6 +105,18 @@ export class PaymentService {
           `Failed to invalidate cache for ticket: ${ticket.ticketId}`,
         ),
       );
+
+      // Send notification about ticket creation
+      await notificationQueue.add("send-notification", {
+        userId: ticket.userId,
+        type: "TICKET_PURCHASED",
+        title: "Ticket Purchased Successfully",
+        message: `Your ticket for ${ticket.ticketType.event.title} has been confirmed.`,
+        metadata: {
+          eventId: ticket.ticketType.eventId,
+          ticketId: ticket.ticketId,
+        },
+      });
 
       // Calculate actual revenue (total price minus platform fees)
       const platformFee =
@@ -254,6 +267,19 @@ export class PaymentService {
         logger.error("Error sending ticket confirmation email:", emailError);
         // Don't fail the payment verification if email fails
       }
+
+      // Send notification about payment success
+      await notificationQueue.add("send-notification", {
+        userId: ticket.userId,
+        type: "PAYMENT_SUCCESS",
+        title: "Payment Successful",
+        message: `Payment of ₹${ticket.totalPrice} completed successfully.`,
+        metadata: {
+          paymentId: razorpayPaymentId,
+          amount: ticket.totalPrice,
+          ticketId: ticket.ticketId,
+        },
+      });
 
       return { ticket, payment };
     } catch (error) {
