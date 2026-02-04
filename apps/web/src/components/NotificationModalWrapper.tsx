@@ -3,11 +3,16 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import NotificationModal from "./NotificationModal";
-import { subscribeToPushNotifications } from "@/lib/notifications";
+import {
+  subscribeToPushNotifications,
+  isMobileDevice,
+} from "@/lib/notifications";
 
 export default function NotificationModalWrapper() {
   const { token, user, hydrated } = useSelector((state: any) => state.auth);
   const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -23,21 +28,65 @@ export default function NotificationModalWrapper() {
     console.log("🔔 Starting notification subscription...");
     console.log("Token available:", !!token);
     console.log("Hostname:", window.location.hostname);
+    console.log("Mobile device:", isMobileDevice());
 
     if (!token) {
-      throw new Error("No auth token available");
+      const errorMsg = "No auth token available. Please log in again.";
+      setError(errorMsg);
+      throw new Error(errorMsg);
     }
 
     try {
+      setError(null);
+      setIsRetrying(false);
       const result = await subscribeToPushNotifications(token);
       console.log("✅ Subscription successful:", result);
+      return result;
     } catch (error) {
       console.error("❌ Subscription failed:", error);
+
+      // Set user-friendly error message
+      let errorMessage = "Failed to enable notifications. ";
+
+      if (error instanceof Error) {
+        if (
+          error.message.includes("permission denied") ||
+          error.message.includes("permission was previously denied")
+        ) {
+          errorMessage =
+            "Notification permission denied. Please enable notifications in your browser settings.";
+        } else if (error.message.includes("not supported")) {
+          errorMessage = error.message;
+        } else if (error.message.includes("VAPID")) {
+          errorMessage = "Server configuration error. Please contact support.";
+        } else if (error.message.includes("Service Worker")) {
+          errorMessage =
+            "Failed to register service worker. Please refresh the page and try again.";
+        } else {
+          errorMessage += error.message;
+        }
+      }
+
+      setError(errorMessage);
+      setIsRetrying(true);
       throw error;
     }
   };
 
+  const handleRetry = () => {
+    setError(null);
+    setIsRetrying(false);
+  };
+
   return (
-    <NotificationModal token={token} onEnable={handleEnableNotifications} />
+    <>
+      <NotificationModal
+        token={token}
+        onEnable={handleEnableNotifications}
+        error={error}
+        onRetry={handleRetry}
+        isRetrying={isRetrying}
+      />
+    </>
   );
 }
