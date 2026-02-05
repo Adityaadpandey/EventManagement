@@ -97,6 +97,48 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 /**
+ * Reset push notification state completely
+ * Useful when encountering persistent subscription errors
+ */
+export async function resetPushState(): Promise<void> {
+  console.log("🔄 Resetting push notification state...");
+
+  try {
+    // Get all service worker registrations
+    const registrations = await navigator.serviceWorker.getRegistrations();
+
+    for (const registration of registrations) {
+      // Unsubscribe from push if subscribed
+      try {
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await subscription.unsubscribe();
+          console.log("✅ Unsubscribed from push");
+        }
+      } catch (e) {
+        console.warn("Could not unsubscribe:", e);
+      }
+
+      // Unregister the service worker
+      try {
+        await registration.unregister();
+        console.log("✅ Service worker unregistered");
+      } catch (e) {
+        console.warn("Could not unregister service worker:", e);
+      }
+    }
+
+    // Wait a bit for cleanup to complete
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    console.log("✅ Push state reset complete");
+  } catch (error) {
+    console.error("Error resetting push state:", error);
+    throw error;
+  }
+}
+
+/**
  * Get VAPID public key from server
  */
 async function getVapidPublicKey(): Promise<string> {
@@ -141,9 +183,18 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     // Always use production service worker which includes push notification handlers
     const registration = await navigator.serviceWorker.register("/sw.js", {
       scope: "/",
+      updateViaCache: "none", // Force check for updates
     });
 
     console.log("Service Worker registered successfully");
+
+    // Force update check to ensure we have the latest version
+    try {
+      await registration.update();
+      console.log("Service Worker update check completed");
+    } catch (updateError) {
+      console.warn("Service Worker update check failed:", updateError);
+    }
 
     // Wait for service worker to be ready with timeout
     const readyPromise = navigator.serviceWorker.ready;
@@ -154,9 +205,29 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       ),
     );
 
-    await Promise.race([readyPromise, timeoutPromise]);
+    const readyRegistration = await Promise.race([
+      readyPromise,
+      timeoutPromise,
+    ]);
 
-    return registration;
+    // Ensure the service worker is active
+    if (!readyRegistration.active) {
+      console.log("Waiting for service worker to activate...");
+      await new Promise<void>((resolve) => {
+        const sw = readyRegistration.installing || readyRegistration.waiting;
+        if (!sw) {
+          resolve();
+          return;
+        }
+        sw.addEventListener("statechange", () => {
+          if (sw.state === "activated") {
+            resolve();
+          }
+        });
+      });
+    }
+
+    return readyRegistration;
   } catch (error) {
     console.error("Service Worker registration failed:", error);
     throw new Error(
@@ -201,6 +272,22 @@ export async function subscribeToPushNotifications(
 
     const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
 
+    // Clear any existing subscription that might conflict
+    try {
+      const existingSubscription =
+        await registration.pushManager.getSubscription();
+      if (existingSubscription) {
+        console.log(
+          "🔄 Found existing subscription, unsubscribing to avoid conflicts...",
+        );
+        await existingSubscription.unsubscribe();
+        console.log("✅ Old subscription cleared");
+      }
+    } catch (cleanupError) {
+      console.warn("⚠️ Could not clear existing subscription:", cleanupError);
+      // Continue anyway - the new subscription might still work
+    }
+
     // Subscribe to push notifications with retry
     console.log("Subscribing to push notifications...");
     let subscription: PushSubscription | null = null;
@@ -237,9 +324,30 @@ export async function subscribeToPushNotifications(
             convertedKeyLength: convertedVapidKey.length,
           });
 
-          throw new Error(
-            `Failed to subscribe to push notifications after ${maxRetries} attempts: ${error.message}`,
-          );
+          // Try a full reset as last resort
+          console.log("🔄 Attempting full push state reset as last resort...");
+          try {
+            await resetPushState();
+            // Wait for reset to complete
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+
+            // Re-register service worker
+            const freshRegistration = await registerServiceWorker();
+            if (freshRegistration) {
+              console.log("🔄 Attempting subscription after reset...");
+              subscription = await freshRegistration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: convertedVapidKey,
+              });
+              console.log("✅ Push subscription successful after reset!");
+              break; // Exit the retry loop
+            }
+          } catch (resetError: any) {
+            console.error("❌ Reset attempt also failed:", resetError);
+            throw new Error(
+              `Failed to subscribe to push notifications after ${maxRetries} attempts and reset: ${error.message}`,
+            );
+          }
         }
         console.warn(
           `⏳ Retry ${retryCount}/${maxRetries} for push subscription in ${1000 * retryCount}ms...`,
