@@ -3,10 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import NotificationModal from "./NotificationModal";
-import {
-  subscribeToPushNotifications,
-  isMobileDevice,
-} from "@/lib/notifications";
+import { subscribeToPushNotifications } from "@/lib/notifications";
 
 export default function NotificationModalWrapper() {
   const { token, user, hydrated } = useSelector((state: any) => state.auth);
@@ -25,11 +22,6 @@ export default function NotificationModalWrapper() {
   if (!token || !user) return null;
 
   const handleEnableNotifications = async () => {
-    console.log("🔔 Starting notification subscription...");
-    console.log("Token available:", !!token);
-    console.log("Hostname:", window.location.hostname);
-    console.log("Mobile device:", isMobileDevice());
-
     if (!token) {
       const errorMsg = "No auth token available. Please log in again.";
       setError(errorMsg);
@@ -40,11 +32,8 @@ export default function NotificationModalWrapper() {
       setError(null);
       setIsRetrying(false);
       const result = await subscribeToPushNotifications(token);
-      console.log("✅ Subscription successful:", result);
       return result;
     } catch (error) {
-      console.error("❌ Subscription failed:", error);
-
       // Set user-friendly error message
       let errorMessage = "Failed to enable notifications. ";
 
@@ -54,14 +43,13 @@ export default function NotificationModalWrapper() {
           error.message.includes("permission was previously denied")
         ) {
           errorMessage =
-            "Notification permission denied. Please enable notifications in your browser settings.";
+            "Notification permission denied. Please enable in browser settings.";
         } else if (error.message.includes("not supported")) {
           errorMessage = error.message;
         } else if (error.message.includes("VAPID")) {
           errorMessage = "Server configuration error. Please contact support.";
         } else if (error.message.includes("Service Worker")) {
-          errorMessage =
-            "Failed to register service worker. Please refresh the page and try again.";
+          errorMessage = "Service worker error. Please refresh and try again.";
         } else {
           errorMessage += error.message;
         }
@@ -79,14 +67,12 @@ export default function NotificationModalWrapper() {
   };
 
   return (
-    <>
-      <NotificationModal
-        token={token}
-        onEnable={handleEnableNotifications}
-        error={error}
-        onRetry={handleRetry}
-        isRetrying={isRetrying}
-      />
-    </>
+    <NotificationModal
+      token={token}
+      onEnable={handleEnableNotifications}
+      error={error}
+      onRetry={handleRetry}
+      isRetrying={isRetrying}
+    />
   );
 }
