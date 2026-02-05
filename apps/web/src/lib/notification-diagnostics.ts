@@ -28,6 +28,11 @@ export interface DiagnosticResults {
 }
 
 export async function diagnoseNotificationSetup(): Promise<DiagnosticResults> {
+  // Use same API URL construction as notifications.ts
+  const API_BASE_URL = (
+    process.env.NEXT_PUBLIC_API_URL || "https://api.tixin.in"
+  ).replace(/\/api\/v1\/?$/, "");
+
   const results: DiagnosticResults = {
     https: window.location.protocol === "https:",
     serviceWorkerSupport: "serviceWorker" in navigator,
@@ -71,7 +76,7 @@ export async function diagnoseNotificationSetup(): Promise<DiagnosticResults> {
     // Try to fetch VAPID key
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/notification/vapid-public-key`,
+        `${API_BASE_URL}/api/v1/notification/vapid-public-key`,
       );
       if (response.ok) {
         const data = await response.json();
