@@ -180,8 +180,8 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 
   try {
-    // Always use production service worker which includes push notification handlers
-    const registration = await navigator.serviceWorker.register("/sw.js", {
+    // Use simple push service worker (not Workbox) to avoid precaching issues
+    const registration = await navigator.serviceWorker.register("/push-sw.js", {
       scope: "/",
       updateViaCache: "none", // Force check for updates
     });
