@@ -209,19 +209,40 @@ export async function subscribeToPushNotifications(
 
     while (!subscription && retryCount < maxRetries) {
       try {
+        console.log(
+          `Attempting push subscription (attempt ${retryCount + 1}/${maxRetries})...`,
+        );
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: convertedVapidKey,
         });
-      } catch (error) {
+        console.log("✅ Push subscription successful");
+      } catch (error: any) {
         retryCount++;
+        console.error(`❌ Push subscription attempt ${retryCount} failed:`, {
+          errorName: error.name,
+          errorMessage: error.message,
+          errorCode: error.code,
+          errorStack: error.stack?.split("\n").slice(0, 3).join("\n"),
+        });
+
         if (retryCount >= maxRetries) {
+          // Log detailed diagnostic info on final failure
+          console.error("❌ All retry attempts exhausted. Final state:", {
+            permission: Notification.permission,
+            protocol: window.location.protocol,
+            hostname: window.location.hostname,
+            serviceWorkerState: registration.active?.state,
+            vapidKeyLength: vapidPublicKey.length,
+            convertedKeyLength: convertedVapidKey.length,
+          });
+
           throw new Error(
-            `Failed to subscribe to push notifications after ${maxRetries} attempts: ${error instanceof Error ? error.message : "Unknown error"}`,
+            `Failed to subscribe to push notifications after ${maxRetries} attempts: ${error.message}`,
           );
         }
         console.warn(
-          `Retry ${retryCount}/${maxRetries} for push subscription...`,
+          `⏳ Retry ${retryCount}/${maxRetries} for push subscription in ${1000 * retryCount}ms...`,
         );
         await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
       }
@@ -253,10 +274,25 @@ export async function subscribeToPushNotifications(
       );
     }
 
-    console.log("Successfully subscribed to push notifications");
+    console.log("✅ Successfully subscribed to push notifications");
     return subscription;
-  } catch (error) {
-    console.error("Error subscribing to push notifications:", error);
+  } catch (error: any) {
+    // Log detailed error information
+    console.error("❌ Push subscription failed:", {
+      errorName: error.name,
+      errorMessage: error.message,
+      errorStack: error.stack,
+      errorCode: error.code,
+      permission: Notification.permission,
+      protocol: window.location.protocol,
+      hostname: window.location.hostname,
+    });
+
+    // More specific error messages
+    if (error.message?.includes("Registration failed")) {
+      error.message = `Registration failed - push service error. This usually means:\n1. HTTPS is required (current: ${window.location.protocol})\n2. Browser doesn't support push\n3. VAPID key format is invalid\n4. Service worker not properly registered`;
+    }
+
     throw error;
   }
 }

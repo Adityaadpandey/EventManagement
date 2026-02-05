@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
+import {
+  diagnoseNotificationSetup,
+  formatDiagnostics,
+} from "@/lib/notification-diagnostics";
 
 interface NotificationModalProps {
   token?: string;
@@ -73,6 +77,13 @@ export default function NotificationModal({
   const handleDismiss = () => {
     setShow(false);
     localStorage.setItem("notification-modal-dismissed", "true");
+  };
+
+  const runDiagnostics = async () => {
+    const results = await diagnoseNotificationSetup();
+    const formatted = formatDiagnostics(results);
+    console.log(formatted);
+    alert("Diagnostics logged to console. Press F12 to view.");
   };
 
   if (!show) return null;
@@ -210,6 +221,14 @@ export default function NotificationModal({
             </>
           )}
         </div>
+
+        {/* Diagnostics button */}
+        <button
+          onClick={runDiagnostics}
+          className="mt-2 text-sm text-gray-500 hover:text-gray-700 underline w-full"
+        >
+          Run Diagnostics
+        </button>
 
         {/* Dismiss link */}
         <button
