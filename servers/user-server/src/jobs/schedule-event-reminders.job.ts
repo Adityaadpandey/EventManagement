@@ -67,7 +67,8 @@ export function startEventReminderJob() {
             userId: user.userId,
             type: "EVENT_REMINDER",
             title: "Event Reminder",
-            message: `Don't forget! ${event.title} is happening tomorrow at ${event.time.toLocaleTimeString()}.`,
+            body: `Don't forget! ${event.title} is happening tomorrow at ${event.time.toLocaleTimeString()}.`,
+            link: `/events/${event.eventId}`,
             metadata: {
               eventId: event.eventId,
               eventDate: event.date.toISOString(),
