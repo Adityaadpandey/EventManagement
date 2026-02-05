@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
+import {
+  diagnoseNotificationSetup,
+  formatDiagnostics,
+} from "@/lib/notification-diagnostics";
+import { resetPushState } from "@/lib/notifications";
 
 interface NotificationModalProps {
   token?: string;
@@ -73,6 +78,30 @@ export default function NotificationModal({
   const handleDismiss = () => {
     setShow(false);
     localStorage.setItem("notification-modal-dismissed", "true");
+  };
+
+  const runDiagnostics = async () => {
+    const results = await diagnoseNotificationSetup();
+    const formatted = formatDiagnostics(results);
+    console.log(formatted);
+    alert("Diagnostics logged to console. Press F12 to view.");
+  };
+
+  const handleReset = async () => {
+    try {
+      setLoading(true);
+      await resetPushState();
+      alert(
+        "✅ Push state reset complete!\n\nPlease close this modal and try enabling notifications again.",
+      );
+      setShow(false);
+      // Clear the dismissed flag so modal shows again
+      localStorage.removeItem("notification-modal-dismissed");
+    } catch (error: any) {
+      alert("❌ Reset failed: " + (error.message || "Unknown error"));
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!show) return null;
@@ -209,6 +238,23 @@ export default function NotificationModal({
               </button>
             </>
           )}
+        </div>
+
+        {/* Diagnostics and Reset buttons */}
+        <div className="mt-2 flex justify-center gap-4">
+          <button
+            onClick={runDiagnostics}
+            className="text-sm text-gray-500 hover:text-gray-700 underline"
+          >
+            Run Diagnostics
+          </button>
+          <button
+            onClick={handleReset}
+            disabled={loading}
+            className="text-sm text-red-500 hover:text-red-700 underline disabled:opacity-50"
+          >
+            Reset Push State
+          </button>
         </div>
 
         {/* Dismiss link */}
