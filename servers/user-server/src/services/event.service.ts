@@ -642,7 +642,8 @@ export class EventService {
           userId: ticketedUsers.find((u) => u.email === user.email)?.userId,
           type: "EVENT_UPDATE",
           title: `Update: ${eventTitle}`,
-          message: update,
+          body: update,
+          link: `/events/${eventId}`,
           metadata: {
             eventId,
             imageUrl: imageUrl || undefined,

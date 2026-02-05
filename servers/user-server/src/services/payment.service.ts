@@ -111,7 +111,8 @@ export class PaymentService {
         userId: ticket.userId,
         type: "TICKET_PURCHASED",
         title: "Ticket Purchased Successfully",
-        message: `Your ticket for ${ticket.ticketType.event.title} has been confirmed.`,
+        body: `Your ticket for ${ticket.ticketType.event.title} has been confirmed.`,
+        link: `/tickets/${ticket.ticketId}`,
         metadata: {
           eventId: ticket.ticketType.eventId,
           ticketId: ticket.ticketId,
@@ -273,7 +274,8 @@ export class PaymentService {
         userId: ticket.userId,
         type: "PAYMENT_SUCCESS",
         title: "Payment Successful",
-        message: `Payment of ₹${ticket.totalPrice} completed successfully.`,
+        body: `Payment of ₹${ticket.totalPrice} completed successfully.`,
+        link: `/tickets/${ticket.ticketId}`,
         metadata: {
           paymentId: razorpayPaymentId,
           amount: ticket.totalPrice,

@@ -7,6 +7,7 @@ import {
   setTicketCache,
 } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
+import { notificationQueue } from "../lib/queues";
 import { razorpay } from "../lib/razorpay";
 import { trackCTAClickWithEventId } from "../middlewares/analytics.middleware";
 import {
@@ -295,8 +296,21 @@ export class TicketService {
         return newTicket;
       });
 
-      // Handle free ticket email AFTER transaction (non-blocking)
+      // Handle free ticket email and notification AFTER transaction (non-blocking)
       if (isFree) {
+        // Send push notification for free ticket
+        await notificationQueue.add("send-notification", {
+          userId,
+          type: "TICKET_PURCHASED",
+          title: "Ticket Confirmed!",
+          body: `Your free ticket for ${event.title} has been confirmed.`,
+          link: `/tickets/${ticket.ticketId}`,
+          metadata: {
+            eventId: ticketType.eventId,
+            ticketId: ticket.ticketId,
+          },
+        });
+
         // Send email asynchronously without waiting
         setImmediate(async () => {
           try {
