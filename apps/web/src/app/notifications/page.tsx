@@ -47,7 +47,7 @@ export default function NotificationsPage() {
       }
 
       const data = await response.json();
-      setNotifications(data.data || []);
+      setNotifications(data.data.notifications || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
