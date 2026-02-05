@@ -1,12 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
-import {
-  diagnoseNotificationSetup,
-  formatDiagnostics,
-} from "@/lib/notification-diagnostics";
-import { resetPushState } from "@/lib/notifications";
+import { isPushNotificationSupported, isSubscribed } from "@/lib/notifications";
+import { Bell, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface NotificationModalProps {
   token?: string;
@@ -27,15 +23,45 @@ export default function NotificationModal({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Check if already dismissed
-    const dismissed = localStorage.getItem("notification-modal-dismissed");
-    if (dismissed || !token) return;
+    const checkNotificationStatus = async () => {
+      if (!token) return;
 
-    // Check notification permission
-    if ("Notification" in window && Notification.permission === "default") {
-      // Show immediately
-      setShow(true);
-    }
+      // Check if permanently dismissed
+      const permanentlyDismissed = localStorage.getItem(
+        "notification-modal-permanently-dismissed",
+      );
+      if (permanentlyDismissed) return;
+
+      // Check if dismissed this session
+      const sessionDismissed = sessionStorage.getItem(
+        "notification-modal-session-dismissed",
+      );
+      if (sessionDismissed) return;
+
+      // Check if push notifications are supported
+      if (!isPushNotificationSupported()) return;
+
+      // Check notification permission and subscription status
+      if ("Notification" in window) {
+        const permission = Notification.permission;
+
+        if (permission === "denied") return;
+
+        if (permission === "default") {
+          setShow(true);
+          return;
+        }
+
+        if (permission === "granted") {
+          const subscribed = await isSubscribed();
+          if (!subscribed) {
+            setShow(true);
+          }
+        }
+      }
+    };
+
+    checkNotificationStatus();
   }, [token]);
 
   const handleEnable = async () => {
@@ -43,31 +69,13 @@ export default function NotificationModal({
     try {
       await onEnable();
       setShow(false);
-      // Mark as dismissed so it doesn't show again
-      localStorage.setItem("notification-modal-dismissed", "true");
+      localStorage.removeItem("notification-modal-permanently-dismissed");
+      sessionStorage.removeItem("notification-modal-session-dismissed");
     } catch (error: any) {
       console.error("Failed to enable notifications:", error);
-
-      // Check if it's a localhost issue
-      if (
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1"
-      ) {
+      if (error.message?.includes("permission denied")) {
         alert(
-          "⚠️ Push notifications don't work on localhost.\n\nThey require HTTPS. Please test on your production domain or use ngrok/tunneling.",
-        );
-      } else if (error.message?.includes("permission denied")) {
-        alert(
-          "❌ Notification permission was denied.\n\nPlease enable notifications in your browser settings and try again.",
-        );
-      } else if (error.message?.includes("Service Worker")) {
-        alert(
-          "❌ Service Worker failed to register.\n\nPlease refresh the page and try again.",
-        );
-      } else {
-        alert(
-          "❌ Failed to enable notifications.\n\nError: " +
-            (error.message || "Unknown error"),
+          "Notification permission was denied. Please enable notifications in your browser settings.",
         );
       }
     } finally {
@@ -75,33 +83,14 @@ export default function NotificationModal({
     }
   };
 
-  const handleDismiss = () => {
+  const handleMaybeLater = () => {
     setShow(false);
-    localStorage.setItem("notification-modal-dismissed", "true");
+    sessionStorage.setItem("notification-modal-session-dismissed", "true");
   };
 
-  const runDiagnostics = async () => {
-    const results = await diagnoseNotificationSetup();
-    const formatted = formatDiagnostics(results);
-    console.log(formatted);
-    alert("Diagnostics logged to console. Press F12 to view.");
-  };
-
-  const handleReset = async () => {
-    try {
-      setLoading(true);
-      await resetPushState();
-      alert(
-        "✅ Push state reset complete!\n\nPlease close this modal and try enabling notifications again.",
-      );
-      setShow(false);
-      // Clear the dismissed flag so modal shows again
-      localStorage.removeItem("notification-modal-dismissed");
-    } catch (error: any) {
-      alert("❌ Reset failed: " + (error.message || "Unknown error"));
-    } finally {
-      setLoading(false);
-    }
+  const handleDismissPermanently = () => {
+    setShow(false);
+    localStorage.setItem("notification-modal-permanently-dismissed", "true");
   };
 
   if (!show) return null;
@@ -110,166 +99,133 @@ export default function NotificationModal({
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-md"
-        onClick={() => setShow(false)}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={handleMaybeLater}
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 animate-scale-in border border-gray-100">
+      <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 animate-scale-in">
+        {/* Close button */}
+        <button
+          onClick={handleMaybeLater}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
         {/* Icon */}
-        <div className="flex justify-center mb-6">
-          <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center animate-bounce shadow-lg">
-            <Bell className="w-10 h-10 text-white" />
+        <div className="flex justify-center mb-5">
+          <div className="w-16 h-16 bg-[#f6d100] rounded-full flex items-center justify-center shadow-md">
+            <Bell className="w-8 h-8 text-black" />
           </div>
         </div>
 
         {/* Content */}
-        <h2 className="text-2xl font-bold text-center mb-3 text-black">
-          {error ? "Notification Setup Failed" : "Enable Notifications?"}
+        <h2
+          className="text-xl font-bold text-center mb-2 text-black"
+          style={{ fontFamily: "Bricolage Grotesque, sans-serif" }}
+        >
+          {error ? "Setup Failed" : "Stay Updated!"}
         </h2>
-        <p className="text-gray-600 text-center mb-6 text-sm">
-          {error ? (
-            <span className="text-red-600 font-medium">{error}</span>
-          ) : (
-            "Get instant updates about your tickets, events, and exclusive offers. Never miss important information!"
-          )}
-        </p>
 
-        {/* Benefits */}
-        <div className="space-y-3 mb-8 bg-gray-50 rounded-2xl p-4">
-          <div className="flex items-center gap-3 text-sm text-gray-700">
-            <span className="text-2xl">🎫</span>
-            <span>Instant ticket confirmations</span>
-          </div>
-          <div className="flex items-center gap-3 text-sm text-gray-700">
-            <span className="text-2xl">⏰</span>
-            <span>Event reminders before they start</span>
-          </div>
-          <div className="flex items-center gap-3 text-sm text-gray-700">
-            <span className="text-2xl">💰</span>
-            <span>Payment and refund updates</span>
-          </div>
-          <div className="flex items-center gap-3 text-sm text-gray-700">
-            <span className="text-2xl">🎉</span>
-            <span>Exclusive offers and promotions</span>
-          </div>
-        </div>
+        {error ? (
+          <p className="text-red-500 text-center text-sm mb-5">{error}</p>
+        ) : (
+          <p className="text-gray-500 text-center text-sm mb-5">
+            Get instant updates for tickets, events & reminders
+          </p>
+        )}
 
         {/* Buttons */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           {isRetrying ? (
-            <>
-              <button
-                onClick={() => {
-                  onRetry?.();
-                  handleEnable();
-                }}
-                disabled={loading}
-                className="w-full py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Retrying...
-                  </span>
-                ) : (
-                  "🔄 Try Again"
-                )}
-              </button>
-              <button
-                onClick={handleDismiss}
-                className="w-full py-3 text-gray-600 hover:text-black font-medium transition-colors rounded-xl hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            </>
+            <button
+              onClick={() => {
+                onRetry?.();
+                handleEnable();
+              }}
+              disabled={loading}
+              className="w-full py-3 bg-[#f6d100] text-black font-semibold rounded-xl hover:bg-[#e5c200] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              style={{ fontFamily: "Bricolage Grotesque, sans-serif" }}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Retrying...
+                </span>
+              ) : (
+                "Try Again"
+              )}
+            </button>
           ) : (
-            <>
-              <button
-                onClick={handleEnable}
-                disabled={loading}
-                className="w-full py-4 bg-black text-white font-semibold rounded-xl hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Enabling...
-                  </span>
-                ) : (
-                  "🔔 Enable Notifications"
-                )}
-              </button>
-
-              <button
-                onClick={() => setShow(false)}
-                className="w-full py-3 text-gray-600 hover:text-black font-medium transition-colors rounded-xl hover:bg-gray-50"
-              >
-                Maybe Later
-              </button>
-            </>
+            <button
+              onClick={handleEnable}
+              disabled={loading}
+              className="w-full py-3 bg-[#f6d100] text-black font-semibold rounded-xl hover:bg-[#e5c200] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              style={{ fontFamily: "Bricolage Grotesque, sans-serif" }}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Enabling...
+                </span>
+              ) : (
+                "Enable Notifications"
+              )}
+            </button>
           )}
-        </div>
 
-        {/* Diagnostics and Reset buttons */}
-        <div className="mt-2 flex justify-center gap-4">
           <button
-            onClick={runDiagnostics}
-            className="text-sm text-gray-500 hover:text-gray-700 underline"
+            onClick={handleMaybeLater}
+            className="w-full py-2 text-gray-500 text-sm hover:text-gray-700 transition-colors"
           >
-            Run Diagnostics
-          </button>
-          <button
-            onClick={handleReset}
-            disabled={loading}
-            className="text-sm text-red-500 hover:text-red-700 underline disabled:opacity-50"
-          >
-            Reset Push State
+            Maybe Later
           </button>
         </div>
 
-        {/* Dismiss link */}
+        {/* Don't ask again */}
         <button
-          onClick={handleDismiss}
-          className="w-full mt-4 text-xs text-gray-400 hover:text-gray-600 underline transition-colors"
+          onClick={handleDismissPermanently}
+          className="w-full mt-3 text-xs text-gray-400 hover:text-gray-500 transition-colors"
         >
-          Don't ask again
+          Don't show again
         </button>
       </div>
 
       <style jsx>{`
         @keyframes scale-in {
           from {
-            transform: scale(0.9);
+            transform: scale(0.95);
             opacity: 0;
           }
           to {
@@ -278,7 +234,7 @@ export default function NotificationModal({
           }
         }
         .animate-scale-in {
-          animation: scale-in 0.3s ease-out;
+          animation: scale-in 0.2s ease-out;
         }
       `}</style>
     </div>

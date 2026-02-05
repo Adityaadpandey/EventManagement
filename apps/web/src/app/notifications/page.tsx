@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ArrowLeft, Bell, Check, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface Notification {
   notificationId: string;
@@ -29,7 +30,7 @@ export default function NotificationsPage() {
       const token = localStorage.getItem("token");
 
       if (!token) {
-        router.push("/login");
+        router.push("/auth");
         return;
       }
 
@@ -78,7 +79,7 @@ export default function NotificationsPage() {
         );
       }
     } catch (err) {
-      console.error("Error marking notification as read:", err);
+      // Silent fail
     }
   };
 
@@ -103,7 +104,7 @@ export default function NotificationsPage() {
         );
       }
     } catch (err) {
-      console.error("Error deleting notification:", err);
+      // Silent fail
     }
   };
 
@@ -126,7 +127,7 @@ export default function NotificationsPage() {
         setNotifications(notifications.map((n) => ({ ...n, read: true })));
       }
     } catch (err) {
-      console.error("Error marking all as read:", err);
+      // Silent fail
     }
   };
 
@@ -149,7 +150,7 @@ export default function NotificationsPage() {
         setNotifications([]);
       }
     } catch (err) {
-      console.error("Error clearing all notifications:", err);
+      // Silent fail
     }
   };
 
@@ -187,10 +188,10 @@ export default function NotificationsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#eff0fb] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading notifications...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#f6d100] border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-gray-500 text-sm">Loading...</p>
         </div>
       </div>
     );
@@ -198,12 +199,12 @@ export default function NotificationsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#eff0fb] flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-red-600">Error: {error}</p>
+          <p className="text-red-500 mb-4">{error}</p>
           <button
             onClick={fetchNotifications}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-6 py-2 bg-[#f6d100] text-black font-medium rounded-xl hover:bg-[#e5c200] transition-colors"
           >
             Retry
           </button>
@@ -213,38 +214,58 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-[#eff0fb]">
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
-          <div className="flex gap-2">
-            {notifications.length > 0 && (
-              <>
-                <button
-                  onClick={markAllAsRead}
-                  className="px-4 py-2 text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                >
-                  Mark All Read
-                </button>
-                <button
-                  onClick={clearAll}
-                  className="px-4 py-2 text-sm bg-white border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
-                >
-                  Clear All
-                </button>
-              </>
-            )}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="p-2 hover:bg-white rounded-xl transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1
+              className="text-2xl font-bold text-black"
+              style={{ fontFamily: "Bricolage Grotesque, sans-serif" }}
+            >
+              Notifications
+            </h1>
           </div>
+          {notifications.length > 0 && (
+            <div className="flex gap-2">
+              <button
+                onClick={markAllAsRead}
+                className="p-2 hover:bg-white rounded-xl transition-colors"
+                title="Mark all as read"
+              >
+                <Check className="w-5 h-5 text-gray-600" />
+              </button>
+              <button
+                onClick={clearAll}
+                className="p-2 hover:bg-white rounded-xl transition-colors"
+                title="Clear all"
+              >
+                <Trash2 className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+          )}
         </div>
 
+        {/* Content */}
         {notifications.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <div className="text-6xl mb-4">🔔</div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              No notifications yet
+          <div className="bg-white rounded-2xl p-12 text-center">
+            <div className="w-16 h-16 bg-[#f6d100] rounded-full flex items-center justify-center mx-auto mb-4">
+              <Bell className="w-8 h-8 text-black" />
+            </div>
+            <h2
+              className="text-lg font-semibold text-black mb-2"
+              style={{ fontFamily: "Bricolage Grotesque, sans-serif" }}
+            >
+              No notifications
             </h2>
-            <p className="text-gray-600">
-              When you receive notifications, they will appear here.
+            <p className="text-gray-500 text-sm">
+              You're all caught up! New notifications will appear here.
             </p>
           </div>
         ) : (
@@ -252,49 +273,42 @@ export default function NotificationsPage() {
             {notifications.map((notification) => (
               <div
                 key={notification.notificationId}
-                className={`bg-white rounded-lg shadow-sm p-4 transition-all hover:shadow-md ${
-                  !notification.read ? "border-l-4 border-blue-500" : ""
+                className={`bg-white rounded-2xl p-4 transition-all ${
+                  !notification.read ? "border-l-4 border-[#f6d100]" : ""
                 }`}
               >
-                <div className="flex items-start gap-4">
-                  <div className="text-3xl flex-shrink-0">
+                <div className="flex items-start gap-3">
+                  <div className="text-2xl flex-shrink-0">
                     {getNotificationIcon(notification.type)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-medium text-black text-sm">
                         {notification.title}
                       </h3>
-                      <span className="text-xs text-gray-500 whitespace-nowrap">
+                      <span className="text-xs text-gray-400 whitespace-nowrap">
                         {formatDate(notification.createdAt)}
                       </span>
                     </div>
-                    <p className="mt-1 text-gray-700">{notification.message}</p>
-                    {notification.metadata && (
-                      <div className="mt-2 text-xs text-gray-500">
-                        {notification.metadata.eventId && (
-                          <span className="inline-block mr-2">
-                            Event ID: {notification.metadata.eventId}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    <p className="mt-1 text-gray-600 text-sm">
+                      {notification.message}
+                    </p>
                     <div className="mt-3 flex gap-2">
                       {!notification.read && (
                         <button
                           onClick={() =>
                             markAsRead(notification.notificationId)
                           }
-                          className="text-xs px-3 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
+                          className="text-xs px-3 py-1.5 bg-[#eff0fb] text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                         >
-                          Mark as Read
+                          Mark read
                         </button>
                       )}
                       <button
                         onClick={() =>
                           deleteNotification(notification.notificationId)
                         }
-                        className="text-xs px-3 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100"
+                        className="text-xs px-3 py-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       >
                         Delete
                       </button>
