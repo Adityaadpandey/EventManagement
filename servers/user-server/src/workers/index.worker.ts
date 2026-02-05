@@ -31,3 +31,4 @@ startWorker(path.resolve(__dirname, "./phoneOtp.worker.js"));
 startWorker(path.resolve(__dirname, "./email.worker.js"));
 startWorker(path.resolve(__dirname, "./analytics.worker.js"));
 startWorker(path.resolve(__dirname, "./ledger.worker.js"));
+startWorker(path.resolve(__dirname, "./notification.worker.js"));

@@ -17,16 +17,6 @@ if (!config.VAPID_PUBLIC_KEY || !config.VAPID_PRIVATE_KEY) {
   );
 }
 
-if (
-  config.VAPID_PUBLIC_KEY.length < 50 ||
-  config.VAPID_PRIVATE_KEY.length < 50
-) {
-  logger.error("❌ VAPID keys appear to be invalid (too short)");
-  throw new Error(
-    "Invalid VAPID keys detected. Please regenerate: node scripts/generate-vapid-keys.js",
-  );
-}
-
 logger.info("✅ VAPID keys validated successfully");
 
 // Configure VAPID details
