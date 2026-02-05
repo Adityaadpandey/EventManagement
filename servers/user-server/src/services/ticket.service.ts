@@ -85,14 +85,11 @@ export class TicketService {
       const now = new Date();
 
       if (event.date && event.time) {
-        const eventStart = new Date(event.time);
+        const eventStart = new Date(`${event.date}T${event.time}:00`);
 
-        // Require eventStart to be at least 1 day from now
-        const oneDayBeforeEvent = new Date(
-          eventStart.getTime() + 24 * 60 * 60 * 1000,
-        );
+        const cutoff = new Date(eventStart.getTime() + 24 * 60 * 60 * 1000);
 
-        if (now >= oneDayBeforeEvent) {
+        if (now >= cutoff) {
           throw new BadRequestError(
             "Ticket sales close 1 day after the event starts",
           );
@@ -100,19 +97,16 @@ export class TicketService {
       } else if (event.date) {
         const eventDate = new Date(event.date);
 
-        const oneDayBeforeEvent = new Date(
-          eventDate.getTime() + 24 * 60 * 60 * 1000,
-        );
+        const cutoff = new Date(eventDate.getTime() + 24 * 60 * 60 * 1000);
 
-        if (now >= oneDayBeforeEvent) {
+        if (now >= cutoff) {
           throw new BadRequestError(
             "Ticket sales close 1 day after the event date",
           );
         }
       }
 
-      // Check sales cutoff
-      if (ticketType.salesCutoff && now > ticketType.salesCutoff) {
+      if (ticketType.salesCutoff && now > new Date(ticketType.salesCutoff)) {
         throw new BadRequestError("Ticket sales have ended");
       }
 
