@@ -22,8 +22,8 @@ logger.info("✅ VAPID keys validated successfully");
 // Configure VAPID details
 webpush.setVapidDetails(
   "mailto:noreply@tixin.in",
-  config.VAPID_PUBLIC_KEY!,
-  config.VAPID_PRIVATE_KEY!,
+  config.VAPID_PUBLIC_KEY,
+  config.VAPID_PRIVATE_KEY,
 );
 
 // Notification job data interface
