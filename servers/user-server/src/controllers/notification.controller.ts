@@ -3,6 +3,7 @@ import { NotificationService } from "../services/notification.service";
 import logger from "../config/logger";
 import { sendSuccess, sendError } from "../utils/responseMsg";
 import { AuthenticatedRequest } from "../types/auth";
+import { config } from "../config";
 
 const notificationService = new NotificationService();
 
@@ -135,7 +136,7 @@ export class NotificationController {
    */
   async getVapidPublicKey(req: Request, res: Response) {
     try {
-      const publicKey = process.env.VAPID_PUBLIC_KEY;
+      const publicKey = config.VAPID_PUBLIC_KEY;
 
       if (!publicKey) {
         return sendError(res, "VAPID public key not configured", 500);
