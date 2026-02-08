@@ -97,11 +97,12 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 /**
- * Reset push notification state completely
- * Useful when encountering persistent subscription errors
+ * Reset push subscription state
+ * Only unsubscribes from push - does NOT unregister the main service worker
+ * since it's shared with the PWA caching layer
  */
 export async function resetPushState(): Promise<void> {
-  console.log("🔄 Resetting push notification state...");
+  console.log("🔄 Resetting push subscription state...");
 
   try {
     // Get all service worker registrations
@@ -118,20 +119,13 @@ export async function resetPushState(): Promise<void> {
       } catch (e) {
         console.warn("Could not unsubscribe:", e);
       }
-
-      // Unregister the service worker
-      try {
-        await registration.unregister();
-        console.log("✅ Service worker unregistered");
-      } catch (e) {
-        console.warn("Could not unregister service worker:", e);
-      }
+      // Do NOT unregister the service worker - it's the main PWA worker
     }
 
     // Wait a bit for cleanup to complete
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    console.log("✅ Push state reset complete");
+    console.log("✅ Push subscription state reset complete");
   } catch (error) {
     console.error("Error resetting push state:", error);
     throw error;
@@ -171,7 +165,10 @@ async function getVapidPublicKey(): Promise<string> {
 }
 
 /**
- * Register service worker
+ * Get the active service worker registration.
+ * Uses the main SW already registered by next-pwa (which includes push handlers
+ * via the worker/ directory) instead of registering a separate service worker.
+ * Registering a separate SW at the same scope causes conflicts and push failures.
  */
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!("serviceWorker" in navigator)) {
@@ -180,24 +177,7 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 
   try {
-    // Use simple push service worker (not Workbox) to avoid precaching issues
-    const registration = await navigator.serviceWorker.register("/push-sw.js", {
-      scope: "/",
-      updateViaCache: "none", // Force check for updates
-    });
-
-    console.log("Service Worker registered successfully");
-
-    // Force update check to ensure we have the latest version
-    try {
-      await registration.update();
-      console.log("Service Worker update check completed");
-    } catch (updateError) {
-      console.warn("Service Worker update check failed:", updateError);
-    }
-
-    // Wait for service worker to be ready with timeout
-    const readyPromise = navigator.serviceWorker.ready;
+    // Wait for the main service worker (registered by next-pwa) to be ready
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(
         () => reject(new Error("Service Worker ready timeout")),
@@ -205,16 +185,18 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       ),
     );
 
-    const readyRegistration = await Promise.race([
-      readyPromise,
+    const registration = await Promise.race([
+      navigator.serviceWorker.ready,
       timeoutPromise,
     ]);
 
+    console.log("Service Worker ready for push notifications");
+
     // Ensure the service worker is active
-    if (!readyRegistration.active) {
+    if (!registration.active) {
       console.log("Waiting for service worker to activate...");
       await new Promise<void>((resolve) => {
-        const sw = readyRegistration.installing || readyRegistration.waiting;
+        const sw = registration.installing || registration.waiting;
         if (!sw) {
           resolve();
           return;
@@ -227,11 +209,11 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       });
     }
 
-    return readyRegistration;
+    return registration;
   } catch (error) {
-    console.error("Service Worker registration failed:", error);
+    console.error("Service Worker not available:", error);
     throw new Error(
-      `Service Worker registration failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Service Worker not available: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
@@ -324,18 +306,20 @@ export async function subscribeToPushNotifications(
             convertedKeyLength: convertedVapidKey.length,
           });
 
-          // Try a full reset as last resort
-          console.log("🔄 Attempting full push state reset as last resort...");
+          // Try a reset as last resort (unsubscribe only, keep SW)
+          console.log(
+            "🔄 Attempting push subscription reset as last resort...",
+          );
           try {
             await resetPushState();
             // Wait for reset to complete
             await new Promise((resolve) => setTimeout(resolve, 2000));
 
-            // Re-register service worker
-            const freshRegistration = await registerServiceWorker();
-            if (freshRegistration) {
+            // Use the existing service worker
+            const readyRegistration = await navigator.serviceWorker.ready;
+            if (readyRegistration) {
               console.log("🔄 Attempting subscription after reset...");
-              subscription = await freshRegistration.pushManager.subscribe({
+              subscription = await readyRegistration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: convertedVapidKey,
               });
