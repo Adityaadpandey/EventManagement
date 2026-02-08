@@ -1,19 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";
 import NotificationModal from "./NotificationModal";
-import { subscribeToPushNotifications } from "@/lib/notifications";
+import {
+  subscribeToPushNotifications,
+  isPushNotificationSupported,
+  isSubscribed,
+} from "@/lib/notifications";
 
 export default function NotificationModalWrapper() {
   const { token, user, hydrated } = useSelector((state: any) => state.auth);
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const autoSubscribeAttempted = useRef(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-subscribe silently when user logs in and permission is already granted
+  useEffect(() => {
+    if (!mounted || !hydrated || !token || !user) return;
+    if (autoSubscribeAttempted.current) return;
+    if (!isPushNotificationSupported()) return;
+    if (!("Notification" in window)) return;
+
+    const autoSubscribe = async () => {
+      autoSubscribeAttempted.current = true;
+
+      // Only auto-subscribe if permission was already granted (returning user)
+      if (Notification.permission !== "granted") return;
+
+      const alreadySubscribed = await isSubscribed();
+      if (alreadySubscribed) return;
+
+      try {
+        console.log("Auto-subscribing to push notifications on login...");
+        await subscribeToPushNotifications(token);
+        console.log("Auto-subscribe successful");
+      } catch (err) {
+        // Silent failure for auto-subscribe - don't block the user
+        console.warn("Auto-subscribe failed:", err);
+      }
+    };
+
+    autoSubscribe();
+  }, [mounted, hydrated, token, user]);
+
+  // Reset auto-subscribe flag when user logs out
+  useEffect(() => {
+    if (!token) {
+      autoSubscribeAttempted.current = false;
+    }
+  }, [token]);
 
   // Don't render until hydrated and mounted (avoid SSR issues)
   if (!mounted || !hydrated) return null;
