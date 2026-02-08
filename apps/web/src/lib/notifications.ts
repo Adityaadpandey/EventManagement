@@ -165,10 +165,10 @@ async function getVapidPublicKey(): Promise<string> {
 }
 
 /**
- * Get the active service worker registration.
- * Uses the main SW already registered by next-pwa (which includes push handlers
- * via the worker/ directory) instead of registering a separate service worker.
- * Registering a separate SW at the same scope causes conflicts and push failures.
+ * Get or register the main service worker.
+ * Registers /sw.js (the main Workbox SW that includes push handlers via
+ * the worker/ directory). This is the same SW that next-pwa auto-registers,
+ * so calling register() with the same script URL is idempotent.
  */
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!("serviceWorker" in navigator)) {
@@ -177,43 +177,47 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 
   try {
-    // Wait for the main service worker (registered by next-pwa) to be ready
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(
-        () => reject(new Error("Service Worker ready timeout")),
-        10000,
-      ),
-    );
+    // Explicitly register the main SW - this is idempotent if next-pwa
+    // already registered it. Using /sw.js (not a separate push-sw.js)
+    // avoids scope conflicts.
+    const registration = await navigator.serviceWorker.register("/sw.js", {
+      scope: "/",
+    });
 
-    const registration = await Promise.race([
-      navigator.serviceWorker.ready,
-      timeoutPromise,
-    ]);
+    console.log("Service Worker registered successfully");
+
+    // Wait for the service worker to be ready
+    const readyRegistration = await navigator.serviceWorker.ready;
 
     console.log("Service Worker ready for push notifications");
 
     // Ensure the service worker is active
-    if (!registration.active) {
+    if (!readyRegistration.active) {
       console.log("Waiting for service worker to activate...");
-      await new Promise<void>((resolve) => {
-        const sw = registration.installing || registration.waiting;
+      await new Promise<void>((resolve, reject) => {
+        const sw = readyRegistration.installing || readyRegistration.waiting;
         if (!sw) {
           resolve();
           return;
         }
+        const timeout = setTimeout(
+          () => reject(new Error("Service Worker activation timeout")),
+          10000,
+        );
         sw.addEventListener("statechange", () => {
           if (sw.state === "activated") {
+            clearTimeout(timeout);
             resolve();
           }
         });
       });
     }
 
-    return registration;
+    return readyRegistration;
   } catch (error) {
-    console.error("Service Worker not available:", error);
+    console.error("Service Worker registration failed:", error);
     throw new Error(
-      `Service Worker not available: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Service Worker registration failed: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   }
 }
