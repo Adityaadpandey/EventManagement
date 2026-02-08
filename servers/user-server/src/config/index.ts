@@ -124,10 +124,14 @@ export const config: Config = {
   SMTP_USER: process.env.SMTP_USER || "",
   SMTP_PASS: process.env.SMTP_PASS || "",
 
-  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || "",
-  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || "",
-
   AWS_REGION: process.env.AWS_REGION || "us-east-1",
   AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID || "",
   AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY || "",
+
+  VAPID_PUBLIC_KEY:
+    process.env.VAPID_PUBLIC_KEY ||
+    "BMQYt1g_3L7bD-zwybIiT12xx5jNjYwvxbjQwkCJadKm-ZBd6tuAcrbVwCOGrkbGHddRFG3bZn5nyMAJd-5QHw8",
+  VAPID_PRIVATE_KEY:
+    process.env.VAPID_PRIVATE_KEY ||
+    "ptXLDU7IrCGQ_p_Uh2IFW4thrWGBpoFNkdxJWT7Rbg4",
 };
