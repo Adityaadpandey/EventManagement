@@ -6,6 +6,7 @@ const withPWAConfig = withPWA({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development", // Disable in dev to avoid warnings
+  buildExcludes: [/app-build-manifest\.json$/, /dynamic-css-manifest\.json$/],
 });
 
 const nextConfig: NextConfig = {
