@@ -703,6 +703,10 @@ export class TicketService {
           }
         }
 
+        // Add event ID suffix to ensure uniqueness across events with same name
+        // Take last 4 chars of event UUID for brevity
+        const eventIdSuffix = ticketType.eventId.slice(-4).toUpperCase();
+
         // Ultra-fast sequential numbering using Event table counter
         const updatedEvent = await tx.event.update({
           where: { eventId: ticketType.eventId },
@@ -714,20 +718,20 @@ export class TicketService {
 
         const ticketNumber = updatedEvent.ticketCounter;
         const formattedNumber = ticketNumber.toString().padStart(3, "0");
-        const qrCode = `${prefix}${formattedNumber}`;
+        // Format: PREFIX-EVENTID-NUMBER
+        // Examples:
+        // - "Ragnarok" Event 1 -> TKT-RAG-A1B2-001
+        // - "Ragnarok" Event 2 -> TKT-RAG-C3D4-001
+        // - "Code Caravan 3.0" -> CC30-E5F6-001
+        const qrCode = `${prefix}-${eventIdSuffix}-${formattedNumber}`;
 
-        // Verify uniqueness (should be guaranteed by counter, but double-check)
+        // Verify uniqueness (should be guaranteed by counter + eventId, but double-check)
         const existingTicket = await tx.ticket.findUnique({
           where: { qrCode },
           select: { ticketId: true },
         });
 
         if (!existingTicket) {
-          // Format: PREFIX + SEQUENTIAL_NUMBER
-          // Examples:
-          // - "Code Caravan 3.0" -> CC3001, CC3002, CC3003
-          // - "HANGOVER" -> TKT-HAN001, TKT-HAN002
-          // - "DJ Night" -> TKT-DJN001, TKT-DJN002
           return qrCode;
         }
 
