@@ -36,6 +36,8 @@ import { healthCheck } from "./utils/healthCheck";
 import { sendError } from "./utils/responseMsg";
 import { isNewRelicAvailable } from "./utils/newrelic";
 import { newrelicMiddleware } from "./middlewares/newrelic.middleware";
+import { prometheusMiddleware } from "./middlewares/prometheus.middleware";
+import { getMetrics, getContentType } from "./utils/prometheusMetrics";
 
 const app = express();
 
@@ -90,6 +92,9 @@ app.use(
 
 // Add request ID tracking (before any logging)
 app.use(requestIdMiddleware);
+
+// Prometheus HTTP metrics (after request ID, before body parsing)
+app.use(prometheusMiddleware);
 
 // Body parsing with strict limits and optimized settings
 app.use(
@@ -180,25 +185,31 @@ if (isNewRelicAvailable()) {
   app.use(newrelicMiddleware);
 }
 
-// Metrics endpoint for monitoring (with basic auth in production)
-app.get("/metrics", async (_, res: Response) => {
+// Metrics endpoint — default: Prometheus text; Accept: application/json → legacy JSON
+app.get("/metrics", async (req: Request, res: Response) => {
   try {
-    const { collectMetrics, formatPrometheusMetrics } = await import(
-      "./utils/metrics"
-    );
-    const dbMetrics = await getDatabaseMetrics();
-    const appMetrics = collectMetrics();
-
-    // Support Prometheus format if requested
-    const acceptHeader = _.get("Accept") || "";
-    if (acceptHeader.includes("text/plain")) {
-      return res.type("text/plain").send(formatPrometheusMetrics(appMetrics));
+    const acceptHeader = req.get("Accept") || "";
+    if (acceptHeader.includes("application/json")) {
+      const { collectMetrics } = await import("./utils/metrics");
+      const dbMetrics = await getDatabaseMetrics();
+      return res.json({ database: dbMetrics, application: collectMetrics() });
     }
 
-    return res.json({
-      database: dbMetrics,
-      application: appMetrics,
-    });
+    // Default: Prometheus text format (for Prometheus scraper)
+    const metrics = await getMetrics();
+    return res.set("Content-Type", getContentType()).send(metrics);
+  } catch (error) {
+    logger.error("Error fetching metrics:", error);
+    return res.status(500).json({ error: "Failed to fetch metrics" });
+  }
+});
+
+// Explicit JSON-only metrics endpoint for internal dashboards
+app.get("/metrics/json", async (_: Request, res: Response) => {
+  try {
+    const { collectMetrics } = await import("./utils/metrics");
+    const dbMetrics = await getDatabaseMetrics();
+    return res.json({ database: dbMetrics, application: collectMetrics() });
   } catch (error) {
     logger.error("Error fetching metrics:", error);
     return res.status(500).json({ error: "Failed to fetch metrics" });
