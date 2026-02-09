@@ -3,5 +3,6 @@
 2. user buys the ticket and we add the ticket in the user but with the status of pending and then we update the status of the ticket to success after the payment is done
    else if not done completed in 5 min revert back or would just leave it as pending
 
-
 3 add the get to generate the checker with
+
+`ssh -L 9090:localhost:9090 -L 3001:localhost:3001 user@api.tixin.in`
