@@ -1,5 +1,4 @@
 services:
-
   backend:
     build:
       context: .
@@ -7,6 +6,7 @@ services:
     container_name: user_server
     restart: always
     ports:
-      - "7001:7001"
-    # env_file:
-    #   - ./servers/user-server/.env
+      - '7001:7001'
+    command: ['node', '-r', 'newrelic', 'dist/workers/index.worker.js']
+    env_file:
+      - ./servers/user-server/.env

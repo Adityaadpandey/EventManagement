@@ -5,7 +5,7 @@ services:
     container_name: backend-service-stag
     ports:
       - "7001:7001"
-    command: ["node", "dist/index.js"]
+    command: ["node", "-r", "newrelic", "dist/index.js"]
     environment:
       - NODE_ENV=production
       - HOST=0.0.0.0
