@@ -15,6 +15,12 @@ import {
   emailCircuitBreaker,
   smsCircuitBreaker,
 } from "./circuitBreaker";
+import {
+  emailQueue,
+  otpQueue,
+  notificationQueue,
+  analyticsQueue,
+} from "../lib/queues";
 
 // Custom registry — keeps prom-client metrics isolated from New Relic
 export const registry = new Registry();
@@ -69,6 +75,52 @@ export const circuitBreakerSuccessCount = new Gauge({
   registers: [registry],
 });
 
+// ── Device / client category tracking ───────────────────────────────
+
+export const httpRequestsByDevice = new Counter({
+  name: "http_requests_by_device_total",
+  help: "HTTP requests by device category",
+  labelNames: ["device"] as const,
+  registers: [registry],
+});
+
+// ── BullMQ worker queue gauges ──────────────────────────────────────
+
+export const bullmqWaiting = new Gauge({
+  name: "bullmq_queue_waiting",
+  help: "Number of waiting jobs in BullMQ queue",
+  labelNames: ["queue"] as const,
+  registers: [registry],
+});
+
+export const bullmqActive = new Gauge({
+  name: "bullmq_queue_active",
+  help: "Number of active jobs in BullMQ queue",
+  labelNames: ["queue"] as const,
+  registers: [registry],
+});
+
+export const bullmqCompleted = new Gauge({
+  name: "bullmq_queue_completed",
+  help: "Number of completed jobs in BullMQ queue",
+  labelNames: ["queue"] as const,
+  registers: [registry],
+});
+
+export const bullmqFailed = new Gauge({
+  name: "bullmq_queue_failed",
+  help: "Number of failed jobs in BullMQ queue",
+  labelNames: ["queue"] as const,
+  registers: [registry],
+});
+
+export const bullmqDelayed = new Gauge({
+  name: "bullmq_queue_delayed",
+  help: "Number of delayed jobs in BullMQ queue",
+  labelNames: ["queue"] as const,
+  registers: [registry],
+});
+
 // ── Circuit breaker sync helper ─────────────────────────────────────
 
 const stateToNum = (state: string): number => {
@@ -99,10 +151,41 @@ export const updateCircuitBreakerMetrics = (): void => {
   }
 };
 
+// ── BullMQ queue sync helper ────────────────────────────────────────
+
+const queues = {
+  emails: emailQueue,
+  otps: otpQueue,
+  notifications: notificationQueue,
+  analytics: analyticsQueue,
+};
+
+const updateQueueMetrics = async (): Promise<void> => {
+  for (const [name, queue] of Object.entries(queues)) {
+    try {
+      const counts = await queue.getJobCounts(
+        "waiting",
+        "active",
+        "completed",
+        "failed",
+        "delayed",
+      );
+      bullmqWaiting.labels(name).set(counts.waiting ?? 0);
+      bullmqActive.labels(name).set(counts.active ?? 0);
+      bullmqCompleted.labels(name).set(counts.completed ?? 0);
+      bullmqFailed.labels(name).set(counts.failed ?? 0);
+      bullmqDelayed.labels(name).set(counts.delayed ?? 0);
+    } catch {
+      // Queue may not be ready yet — skip silently
+    }
+  }
+};
+
 // ── Exports for the /metrics endpoint ───────────────────────────────
 
 export const getMetrics = async (): Promise<string> => {
   updateCircuitBreakerMetrics();
+  await updateQueueMetrics();
   return registry.metrics();
 };
 

@@ -8,6 +8,7 @@ import {
   httpRequestsTotal,
   httpRequestDuration,
   httpActiveRequests,
+  httpRequestsByDevice,
 } from "../utils/prometheusMetrics";
 
 /**
@@ -22,6 +23,28 @@ const normalizeRoute = (path: string): string => {
     ) // UUID
     .replace(/[0-9a-f]{24}/gi, ":id") // MongoDB ObjectId
     .replace(/\/\d+/g, "/:id"); // Numeric IDs
+};
+
+/**
+ * Classify user-agent into a low-cardinality device category.
+ */
+const classifyDevice = (ua: string): string => {
+  if (!ua) return "unknown";
+  const lower = ua.toLowerCase();
+  if (
+    /bot|crawl|spider|slurp|wget|curl|httpclient|python-requests|go-http|java\/|okhttp/i.test(
+      lower,
+    )
+  )
+    return "bot";
+  if (
+    /mobile|android|iphone|ipod|windows phone|opera mini|opera mobi/i.test(
+      lower,
+    )
+  )
+    return "mobile";
+  if (/ipad|tablet|kindle|silk|playbook/i.test(lower)) return "tablet";
+  return "desktop";
 };
 
 export const prometheusMiddleware = (
@@ -43,6 +66,10 @@ export const prometheusMiddleware = (
   const start = process.hrtime.bigint();
 
   httpActiveRequests.labels(method).inc();
+
+  // Track device category
+  const device = classifyDevice(req.get("User-Agent") || "");
+  httpRequestsByDevice.labels(device).inc();
 
   res.on("finish", () => {
     const route = normalizeRoute(req.path);
