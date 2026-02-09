@@ -2,9 +2,9 @@
  * New Relic middleware for enhanced tracking
  */
 
-import type { Request, Response, NextFunction } from "express";
-import { addCustomAttributes, recordCustomEvent } from "../utils/newrelic";
+import type { NextFunction, Response } from "express";
 import type { AuthenticatedRequest } from "../types/auth";
+import { addCustomAttributes, recordCustomEvent } from "../utils/newrelic";
 
 /**
  * Add custom attributes to New Relic transactions

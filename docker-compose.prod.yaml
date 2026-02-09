@@ -5,7 +5,7 @@ services:
     container_name: backend-service
     ports:
       - "7001:7001"
-    command: ["node", "dist/bin.js"]
+    command: ["node", "-r", "newrelic", "dist/bin.js"]
     environment:
       - NODE_ENV=production
       - NODE_OPTIONS=--max-old-space-size=2048
@@ -50,10 +50,11 @@ services:
     image: adppandey/backend-user-service:latest
     pull_policy: always
     container_name: worker
-    command: ["node", "dist/workers/index.worker.js"]
+    command: ["node", "-r", "newrelic", "dist/workers/index.worker.js"]
     environment:
       - NODE_ENV=production
       - NODE_OPTIONS=--max-old-space-size=1024
+      - NEW_RELIC_APP_NAME=tixin-workers
     env_file:
       - .env
     volumes:
