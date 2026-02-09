@@ -34,12 +34,8 @@ import { getDatabaseMetrics } from "./utils/databseMatrices";
 import { setupGracefulShutdown } from "./utils/gracefullShutdown";
 import { healthCheck } from "./utils/healthCheck";
 import { sendError } from "./utils/responseMsg";
-if (process.env.NEW_RELIC_LICENSE_KEY) {
-  require("newrelic");
-  console.log("New Relic agent loaded");
-} else {
-  console.log("New Relic not configured (no license key found)");
-}
+import { isNewRelicAvailable } from "./utils/newrelic";
+import { newrelicMiddleware } from "./middlewares/newrelic.middleware";
 
 const app = express();
 
@@ -178,6 +174,11 @@ app.get("/health", async (_, res: Response) => {
 
 // Request middleware (logs all requests except health checks)
 app.use(reqMiddleware);
+
+// New Relic custom transaction tracking
+if (isNewRelicAvailable()) {
+  app.use(newrelicMiddleware);
+}
 
 // Metrics endpoint for monitoring (with basic auth in production)
 app.get("/metrics", async (_, res: Response) => {

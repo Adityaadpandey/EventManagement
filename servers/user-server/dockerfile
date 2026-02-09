@@ -31,6 +31,7 @@ WORKDIR /workspace
 COPY --from=builder /workspace/packages ./packages
 COPY --from=builder /workspace/servers/user-server/dist ./servers/user-server/dist
 COPY --from=builder /workspace/servers/user-server/package*.json ./servers/user-server/
+COPY --from=builder /workspace/servers/user-server/newrelic.js ./servers/user-server/newrelic.js
 
 WORKDIR /workspace/servers/user-server
 
@@ -50,4 +51,4 @@ RUN pnpm install --prod
 
 EXPOSE 7001
 
-CMD ["node", "dist/bin.js"]
+CMD ["node", "-r", "newrelic", "dist/bin.js"]
