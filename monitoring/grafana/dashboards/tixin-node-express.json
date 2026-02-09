@@ -1,10 +1,8 @@
 {
-  "annotations": {
-    "list": []
-  },
+  "annotations": { "list": [] },
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 1,
+  "graphTooltip": 2,
   "id": null,
   "links": [],
   "panels": [
@@ -16,31 +14,27 @@
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": {
-            "axisBorderShow": false,
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "auto",
-            "spanNulls": false
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
           },
           "unit": "reqps"
-        },
-        "overrides": []
+        }
       },
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 1 },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
       "id": 1,
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "single" }
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
       },
       "title": "Request Rate",
-      "type": "timeseries",
+      "type": "stat",
       "targets": [
         {
           "expr": "sum(rate(http_requests_total{app=\"tixin-backend\"}[5m]))",
@@ -50,41 +44,110 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "red", "mode": "fixed" },
-          "custom": {
-            "axisBorderShow": false,
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "auto",
-            "spanNulls": false
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0.01 }
+            ]
           },
           "unit": "reqps"
-        },
-        "overrides": []
+        }
       },
-      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 1 },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
       "id": 2,
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "single" }
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
       },
-      "title": "Error Rate (5xx)",
-      "type": "timeseries",
+      "title": "5xx Rate",
+      "type": "stat",
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{app=\"tixin-backend\", status_code=~\"5..\"}[5m]))",
+          "expr": "sum(rate(http_requests_total{app=\"tixin-backend\", status_code=~\"5..\"}[5m])) or vector(0)",
           "legendFormat": "5xx/s",
           "refId": "A"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.05 },
+              { "color": "red", "value": 0.1 }
+            ]
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 3,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
+      },
+      "title": "Error %",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{app=\"tixin-backend\", status_code=~\"5..\"}[5m])) / sum(rate(http_requests_total{app=\"tixin-backend\"}[5m])) or vector(0)",
+          "legendFormat": "error ratio",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 4,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
+      },
+      "title": "Avg Latency",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "rate(http_request_duration_seconds_sum{app=\"tixin-backend\"}[5m]) / rate(http_request_duration_seconds_count{app=\"tixin-backend\"}[5m])",
+          "legendFormat": "avg",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -96,55 +159,45 @@
               { "color": "red", "value": 100 }
             ]
           }
-        },
-        "overrides": []
+        }
       },
-      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 1 },
-      "id": 3,
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "id": 5,
       "options": {
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "background"
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
       },
       "title": "Active Requests",
       "type": "stat",
       "targets": [
         {
           "expr": "sum(http_active_requests{app=\"tixin-backend\"})",
-          "legendFormat": "active",
+          "legendFormat": "in-flight",
           "refId": "A"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
-          "unit": "s",
           "thresholds": {
             "mode": "absolute",
             "steps": [{ "color": "green", "value": null }]
-          }
-        },
-        "overrides": []
+          },
+          "unit": "dtdurations"
+        }
       },
-      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 1 },
-      "id": 4,
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "id": 6,
       "options": {
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "orientation": "auto",
-        "textMode": "auto",
-        "colorMode": "value"
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "value",
+        "textMode": "value_and_name",
+        "orientation": "auto"
       },
       "title": "Uptime",
       "type": "stat",
@@ -157,14 +210,56 @@
       ]
     },
     {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
-      "id": 101,
-      "title": "Latency",
-      "type": "row"
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "gradientMode": "opacity"
+          },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "id": 7,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Request Rate Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{app=\"tixin-backend\"}[5m]))",
+          "legendFormat": "total req/s",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{app=\"tixin-backend\", status_code=~\"2..\"}[5m]))",
+          "legendFormat": "2xx/s",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{app=\"tixin-backend\", status_code=~\"4..\"}[5m]))",
+          "legendFormat": "4xx/s",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{app=\"tixin-backend\", status_code=~\"5..\"}[5m]))",
+          "legendFormat": "5xx/s",
+          "refId": "D"
+        }
+      ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -174,20 +269,61 @@
             "fillOpacity": 10,
             "lineWidth": 2,
             "pointSize": 5,
-            "showPoints": "auto",
+            "showPoints": "never",
             "spanNulls": false
           },
-          "unit": "s"
-        },
-        "overrides": []
+          "unit": "short"
+        }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
-      "id": 5,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "id": 8,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi" }
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
-      "title": "Request Latency Percentiles",
+      "title": "Total Requests (cumulative)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(http_requests_total{app=\"tixin-backend\"}) by (status_code)",
+          "legendFormat": "{{status_code}}",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "id": 101,
+      "title": "Latency",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false,
+            "gradientMode": "opacity"
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 14 },
+      "id": 10,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Latency Percentiles (global)",
       "type": "timeseries",
       "targets": [
         {
@@ -196,19 +332,24 @@
           "refId": "A"
         },
         {
+          "expr": "histogram_quantile(0.90, sum(rate(http_request_duration_seconds_bucket{app=\"tixin-backend\"}[5m])) by (le))",
+          "legendFormat": "p90",
+          "refId": "B"
+        },
+        {
           "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{app=\"tixin-backend\"}[5m])) by (le))",
           "legendFormat": "p95",
-          "refId": "B"
+          "refId": "C"
         },
         {
           "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{app=\"tixin-backend\"}[5m])) by (le))",
           "legendFormat": "p99",
-          "refId": "C"
+          "refId": "D"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -218,20 +359,24 @@
             "fillOpacity": 10,
             "lineWidth": 2,
             "pointSize": 5,
-            "showPoints": "auto",
+            "showPoints": "never",
             "spanNulls": false
           },
           "unit": "s"
-        },
-        "overrides": []
+        }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
-      "id": 6,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 14 },
+      "id": 11,
       "options": {
-        "legend": { "displayMode": "table", "placement": "right" },
-        "tooltip": { "mode": "multi" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
-      "title": "Latency by Route (p95)",
+      "title": "p95 Latency by Route",
       "type": "timeseries",
       "targets": [
         {
@@ -242,36 +387,136 @@
       ]
     },
     {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 14 },
+      "id": 12,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Avg Latency by Route",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(http_request_duration_seconds_sum{app=\"tixin-backend\"}[5m])) by (route) / sum(rate(http_request_duration_seconds_count{app=\"tixin-backend\"}[5m])) by (route)",
+          "legendFormat": "{{route}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "id": 13,
+      "options": {
+        "calculate": true,
+        "yAxis": { "unit": "s" },
+        "cellGap": 1,
+        "color": { "mode": "scheme", "scheme": "Oranges" },
+        "tooltip": { "show": true }
+      },
+      "title": "Request Duration Heatmap",
+      "type": "heatmap",
+      "targets": [
+        {
+          "expr": "sum(increase(http_request_duration_seconds_bucket{app=\"tixin-backend\"}[5m])) by (le)",
+          "legendFormat": "{{le}}",
+          "refId": "A",
+          "format": "heatmap"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "id": 14,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true
+      },
+      "title": "Slowest Routes (p99)",
+      "type": "bargauge",
+      "targets": [
+        {
+          "expr": "topk(10, histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{app=\"tixin-backend\"}[5m])) by (le, route)))",
+          "legendFormat": "{{route}}",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 },
       "id": 102,
-      "title": "Traffic",
+      "title": "Traffic Breakdown",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
             "axisBorderShow": false,
             "drawStyle": "bars",
-            "fillOpacity": 50,
+            "fillOpacity": 60,
             "lineWidth": 1,
-            "pointSize": 5,
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "mode": "normal" }
+            "stacking": { "mode": "normal" },
+            "gradientMode": "opacity"
           },
           "unit": "reqps"
-        },
-        "overrides": []
+        }
       },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 19 },
-      "id": 7,
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 31 },
+      "id": 20,
       "options": {
-        "legend": { "displayMode": "table", "placement": "right" },
-        "tooltip": { "mode": "multi" }
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "title": "Traffic by Route",
       "type": "timeseries",
@@ -284,29 +529,27 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
             "axisBorderShow": false,
             "drawStyle": "bars",
-            "fillOpacity": 50,
+            "fillOpacity": 60,
             "lineWidth": 1,
-            "pointSize": 5,
             "showPoints": "never",
             "spanNulls": false,
             "stacking": { "mode": "normal" }
           },
           "unit": "reqps"
-        },
-        "overrides": []
+        }
       },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 19 },
-      "id": 8,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 31 },
+      "id": 21,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi" }
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "title": "Traffic by Status Code",
       "type": "timeseries",
@@ -319,29 +562,27 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
             "axisBorderShow": false,
             "drawStyle": "bars",
-            "fillOpacity": 50,
+            "fillOpacity": 60,
             "lineWidth": 1,
-            "pointSize": 5,
             "showPoints": "never",
             "spanNulls": false,
             "stacking": { "mode": "normal" }
           },
           "unit": "reqps"
-        },
-        "overrides": []
+        }
       },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 19 },
-      "id": 9,
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 31 },
+      "id": 22,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi" }
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "title": "Traffic by Method",
       "type": "timeseries",
@@ -354,35 +595,102 @@
       ]
     },
     {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0.01 },
+              { "color": "red", "value": 0.05 }
+            ]
+          },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 39 },
+      "id": 23,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true
+      },
+      "title": "4xx Rate by Route",
+      "type": "bargauge",
+      "targets": [
+        {
+          "expr": "topk(10, sum(rate(http_requests_total{app=\"tixin-backend\", status_code=~\"4..\"}[5m])) by (route))",
+          "legendFormat": "{{route}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0.01 }
+            ]
+          },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 39 },
+      "id": 24,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true
+      },
+      "title": "5xx Rate by Route",
+      "type": "bargauge",
+      "targets": [
+        {
+          "expr": "topk(10, sum(rate(http_requests_total{app=\"tixin-backend\", status_code=~\"5..\"}[5m])) by (route))",
+          "legendFormat": "{{route}}",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 47 },
       "id": 103,
       "title": "Node.js Runtime",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
             "axisBorderShow": false,
             "drawStyle": "line",
-            "fillOpacity": 15,
+            "fillOpacity": 20,
             "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "auto",
-            "spanNulls": false
+            "showPoints": "never",
+            "spanNulls": false,
+            "gradientMode": "opacity"
           },
           "unit": "bytes"
-        },
-        "overrides": []
+        }
       },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 28 },
-      "id": 10,
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 48 },
+      "id": 30,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi" }
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "title": "Heap Memory",
       "type": "timeseries",
@@ -396,45 +704,59 @@
           "expr": "nodejs_heap_size_total_bytes{app=\"tixin-backend\"}",
           "legendFormat": "heap total",
           "refId": "B"
+        },
+        {
+          "expr": "nodejs_external_memory_bytes{app=\"tixin-backend\"}",
+          "legendFormat": "external",
+          "refId": "C"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
             "axisBorderShow": false,
             "drawStyle": "line",
-            "fillOpacity": 15,
+            "fillOpacity": 20,
             "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "auto",
-            "spanNulls": false
+            "showPoints": "never",
+            "spanNulls": false,
+            "gradientMode": "opacity"
           },
           "unit": "bytes"
-        },
-        "overrides": []
+        }
       },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 28 },
-      "id": 11,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 48 },
+      "id": 31,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "single" }
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
-      "title": "Process RSS",
+      "title": "Process Memory (RSS & Heap)",
       "type": "timeseries",
       "targets": [
         {
           "expr": "process_resident_memory_bytes{app=\"tixin-backend\"}",
           "legendFormat": "RSS",
           "refId": "A"
+        },
+        {
+          "expr": "process_virtual_memory_bytes{app=\"tixin-backend\"}",
+          "legendFormat": "virtual",
+          "refId": "B"
+        },
+        {
+          "expr": "nodejs_heap_size_used_bytes{app=\"tixin-backend\"}",
+          "legendFormat": "heap used",
+          "refId": "C"
         }
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -443,39 +765,117 @@
             "drawStyle": "line",
             "fillOpacity": 15,
             "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "auto",
+            "showPoints": "never",
             "spanNulls": false
           },
           "unit": "s"
-        },
-        "overrides": []
+        }
       },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 28 },
-      "id": 12,
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 48 },
+      "id": 32,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "single" }
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "title": "Event Loop Lag",
       "type": "timeseries",
       "targets": [
         {
           "expr": "nodejs_eventloop_lag_seconds{app=\"tixin-backend\"}",
-          "legendFormat": "lag",
+          "legendFormat": "mean lag",
+          "refId": "A"
+        },
+        {
+          "expr": "nodejs_eventloop_lag_p99_seconds{app=\"tixin-backend\"}",
+          "legendFormat": "p99 lag",
+          "refId": "B"
+        },
+        {
+          "expr": "nodejs_eventloop_lag_p50_seconds{app=\"tixin-backend\"}",
+          "legendFormat": "p50 lag",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 56 },
+      "id": 33,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Heap Spaces",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "nodejs_heap_space_size_used_bytes{app=\"tixin-backend\"}",
+          "legendFormat": "{{space}}",
           "refId": "A"
         }
       ]
     },
     {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 56 },
+      "id": 34,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "GC Duration",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(nodejs_gc_duration_seconds_sum{app=\"tixin-backend\"}[5m])",
+          "legendFormat": "{{kind}} (rate)",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 64 },
       "id": 104,
       "title": "Circuit Breakers",
       "type": "row"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "thresholds" },
@@ -497,17 +897,12 @@
               "type": "value"
             }
           ]
-        },
-        "overrides": []
+        }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 37 },
-      "id": 13,
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 65 },
+      "id": 40,
       "options": {
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
+        "reduceOptions": { "calcs": ["lastNotNull"] },
         "orientation": "auto",
         "textMode": "auto",
         "colorMode": "background"
@@ -523,7 +918,7 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -532,59 +927,88 @@
             "drawStyle": "line",
             "fillOpacity": 10,
             "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "auto",
+            "showPoints": "never",
             "spanNulls": false
           }
-        },
-        "overrides": []
+        }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 37 },
-      "id": 14,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 65 },
+      "id": 41,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi" }
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
-      "title": "Circuit Breaker Failure Count",
+      "title": "CB Failure Count",
       "type": "timeseries",
       "targets": [
         {
           "expr": "circuit_breaker_failure_count{app=\"tixin-backend\"}",
-          "legendFormat": "{{service}}",
+          "legendFormat": "{{service}} failures",
           "refId": "A"
         }
       ]
     },
     {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 45 },
-      "id": 105,
-      "title": "System / CPU",
-      "type": "row"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
           "custom": {
             "axisBorderShow": false,
             "drawStyle": "line",
-            "fillOpacity": 15,
+            "fillOpacity": 10,
             "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "auto",
+            "showPoints": "never",
             "spanNulls": false
-          },
-          "unit": "s"
-        },
-        "overrides": []
+          }
+        }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 46 },
-      "id": 15,
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 65 },
+      "id": 42,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "multi" }
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "CB Success Count",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "circuit_breaker_success_count{app=\"tixin-backend\"}",
+          "legendFormat": "{{service}} successes",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 73 },
+      "id": 105,
+      "title": "System / CPU",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false,
+            "gradientMode": "opacity"
+          },
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 74 },
+      "id": 50,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "title": "Process CPU Usage",
       "type": "timeseries",
@@ -602,7 +1026,7 @@
       ]
     },
     {
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
       "fieldConfig": {
         "defaults": {
           "color": { "mode": "palette-classic" },
@@ -611,18 +1035,16 @@
             "drawStyle": "line",
             "fillOpacity": 15,
             "lineWidth": 2,
-            "pointSize": 5,
-            "showPoints": "auto",
+            "showPoints": "never",
             "spanNulls": false
           }
-        },
-        "overrides": []
+        }
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 46 },
-      "id": 16,
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 74 },
+      "id": 51,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom" },
-        "tooltip": { "mode": "single" }
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "title": "Active Handles & Requests",
       "type": "timeseries",
@@ -638,15 +1060,364 @@
           "refId": "B"
         }
       ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 74 },
+      "id": 52,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "single" }
+      },
+      "title": "Open File Descriptors",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "process_open_fds{app=\"tixin-backend\"}",
+          "legendFormat": "open FDs",
+          "refId": "A"
+        },
+        {
+          "expr": "process_max_fds{app=\"tixin-backend\"}",
+          "legendFormat": "max FDs",
+          "refId": "B"
+        }
+      ]
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 82 },
+      "id": 106,
+      "title": "Worker Queues (BullMQ)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 50 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 83 },
+      "id": 60,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
+      },
+      "title": "Waiting Jobs",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "bullmq_queue_waiting{app=\"tixin-backend\"}",
+          "legendFormat": "{{queue}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "purple", "value": 5 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 83 },
+      "id": 61,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
+      },
+      "title": "Active Jobs",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "bullmq_queue_active{app=\"tixin-backend\"}",
+          "legendFormat": "{{queue}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 83 },
+      "id": 62,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
+      },
+      "title": "Failed Jobs",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "bullmq_queue_failed{app=\"tixin-backend\"}",
+          "legendFormat": "{{queue}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "super-light-yellow", "value": null },
+              { "color": "orange", "value": 10 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 83 },
+      "id": 63,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "value_and_name",
+        "orientation": "auto"
+      },
+      "title": "Delayed Jobs",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "bullmq_queue_delayed{app=\"tixin-backend\"}",
+          "legendFormat": "{{queue}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "drawStyle": "line",
+            "fillOpacity": 15,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false,
+            "gradientMode": "opacity"
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 89 },
+      "id": 64,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Queue Depth Over Time (waiting + active)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "bullmq_queue_waiting{app=\"tixin-backend\"} + bullmq_queue_active{app=\"tixin-backend\"}",
+          "legendFormat": "{{queue}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 89 },
+      "id": 65,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "sortBy": "Last *",
+          "sortDesc": true
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Failed Jobs Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "bullmq_queue_failed{app=\"tixin-backend\"}",
+          "legendFormat": "{{queue}} failed",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 97 },
+      "id": 107,
+      "title": "Device / Client Info",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 98 },
+      "id": 70,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "pieType": "donut",
+        "tooltip": { "mode": "single" },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": ["value", "percent"]
+        }
+      },
+      "title": "Requests by Device Category",
+      "type": "piechart",
+      "targets": [
+        {
+          "expr": "http_requests_by_device_total{app=\"tixin-backend\"}",
+          "legendFormat": "{{device}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "mode": "normal" },
+            "gradientMode": "opacity"
+          },
+          "unit": "reqps"
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 98 },
+      "id": 71,
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "title": "Device Traffic Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_by_device_total{app=\"tixin-backend\"}[5m])) by (device)",
+          "legendFormat": "{{device}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "tixin-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
+          "unit": "percentunit"
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 98 },
+      "id": 72,
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true
+      },
+      "title": "Device Share (%)",
+      "type": "bargauge",
+      "targets": [
+        {
+          "expr": "http_requests_by_device_total{app=\"tixin-backend\"} / ignoring(device) group_left sum(http_requests_by_device_total{app=\"tixin-backend\"})",
+          "legendFormat": "{{device}}",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "schemaVersion": 39,
   "tags": ["nodejs", "express", "tixin"],
   "templating": { "list": [] },
   "time": { "from": "now-1h", "to": "now" },
-  "timepicker": {},
+  "timepicker": { "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"] },
   "timezone": "browser",
   "title": "Tixin Node.js / Express",
   "uid": "tixin-node-express",
-  "version": 1
+  "version": 3,
+  "refresh": "30s"
 }
