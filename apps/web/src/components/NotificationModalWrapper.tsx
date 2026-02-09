@@ -6,7 +6,6 @@ import NotificationModal from "./NotificationModal";
 import {
   subscribeToPushNotifications,
   isPushNotificationSupported,
-  isSubscribed,
 } from "@/lib/notifications";
 
 export default function NotificationModalWrapper() {
@@ -33,10 +32,10 @@ export default function NotificationModalWrapper() {
       // Only auto-subscribe if permission was already granted (returning user)
       if (Notification.permission !== "granted") return;
 
-      const alreadySubscribed = await isSubscribed();
-      if (alreadySubscribed) return;
-
       try {
+        // Always re-subscribe on login to ensure the server has a valid
+        // subscription with the current VAPID keys. subscribeToPushNotifications
+        // clears any old subscription before creating a new one.
         console.log("Auto-subscribing to push notifications on login...");
         await subscribeToPushNotifications(token);
         console.log("Auto-subscribe successful");
