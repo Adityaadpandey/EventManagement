@@ -23,11 +23,15 @@ export class WebhookController {
         return sendError(res, "Invalid webhook request", 400);
       }
 
-      // Create expected signature
-      const body = JSON.stringify(req.body);
+      // Get raw body (express.raw middleware provides Buffer in req.body)
+      const rawBody = Buffer.isBuffer(req.body)
+        ? req.body.toString("utf8")
+        : JSON.stringify(req.body);
+
+      // Create expected signature using raw body
       const expectedSignature = crypto
         .createHmac("sha256", webhookSecret)
-        .update(body)
+        .update(rawBody)
         .digest("hex");
 
       // Verify signature
@@ -36,8 +40,13 @@ export class WebhookController {
         return sendError(res, "Invalid signature", 400);
       }
 
-      const event = req.body.event;
-      const payload = req.body.payload.payment.entity;
+      // Parse the body for processing
+      const parsedBody = Buffer.isBuffer(req.body)
+        ? JSON.parse(rawBody)
+        : req.body;
+
+      const event = parsedBody.event;
+      const payload = parsedBody.payload.payment.entity;
 
       logInfo(req, "Received webhook event", { event, paymentId: payload.id });
 
