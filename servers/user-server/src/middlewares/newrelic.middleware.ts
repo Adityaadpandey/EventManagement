@@ -4,7 +4,11 @@
 
 import type { NextFunction, Response } from "express";
 import type { AuthenticatedRequest } from "../types/auth";
-import { addCustomAttributes, recordCustomEvent } from "../utils/newrelic";
+import {
+  addCustomAttributes,
+  recordCustomEvent,
+  getTransaction,
+} from "../utils/newrelic";
 
 /**
  * Add custom attributes to New Relic transactions
@@ -46,11 +50,24 @@ export const newrelicMiddleware = (
   // Track response time
   const startTime = Date.now();
 
-  // Capture response
-  res.on("finish", () => {
+  // Get the current transaction to add response attributes properly
+  const transaction = getTransaction();
+
+  // Intercept the res.end to capture response details before transaction ends
+  const originalEnd = res.end;
+  res.end = function (this: Response, ...args: any[]): Response {
     const duration = Date.now() - startTime;
 
-    // Record custom event for API calls
+    // Add response attributes while transaction is still active
+    if (transaction) {
+      addCustomAttributes({
+        statusCode: res.statusCode,
+        responseTime: duration,
+        success: res.statusCode < 400,
+      });
+    }
+
+    // Record custom event for API calls (events don't require active transaction)
     recordCustomEvent("ApiRequest", {
       requestId: req.requestId,
       method: req.method,
@@ -62,13 +79,9 @@ export const newrelicMiddleware = (
       success: res.statusCode < 400,
     });
 
-    // Add response attributes
-    addCustomAttributes({
-      statusCode: res.statusCode,
-      responseTime: duration,
-      success: res.statusCode < 400,
-    });
-  });
+    // Call the original end method
+    return originalEnd.apply(this, args);
+  };
 
   next();
 };
