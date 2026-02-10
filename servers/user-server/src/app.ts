@@ -7,16 +7,18 @@ import logger from "./config/logger";
 import { connectRedis } from "./config/redis";
 import { compressionMiddleware } from "./middlewares/compression.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
+import { newrelicMiddleware } from "./middlewares/newrelic.middleware";
+import { prometheusMiddleware } from "./middlewares/prometheus.middleware";
 import {
   adminLimiter,
   authLimiter,
-  // blockSuspiciousIPs,
-  // combinedLimiter,
+  blockSuspiciousIPs,
+  combinedLimiter,
   heavyOperationLimiter,
 } from "./middlewares/rate-limit.middleware";
 import { reqMiddleware } from "./middlewares/req.middleware";
 import { requestIdMiddleware } from "./middlewares/request-id.middleware";
-// import { securityMiddleware } from "./middlewares/security.middleware";
+import { securityMiddleware } from "./middlewares/security.middleware";
 import { adminRouter } from "./routes/v1/admin.router";
 import { authRouter } from "./routes/v1/auth.router";
 import { checkerRouter } from "./routes/v1/checker.router";
@@ -33,11 +35,9 @@ import { userRouter } from "./routes/v1/user.router";
 import { getDatabaseMetrics } from "./utils/databseMatrices";
 import { setupGracefulShutdown } from "./utils/gracefullShutdown";
 import { healthCheck } from "./utils/healthCheck";
-import { sendError } from "./utils/responseMsg";
 import { isNewRelicAvailable } from "./utils/newrelic";
-import { newrelicMiddleware } from "./middlewares/newrelic.middleware";
-import { prometheusMiddleware } from "./middlewares/prometheus.middleware";
-import { getMetrics, getContentType } from "./utils/prometheusMetrics";
+import { getContentType, getMetrics } from "./utils/prometheusMetrics";
+import { sendError } from "./utils/responseMsg";
 
 const app = express();
 
@@ -157,13 +157,13 @@ app.use(
 );
 
 // DDoS Protection Layer 1: Block known suspicious IPs
-// app.use(blockSuspiciousIPs);
+app.use(blockSuspiciousIPs);
 
 // DDoS Protection Layer 2: Security middleware (attack pattern detection)
-// app.use(securityMiddleware);
+app.use(securityMiddleware);
 
 // DDoS Protection Layer 3: Rate limiting
-// app.use(combinedLimiter);
+app.use(combinedLimiter);
 
 app.get("/health", async (_, res: Response) => {
   const status = await healthCheck();
