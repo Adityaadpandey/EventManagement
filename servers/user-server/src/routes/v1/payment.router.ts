@@ -1,4 +1,5 @@
 import { Router } from "express";
+import express from "express";
 import { PaymentController } from "../../controllers/payment.controller";
 import { WebhookController } from "../../controllers/webhook.controller";
 import { authMiddleware, requireRole } from "../../middlewares/auth.middleware";
@@ -7,8 +8,10 @@ const router = Router();
 const paymentController = new PaymentController();
 const webhookController = new WebhookController();
 
+// Webhook route needs raw body for signature verification
 router.post(
   "/webhook",
+  express.raw({ type: "application/json" }),
   webhookController.handlePaymentWebhook.bind(webhookController),
 );
 
