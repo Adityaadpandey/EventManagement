@@ -97,13 +97,17 @@ app.use(requestIdMiddleware);
 app.use(prometheusMiddleware);
 
 // Body parsing with strict limits and optimized settings
-app.use(
+// Skip JSON parsing for webhook routes that need raw body for signature verification
+app.use((req, res, next) => {
+  if (req.path === "/api/v1/payment/webhook") {
+    return next();
+  }
   express.json({
     limit: "5mb",
     strict: true, // Only parse arrays and objects
     type: "application/json",
-  }),
-);
+  })(req, res, next);
+});
 
 app.use(
   express.urlencoded({
