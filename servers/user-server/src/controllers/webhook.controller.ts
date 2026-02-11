@@ -24,9 +24,17 @@ export class WebhookController {
       }
 
       // Get raw body (express.raw middleware provides Buffer in req.body)
-      const rawBody = Buffer.isBuffer(req.body)
+      const isBuffer = Buffer.isBuffer(req.body);
+      const rawBody = isBuffer
         ? req.body.toString("utf8")
         : JSON.stringify(req.body);
+
+      // Log body type for debugging
+      logInfo(req, "Webhook body type check", {
+        isBuffer,
+        bodyType: typeof req.body,
+        bodyLength: rawBody.length,
+      });
 
       // Create expected signature using raw body
       const expectedSignature = crypto
@@ -36,7 +44,11 @@ export class WebhookController {
 
       // Verify signature
       if (expectedSignature !== webhookSignature) {
-        logError(req, "Invalid webhook signature");
+        logError(req, "Invalid webhook signature", {
+          expectedSignature,
+          receivedSignature: webhookSignature,
+          bodyPreview: rawBody.substring(0, 100),
+        });
         return sendError(res, "Invalid signature", 400);
       }
 
