@@ -15,8 +15,8 @@ const FIELD_TYPES = [
 
 const CustomFieldsManager = memo(({ customFields, onChange }) => {
   const addCustomField = useCallback(() => {
-    if (customFields.length >= 20) {
-      alert("Maximum 20 custom fields allowed");
+    if (customFields.length >= 40) {
+      alert("Maximum 40 custom fields allowed");
       return;
     }
 
@@ -73,8 +73,8 @@ const CustomFieldsManager = memo(({ customFields, onChange }) => {
 
   const duplicateField = useCallback(
     (index) => {
-      if (customFields.length >= 20) {
-        alert("Maximum 20 custom fields allowed");
+      if (customFields.length >= 40) {
+        alert("Maximum 40 custom fields allowed");
         return;
       }
 
@@ -116,16 +116,16 @@ const CustomFieldsManager = memo(({ customFields, onChange }) => {
         <div>
           <h2 className="text-2xl font-semibold">Custom Fields</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Collect additional information from attendees (max 20 fields)
+            Collect additional information from attendees (max 40 fields)
           </p>
         </div>
         <button
           type="button"
           onClick={addCustomField}
-          disabled={customFields.length >= 20}
+          disabled={customFields.length >= 40}
           className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          + Add Field ({customFields.length}/20)
+          + Add Field ({customFields.length}/40)
         </button>
       </div>
 
@@ -222,7 +222,7 @@ const CustomFieldsManager = memo(({ customFields, onChange }) => {
               <button
                 type="button"
                 onClick={() => duplicateField(index)}
-                disabled={customFields.length >= 20}
+                disabled={customFields.length >= 40}
                 className="p-1 text-blue-500 hover:text-blue-700 disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Duplicate"
               >
