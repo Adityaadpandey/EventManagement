@@ -65,7 +65,7 @@ export const ticketTypeSchema = z.object({
   salesCutoff: z.string().optional().nullable(),
   customField: z
     .array(customFieldSchema)
-    .max(20, "Cannot exceed 20 custom fields per ticket type")
+    .max(60, "Cannot exceed 60 custom fields per ticket type")
     .optional(),
 });
 
