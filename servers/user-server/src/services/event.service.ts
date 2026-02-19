@@ -592,6 +592,13 @@ export class EventService {
       const event = await prisma.event.findUnique({
         where: { eventId },
         include: {
+          lister: {
+            include: {
+              user: {
+                select: { userId: true },
+              },
+            },
+          },
           Ticket: {
             include: {
               user: {
@@ -606,7 +613,19 @@ export class EventService {
         throw new NotFoundError("Event not found");
       }
 
-      if (event.availableMailUpdates <= 0) {
+      // Verify the caller owns this event (admins bypass via controller)
+      if (event.lister.user.userId !== userId) {
+        throw new ForbiddenError(
+          "You do not have permission to send updates for this event",
+        );
+      }
+
+      // Atomically decrement the counter — this prevents race conditions
+      const decrementResult = await prisma.event.updateMany({
+        where: { eventId, availableMailUpdates: { gt: 0 } },
+        data: { availableMailUpdates: { decrement: 1 } },
+      });
+      if (decrementResult.count === 0) {
         throw new BadRequestError(
           "No more email updates available for this event",
         );
@@ -690,11 +709,7 @@ export class EventService {
         });
       }
 
-      // Decrement available updates and invalidate cache
-      await prisma.event.update({
-        where: { eventId },
-        data: { availableMailUpdates: { decrement: 1 } },
-      });
+      // Invalidate cache (decrement already done atomically above)
       await invalidateEventCaches(eventId, userId);
 
       return {
