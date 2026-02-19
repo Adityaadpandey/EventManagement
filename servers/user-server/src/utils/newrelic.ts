@@ -4,13 +4,22 @@
 
 let newrelic: any = null;
 
-// Only load New Relic if license key is present
-if (process.env.NEW_RELIC_LICENSE_KEY) {
+// Only load New Relic if license key is present AND in production
+// To enable in development, set NEW_RELIC_ENABLED=true
+const shouldLoadNewRelic =
+  process.env.NEW_RELIC_LICENSE_KEY &&
+  (process.env.NODE_ENV === "production" ||
+    process.env.NEW_RELIC_ENABLED === "true");
+
+if (shouldLoadNewRelic) {
   try {
     newrelic = require("newrelic");
+    console.log("✓ New Relic monitoring enabled");
   } catch (error) {
     console.warn("New Relic not available:", error);
   }
+} else if (process.env.NODE_ENV !== "production") {
+  console.log("ℹ New Relic disabled for local development");
 }
 
 /**
