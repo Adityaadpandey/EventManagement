@@ -43,6 +43,11 @@
   "keywords": [],
   "author": "aditya",
   "license": "ISC",
+  "pnpm": {
+    "overrides": {
+      "ioredis": "^5.9.3"
+    }
+  },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.917.0",
     "@prisma/adapter-pg": "^7.0.0",
