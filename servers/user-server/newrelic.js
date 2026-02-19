@@ -16,9 +16,13 @@ exports.config = {
 
   /**
    * Logging level
+   * Options: 'fatal', 'error', 'warn', 'info', 'debug', 'trace'
+   * Use 'warn' for local development to reduce noise
    */
   logging: {
-    level: process.env.NEW_RELIC_LOG_LEVEL || "info",
+    level:
+      process.env.NEW_RELIC_LOG_LEVEL ||
+      (process.env.NODE_ENV === "production" ? "info" : "warn"),
     filepath: "stdout",
   },
 
