@@ -19,6 +19,7 @@ type ListerEvent = {
   banner_square: string | null;
   banner_horizontal: string | null;
   location: string | null;
+  availableMailUpdates: number;
 };
 
 function formatDate(dateStr: string) {
