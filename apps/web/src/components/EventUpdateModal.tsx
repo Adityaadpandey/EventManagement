@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Mail, X } from "lucide-react";
+import { useId, useState } from "react";
 import api from "@/lib/api";
 
 type Props = {
@@ -19,6 +19,9 @@ export default function EventUpdateModal({
   onClose,
   onSuccess,
 }: Props) {
+  const messageId = useId();
+  const imageId = useId();
+
   const [message, setMessage] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,16 +41,19 @@ export default function EventUpdateModal({
       });
       onSuccess(eventId);
       onClose();
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.message || "Failed to send update. Try again.",
-      );
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Failed to send update. Try again.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: backdrop click-to-close is standard modal UX
+    // biome-ignore lint/a11y/useKeyWithClickEvents: backdrop click-to-close is standard modal UX
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
       onClick={(e) => {
@@ -66,6 +72,7 @@ export default function EventUpdateModal({
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors mt-0.5"
             aria-label="Close"
@@ -97,14 +104,14 @@ export default function EventUpdateModal({
             {/* Message textarea */}
             <div className="flex flex-col gap-1.5">
               <label
-                htmlFor="update-message"
+                htmlFor={messageId}
                 className="text-sm font-medium text-gray-700"
               >
                 Message to attendees
                 <span className="text-red-500 ml-0.5">*</span>
               </label>
               <textarea
-                id="update-message"
+                id={messageId}
                 rows={4}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -120,14 +127,14 @@ export default function EventUpdateModal({
             {/* Image URL (optional) */}
             <div className="flex flex-col gap-1.5">
               <label
-                htmlFor="update-image"
+                htmlFor={imageId}
                 className="text-sm font-medium text-gray-700"
               >
                 Image URL{" "}
                 <span className="text-gray-400 font-normal">(optional)</span>
               </label>
               <input
-                id="update-image"
+                id={imageId}
                 type="url"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
