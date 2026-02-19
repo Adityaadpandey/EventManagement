@@ -474,6 +474,13 @@ export class EventService {
               },
             },
           },
+          CustomField: {
+            include: {
+              _count: {
+                select: { AttendeeFieldResponse: true },
+              },
+            },
+          },
         },
       });
 
@@ -517,8 +524,15 @@ export class EventService {
       }
 
       // Handle custom fields if provided
-      // Custom fields can be safely replaced as they don't have critical dependencies
       if (customFields && customFields.length > 0) {
+        const hasFieldResponses = existingEvent.CustomField.some(
+          (cf) => cf._count.AttendeeFieldResponse > 0,
+        );
+        if (hasFieldResponses) {
+          throw new BadRequestError(
+            "Cannot modify or delete custom fields after attendees have submitted responses. You can only add new custom fields.",
+          );
+        }
         updatePayload.CustomField = {
           deleteMany: {},
           create: customFields.map((f: any) => ({
