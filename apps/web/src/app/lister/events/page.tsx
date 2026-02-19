@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
-import { BarChart, Edit, Users } from "lucide-react";
+import { BarChart, Edit, Mail, Users } from "lucide-react";
+import EventUpdateModal from "@/components/EventUpdateModal";
 
 type ListerEvent = {
   eventId: string;
@@ -56,6 +57,22 @@ export default function ListerEventsPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [updateModalEvent, setUpdateModalEvent] = useState<ListerEvent | null>(
+    null,
+  );
+
+  const handleUpdateSuccess = (eventId: string) => {
+    setItems((prev) =>
+      prev.map((ev) =>
+        ev.eventId === eventId
+          ? {
+              ...ev,
+              availableMailUpdates: Math.max(0, ev.availableMailUpdates - 1),
+            }
+          : ev,
+      ),
+    );
+  };
 
   useEffect(() => {
     let cancel = false;
@@ -210,10 +227,38 @@ export default function ListerEventsPage() {
                 >
                   <Users /> Attendees
                 </Link>
+
+                <button
+                  onClick={() => setUpdateModalEvent(ev)}
+                  className="text-gray-700 hover:text-gray-900 transition duration-200 flex items-center gap-2 justify-center sm:justify-start border border-gray-200 rounded-md px-3 py-2 hover:bg-gray-50"
+                >
+                  <Mail size={16} />
+                  Send Update
+                  {ev.availableMailUpdates > 0 ? (
+                    <span className="ml-auto text-xs font-semibold bg-[#FFE348] text-gray-900 rounded-full px-1.5 py-0.5 leading-none">
+                      {ev.availableMailUpdates}
+                    </span>
+                  ) : (
+                    <span className="ml-auto text-xs font-medium bg-gray-100 text-gray-400 rounded-full px-1.5 py-0.5 leading-none">
+                      0
+                    </span>
+                  )}
+                </button>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {/* Event Update Modal */}
+      {updateModalEvent && (
+        <EventUpdateModal
+          eventId={updateModalEvent.eventId}
+          eventTitle={updateModalEvent.title}
+          availableMailUpdates={updateModalEvent.availableMailUpdates}
+          onClose={() => setUpdateModalEvent(null)}
+          onSuccess={handleUpdateSuccess}
+        />
       )}
     </div>
   );
