@@ -571,12 +571,34 @@ export class EventService {
     }
   }
 
-  async updateInfo(eventId: string, update: string, imageUrl?: string) {
+  async updateInfo(
+    eventId: string,
+    update: string,
+    userId: string,
+    imageUrl?: string,
+  ) {
     try {
+      // Validate imageUrl if provided
+      if (imageUrl) {
+        try {
+          new URL(imageUrl);
+        } catch {
+          logger.warn("Invalid imageUrl provided — ignoring");
+          imageUrl = undefined;
+        }
+      }
+
       // Fetch event and ticket holders
       const event = await prisma.event.findUnique({
         where: { eventId },
         include: {
+          lister: {
+            include: {
+              user: {
+                select: { userId: true },
+              },
+            },
+          },
           Ticket: {
             include: {
               user: {
@@ -591,6 +613,24 @@ export class EventService {
         throw new NotFoundError("Event not found");
       }
 
+      // Verify the caller owns this event (admins bypass via controller)
+      if (event.lister.user.userId !== userId) {
+        throw new ForbiddenError(
+          "You do not have permission to send updates for this event",
+        );
+      }
+
+      // Atomically decrement the counter — this prevents race conditions
+      const decrementResult = await prisma.event.updateMany({
+        where: { eventId, availableMailUpdates: { gt: 0 } },
+        data: { availableMailUpdates: { decrement: 1 } },
+      });
+      if (decrementResult.count === 0) {
+        throw new BadRequestError(
+          "No more email updates available for this event",
+        );
+      }
+
       const eventTitle = event.title;
 
       // Extract users from tickets
@@ -602,13 +642,17 @@ export class EventService {
         }`,
       );
 
-      const uniqueUsersMap = new Map<string, { email: string; name: string }>();
+      const uniqueUsersMap = new Map<
+        string,
+        { email: string; name: string; userId: string }
+      >();
 
       ticketedUsers.forEach((u) => {
         if (!uniqueUsersMap.has(u.userId) && u.email) {
           uniqueUsersMap.set(u.userId, {
             email: u.email,
             name: u.name || "Unknown",
+            userId: u.userId,
           });
         }
       });
@@ -653,7 +697,7 @@ export class EventService {
       // Send notifications to all ticket holders
       for (const user of uniqueUsers) {
         await notificationQueue.add("send-notification", {
-          userId: ticketedUsers.find((u) => u.email === user.email)?.userId,
+          userId: user.userId,
           type: "EVENT_UPDATE",
           title: `Update: ${eventTitle}`,
           body: update,
@@ -665,9 +709,13 @@ export class EventService {
         });
       }
 
+      // Invalidate cache (decrement already done atomically above)
+      await invalidateEventCaches(eventId, userId);
+
       return {
         message: `Update sent to ${uniqueUsers.length} ticket holders for event "${eventTitle}"`,
         emailsSent: uniqueUsers.length,
+        updatesRemaining: event.availableMailUpdates - 1,
       };
     } catch (error) {
       logger.error("Error in updateInfo:", error);
@@ -690,7 +738,7 @@ export class EventService {
           const cachedEvent = cached as any;
           if (cachedEvent.ownerId !== userId) {
             throw new UnauthorizedError(
-              "You do not have permission to view this event's analyticsxxx",
+              "You do not have permission to view this event's analytics",
             );
           }
         }

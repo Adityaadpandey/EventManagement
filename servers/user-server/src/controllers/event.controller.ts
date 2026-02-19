@@ -286,6 +286,7 @@ export class EventController {
       const result = await this.eventService.updateInfo(
         eventId,
         update,
+        userId,
         imageUrl,
       );
       return sendSuccess(
