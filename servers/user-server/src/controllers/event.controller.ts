@@ -295,12 +295,7 @@ export class EventController {
         imageUrl,
         isAdmin,
       );
-      return sendSuccess(
-        res,
-        "Event info update processed",
-        result.message,
-        200,
-      );
+      return sendSuccess(res, "Event info update processed", result, 200);
     } catch (error: any) {
       logError(req, "Failed to update event info", error, {
         eventId: req.params.eventId as string,
