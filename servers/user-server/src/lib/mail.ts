@@ -3,6 +3,7 @@ import path from "path";
 import QRCode from "qrcode";
 import logger from "../config/logger";
 import {
+  EventReviewEmailContent,
   EventUpdateEmailContent,
   OtpEmailContent,
   TicketEmailContent,
@@ -12,7 +13,11 @@ import { emailQueue } from "./queues";
 type EmailPayload =
   | { type: "ticket"; content: TicketEmailContent }
   | { type: "event-update"; content: EventUpdateEmailContent }
-  | { type: "otp"; content: OtpEmailContent };
+  | { type: "otp"; content: OtpEmailContent }
+  | { type: "event-publish-lister"; content: EventReviewEmailContent }
+  | { type: "event-publish-admin"; content: EventReviewEmailContent }
+  | { type: "event-approved"; content: EventReviewEmailContent }
+  | { type: "event-rejected"; content: EventReviewEmailContent };
 
 export const sendEmail = async (
   toEmail: string,
@@ -31,18 +36,11 @@ export const sendEmail = async (
 
   if (payload.type === "ticket") {
     templateFile = "ticket.ejs";
-
-    const qrData = payload.content.ticket.ticketQR;
-    const qrCodeBase64 = await QRCode.toDataURL(qrData);
-
-    // Strip prefix for Nodemailer attachment
+    const qrCodeBase64 = await QRCode.toDataURL(
+      payload.content.ticket.ticketQR,
+    );
     const qrImageBuffer = qrCodeBase64.split(",")[1];
-
-    templateData = {
-      name,
-      ticket: payload.content.ticket,
-    };
-
+    templateData = { name, ticket: payload.content.ticket };
     attachments.push({
       filename: "ticket-qr.png",
       content: qrImageBuffer,
@@ -51,18 +49,18 @@ export const sendEmail = async (
     });
   } else if (payload.type === "event-update") {
     templateFile = "event-update.ejs";
-
-    templateData = {
-      name,
-      eventUpdate: payload.content.eventUpdate,
-    };
+    templateData = { name, eventUpdate: payload.content.eventUpdate };
   } else if (payload.type === "otp") {
     templateFile = "otp.ejs";
-
-    templateData = {
-      name,
-      otp: payload.content.otp,
-    };
+    templateData = { name, otp: payload.content.otp };
+  } else if (
+    payload.type === "event-publish-lister" ||
+    payload.type === "event-publish-admin" ||
+    payload.type === "event-approved" ||
+    payload.type === "event-rejected"
+  ) {
+    templateFile = `${payload.type}.ejs`;
+    templateData = { name, ...payload.content };
   } else {
     logger.error("Invalid email type provided");
     return false;

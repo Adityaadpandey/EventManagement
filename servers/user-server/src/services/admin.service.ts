@@ -1,5 +1,6 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { sendEmail } from "../lib/mail";
 import { NotFoundError, UnauthorizedError } from "../utils/errors";
 
 export class AdminService {
@@ -47,6 +48,45 @@ export class AdminService {
 
       if (!updatedEvent) {
         throw new NotFoundError("Event not found");
+      }
+
+      // Send email to lister on APPROVED or REJECTED
+      const listerEmail = updatedEvent.lister?.user?.email;
+      const listerName = updatedEvent.lister?.user?.name || "Lister";
+
+      if (
+        listerEmail &&
+        (data.newStatus === "APPROVED" || data.newStatus === "REJECTED")
+      ) {
+        const reviewContent = {
+          eventTitle: updatedEvent.title,
+          eventLocation: updatedEvent.location,
+          eventDate: updatedEvent.date
+            ? new Date(updatedEvent.date).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })
+            : null,
+          eventId: updatedEvent.eventId,
+          listerName,
+        };
+
+        const type =
+          data.newStatus === "APPROVED" ? "event-approved" : "event-rejected";
+        const subject =
+          data.newStatus === "APPROVED"
+            ? `🎉 Your event "${updatedEvent.title}" has been approved!`
+            : `Update on your event "${updatedEvent.title}"`;
+
+        sendEmail(
+          listerEmail,
+          subject,
+          { type, content: reviewContent },
+          listerName,
+        ).catch((e) =>
+          logger.error(`Failed to send ${data.newStatus} email to lister:`, e),
+        );
       }
 
       return {

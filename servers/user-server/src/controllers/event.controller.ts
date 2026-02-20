@@ -377,4 +377,28 @@ export class EventController {
       return sendError(res, "Failed to patch event status", 500, error.message);
     }
   }
+
+  async publishEvent(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) throw new UnauthorizedError("User ID is required");
+
+      const { eventId } = req.params;
+      logInfo(req, "Publishing event", { eventId, userId });
+
+      const result = await this.eventService.publishEvent(
+        userId,
+        eventId as string,
+      );
+      return sendSuccess(res, result.message, result.data, 200);
+    } catch (error: any) {
+      logError(req, "Failed to publish event", error, {
+        eventId: req.params.eventId,
+      });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
+      return sendError(res, "Failed to publish event", 500, error.message);
+    }
+  }
 }
