@@ -571,12 +571,35 @@ export class EventService {
     }
   }
 
-  async updateInfo(eventId: string, update: string, imageUrl?: string) {
+  async updateInfo(
+    eventId: string,
+    update: string,
+    userId: string,
+    imageUrl?: string,
+    isAdmin: boolean = false,
+  ) {
     try {
+      // Validate imageUrl if provided
+      if (imageUrl) {
+        try {
+          new URL(imageUrl);
+        } catch {
+          logger.warn("Invalid imageUrl provided — ignoring");
+          imageUrl = undefined;
+        }
+      }
+
       // Fetch event and ticket holders
       const event = await prisma.event.findUnique({
         where: { eventId },
         include: {
+          lister: {
+            include: {
+              user: {
+                select: { userId: true },
+              },
+            },
+          },
           Ticket: {
             include: {
               user: {
@@ -591,9 +614,24 @@ export class EventService {
         throw new NotFoundError("Event not found");
       }
 
+      // Ensure event has a valid lister/user relationship
+      if (!event.lister?.user?.userId) {
+        logger.error("Event is missing lister or lister user", { eventId });
+        throw new ForbiddenError(
+          "Event data is incomplete or corrupted",
+        );
+      }
+
+      // Verify the caller owns this event (admins bypass)
+      if (event.lister.user.userId !== userId && !isAdmin) {
+        throw new ForbiddenError(
+          "You do not have permission to send updates for this event",
+        );
+      }
+
       const eventTitle = event.title;
 
-      // Extract users from tickets
+      // Extract unique ticket holders before decrementing to avoid wasting credits
       const ticketedUsers = event.Ticket.map((t) => t.user);
 
       logger.info(
@@ -602,13 +640,17 @@ export class EventService {
         }`,
       );
 
-      const uniqueUsersMap = new Map<string, { email: string; name: string }>();
+      const uniqueUsersMap = new Map<
+        string,
+        { email: string; name: string; userId: string }
+      >();
 
       ticketedUsers.forEach((u) => {
         if (!uniqueUsersMap.has(u.userId) && u.email) {
           uniqueUsersMap.set(u.userId, {
             email: u.email,
             name: u.name || "Unknown",
+            userId: u.userId,
           });
         }
       });
@@ -621,53 +663,92 @@ export class EventService {
           success: true,
           message: "No previous buyers to send emails to",
           emailsSent: 0,
+          updatesRemaining: event.availableMailUpdates,
         };
       }
 
-      for (const user of uniqueUsers) {
-        if (!user.email) {
-          logger.warn(`Skipping user ${user.name ?? "Unknown"} — no email`);
-          continue;
-        }
-
-        await sendEmail(
-          user.email,
-          `Important Update: ${eventTitle}`,
-          {
-            type: "event-update",
-            content: {
-              eventUpdate: {
-                message: update,
-                updatedAt: new Date().toISOString(),
-                imageUrl: imageUrl || undefined,
-                eventName: event.title,
-                eventDate: event.date.toISOString().split("T")[0],
-                eventVenue: event.location || undefined,
-              },
-            },
-          },
-          user.name ?? "Attendee",
+      // Atomically decrement the counter after confirming there are recipients
+      const decrementResult = await prisma.event.updateMany({
+        where: { eventId, availableMailUpdates: { gt: 0 } },
+        data: { availableMailUpdates: { decrement: 1 } },
+      });
+      if (decrementResult.count === 0) {
+        throw new BadRequestError(
+          "No more email updates available for this event",
         );
       }
 
-      // Send notifications to all ticket holders
-      for (const user of uniqueUsers) {
-        await notificationQueue.add("send-notification", {
-          userId: ticketedUsers.find((u) => u.email === user.email)?.userId,
-          type: "EVENT_UPDATE",
-          title: `Update: ${eventTitle}`,
-          body: update,
-          link: `/events/${eventId}`,
-          metadata: {
+      try {
+        for (const user of uniqueUsers) {
+          if (!user.email) {
+            logger.warn(`Skipping user ${user.name ?? "Unknown"} — no email`);
+            continue;
+          }
+
+          await sendEmail(
+            user.email,
+            `Important Update: ${eventTitle}`,
+            {
+              type: "event-update",
+              content: {
+                eventUpdate: {
+                  message: update,
+                  updatedAt: new Date().toISOString(),
+                  imageUrl: imageUrl || undefined,
+                  eventName: event.title,
+                  eventDate: event.date.toISOString().split("T")[0],
+                  eventVenue: event.location || undefined,
+                },
+              },
+            },
+            user.name ?? "Attendee",
+          );
+        }
+
+        // Send notifications to all ticket holders
+        for (const user of uniqueUsers) {
+          await notificationQueue.add("send-notification", {
+            userId: user.userId,
+            type: "EVENT_UPDATE",
+            title: `Update: ${eventTitle}`,
+            body: update,
+            link: `/events/${eventId}`,
+            metadata: {
+              eventId,
+              imageUrl: imageUrl || undefined,
+            },
+          });
+        }
+      } catch (emailError) {
+        // Roll back the decrement if sending failed; log but don't swallow rollback errors
+        try {
+          await prisma.event.update({
+            where: { eventId },
+            data: { availableMailUpdates: { increment: 1 } },
+          });
+        } catch (rollbackError) {
+          logger.error("Failed to roll back availableMailUpdates decrement", {
             eventId,
-            imageUrl: imageUrl || undefined,
-          },
-        });
+            rollbackError,
+          });
+        }
+        throw emailError;
       }
+
+      // Invalidate cache
+      await invalidateEventCaches(eventId, userId);
+
+      // Fetch the latest availableMailUpdates to ensure updatesRemaining is accurate
+      const updatedMailInfo = await prisma.event.findUnique({
+        where: { eventId },
+        select: { availableMailUpdates: true },
+      });
+      const updatesRemaining = updatedMailInfo?.availableMailUpdates ?? 0;
 
       return {
         message: `Update sent to ${uniqueUsers.length} ticket holders for event "${eventTitle}"`,
         emailsSent: uniqueUsers.length,
+        updatesRemaining,
       };
     } catch (error) {
       logger.error("Error in updateInfo:", error);
@@ -690,7 +771,7 @@ export class EventService {
           const cachedEvent = cached as any;
           if (cachedEvent.ownerId !== userId) {
             throw new UnauthorizedError(
-              "You do not have permission to view this event's analyticsxxx",
+              "You do not have permission to view this event's analytics",
             );
           }
         }
