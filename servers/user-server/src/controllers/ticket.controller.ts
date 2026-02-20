@@ -115,7 +115,16 @@ export class TicketController {
         throw new ForbiddenError("Access denied");
       }
 
-      const result = await this.ticketService.getAllTicketBuyers();
+      const { page, limit, search, sortBy, sortDir, status } = req.query;
+
+      const result = await this.ticketService.getAllTicketBuyers({
+        page: page ? parseInt(page as string, 10) : undefined,
+        limit: limit ? parseInt(limit as string, 10) : undefined,
+        search: search as string | undefined,
+        sortBy: (sortBy as "date" | "amount" | "name") || undefined,
+        sortDir: (sortDir as "asc" | "desc") || undefined,
+        checkedIn: (status as "all" | "checked" | "pending") || undefined,
+      });
 
       return sendSuccess(res, "All ticket buyers fetched successfully", result);
     } catch (error: any) {

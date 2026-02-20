@@ -1,3 +1,4 @@
+import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import {
@@ -614,9 +615,8 @@ export class EventService {
         throw new NotFoundError("Event not found");
       }
 
-      // Ensure event has a valid lister/user relationship
-      if (!event.lister?.user?.userId) {
-        logger.error("Event is missing lister or lister user", { eventId });
+      // Verify the caller owns this event (admins bypass)
+      if (event.lister.user.userId !== userId && !isAdmin) {
         throw new ForbiddenError(
           "Event data is incomplete or corrupted",
         );
@@ -966,6 +966,88 @@ export class EventService {
       };
     } catch (error) {
       logger.error("Error changing event status:", error);
+      throw error;
+    }
+  }
+
+  async publishEvent(userId: string, eventId: string) {
+    try {
+      const event = await prisma.event.findUnique({
+        where: { eventId },
+        include: {
+          lister: {
+            include: {
+              user: { select: { userId: true, name: true, email: true } },
+            },
+          },
+        },
+      });
+
+      if (!event) throw new NotFoundError("Event not found");
+
+      if (event.lister.user.userId !== userId) {
+        throw new ForbiddenError(
+          "You do not have permission to publish this event",
+        );
+      }
+
+      if (event.status === "PENDING") {
+        throw new BadRequestError("Event is already pending review");
+      }
+      if (event.status === "APPROVED") {
+        throw new BadRequestError("Event is already approved and live");
+      }
+      if (event.status === "CANCELLED") {
+        throw new BadRequestError("Cancelled events cannot be published");
+      }
+
+      const updated = await prisma.event.update({
+        where: { eventId },
+        data: { status: "PENDING" },
+      });
+
+      await invalidateEventCaches(eventId, userId);
+
+      const listerName = event.lister.user.name || "Lister";
+      const listerEmail = event.lister.user.email;
+      const adminEmail = config.ADMIN_EMAIL;
+
+      const reviewContent = {
+        eventTitle: event.title,
+        eventLocation: event.location,
+        eventDate: event.date
+          ? new Date(event.date).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })
+          : null,
+        eventId,
+        listerName,
+      };
+
+      // Email to lister — confirmation
+      sendEmail(
+        listerEmail,
+        `Your event "${event.title}" is under review`,
+        { type: "event-publish-lister", content: reviewContent },
+        listerName,
+      ).catch((e) => logger.error("Failed to send lister publish email:", e));
+
+      // Email to admin — action required
+      sendEmail(
+        adminEmail,
+        `New publish request: "${event.title}"`,
+        { type: "event-publish-admin", content: reviewContent },
+        "Admin",
+      ).catch((e) => logger.error("Failed to send admin publish email:", e));
+
+      return {
+        message: "Event submitted for review successfully",
+        data: updated,
+      };
+    } catch (error) {
+      logger.error("Error publishing event:", error);
       throw error;
     }
   }

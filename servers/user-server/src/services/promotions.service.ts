@@ -24,6 +24,7 @@ export class PromotionsService {
     content: string,
     toEventId: string,
     userId: string,
+    isAdmin: boolean = false,
   ) {
     try {
       // Verify the event exists and get event details
@@ -52,8 +53,8 @@ export class PromotionsService {
         throw new NotFoundError("Event not found");
       }
 
-      // Verify the user is the lister of this event
-      if (event.lister.userId !== userId) {
+      // Verify the user is the lister of this event (admins bypass)
+      if (event.lister.userId !== userId && !isAdmin) {
         throw new ForbiddenError(
           "You are not authorized to send promotions for this event",
         );
