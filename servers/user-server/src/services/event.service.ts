@@ -576,6 +576,7 @@ export class EventService {
     update: string,
     userId: string,
     imageUrl?: string,
+    isAdmin: boolean = false,
   ) {
     try {
       // Validate imageUrl if provided
