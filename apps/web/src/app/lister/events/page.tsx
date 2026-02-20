@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
-import { BarChart, Edit, Mail, Users } from "lucide-react";
+import { BarChart, Edit, Loader2, Mail, Send, Users } from "lucide-react";
 import EventUpdateModal from "@/components/EventUpdateModal";
 
 type ListerEvent = {
@@ -57,6 +57,11 @@ export default function ListerEventsPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState<string | null>(null);
+  const [publishToast, setPublishToast] = useState<{
+    msg: string;
+    ok: boolean;
+  } | null>(null);
   const [updateModalEvent, setUpdateModalEvent] = useState<ListerEvent | null>(
     null,
   );
@@ -103,6 +108,36 @@ export default function ListerEventsPage() {
     }
   };
 
+  const handlePublish = async (eventId: string) => {
+    if (
+      !confirm(
+        "Submit this event for admin review? We'll email you once it's approved.",
+      )
+    )
+      return;
+    setPublishing(eventId);
+    try {
+      await api.patch(`/event/${eventId}/publish`);
+      setItems((prev) =>
+        prev.map((ev) =>
+          ev.eventId === eventId ? { ...ev, status: "PENDING" } : ev,
+        ),
+      );
+      setPublishToast({
+        msg: "Event submitted for review! Check your email.",
+        ok: true,
+      });
+    } catch (e: any) {
+      setPublishToast({
+        msg: e?.response?.data?.message || "Failed to submit event",
+        ok: false,
+      });
+    } finally {
+      setPublishing(null);
+      setTimeout(() => setPublishToast(null), 4000);
+    }
+  };
+
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -119,6 +154,19 @@ export default function ListerEventsPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 pb-40 py-8">
+      {/* Toast */}
+      {publishToast && (
+        <div
+          className={`fixed bottom-6 right-4 z-50 px-4 py-3 rounded-2xl text-sm font-medium shadow-lg border max-w-xs ${
+            publishToast.ok
+              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+              : "bg-red-50 text-red-600 border-red-200"
+          }`}
+        >
+          {publishToast.msg}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3">
         <h1 className="home-page-heading">My Events</h1>
@@ -193,6 +241,33 @@ export default function ListerEventsPage() {
 
               {/* Action Links */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 pt-2 text-sm font-medium">
+                {/* Publish button — only for NOT_VIEWED or REJECTED */}
+                {(ev.status === "NOT_VIEWED" || ev.status === "REJECTED") && (
+                  <button
+                    onClick={() => handlePublish(ev.eventId)}
+                    disabled={publishing === ev.eventId}
+                    className="col-span-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-[#FFE348] hover:bg-yellow-300 text-gray-900 font-semibold border border-yellow-400 transition duration-200 disabled:opacity-60"
+                  >
+                    {publishing === ev.eventId ? (
+                      <Loader2 size={15} className="animate-spin" />
+                    ) : (
+                      <Send size={15} />
+                    )}
+                    {publishing === ev.eventId
+                      ? "Submitting…"
+                      : ev.status === "REJECTED"
+                        ? "Resubmit for Review"
+                        : "Publish Event"}
+                  </button>
+                )}
+
+                {/* Pending label — not clickable */}
+                {ev.status === "PENDING" && (
+                  <div className="col-span-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold">
+                    ⏳ Awaiting admin review
+                  </div>
+                )}
+
                 {/* Copy / Share */}
                 <button
                   onClick={() => handleCopyLink(ev.eventId)}

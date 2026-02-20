@@ -30,7 +30,8 @@ export class PromotionsController {
       // Body validation is now handled by middleware
       const { content, toEventId, emailTemplate } = req.body;
 
-      logInfo(req, "Sending promotion", { eventId, toEventId });
+      const isAdmin = req.user?.role === "ADMIN";
+      logInfo(req, "Sending promotion", { eventId, toEventId, isAdmin });
 
       const result = await this.promotionsService.sendMailToPrev(
         eventId,
@@ -38,6 +39,7 @@ export class PromotionsController {
         content || "",
         toEventId,
         userId,
+        isAdmin,
       );
 
       return sendSuccess(res, "Promotion sent successfully", result);

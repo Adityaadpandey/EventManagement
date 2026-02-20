@@ -80,6 +80,14 @@ router.get(
   promotionsController.getPromotionReach.bind(promotionsController),
 );
 
+// PATCH /api/v1/event/:eventId/publish — lister submits event for admin review
+router.patch(
+  "/:eventId/publish",
+  authMiddleware,
+  requireRole(["LISTER"]),
+  eventController.publishEvent.bind(eventController),
+);
+
 // DELETE /api/v1/event/:eventId
 
 // GET /api/v1/event/:eventId/attendees
