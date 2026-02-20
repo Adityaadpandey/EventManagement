@@ -577,6 +577,7 @@ export class EventService {
     update: string,
     userId: string,
     imageUrl?: string,
+    isAdmin: boolean = false,
   ) {
     try {
       // Validate imageUrl if provided
@@ -614,8 +615,8 @@ export class EventService {
         throw new NotFoundError("Event not found");
       }
 
-      // Verify the caller owns this event (admins bypass via controller)
-      if (event.lister.user.userId !== userId) {
+      // Verify the caller owns this event (admins bypass)
+      if (event.lister.user.userId !== userId && !isAdmin) {
         throw new ForbiddenError(
           "You do not have permission to send updates for this event",
         );

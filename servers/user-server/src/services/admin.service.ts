@@ -1,5 +1,6 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { invalidateEventCaches } from "../lib/cache";
 import { sendEmail } from "../lib/mail";
 import { NotFoundError, UnauthorizedError } from "../utils/errors";
 
@@ -88,6 +89,13 @@ export class AdminService {
           logger.error(`Failed to send ${data.newStatus} email to lister:`, e),
         );
       }
+
+      // Invalidate all event-related caches so reads reflect the new status
+      const listerUserId = updatedEvent.lister?.user?.userId;
+      await invalidateEventCaches(data.eventId, listerUserId);
+      logger.info(
+        `Invalidated event caches for ${data.eventId} after status → ${data.newStatus}`,
+      );
 
       return {
         message: `Event status updated to ${data.newStatus} successfully`,

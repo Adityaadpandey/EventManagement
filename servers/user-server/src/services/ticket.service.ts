@@ -510,45 +510,93 @@ export class TicketService {
     }
   }
 
-  async getAllTicketBuyers() {
+  async getAllTicketBuyers(
+    params: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      sortBy?: "date" | "amount" | "name";
+      sortDir?: "asc" | "desc";
+      checkedIn?: "all" | "checked" | "pending";
+    } = {},
+  ) {
     try {
-      const tickets = await prisma.ticket.findMany({
-        where: {
-          status: "SUCCESS",
-        },
-        include: {
-          user: {
-            select: {
-              userId: true,
-              name: true,
-              email: true,
-              phone: true,
-            },
-          },
-          ticketType: {
-            select: {
-              name: true,
-              price: true,
-            },
-          },
-          Event: {
-            select: {
-              eventId: true,
-              title: true,
-              date: true,
-              location: true,
-            },
-          },
-          AttendeeFieldResponse: {
-            include: {
-              field: true,
-            },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+      const page = Math.max(1, params.page || 1);
+      const limit = Math.min(100, Math.max(1, params.limit || 25));
+      const skip = (page - 1) * limit;
+      const search = params.search?.trim() || "";
+      const sortBy = params.sortBy || "date";
+      const sortDir = params.sortDir || "desc";
+      const checkedIn = params.checkedIn || "all";
 
-      return tickets;
+      // Build where clause
+      const where: any = { status: "SUCCESS" };
+
+      // Checked-in filter
+      if (checkedIn === "checked") where.checkedIn = true;
+      if (checkedIn === "pending") where.checkedIn = false;
+
+      // Search across user name/email, event title, ticketId
+      if (search) {
+        where.OR = [
+          { ticketId: { contains: search, mode: "insensitive" } },
+          { qrCode: { contains: search, mode: "insensitive" } },
+          { user: { name: { contains: search, mode: "insensitive" } } },
+          { user: { email: { contains: search, mode: "insensitive" } } },
+          { Event: { title: { contains: search, mode: "insensitive" } } },
+        ];
+      }
+
+      // Build orderBy
+      let orderBy: any;
+      if (sortBy === "amount") {
+        orderBy = { totalPrice: sortDir };
+      } else if (sortBy === "name") {
+        orderBy = { user: { name: sortDir } };
+      } else {
+        orderBy = { createdAt: sortDir };
+      }
+
+      // Run count + data in parallel
+      const [total, tickets] = await Promise.all([
+        prisma.ticket.count({ where }),
+        prisma.ticket.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy,
+          include: {
+            user: {
+              select: {
+                userId: true,
+                name: true,
+                email: true,
+                phone: true,
+              },
+            },
+            ticketType: {
+              select: {
+                name: true,
+                price: true,
+              },
+            },
+            Event: {
+              select: {
+                eventId: true,
+                title: true,
+              },
+            },
+          },
+        }),
+      ]);
+
+      return {
+        buyers: tickets,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      };
     } catch (error) {
       logger.error("Error fetching all ticket buyers:", error);
       throw error;

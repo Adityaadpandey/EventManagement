@@ -179,6 +179,38 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Cancellation requested alert */}
+      {!loading &&
+        (() => {
+          const cancelRequested = events.filter(
+            (e) => e.status === "CANCELLATION_REQUESTED",
+          );
+          if (cancelRequested.length === 0) return null;
+          return (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-orange-50 border border-orange-200 rounded-2xl px-5 py-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                <div>
+                  <p className="text-sm font-bold text-orange-800">
+                    {cancelRequested.length} event
+                    {cancelRequested.length !== 1 ? "s" : ""} requesting
+                    cancellation
+                  </p>
+                  <p className="text-xs text-orange-600 mt-0.5">
+                    Review cancellation requests and take action
+                  </p>
+                </div>
+              </div>
+              <Link
+                href={`/admin/events/${cancelRequested[0].eventId}`}
+                className="flex items-center gap-1.5 bg-orange-600 text-white text-xs font-semibold px-4 py-2 rounded-full hover:bg-orange-700 transition-colors shrink-0"
+              >
+                Review <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          );
+        })()}
+
       {/* Metric cards */}
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">

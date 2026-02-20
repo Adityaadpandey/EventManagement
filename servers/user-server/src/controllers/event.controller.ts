@@ -282,12 +282,18 @@ export class EventController {
       const { update, imageUrl } = req.body;
       if (!update) return sendError(res, "Update data is required", 400);
 
-      logInfo(req, "Updating event info", { eventId, hasImage: !!imageUrl });
+      const isAdmin = req.user?.role === "ADMIN";
+      logInfo(req, "Updating event info", {
+        eventId,
+        hasImage: !!imageUrl,
+        isAdmin,
+      });
       const result = await this.eventService.updateInfo(
         eventId,
         update,
         userId,
         imageUrl,
+        isAdmin,
       );
       return sendSuccess(
         res,

@@ -89,6 +89,21 @@ export const PAYOUT_ALLOWED_ACTIONS: Record<string, PayoutAction[]> = {
   REVERSED: [],
 };
 
+// ─── Event Actions ───────────────────────────────────────────────────────────
+
+export type EventAction = "APPROVED" | "REJECTED" | "CANCELLED";
+
+export const EVENT_ALLOWED_ACTIONS: Record<string, EventAction[]> = {
+  NOT_VIEWED: ["APPROVED", "REJECTED"],
+  PENDING: ["APPROVED", "REJECTED"],
+  APPROVED: ["CANCELLED"],
+  CANCELLATION_REQUESTED: ["CANCELLED"],
+  REJECTED: [],
+  CANCELLED: [],
+};
+
+export const CAN_TOGGLE_BUY = ["APPROVED"];
+
 // ─── Formatters ──────────────────────────────────────────────────────────────
 
 export const fmtDate = (d: string) =>

@@ -396,3 +396,54 @@ export function InfoCard({
     </div>
   );
 }
+
+// ─── Confirm Dialog ──────────────────────────────────────────────────────────
+
+export function ConfirmDialog({
+  title,
+  description,
+  confirmLabel,
+  confirmClassName,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  confirmClassName?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+        onClick={onCancel}
+      />
+      <div className="relative w-full max-w-sm bg-[var(--color-neutral-light)] rounded-2xl shadow-xl border border-gray-100 p-6 animate-[slideUp_0.2s_ease-out]">
+        <h3 className="text-base font-bold text-[var(--color-neutral-dark2)]">
+          {title}
+        </h3>
+        <p className="text-sm text-[var(--color-neutral-dark4)] mt-2 leading-relaxed">
+          {description}
+        </p>
+        <div className="flex items-center gap-2 mt-5 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className={`px-4 py-2 text-sm font-bold rounded-xl transition-colors ${
+              confirmClassName || "bg-red-500 text-white hover:bg-red-600"
+            }`}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -29,11 +29,19 @@ if (!self.define) {
 }
 define(["./workbox-495fd258"], function (e) {
   "use strict";
-  (importScripts("worker-uv43FoMRwAnGMM7FUMVqp.js"),
+  (importScripts("worker-bLulPIiwGSMbJPJW_FYZM.js"),
     self.skipWaiting(),
     e.clientsClaim(),
     e.precacheAndRoute(
       [
+        {
+          url: "/_next/static/bLulPIiwGSMbJPJW_FYZM/_buildManifest.js",
+          revision: "968687aa7a2e77b7863f1ee081e64a02",
+        },
+        {
+          url: "/_next/static/bLulPIiwGSMbJPJW_FYZM/_ssgManifest.js",
+          revision: "b6652df95db52feb4daf4eca35380933",
+        },
         {
           url: "/_next/static/chunks/0198aeb4-6f7024e1bccc7d70.js",
           revision: "6f7024e1bccc7d70",
@@ -79,8 +87,8 @@ define(["./workbox-495fd258"], function (e) {
           revision: "32fab7ef204181cf",
         },
         {
-          url: "/_next/static/chunks/3686-e121d3fbb52f42d8.js",
-          revision: "e121d3fbb52f42d8",
+          url: "/_next/static/chunks/3686-68bfa025e25fb033.js",
+          revision: "68bfa025e25fb033",
         },
         {
           url: "/_next/static/chunks/4458-29eaa7c27f7abc17.js",
@@ -91,8 +99,8 @@ define(["./workbox-495fd258"], function (e) {
           revision: "dc0c227cecae1f73",
         },
         {
-          url: "/_next/static/chunks/5280-e3adaea3517f7b2d.js",
-          revision: "e3adaea3517f7b2d",
+          url: "/_next/static/chunks/5280-98e60f76bafa2eeb.js",
+          revision: "98e60f76bafa2eeb",
         },
         {
           url: "/_next/static/chunks/5305-f26df7f7941633c1.js",
@@ -147,8 +155,8 @@ define(["./workbox-495fd258"], function (e) {
           revision: "787a70c88b11fec3",
         },
         {
-          url: "/_next/static/chunks/app/admin/events/%5BeventId%5D/page-205ffb85d9454eaa.js",
-          revision: "205ffb85d9454eaa",
+          url: "/_next/static/chunks/app/admin/events/%5BeventId%5D/page-51eafd9a9b18ac58.js",
+          revision: "51eafd9a9b18ac58",
         },
         {
           url: "/_next/static/chunks/app/admin/events/page-bd17cc066fae42d3.js",
@@ -159,32 +167,32 @@ define(["./workbox-495fd258"], function (e) {
           revision: "6738ab7b753f3b35",
         },
         {
-          url: "/_next/static/chunks/app/admin/layout-3274d90a86d1977d.js",
-          revision: "3274d90a86d1977d",
+          url: "/_next/static/chunks/app/admin/layout-6981f7574a398d22.js",
+          revision: "6981f7574a398d22",
         },
         {
-          url: "/_next/static/chunks/app/admin/page-3c8ee47e6bc96f48.js",
-          revision: "3c8ee47e6bc96f48",
+          url: "/_next/static/chunks/app/admin/page-026e6d1c83412e32.js",
+          revision: "026e6d1c83412e32",
         },
         {
           url: "/_next/static/chunks/app/admin/payouts/page-a17e5e2e5e485cad.js",
           revision: "a17e5e2e5e485cad",
         },
         {
-          url: "/_next/static/chunks/app/auth/page-e6fadcc8ae859d9f.js",
-          revision: "e6fadcc8ae859d9f",
+          url: "/_next/static/chunks/app/auth/page-5f2fb24a328ba12a.js",
+          revision: "5f2fb24a328ba12a",
         },
         {
           url: "/_next/static/chunks/app/cancellation-policy/page-31202d849926dd74.js",
           revision: "31202d849926dd74",
         },
         {
-          url: "/_next/static/chunks/app/checker/page-9fd9f2cf706d5762.js",
-          revision: "9fd9f2cf706d5762",
+          url: "/_next/static/chunks/app/checker/page-bf7ec75385e513b6.js",
+          revision: "bf7ec75385e513b6",
         },
         {
-          url: "/_next/static/chunks/app/event/%5BeventId%5D/attendees/page-91513f6b5cdc8f2a.js",
-          revision: "91513f6b5cdc8f2a",
+          url: "/_next/static/chunks/app/event/%5BeventId%5D/attendees/page-c0861d756f4c0d48.js",
+          revision: "c0861d756f4c0d48",
         },
         {
           url: "/_next/static/chunks/app/event/%5BeventId%5D/edit/page-702d35ba1e01aae5.js",
@@ -203,12 +211,12 @@ define(["./workbox-495fd258"], function (e) {
           revision: "1ae76623ed81ec4f",
         },
         {
-          url: "/_next/static/chunks/app/layout-ac22ef3ed0c6a035.js",
-          revision: "ac22ef3ed0c6a035",
+          url: "/_next/static/chunks/app/layout-bbb0acacbc52c344.js",
+          revision: "bbb0acacbc52c344",
         },
         {
-          url: "/_next/static/chunks/app/lister/edit/page-2d3b7e6b390eb3a6.js",
-          revision: "2d3b7e6b390eb3a6",
+          url: "/_next/static/chunks/app/lister/edit/page-8c0057c8e58d1958.js",
+          revision: "8c0057c8e58d1958",
         },
         {
           url: "/_next/static/chunks/app/lister/events/%5BeventId%5D/page-0cdb769aef95708c.js",
@@ -219,16 +227,16 @@ define(["./workbox-495fd258"], function (e) {
           revision: "5199e2a456acf3cd",
         },
         {
-          url: "/_next/static/chunks/app/lister/events/page-3029763c51665b6e.js",
-          revision: "3029763c51665b6e",
+          url: "/_next/static/chunks/app/lister/events/page-ab3f6e38b1144cc6.js",
+          revision: "ab3f6e38b1144cc6",
         },
         {
-          url: "/_next/static/chunks/app/lister/page-b39188cdfb9b371d.js",
-          revision: "b39188cdfb9b371d",
+          url: "/_next/static/chunks/app/lister/page-b44dcd94e5ac7d1e.js",
+          revision: "b44dcd94e5ac7d1e",
         },
         {
-          url: "/_next/static/chunks/app/notifications/page-f0899f6aab2f16c8.js",
-          revision: "f0899f6aab2f16c8",
+          url: "/_next/static/chunks/app/notifications/page-c383ab36d3c4ba4f.js",
+          revision: "c383ab36d3c4ba4f",
         },
         {
           url: "/_next/static/chunks/app/page-8583a5c82baf4255.js",
@@ -239,8 +247,8 @@ define(["./workbox-495fd258"], function (e) {
           revision: "fee4cf0078859632",
         },
         {
-          url: "/_next/static/chunks/app/profile/page-1af62f012bc56d90.js",
-          revision: "1af62f012bc56d90",
+          url: "/_next/static/chunks/app/profile/page-929e3257043b80a4.js",
+          revision: "929e3257043b80a4",
         },
         {
           url: "/_next/static/chunks/app/server-sitemap.xml/route-1cf542c6d0ce2814.js",
@@ -251,12 +259,12 @@ define(["./workbox-495fd258"], function (e) {
           revision: "a180b1b7759e3e12",
         },
         {
-          url: "/_next/static/chunks/app/tickets/%5BticketId%5D/page-557960333699097c.js",
-          revision: "557960333699097c",
+          url: "/_next/static/chunks/app/tickets/%5BticketId%5D/page-17aa88d4bcd5708c.js",
+          revision: "17aa88d4bcd5708c",
         },
         {
-          url: "/_next/static/chunks/app/tickets/my-tickets/page-eb5307077a3e6201.js",
-          revision: "eb5307077a3e6201",
+          url: "/_next/static/chunks/app/tickets/my-tickets/page-ede3df66522be66e.js",
+          revision: "ede3df66522be66e",
         },
         {
           url: "/_next/static/chunks/e89fb3a8.52ff3afe23c7019c.js",
@@ -287,16 +295,20 @@ define(["./workbox-495fd258"], function (e) {
           revision: "846118c33b2c0e922d7b3a7676f81f6f",
         },
         {
-          url: "/_next/static/chunks/webpack-584d735f4d2706c6.js",
-          revision: "584d735f4d2706c6",
+          url: "/_next/static/chunks/webpack-e6fb252602874ae8.js",
+          revision: "e6fb252602874ae8",
+        },
+        {
+          url: "/_next/static/css/081a0afca5a9bd20.css",
+          revision: "081a0afca5a9bd20",
+        },
+        {
+          url: "/_next/static/css/176cdeffa693ec48.css",
+          revision: "176cdeffa693ec48",
         },
         {
           url: "/_next/static/css/1de76be520b4de19.css",
           revision: "1de76be520b4de19",
-        },
-        {
-          url: "/_next/static/css/35ceb7e39a232dc3.css",
-          revision: "35ceb7e39a232dc3",
         },
         {
           url: "/_next/static/css/5ffc76fbbe15378a.css",
@@ -353,14 +365,6 @@ define(["./workbox-495fd258"], function (e) {
         {
           url: "/_next/static/media/marker-icon.d577052a.png",
           revision: "d577052a",
-        },
-        {
-          url: "/_next/static/uv43FoMRwAnGMM7FUMVqp/_buildManifest.js",
-          revision: "968687aa7a2e77b7863f1ee081e64a02",
-        },
-        {
-          url: "/_next/static/uv43FoMRwAnGMM7FUMVqp/_ssgManifest.js",
-          revision: "b6652df95db52feb4daf4eca35380933",
         },
         { url: "/favicon.ico", revision: "319fb0118da21e1a57aebe6c6d1ab105" },
         { url: "/file.svg", revision: "d09f95206c3fa0bb9bd9fefabfd0ea71" },

@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import {
   ArrowLeft,
   Banknote,
+  Bell,
   CalendarDays,
   Clock,
   LayoutDashboard,
@@ -40,6 +41,18 @@ const navItems = [
     href: "/admin/payouts",
     label: "Payouts",
     icon: Banknote,
+    exact: true,
+  },
+  {
+    href: "/admin/notifications",
+    label: "Notifications",
+    icon: Bell,
+    exact: true,
+  },
+  {
+    href: "/admin/buyers",
+    label: "All Buyers",
+    icon: Zap,
     exact: true,
   },
 ];
@@ -97,7 +110,7 @@ export default function AdminLayout({
     (href: string, exact = false) =>
       exact
         ? pathname === href
-        : pathname === href || pathname.startsWith(href + "/"),
+        : pathname === href || pathname?.startsWith(href + "/"),
     [pathname],
   );
 
