@@ -1,39 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
 import api from "@/lib/api";
 import {
   ArrowLeft,
-  Loader2,
-  AlertCircle,
-  Calendar,
-  MapPin,
-  Users,
-  DollarSign,
-  Ticket,
   BarChart3,
-  Clock,
-  User,
-  Eye,
-  MousePointer,
-  TrendingUp,
+  Calendar,
   CheckCheck,
+  Clock,
+  DollarSign,
+  Eye,
+  MapPin,
+  MousePointer,
+  Ticket,
+  TrendingUp,
+  User,
+  Users,
 } from "lucide-react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
 } from "recharts";
+import {
+  ChartCard as ChartCardShared,
+  EmptyState,
+  InfoCard,
+  PageError,
+  PageLoading,
+  SkeletonListSection,
+  SkeletonMetricCard,
+  StatCard,
+  StatusBadge,
+} from "../../_components/admin-components";
+import {
+  fmtCur,
+  fmtDateLong,
+  fmtNumber,
+  fmtTime,
+} from "../../_lib/admin-utils";
 
-// ─── Types matching actual API shapes ────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 type TicketType = {
   ticketTypeId: string;
@@ -82,7 +97,7 @@ type Analytics = {
   revenueByDay: Record<string, number>;
 };
 
-type Ticket = {
+type TicketRecord = {
   ticketId: string;
   qrCode?: string;
   quantity: number;
@@ -100,7 +115,7 @@ type AttendeeTicketType = {
   totalQuantity: number;
   totalRevenue: number;
   checkedInCount: number;
-  tickets: Ticket[];
+  tickets: TicketRecord[];
 };
 
 type AttendeesData = {
@@ -119,16 +134,6 @@ type AttendeesData = {
 const TABS = ["Overview", "Analytics", "Attendees"] as const;
 type Tab = (typeof TABS)[number];
 
-const STATUS_BADGE: Record<string, string> = {
-  APPROVED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  REJECTED: "bg-red-50 text-red-600 border border-red-200",
-  PENDING: "bg-amber-50 text-amber-700 border border-amber-200",
-  NOT_VIEWED: "bg-gray-100 text-gray-500 border border-gray-200",
-  CANCELLATION_REQUESTED:
-    "bg-orange-50 text-orange-700 border border-orange-200",
-  CANCELLED: "bg-red-50 text-red-400 border border-red-100",
-};
-
 const TOOLTIP_STYLE = {
   contentStyle: {
     backgroundColor: "#fff",
@@ -136,34 +141,10 @@ const TOOLTIP_STYLE = {
     borderRadius: 12,
     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.05)",
   },
-  labelStyle: { color: "#1E1E1E", fontWeight: 600 },
-  itemStyle: { color: "#3D3D3D" },
+  labelStyle: { color: "var(--color-neutral-dark2)", fontWeight: 600 },
+  itemStyle: { color: "var(--color-neutral-dark3)" },
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const formatDate = (s: string) =>
-  new Date(s).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
-const formatTime = (s: string) =>
-  new Date(s).toLocaleTimeString("en-IN", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-
-const formatCurrency = (n: number) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(n || 0);
-
-/** Turn a Record<dateString, number> into sorted chart data */
 function recordToChartData(rec: Record<string, number>, valueKey: string) {
   return Object.entries(rec)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -176,10 +157,11 @@ function recordToChartData(rec: Record<string, number>, valueKey: string) {
     }));
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
+// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function AdminEventDetailPage() {
-  const { eventId } = useParams<{ eventId: string }>();
+  const params = useParams<{ eventId: string }>();
+  const eventId = params?.eventId;
   const [tab, setTab] = useState<Tab>("Overview");
 
   const [event, setEvent] = useState<EventDetail | null>(null);
@@ -193,7 +175,6 @@ export default function AdminEventDetailPage() {
   const [attendeesLoading, setAttendeesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load event detail on mount
   useEffect(() => {
     api
       .get(`/admin/event/${eventId}`)
@@ -218,59 +199,48 @@ export default function AdminEventDetailPage() {
       setAttendeesLoading(true);
       api
         .get(`/admin/event/attendee/${eventId}`)
-        .then((res) => setAttendeesData(res.data?.data || null))
+        .then((res) => {
+          // API returns { data: { success, data: { event, statistics, ticketTypes } } }
+          const raw = res.data?.data;
+          const inner = raw?.data ?? raw;
+          setAttendeesData(inner || null);
+        })
         .catch(() => setAttendeesData(null))
         .finally(() => setAttendeesLoading(false));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, eventId]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 animate-spin text-[#FFE348]" />
-      </div>
-    );
-  }
-
-  if (error || !event) {
-    return (
-      <div className="flex items-center justify-center h-full gap-2 text-sm text-red-500">
-        <AlertCircle className="w-4 h-4" />
-        <p>{error || "Event not found"}</p>
-      </div>
-    );
-  }
+  if (loading) return <PageLoading />;
+  if (error || !event)
+    return <PageError message={error || "Event not found"} />;
 
   const banner =
     event.banner_horizontal || event.banner_square || event.banner_vertical;
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 pb-10">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 pb-24 lg:pb-10">
       {/* Header */}
       <div className="flex items-start gap-3">
         <Link
           href="/admin/events"
-          className="p-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 transition-colors shrink-0 mt-0.5 shadow-sm"
+          className="p-2 rounded-xl bg-[var(--color-neutral-light)] border border-gray-100 hover:bg-gray-50 transition-colors shrink-0 mt-0.5 shadow-sm"
         >
           <ArrowLeft className="w-4 h-4 text-gray-500" />
         </Link>
         <div className="flex-1 min-w-0">
-          <h1 className="text-lg sm:text-xl font-bold text-[#1E1E1E] leading-tight">
+          <h1 className="text-lg sm:text-xl font-bold text-[var(--color-neutral-dark2)] leading-tight">
             {event.title}
           </h1>
-          <p className="text-gray-400 text-xs sm:text-sm mt-0.5">
+          <p className="text-[var(--color-neutral-dark4)] text-xs sm:text-sm mt-0.5">
             {event.lister?.user?.name ||
               event.lister?.user?.email ||
               "Unknown lister"}
           </p>
           <div className="flex items-center gap-2 flex-wrap mt-2">
+            <StatusBadge status={event.status} type="event" />
             <span
-              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${STATUS_BADGE[event.status] || "bg-gray-100 text-gray-500"}`}
-            >
-              {event.status.replace(/_/g, " ")}
-            </span>
-            <span
-              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+              className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${
                 event.canBuy
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                   : "bg-gray-100 text-gray-500 border-gray-200"
@@ -294,15 +264,15 @@ export default function AdminEventDetailPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 overflow-x-auto scrollbar-none">
+      <div className="flex border-b border-gray-200 overflow-x-auto scrollbar-none -mx-4 sm:-mx-6 px-4 sm:px-6">
         {TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 sm:px-5 py-3 text-sm font-semibold border-b-2 transition-all -mb-px whitespace-nowrap ${
               tab === t
-                ? "border-[#FFE348] text-[#1E1E1E]"
-                : "border-transparent text-gray-400 hover:text-[#1E1E1E]"
+                ? "border-[var(--color-primary)] text-[var(--color-neutral-dark2)]"
+                : "border-transparent text-gray-400 hover:text-[var(--color-neutral-dark2)]"
             }`}
           >
             {t}
@@ -318,14 +288,14 @@ export default function AdminEventDetailPage() {
               <InfoCard
                 icon={<Calendar className="w-4 h-4 text-amber-500" />}
                 label="Date"
-                value={formatDate(event.date)}
+                value={fmtDateLong(event.date)}
               />
             )}
             {event.time && (
               <InfoCard
                 icon={<Clock className="w-4 h-4 text-blue-500" />}
                 label="Time"
-                value={formatTime(event.time)}
+                value={fmtTime(event.time)}
               />
             )}
             {event.location && (
@@ -353,36 +323,50 @@ export default function AdminEventDetailPage() {
 
           {/* Ticket Types */}
           {event.TicketType && event.TicketType.length > 0 && (
-            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-[var(--color-neutral-light)] border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest px-5 pt-4 pb-2">
                 Ticket Types
               </p>
               <div className="divide-y divide-gray-50">
-                {event.TicketType.map((tt) => (
-                  <div
-                    key={tt.ticketTypeId}
-                    className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors"
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-[#1E1E1E]">
-                        {tt.name}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {tt.soldCount} / {tt.quantity} sold
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-[#1E1E1E]">
-                        {formatCurrency(tt.price)}
-                      </p>
-                      {tt.discountedPrice != null && (
-                        <p className="text-xs text-emerald-600 mt-0.5">
-                          Disc: {formatCurrency(tt.discountedPrice)}
+                {event.TicketType.map((tt) => {
+                  const pct =
+                    tt.quantity > 0
+                      ? Math.round((tt.soldCount / tt.quantity) * 100)
+                      : 0;
+                  return (
+                    <div
+                      key={tt.ticketTypeId}
+                      className="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors gap-4"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-[var(--color-neutral-dark2)]">
+                          {tt.name}
                         </p>
-                      )}
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden max-w-[120px]">
+                            <div
+                              className="h-full rounded-full bg-[var(--color-primary)] transition-all"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-[var(--color-neutral-dark4)]">
+                            {tt.soldCount}/{tt.quantity} sold
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-bold text-[var(--color-neutral-dark2)] tabular-nums">
+                          {fmtCur(tt.price)}
+                        </p>
+                        {tt.discountedPrice != null && (
+                          <p className="text-xs text-emerald-600 mt-0.5">
+                            Disc: {fmtCur(tt.discountedPrice)}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -392,25 +376,25 @@ export default function AdminEventDetailPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <StatMini
                 label="Views"
-                value={event.EventAnalytics.views}
+                value={fmtNumber(event.EventAnalytics.views)}
                 accent="text-blue-600"
                 bg="bg-blue-50"
               />
               <StatMini
                 label="Clicks"
-                value={event.EventAnalytics.clicks}
+                value={fmtNumber(event.EventAnalytics.clicks)}
                 accent="text-purple-600"
                 bg="bg-purple-50"
               />
               <StatMini
                 label="Tickets Sold"
-                value={event.EventAnalytics.ticketsSold}
+                value={fmtNumber(event.EventAnalytics.ticketsSold)}
                 accent="text-amber-600"
                 bg="bg-amber-50"
               />
               <StatMini
                 label="Revenue"
-                value={formatCurrency(event.EventAnalytics.revenue)}
+                value={fmtCur(event.EventAnalytics.revenue)}
                 accent="text-emerald-600"
                 bg="bg-emerald-50"
               />
@@ -418,12 +402,12 @@ export default function AdminEventDetailPage() {
           )}
 
           {event.description && (
-            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5">
+            <div className="bg-[var(--color-neutral-light)] border border-gray-100 rounded-2xl shadow-sm p-5">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
                 Description
               </p>
               <div
-                className="text-sm text-[#3D3D3D] leading-relaxed"
+                className="text-sm text-[var(--color-neutral-dark3)] leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: event.description }}
               />
             </div>
@@ -435,16 +419,20 @@ export default function AdminEventDetailPage() {
       {tab === "Analytics" && (
         <div className="space-y-5">
           {analyticsLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-6 h-6 animate-spin text-[#FFE348]" />
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <SkeletonMetricCard key={i} />
+                ))}
+              </div>
+              <SkeletonListSection rows={3} />
             </div>
           ) : !analytics ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
-              <BarChart3 className="w-10 h-10 text-gray-200" />
-              <p className="text-sm text-gray-300">
-                No analytics data available yet
-              </p>
-            </div>
+            <EmptyState
+              icon={BarChart3}
+              title="No analytics data yet"
+              subtitle="Analytics will appear once the event starts getting traffic"
+            />
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3">
@@ -452,25 +440,25 @@ export default function AdminEventDetailPage() {
                   icon={<Eye className="w-4 h-4 text-blue-600" />}
                   bg="bg-blue-50"
                   label="Total Views"
-                  value={analytics.views?.toLocaleString() || "0"}
+                  value={fmtNumber(analytics.views)}
                 />
                 <StatCard
                   icon={<MousePointer className="w-4 h-4 text-purple-600" />}
                   bg="bg-purple-50"
                   label="Total Clicks"
-                  value={analytics.clicks?.toLocaleString() || "0"}
+                  value={fmtNumber(analytics.clicks)}
                 />
                 <StatCard
                   icon={<Ticket className="w-4 h-4 text-amber-600" />}
                   bg="bg-amber-50"
                   label="Tickets Sold"
-                  value={analytics.ticketsSold?.toLocaleString() || "0"}
+                  value={fmtNumber(analytics.ticketsSold)}
                 />
                 <StatCard
                   icon={<DollarSign className="w-4 h-4 text-emerald-600" />}
                   bg="bg-emerald-50"
                   label="Revenue"
-                  value={formatCurrency(analytics.revenue)}
+                  value={fmtCur(analytics.revenue)}
                 />
               </div>
 
@@ -486,7 +474,7 @@ export default function AdminEventDetailPage() {
                     icon={<Users className="w-4 h-4 text-pink-600" />}
                     bg="bg-pink-50"
                     label="Capacity"
-                    value={analytics.capacity.toLocaleString()}
+                    value={fmtNumber(analytics.capacity)}
                   />
                 )}
                 {analytics.capacityUtilization != null && (
@@ -501,7 +489,7 @@ export default function AdminEventDetailPage() {
 
               {analytics.viewsByDay &&
                 Object.keys(analytics.viewsByDay).length > 0 && (
-                  <ChartCard title="Views Over Time">
+                  <ChartCardShared title="Views Over Time">
                     <ResponsiveContainer width="100%" height={180}>
                       <LineChart
                         data={recordToChartData(analytics.viewsByDay, "views")}
@@ -528,12 +516,12 @@ export default function AdminEventDetailPage() {
                         />
                       </LineChart>
                     </ResponsiveContainer>
-                  </ChartCard>
+                  </ChartCardShared>
                 )}
 
               {analytics.salesByDay &&
                 Object.keys(analytics.salesByDay).length > 0 && (
-                  <ChartCard title="Ticket Sales Over Time">
+                  <ChartCardShared title="Ticket Sales Over Time">
                     <ResponsiveContainer width="100%" height={180}>
                       <BarChart
                         data={recordToChartData(
@@ -556,18 +544,18 @@ export default function AdminEventDetailPage() {
                         <Tooltip {...TOOLTIP_STYLE} />
                         <Bar
                           dataKey="tickets"
-                          fill="#FFE348"
+                          fill="var(--color-primary2)"
                           radius={[4, 4, 0, 0]}
                           name="Tickets"
                         />
                       </BarChart>
                     </ResponsiveContainer>
-                  </ChartCard>
+                  </ChartCardShared>
                 )}
 
               {analytics.revenueByDay &&
                 Object.keys(analytics.revenueByDay).length > 0 && (
-                  <ChartCard title="Revenue Over Time">
+                  <ChartCardShared title="Revenue Over Time">
                     <ResponsiveContainer width="100%" height={180}>
                       <LineChart
                         data={recordToChartData(
@@ -590,10 +578,7 @@ export default function AdminEventDetailPage() {
                         />
                         <Tooltip
                           {...TOOLTIP_STYLE}
-                          formatter={(v: number) => [
-                            formatCurrency(v),
-                            "Revenue",
-                          ]}
+                          formatter={(v: number) => [fmtCur(v), "Revenue"]}
                         />
                         <Line
                           type="monotone"
@@ -604,7 +589,7 @@ export default function AdminEventDetailPage() {
                         />
                       </LineChart>
                     </ResponsiveContainer>
-                  </ChartCard>
+                  </ChartCardShared>
                 )}
             </>
           )}
@@ -615,16 +600,20 @@ export default function AdminEventDetailPage() {
       {tab === "Attendees" && (
         <div className="space-y-5">
           {attendeesLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <Loader2 className="w-6 h-6 animate-spin text-[#FFE348]" />
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <SkeletonMetricCard key={i} />
+                ))}
+              </div>
+              <SkeletonListSection rows={4} />
             </div>
           ) : !attendeesData ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
-              <Users className="w-10 h-10 text-gray-200" />
-              <p className="text-sm text-gray-300">
-                No attendee data available
-              </p>
-            </div>
+            <EmptyState
+              icon={Users}
+              title="No attendee data"
+              subtitle="Attendee information will be available once tickets are sold"
+            />
           ) : (
             <>
               {attendeesData.statistics && (
@@ -633,25 +622,23 @@ export default function AdminEventDetailPage() {
                     icon={<Ticket className="w-4 h-4 text-amber-600" />}
                     bg="bg-amber-50"
                     label="Tickets Sold"
-                    value={(
-                      attendeesData.statistics.totalTicketsSold ?? 0
-                    ).toLocaleString()}
+                    value={fmtNumber(
+                      attendeesData.statistics.totalTicketsSold ?? 0,
+                    )}
                   />
                   <StatCard
                     icon={<CheckCheck className="w-4 h-4 text-emerald-600" />}
                     bg="bg-emerald-50"
                     label="Checked In"
-                    value={(
-                      attendeesData.statistics.totalCheckedIn ?? 0
-                    ).toLocaleString()}
+                    value={fmtNumber(
+                      attendeesData.statistics.totalCheckedIn ?? 0,
+                    )}
                   />
                   <StatCard
                     icon={<DollarSign className="w-4 h-4 text-blue-600" />}
                     bg="bg-blue-50"
                     label="Revenue"
-                    value={formatCurrency(
-                      attendeesData.statistics.totalRevenue ?? 0,
-                    )}
+                    value={fmtCur(attendeesData.statistics.totalRevenue ?? 0)}
                   />
                   <StatCard
                     icon={<TrendingUp className="w-4 h-4 text-purple-600" />}
@@ -667,17 +654,17 @@ export default function AdminEventDetailPage() {
                 return (
                   <div
                     key={tt.ticketTypeId}
-                    className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden"
+                    className="bg-[var(--color-neutral-light)] border border-gray-100 rounded-2xl shadow-sm overflow-hidden"
                   >
                     {/* Ticket type header */}
                     <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50/60">
                       <div>
-                        <p className="text-sm font-semibold text-[#1E1E1E]">
+                        <p className="text-sm font-semibold text-[var(--color-neutral-dark2)]">
                           {tt.name}
                         </p>
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <p className="text-xs text-[var(--color-neutral-dark4)] mt-0.5">
                           {tt.soldCount ?? 0} sold · {tt.checkedInCount ?? 0}{" "}
-                          checked in · {formatCurrency(tt.totalRevenue ?? 0)}
+                          checked in · {fmtCur(tt.totalRevenue ?? 0)}
                         </p>
                       </div>
                       <span className="text-xs text-gray-400 font-medium bg-gray-100 px-2.5 py-1 rounded-full">
@@ -691,7 +678,7 @@ export default function AdminEventDetailPage() {
                       </p>
                     ) : (
                       <>
-                        {/* Desktop table — hidden on mobile */}
+                        {/* Desktop table */}
                         <div className="hidden sm:block overflow-x-auto">
                           <table className="w-full">
                             <thead>
@@ -717,7 +704,7 @@ export default function AdminEventDetailPage() {
                               {tickets.map((t) => (
                                 <tr
                                   key={t.ticketId}
-                                  className="hover:bg-[#eff0fb]/40 transition-colors"
+                                  className="hover:bg-[var(--background)]/40 transition-colors"
                                 >
                                   <td className="px-4 py-3">
                                     <p className="text-xs font-mono text-gray-500">
@@ -725,20 +712,20 @@ export default function AdminEventDetailPage() {
                                     </p>
                                   </td>
                                   <td className="px-4 py-3">
-                                    <p className="text-sm font-medium text-[#1E1E1E]">
+                                    <p className="text-sm font-medium text-[var(--color-neutral-dark2)]">
                                       {t.buyer?.name || "—"}
                                     </p>
-                                    <p className="text-xs text-gray-400 mt-0.5">
+                                    <p className="text-xs text-[var(--color-neutral-dark4)] mt-0.5">
                                       {t.buyer?.email || ""}
                                     </p>
                                   </td>
-                                  <td className="px-4 py-3 text-sm text-[#3D3D3D] font-medium">
+                                  <td className="px-4 py-3 text-sm text-[var(--color-neutral-dark3)] font-medium tabular-nums">
                                     {t.quantity}
                                   </td>
-                                  <td className="px-4 py-3 text-sm font-semibold text-[#1E1E1E]">
-                                    {formatCurrency(t.totalPrice)}
+                                  <td className="px-4 py-3 text-sm font-semibold text-[var(--color-neutral-dark2)] tabular-nums">
+                                    {fmtCur(t.totalPrice)}
                                   </td>
-                                  <td className="px-4 py-3 text-xs text-gray-400">
+                                  <td className="px-4 py-3 text-xs text-[var(--color-neutral-dark4)]">
                                     {t.purchaseDate
                                       ? new Date(
                                           t.purchaseDate,
@@ -751,10 +738,10 @@ export default function AdminEventDetailPage() {
                                   </td>
                                   <td className="px-4 py-3">
                                     <span
-                                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                                      className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
                                         t.checkedIn
-                                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                          : "bg-gray-100 text-gray-500 border border-gray-200"
+                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                          : "bg-gray-100 text-gray-500 border-gray-200"
                                       }`}
                                     >
                                       {t.checkedIn ? "Checked In" : "Pending"}
@@ -766,7 +753,7 @@ export default function AdminEventDetailPage() {
                           </table>
                         </div>
 
-                        {/* Mobile cards — hidden on desktop */}
+                        {/* Mobile cards */}
                         <div className="sm:hidden divide-y divide-gray-50">
                           {tickets.map((t) => (
                             <div
@@ -775,20 +762,20 @@ export default function AdminEventDetailPage() {
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0">
-                                  <p className="text-sm font-semibold text-[#1E1E1E]">
+                                  <p className="text-sm font-semibold text-[var(--color-neutral-dark2)]">
                                     {t.buyer?.name || "Unknown buyer"}
                                   </p>
                                   {t.buyer?.email && (
-                                    <p className="text-xs text-gray-400 mt-0.5 truncate">
+                                    <p className="text-xs text-[var(--color-neutral-dark4)] mt-0.5 truncate">
                                       {t.buyer.email}
                                     </p>
                                   )}
                                 </div>
                                 <span
-                                  className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full ${
+                                  className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full border ${
                                     t.checkedIn
-                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                      : "bg-gray-100 text-gray-500 border border-gray-200"
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      : "bg-gray-100 text-gray-500 border-gray-200"
                                   }`}
                                 >
                                   {t.checkedIn ? "In" : "Pending"}
@@ -800,12 +787,12 @@ export default function AdminEventDetailPage() {
                                 </span>
                                 <span className="text-xs text-gray-500">
                                   Qty:{" "}
-                                  <span className="font-semibold text-[#1E1E1E]">
+                                  <span className="font-semibold text-[var(--color-neutral-dark2)]">
                                     {t.quantity}
                                   </span>
                                 </span>
-                                <span className="text-xs font-semibold text-[#1E1E1E]">
-                                  {formatCurrency(t.totalPrice)}
+                                <span className="text-xs font-semibold text-[var(--color-neutral-dark2)] tabular-nums">
+                                  {fmtCur(t.totalPrice)}
                                 </span>
                                 {t.purchaseDate && (
                                   <span className="text-xs text-gray-400">
@@ -834,59 +821,12 @@ export default function AdminEventDetailPage() {
   );
 }
 
-// ─── Small reusable sub-components ───────────────────────────────────────────
-
-function InfoCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
-      <div className="shrink-0">{icon}</div>
-      <div className="min-w-0">
-        <p className="text-xs text-gray-400">{label}</p>
-        <p className="text-sm font-semibold text-[#1E1E1E] mt-0.5 truncate">
-          {value}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  icon,
-  bg,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  bg: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
-      <div
-        className={`w-8 h-8 rounded-xl ${bg} flex items-center justify-center mb-3`}
-      >
-        {icon}
-      </div>
-      <p className="text-xl font-bold text-[#1E1E1E] tabular-nums">{value}</p>
-      <p className="text-xs text-gray-400 mt-1">{label}</p>
-    </div>
-  );
-}
+// ─── Local sub-component ─────────────────────────────────────────────────────
 
 function StatMini({
   label,
   value,
   accent,
-  bg,
 }: {
   label: string;
   value: string | number;
@@ -894,24 +834,11 @@ function StatMini({
   bg: string;
 }) {
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 text-center">
-      <p className={`text-lg font-bold ${accent}`}>{value}</p>
-      <p className="text-xs text-gray-400 mt-0.5">{label}</p>
-    </div>
-  );
-}
-
-function ChartCard({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5">
-      <p className="text-sm font-bold text-[#1E1E1E] mb-4">{title}</p>
-      {children}
+    <div className="bg-[var(--color-neutral-light)] border border-gray-100 rounded-2xl shadow-sm p-4 text-center">
+      <p className={`text-lg font-bold ${accent} tabular-nums`}>{value}</p>
+      <p className="text-xs text-[var(--color-neutral-dark4)] mt-0.5">
+        {label}
+      </p>
     </div>
   );
 }

@@ -1,55 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import {
-  Loader2,
-  AlertCircle,
-  Check,
-  X,
-  MapPin,
   CalendarDays,
-  User,
+  Check,
   ChevronDown,
   ChevronUp,
+  Loader2,
+  MapPin,
+  User,
+  X,
 } from "lucide-react";
-
-type PendingEvent = {
-  eventId: string;
-  title: string;
-  description: string | null;
-  date: string | null;
-  time: string | null;
-  location: string | null;
-  status: string;
-  lister: { user: { name: string | null; email: string | null } };
-};
-
-function Toast({
-  msg,
-  ok,
-  onDone,
-}: {
-  msg: string;
-  ok: boolean;
-  onDone: () => void;
-}) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 3000);
-    return () => clearTimeout(t);
-  }, []);
-  return (
-    <div
-      className={`fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-2xl text-sm font-medium shadow-lg border ${
-        ok
-          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-          : "bg-red-50 text-red-600 border-red-200"
-      }`}
-    >
-      {msg}
-    </div>
-  );
-}
+import { useCallback, useEffect, useState } from "react";
+import {
+  EmptyState,
+  PageError,
+  PageHeader,
+  SkeletonCard,
+  Toast,
+} from "../../_components/admin-components";
+import { type PendingEvent, fmtDateLong } from "../../_lib/admin-utils";
 
 export default function AdminPendingEventsPage() {
   const [items, setItems] = useState<PendingEvent[]>([]);
@@ -59,7 +29,7 @@ export default function AdminPendingEventsPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get("/admin/get-all-pending-events");
@@ -69,11 +39,11 @@ export default function AdminPendingEventsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   const act = async (eventId: string, newStatus: "APPROVED" | "REJECTED") => {
     setActing(eventId + newStatus);
@@ -97,57 +67,39 @@ export default function AdminPendingEventsPage() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 animate-spin text-[#FFE348]" />
-      </div>
-    );
-  if (err)
-    return (
-      <div className="flex items-center justify-center h-full gap-2 text-sm text-red-500">
-        <AlertCircle className="w-4 h-4" /> {err}
-      </div>
-    );
+  if (err) return <PageError message={err} />;
 
   return (
-    <div className="p-6 space-y-5 pb-10">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 pb-24 lg:pb-10">
       {toast && (
         <Toast msg={toast.msg} ok={toast.ok} onDone={() => setToast(null)} />
       )}
 
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#1E1E1E]">
-            Pending Review
-            {items.length > 0 && (
-              <span className="ml-2 text-sm font-bold bg-[#FFE348] text-[#1E1E1E] px-2.5 py-0.5 rounded-full align-middle">
-                {items.length}
-              </span>
-            )}
-          </h1>
-          <p className="text-sm text-gray-400 mt-0.5">
-            {items.length === 0
+      <PageHeader
+        title="Pending Review"
+        badge={loading ? null : items.length || null}
+        subtitle={
+          loading
+            ? "Loading submissions..."
+            : items.length === 0
               ? "All submissions have been reviewed — great work!"
-              : "Review each submission carefully before approving"}
-          </p>
-        </div>
-      </div>
+              : "Review each submission carefully before approving"
+        }
+      />
 
-      {/* Empty state */}
-      {items.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center">
-            <Check className="w-7 h-7 text-emerald-600" strokeWidth={2.5} />
-          </div>
-          <div className="text-center">
-            <p className="text-base font-bold text-[#1E1E1E]">Queue is empty</p>
-            <p className="text-sm text-gray-400 mt-1">
-              All submissions are reviewed
-            </p>
-          </div>
+      {/* Loading */}
+      {loading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={Check}
+          title="Queue is empty"
+          subtitle="All submissions are reviewed"
+        />
       ) : (
         <div className="space-y-3">
           {items.map((ev, idx) => {
@@ -159,44 +111,40 @@ export default function AdminPendingEventsPage() {
             return (
               <div
                 key={ev.eventId}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+                className="bg-[var(--color-neutral-light)] rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
               >
                 {/* Main row */}
                 <div
-                  className="flex items-start gap-4 p-5 cursor-pointer hover:bg-[#eff0fb]/30 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 p-4 sm:p-5 cursor-pointer hover:bg-[var(--background)]/30 transition-colors"
                   onClick={() => setExpanded(isExpanded ? null : ev.eventId)}
                 >
                   {/* Number */}
-                  <span className="text-sm font-bold text-gray-200 shrink-0 pt-0.5 w-6 text-right tabular-nums">
+                  <span className="hidden sm:block text-sm font-bold text-gray-200 shrink-0 pt-0.5 w-6 text-right tabular-nums">
                     {idx + 1}
                   </span>
 
                   {/* Event info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-[#1E1E1E] leading-snug">
+                    <p className="text-sm font-bold text-[var(--color-neutral-dark2)] leading-snug">
                       {ev.title}
                     </p>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-                      <span className="flex items-center gap-1.5 text-xs text-gray-400">
+                      <span className="flex items-center gap-1.5 text-xs text-[var(--color-neutral-dark4)]">
                         <User className="w-3.5 h-3.5" />
                         {ev.lister?.user?.name ||
                           ev.lister?.user?.email ||
                           "Unknown lister"}
                       </span>
                       {ev.location && (
-                        <span className="flex items-center gap-1.5 text-xs text-gray-400">
+                        <span className="flex items-center gap-1.5 text-xs text-[var(--color-neutral-dark4)]">
                           <MapPin className="w-3.5 h-3.5" />
                           {ev.location}
                         </span>
                       )}
                       {ev.date && (
-                        <span className="flex items-center gap-1.5 text-xs text-gray-400">
+                        <span className="flex items-center gap-1.5 text-xs text-[var(--color-neutral-dark4)]">
                           <CalendarDays className="w-3.5 h-3.5" />
-                          {new Date(ev.date).toLocaleDateString("en-IN", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })}
+                          {fmtDateLong(ev.date)}
                         </span>
                       )}
                     </div>
@@ -210,7 +158,7 @@ export default function AdminPendingEventsPage() {
                     <button
                       disabled={isActing}
                       onClick={() => act(ev.eventId, "APPROVED")}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition-colors disabled:opacity-50 shadow-sm"
+                      className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white transition-colors disabled:opacity-50 shadow-sm"
                     >
                       {isApproving ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -222,7 +170,7 @@ export default function AdminPendingEventsPage() {
                     <button
                       disabled={isActing}
                       onClick={() => act(ev.eventId, "REJECTED")}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-white hover:bg-red-50 text-red-500 border border-red-200 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs font-bold bg-[var(--color-neutral-light)] hover:bg-red-50 text-red-500 border border-red-200 transition-colors disabled:opacity-50"
                     >
                       {isRejecting ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -248,7 +196,7 @@ export default function AdminPendingEventsPage() {
 
                 {/* Expanded description */}
                 {isExpanded && (
-                  <div className="px-5 pb-5 pt-0 border-t border-gray-100 ml-10">
+                  <div className="px-4 sm:px-5 pb-5 pt-0 border-t border-gray-100 sm:ml-10">
                     <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-300 mb-2 pt-4">
                       Description
                     </p>

@@ -1,59 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import {
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  XCircle,
-  RotateCcw,
+  Banknote,
+  Building2,
   Check,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
-  Building2,
-  Banknote,
+  Loader2,
+  RotateCcw,
+  XCircle,
 } from "lucide-react";
-
-type Payout = {
-  id: string;
-  amount: number;
-  status: "PENDING" | "APPROVED" | "COMPLETED" | "REJECTED" | "REVERSED";
-  createdAt: string;
-  updatedAt: string;
-  lister?: {
-    companyName?: string | null;
-    user?: { name?: string | null; email?: string | null };
-  };
-  event?: { title?: string | null };
-  bankDetails?: {
-    accountHolderName?: string | null;
-    accountNumber?: string | null;
-    ifsc?: string | null;
-    bankName?: string | null;
-  };
-};
-
-type Action = "approve" | "complete" | "reject" | "reverse";
-
-const STATUS_PILL: Record<string, string> = {
-  PENDING: "bg-amber-50 text-amber-700 border border-amber-200",
-  APPROVED: "bg-blue-50 text-blue-700 border border-blue-200",
-  COMPLETED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  REJECTED: "bg-red-50 text-red-600 border border-red-200",
-  REVERSED: "bg-orange-50 text-orange-700 border border-orange-200",
-};
-
-const ALLOWED_ACTIONS: Record<string, Action[]> = {
-  PENDING: ["approve", "reject"],
-  APPROVED: ["complete", "reject"],
-  COMPLETED: ["reverse"],
-  REJECTED: [],
-  REVERSED: [],
-};
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  EmptyState,
+  FilterPill,
+  MetricCard,
+  PageError,
+  PageHeader,
+  SkeletonCard,
+  SkeletonMetricCard,
+  StatusBadge,
+  Toast,
+} from "../_components/admin-components";
+import {
+  type AdminPayout,
+  type PayoutAction,
+  PAYOUT_ALLOWED_ACTIONS,
+  PAYOUT_STATUSES,
+  fmtCur,
+  fmtDate,
+  getStatusLabel,
+} from "../_lib/admin-utils";
 
 const ACTION_CONFIG: Record<
-  Action,
+  PayoutAction,
   { label: string; icon: React.FC<any>; className: string }
 > = {
   approve: {
@@ -70,7 +52,8 @@ const ACTION_CONFIG: Record<
   reject: {
     label: "Reject",
     icon: XCircle,
-    className: "bg-white text-red-500 border border-red-200 hover:bg-red-50",
+    className:
+      "bg-[var(--color-neutral-light)] text-red-500 border border-red-200 hover:bg-red-50",
   },
   reverse: {
     label: "Reverse",
@@ -80,56 +63,8 @@ const ACTION_CONFIG: Record<
   },
 };
 
-const ALL_STATUSES = [
-  "ALL",
-  "PENDING",
-  "APPROVED",
-  "COMPLETED",
-  "REJECTED",
-  "REVERSED",
-] as const;
-
-const fmtCur = (n: number) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(n || 0);
-const fmtDate = (s: string) =>
-  new Date(s).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-
-function Toast({
-  msg,
-  ok,
-  onDone,
-}: {
-  msg: string;
-  ok: boolean;
-  onDone: () => void;
-}) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 3000);
-    return () => clearTimeout(t);
-  }, []);
-  return (
-    <div
-      className={`fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-2xl text-sm font-medium shadow-lg border ${
-        ok
-          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-          : "bg-red-50 text-red-600 border-red-200"
-      }`}
-    >
-      {msg}
-    </div>
-  );
-}
-
 export default function AdminPayoutsPage() {
-  const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [payouts, setPayouts] = useState<AdminPayout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [acting, setActing] = useState<string | null>(null);
@@ -137,7 +72,7 @@ export default function AdminPayoutsPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get("/admin/payout/all");
@@ -150,13 +85,13 @@ export default function AdminPayoutsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
-  const doAction = async (payoutId: string, action: Action) => {
+  const doAction = async (payoutId: string, action: PayoutAction) => {
     const label = ACTION_CONFIG[action].label.toLowerCase();
     if (!confirm(`${ACTION_CONFIG[action].label} this payout?`)) return;
     setActing(`${payoutId}-${action}`);
@@ -174,22 +109,15 @@ export default function AdminPayoutsPage() {
     }
   };
 
-  const filtered = payouts.filter(
-    (p) => statusFilter === "ALL" || p.status === statusFilter,
+  const filtered = useMemo(
+    () =>
+      payouts.filter(
+        (p) => statusFilter === "ALL" || p.status === statusFilter,
+      ),
+    [payouts, statusFilter],
   );
 
-  if (loading)
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 animate-spin text-[#FFE348]" />
-      </div>
-    );
-  if (error)
-    return (
-      <div className="flex items-center justify-center h-full gap-2 text-sm text-red-500">
-        <AlertCircle className="w-4 h-4" /> {error}
-      </div>
-    );
+  if (error) return <PageError message={error} />;
 
   const completedTotal = payouts
     .filter((p) => p.status === "COMPLETED")
@@ -199,127 +127,114 @@ export default function AdminPayoutsPage() {
     .reduce((s, p) => s + p.amount, 0);
 
   return (
-    <div className="p-6 space-y-5 pb-10">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 pb-24 lg:pb-10">
       {toast && (
         <Toast msg={toast.msg} ok={toast.ok} onDone={() => setToast(null)} />
       )}
 
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#1E1E1E]">Payouts</h1>
-        <p className="text-sm text-gray-400 mt-0.5">
-          Manage lister withdrawal requests
-        </p>
-      </div>
+      <PageHeader
+        title="Payouts"
+        subtitle="Manage lister withdrawal requests"
+      />
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          {
-            label: "Total Requests",
-            value: payouts.length,
-            sub: "all time",
-            icon: Banknote,
-            color: "text-indigo-600",
-            bg: "bg-indigo-50",
-          },
-          {
-            label: "Pending Amount",
-            value: fmtCur(pendingTotal),
-            sub: `${payouts.filter((p) => p.status === "PENDING").length} requests`,
-            icon: Loader2,
-            color: "text-amber-600",
-            bg: "bg-amber-50",
-          },
-          {
-            label: "Total Paid Out",
-            value: fmtCur(completedTotal),
-            sub: "completed payouts",
-            icon: CheckCircle2,
-            color: "text-emerald-600",
-            bg: "bg-emerald-50",
-          },
-          {
-            label: "Needs Action",
-            value: payouts.filter((p) => ALLOWED_ACTIONS[p.status]?.length > 0)
-              .length,
-            sub: "approve or complete",
-            icon: RotateCcw,
-            color: "text-blue-600",
-            bg: "bg-blue-50",
-          },
-        ].map((card) => (
-          <div
-            key={card.label}
-            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5"
-          >
-            <div
-              className={`w-9 h-9 rounded-xl ${card.bg} flex items-center justify-center mb-3`}
-            >
-              <card.icon
-                className={`w-4.5 h-4.5 ${card.color}`}
-                strokeWidth={1.8}
-              />
-            </div>
-            <p className="text-xl font-bold text-[#1E1E1E] tabular-nums">
-              {card.value}
-            </p>
-            <p className="text-sm font-medium text-[#1E1E1E] mt-1">
-              {card.label}
-            </p>
-            <p className="text-xs text-gray-400 mt-0.5">{card.sub}</p>
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonMetricCard key={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <MetricCard
+            label="Total Requests"
+            value={payouts.length}
+            sub="all time"
+            icon={Banknote}
+            color="text-indigo-600"
+            bg="bg-indigo-50"
+          />
+          <MetricCard
+            label="Pending Amount"
+            value={fmtCur(pendingTotal)}
+            sub={`${payouts.filter((p) => p.status === "PENDING").length} requests`}
+            icon={Loader2}
+            color="text-amber-600"
+            bg="bg-amber-50"
+          />
+          <MetricCard
+            label="Total Paid Out"
+            value={fmtCur(completedTotal)}
+            sub="completed payouts"
+            icon={CheckCircle2}
+            color="text-emerald-600"
+            bg="bg-emerald-50"
+          />
+          <MetricCard
+            label="Needs Action"
+            value={
+              payouts.filter(
+                (p) => (PAYOUT_ALLOWED_ACTIONS[p.status]?.length ?? 0) > 0,
+              ).length
+            }
+            sub="approve or complete"
+            icon={RotateCcw}
+            color="text-blue-600"
+            bg="bg-blue-50"
+          />
+        </div>
+      )}
 
       {/* Status filter */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-2 flex-wrap">
-        {ALL_STATUSES.map((s) => {
+      <div className="bg-[var(--color-neutral-light)] rounded-2xl border border-gray-100 shadow-sm p-3 sm:p-4 flex items-center gap-2 flex-wrap">
+        {PAYOUT_STATUSES.map((s) => {
           const count =
             s === "ALL"
               ? payouts.length
               : payouts.filter((p) => p.status === s).length;
-          const active = statusFilter === s;
           return (
-            <button
+            <FilterPill
               key={s}
+              label={s === "ALL" ? "All" : getStatusLabel(s)}
+              count={count}
+              active={statusFilter === s}
               onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                active
-                  ? "bg-[#FFE348] text-[#1E1E1E] shadow-sm"
-                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-              }`}
-            >
-              {s === "ALL" ? "All" : s} · {count}
-            </button>
+            />
           );
         })}
       </div>
 
       {/* Payouts list */}
-      <div className="space-y-3">
-        {filtered.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center py-16 gap-3">
-            <Banknote className="w-10 h-10 text-gray-200" />
-            <p className="text-sm text-gray-300">No payouts with this status</p>
-          </div>
-        ) : (
-          filtered.map((payout) => {
-            const actions = ALLOWED_ACTIONS[payout.status] || [];
+      {loading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={Banknote}
+          title="No payouts with this status"
+          subtitle="Try changing the status filter"
+        />
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((payout) => {
+            const actions = PAYOUT_ALLOWED_ACTIONS[payout.status] || [];
             const isExp = expanded === payout.id;
 
             return (
               <div
                 key={payout.id}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+                className="bg-[var(--color-neutral-light)] rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
               >
                 {/* Main row */}
                 <div
-                  className="flex items-center gap-4 p-5 cursor-pointer hover:bg-[#eff0fb]/30 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 sm:p-5 cursor-pointer hover:bg-[var(--background)]/30 transition-colors"
                   onClick={() => setExpanded(isExp ? null : payout.id)}
                 >
                   {/* Lister icon */}
-                  <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
+                  <div className="hidden sm:flex w-10 h-10 rounded-xl bg-gray-100 items-center justify-center shrink-0">
                     <Building2
                       className="w-5 h-5 text-gray-400"
                       strokeWidth={1.5}
@@ -329,14 +244,10 @@ export default function AdminPayoutsPage() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-base font-bold text-[#1E1E1E] tabular-nums">
+                      <p className="text-base font-bold text-[var(--color-neutral-dark2)] tabular-nums">
                         {fmtCur(payout.amount)}
                       </p>
-                      <span
-                        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${STATUS_PILL[payout.status] || "bg-gray-100 text-gray-500"}`}
-                      >
-                        {payout.status}
-                      </span>
+                      <StatusBadge status={payout.status} type="payout" />
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
                       <p className="text-xs text-gray-500">
@@ -346,7 +257,7 @@ export default function AdminPayoutsPage() {
                           "Unknown lister"}
                       </p>
                       {payout.event?.title && (
-                        <p className="text-xs text-gray-400 truncate max-w-[200px]">
+                        <p className="text-xs text-[var(--color-neutral-dark4)] truncate max-w-[200px]">
                           {payout.event.title}
                         </p>
                       )}
@@ -358,7 +269,7 @@ export default function AdminPayoutsPage() {
 
                   {/* Action buttons */}
                   <div
-                    className="flex items-center gap-2 shrink-0"
+                    className="flex items-center gap-2 shrink-0 flex-wrap"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {actions.map((action) => {
@@ -370,7 +281,7 @@ export default function AdminPayoutsPage() {
                           key={action}
                           disabled={!!acting}
                           onClick={() => doAction(payout.id, action)}
-                          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold transition-all disabled:opacity-50 ${cfg.className}`}
+                          className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-bold transition-all disabled:opacity-50 ${cfg.className}`}
                         >
                           {isActing ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -399,12 +310,12 @@ export default function AdminPayoutsPage() {
 
                 {/* Bank details */}
                 {isExp && (
-                  <div className="border-t border-gray-100 px-5 py-4 bg-gray-50/50">
+                  <div className="border-t border-gray-100 px-4 sm:px-5 py-4 bg-gray-50/50">
                     <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-300 mb-3">
                       Bank Details
                     </p>
                     {payout.bankDetails ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {[
                           {
                             label: "Account Holder",
@@ -425,10 +336,10 @@ export default function AdminPayoutsPage() {
                         ].map((f) =>
                           f.value ? (
                             <div key={f.label}>
-                              <p className="text-[11px] text-gray-400">
+                              <p className="text-[11px] text-[var(--color-neutral-dark4)]">
                                 {f.label}
                               </p>
-                              <p className="text-sm font-semibold text-[#1E1E1E] mt-0.5 font-mono tracking-wide">
+                              <p className="text-sm font-semibold text-[var(--color-neutral-dark2)] mt-0.5 font-mono tracking-wide">
                                 {f.value}
                               </p>
                             </div>
@@ -444,9 +355,9 @@ export default function AdminPayoutsPage() {
                 )}
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   );
 }
