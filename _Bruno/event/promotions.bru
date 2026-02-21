@@ -1,0 +1,27 @@
+meta {
+  name: promotions
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{host}}/event/1edc63ac-30b1-42f3-8342-f008eb42439a/promote
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "toEventId": "bfd52758-1c83-4e1f-9691-94497ff85098",
+    "content": "Hoi Bro",
+    "customImageUrl": "https://res.cloudinary.com/dcomykzwq/image/upload/v1763209726/WhatsApp_Image_2025-11-15_at_5.52.50_PM_dfxkjt.jpg",
+    "discountCode": "NEW30",
+    "discountPercentage": 30,
+    "earlyBirdOffer": true
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

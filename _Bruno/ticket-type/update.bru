@@ -4,22 +4,35 @@ meta {
   seq: 2
 }
 
-post {
-  url: {{host}}/ticket-type/{{eventId}}
+patch {
+  url: {{host}}/ticket-type/b35ec4ed-4fa0-4588-8eb9-57214f3e5cb6/835afade-f953-4236-a9b6-c65580ef5596
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "name": "Early Bird",
-    "description": "Discounted ticket for early registrants.",
-    "price": 150,
-    "discountedPrice": 100,
-    "discountReason": "Limited-time early bird offer",
-    "quantity": 100,
-    "salesCutoff": "2025-12-01T23:59:59.000Z"
+    "name": "Team of 1",
+    "description": "Single Entry",
+    "price": 249,
+    "discountedPrice": 199,
+    "discountReason": "Early bird discount",
+    "quantity": 10000,
+    "customField": [
+      {
+        "label": "Reg. No.",
+        "fieldType": "number",
+        "required": true
+      },
+      {
+        "label": "Hostel",
+        "fieldType": "dropdown",
+        "required": true,
+        "options": "Day Scholars,BH-1,BH-2,BH-3,BH-4,BH-5,BH-6,BH-7,BH-8,BH-9,BH-10,Apartments,GH-1,GH-2,GH-3,GH-4,GH-5,GH-6,GH-7,GH-8,GH-9"
+      }
+    ]
   }
+  
 }
 
 settings {

@@ -1,5 +1,6 @@
 import chalk from "chalk";
 import winston from "winston";
+import NewRelicTransport from "./newrelic-transport.js";
 
 const levelStyles: Record<string, any> = {
   error: chalk.bgRed.white.bold,
@@ -12,7 +13,15 @@ const levelStyles: Record<string, any> = {
 };
 
 export const getLogger = (service: string, level = "debug") => {
-  return winston.createLogger({
+  // Create transports array
+  const transports: winston.transport[] = [new winston.transports.Console()];
+
+  // Add New Relic transport if license key is present
+  if (process.env.NEW_RELIC_LICENSE_KEY) {
+    transports.push(new NewRelicTransport());
+  }
+
+  const logger = winston.createLogger({
     level: level,
     defaultMeta: { service },
     format: winston.format.combine(
@@ -24,11 +33,67 @@ export const getLogger = (service: string, level = "debug") => {
         const serviceName = chalk.cyan(`[${service}]`);
         const message = chalk.white(info.message);
 
-        return `${time} ${tag} ${serviceName}: ${message}`;
+        // Extract metadata (excluding winston internals)
+        const {
+          level,
+          message: msg,
+          timestamp,
+          service: svc,
+          ...metadata
+        } = info;
+
+        // Format metadata if present
+        let metaStr = "";
+        if (Object.keys(metadata).length > 0) {
+          // Highlight requestId if present
+          if (metadata.requestId) {
+            metaStr += chalk.yellow(` [reqId: ${metadata.requestId}]`);
+            delete metadata.requestId;
+          }
+
+          // Add remaining metadata
+          if (Object.keys(metadata).length > 0) {
+            try {
+              // Safe stringify that handles circular references and errors
+              const safeMetadata = JSON.parse(
+                JSON.stringify(metadata, (key, value) => {
+                  // Handle Error objects
+                  if (value instanceof Error) {
+                    return {
+                      name: value.name,
+                      message: value.message,
+                      stack: value.stack,
+                    };
+                  }
+                  // Skip circular references and complex objects
+                  if (typeof value === "object" && value !== null) {
+                    // Check for circular reference indicators
+                    if (
+                      value.constructor?.name === "IncomingMessage" ||
+                      value.constructor?.name === "ClientRequest" ||
+                      value.req ||
+                      value.res
+                    ) {
+                      return "[Circular]";
+                    }
+                  }
+                  return value;
+                }),
+              );
+              metaStr += chalk.gray(` ${JSON.stringify(safeMetadata)}`);
+            } catch (e) {
+              metaStr += chalk.gray(` [Unable to serialize metadata]`);
+            }
+          }
+        }
+
+        return `${time} ${tag} ${serviceName}: ${message}${metaStr}`;
       }),
     ),
-    transports: [new winston.transports.Console()],
+    transports,
   });
+
+  return logger;
 };
 
 winston.addColors({

@@ -1,7 +1,19 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import {
+  delListerCache,
+  getListerCache,
+  invalidateUserCaches,
+  setListerCache,
+  setUserCache,
+} from "../lib/cache";
+import {
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../utils/errors";
 
-export class ListerServer {
+export class ListerService {
   async applyForLister(
     userId: string,
     listerData: { companyName: string; companyLogo?: string; bio: string },
@@ -16,11 +28,11 @@ export class ListerServer {
       });
 
       if (!existingUser) {
-        throw new Error("User not found.");
+        throw new NotFoundError("User not found.");
       }
 
       if (existingUser.Lister) {
-        throw new Error("User is already a lister.");
+        throw new BadRequestError("User is already a lister.");
       }
 
       // Create new lister
@@ -30,6 +42,7 @@ export class ListerServer {
           companyName: listerData.companyName,
           companyLogo: listerData.companyLogo,
           bio: listerData.bio,
+          status: "COMPLETED",
         },
         select: {
           listerId: true,
@@ -41,6 +54,22 @@ export class ListerServer {
           createdAt: true,
         },
       });
+
+      const _ = await prisma.user.update({
+        where: { userId },
+        data: {
+          role: "LISTER",
+        },
+      });
+
+      // Update user cache with new role
+      await setUserCache(userId, {
+        ...existingUser,
+        role: "LISTER",
+      });
+
+      // Cache the lister profile
+      await setListerCache(lister.listerId, lister);
 
       return lister;
     } catch (error) {
@@ -63,12 +92,31 @@ export class ListerServer {
           status: true,
           createdAt: true,
           updatedAt: true,
-          ListerAnalytics: {
+          Event: {
             select: {
-              totalEvents: true,
-              totalRevenue: true,
-              totalTicketsSold: true,
-              lastUpdated: true,
+              eventId: true,
+              title: true,
+              date: true,
+              banner_horizontal: true,
+              banner_vertical: true,
+              banner_square: true,
+              status: true,
+              Ticket: {
+                where: { status: "SUCCESS" },
+                select: {
+                  quantity: true,
+                  totalPrice: true,
+                  ticketType: {
+                    select: {
+                      platformfee: true,
+                      platformfeePerc: true,
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
             },
           },
           user: {
@@ -87,9 +135,77 @@ export class ListerServer {
       });
 
       if (!lister) {
-        throw new Error("Lister not found for given userId");
+        throw new UnauthorizedError("Lister not found for given userId");
       }
-      return lister;
+
+      // Calculate real-time analytics
+      let totalRevenue = 0;
+      let totalTicketsSold = 0;
+
+      lister.Event.forEach((event) => {
+        const eventTicketsSold = event.Ticket.reduce(
+          (sum, ticket) => sum + ticket.quantity,
+          0,
+        );
+        const eventRevenue = event.Ticket.reduce((sum, ticket) => {
+          // Calculate actual revenue by subtracting platform fees
+          // If platform fee exists, subtract it; if 0, use platformfeePerc
+          const platformFee =
+            ticket.ticketType.platformfee > 0
+              ? ticket.ticketType.platformfee * ticket.quantity
+              : ticket.totalPrice * ticket.ticketType.platformfeePerc;
+          const actualRevenue = ticket.totalPrice - platformFee;
+          return sum + actualRevenue;
+        }, 0);
+
+        totalTicketsSold += eventTicketsSold;
+        totalRevenue += eventRevenue;
+      });
+
+      // Update the ListerAnalytics table with real-time data
+      await prisma.listerAnalytics.upsert({
+        where: { listerId: lister.listerId },
+        create: {
+          listerId: lister.listerId,
+          totalEvents: lister.Event.length,
+          totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+          totalTicketsSold,
+        },
+        update: {
+          totalEvents: lister.Event.length,
+          totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+          totalTicketsSold,
+          lastUpdated: new Date(),
+        },
+      });
+
+      // Invalidate user caches after updating analytics
+      await invalidateUserCaches(userId);
+
+      // Cache the lister profile
+      const listerResult = {
+        ...lister,
+        ListerAnalytics: {
+          totalEvents: lister.Event.length,
+          totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+          totalTicketsSold,
+          lastUpdated: new Date(),
+        },
+        Event: lister.Event.map((event) => ({
+          eventId: event.eventId,
+          title: event.title,
+          date: event.date,
+          banner_horizontal: event.banner_horizontal,
+          banner_vertical: event.banner_vertical,
+          banner_square: event.banner_square,
+          status: event.status,
+        })),
+      };
+
+      // Cache the lister result
+      await setListerCache(lister.listerId, listerResult);
+
+      return listerResult;
     } catch (error) {
       logger.error("Error in meLister:", error);
       throw error;
@@ -111,7 +227,7 @@ export class ListerServer {
       });
 
       if (!existingLister) {
-        throw new Error("Lister not found for given userId");
+        throw new NotFoundError("Lister not found for given userId");
       }
 
       // Update the lister
@@ -138,6 +254,10 @@ export class ListerServer {
         },
       });
 
+      // Invalidate lister cache
+      await delListerCache(existingLister.listerId);
+      await invalidateUserCaches(userId);
+
       return updatedLister;
     } catch (error) {
       logger.error("Error in updateLister:", error);
@@ -147,6 +267,14 @@ export class ListerServer {
 
   async getLister(listerId: string) {
     try {
+      // Try cache first
+      const cached = await getListerCache(listerId);
+      if (cached) {
+        logger.info(`Lister cache hit for ${listerId}`);
+        return cached;
+      }
+
+      // Cache miss - fetch from database
       const lister = await prisma.lister.findUnique({
         where: {
           listerId,
@@ -175,27 +303,20 @@ export class ListerServer {
               banner_vertical: true,
               banner_square: true,
               status: true,
-              ticketsSold: true,
-              revenue: true,
             },
             orderBy: {
               createdAt: "desc",
-            },
-          },
-          ListerAnalytics: {
-            select: {
-              totalEvents: true,
-              totalRevenue: true,
-              totalTicketsSold: true,
-              lastUpdated: true,
             },
           },
         },
       });
 
       if (!lister) {
-        throw new Error("Lister not found for given listerId");
+        throw new NotFoundError("Lister not found for given listerId");
       }
+
+      // Cache the lister
+      await setListerCache(listerId, lister);
 
       return lister;
     } catch (error) {
@@ -206,71 +327,327 @@ export class ListerServer {
 
   async getListerAnalytics(userId: string) {
     try {
+      // Get lister info
       const lister = await prisma.lister.findUnique({
-        where: {
-          userId,
-        },
+        where: { userId },
         select: {
           listerId: true,
-        },
-      });
-      if (!lister?.listerId) {
-        throw new Error("User is not a Lister");
-      }
-      const { listerId } = lister;
-      const analytics = await prisma.listerAnalytics.findUnique({
-        where: { listerId },
-        select: {
-          totalEvents: true,
-          totalRevenue: true,
-          totalTicketsSold: true,
-          lastUpdated: true,
-          lister: {
+          companyName: true,
+          user: {
             select: {
-              companyName: true,
-              user: {
-                select: {
-                  name: true,
-                },
-              },
+              name: true,
+              userId: true,
             },
           },
         },
       });
 
-      if (!analytics) {
-        // Create analytics record if it doesn't exist
-        const newAnalytics = await prisma.listerAnalytics.create({
-          data: {
-            listerId,
-            totalEvents: 0,
-            totalRevenue: 0,
-            totalTicketsSold: 0,
+      if (!lister?.listerId) {
+        throw new UnauthorizedError("User is not a Lister");
+      }
+      if (userId !== lister.user?.userId) {
+        throw new UnauthorizedError("Access Denied");
+      }
+
+      const { listerId } = lister;
+
+      // OPTIMIZED: Aggregate from EventAnalytics (already kept in sync by payment.service)
+      // This is MUCH faster than querying all tickets
+      const [totalEvents, analyticsSum] = await Promise.all([
+        // Count total events
+        prisma.event.count({
+          where: { listerId },
+        }),
+        // Aggregate revenue and tickets from EventAnalytics
+        prisma.eventAnalytics.aggregate({
+          where: {
+            event: {
+              listerId,
+            },
           },
-          select: {
-            totalEvents: true,
-            totalRevenue: true,
-            totalTicketsSold: true,
-            lastUpdated: true,
-            lister: {
-              select: {
-                companyName: true,
-                user: {
-                  select: {
-                    name: true,
+          _sum: {
+            revenue: true,
+            ticketsSold: true,
+          },
+        }),
+      ]);
+
+      const totalRevenue = parseFloat(
+        (analyticsSum._sum.revenue || 0).toFixed(2),
+      );
+      const totalTicketsSold = analyticsSum._sum.ticketsSold || 0;
+
+      logger.info("Lister analytics aggregated from EventAnalytics:", {
+        totalEvents,
+        totalTicketsSold,
+        totalRevenue,
+      });
+
+      prisma.listerAnalytics
+        .upsert({
+          where: { listerId },
+          create: {
+            listerId,
+            totalEvents,
+            totalRevenue,
+            totalTicketsSold,
+          },
+          update: {
+            totalEvents,
+            totalRevenue,
+            totalTicketsSold,
+            lastUpdated: new Date(),
+          },
+        })
+        .catch((err) =>
+          logger.warn("Failed to update ListerAnalytics cache:", err),
+        );
+
+      return {
+        totalEvents,
+        totalRevenue,
+        totalTicketsSold,
+        lastUpdated: new Date(),
+        lister: {
+          companyName: lister.companyName,
+          user: {
+            name: lister.user.name,
+          },
+        },
+      };
+    } catch (error: any) {
+      logger.error("Error in getListerAnalytics:", error);
+      throw error;
+    }
+  }
+
+  async getEventAttendeeTicketsDetails(
+    eventId: string,
+    userId: string,
+    isAdmin: boolean = false,
+  ) {
+    try {
+      // Verify event ownership first (lightweight query)
+      const event = await prisma.event.findFirst({
+        where: {
+          eventId,
+        },
+        select: {
+          eventId: true,
+          lister: {
+            select: {
+              userId: true,
+            },
+          },
+          title: true,
+          date: true,
+          time: true,
+          location: true,
+          CustomField: {
+            select: {
+              fieldId: true,
+              label: true,
+              fieldType: true,
+              required: true,
+              ticketTypeId: true,
+            },
+          },
+        },
+      });
+      console.log(event);
+
+      if (!event) {
+        logger.warn(`Event not found for eventId: ${eventId} `);
+        throw new NotFoundError("Event not found");
+      }
+      if (event.lister.userId !== userId && !isAdmin) {
+        logger.warn(
+          `Access Denied for userId: ${userId} and eventId: ${eventId} `,
+        );
+        throw new NotFoundError("Access Denied");
+      }
+
+      // OPTIMIZED: Get ticket types with aggregated statistics using raw SQL
+      let ticketTypesWithStats: Array<{
+        ticketTypeId: string;
+        name: string;
+        description: string | null;
+        price: number;
+        discountedPrice: number | null;
+        quantity: number;
+        platformfee: number;
+        platformfeePerc: number;
+        totalTicketsSold: bigint;
+        totalTicketRecords: bigint;
+        checkedInCount: bigint;
+        totalRevenue: number;
+      }>;
+
+      ticketTypesWithStats = await prisma.$queryRaw`
+          SELECT
+            tt."ticketTypeId",
+            tt.name,
+            tt.description,
+            tt.price,
+            tt."discountedPrice",
+            tt.quantity,
+            tt.platformfee,
+            tt."platformfeePerc",
+            COALESCE(SUM(t.quantity), 0)::bigint as "totalTicketsSold",
+            COUNT(t."ticketId")::bigint as "totalTicketRecords",
+            COALESCE(SUM(CASE WHEN t."checkedIn" = true THEN t.quantity ELSE 0 END), 0)::bigint as "checkedInCount",
+            COALESCE(SUM(
+              CASE
+                WHEN tt.platformfee > 0
+                THEN t."totalPrice" - (tt.platformfee * t.quantity)
+                ELSE t."totalPrice" * (1 - tt."platformfeePerc")
+              END
+            ), 0)::float as "totalRevenue"
+          FROM "TicketType" tt
+          LEFT JOIN "Ticket" t ON tt."ticketTypeId" = t."ticketTypeId" AND t.status = 'SUCCESS'
+          WHERE tt."eventId" = ${eventId}
+          GROUP BY tt."ticketTypeId", tt.name, tt.description, tt.price, tt."discountedPrice", tt.quantity, tt.platformfee, tt."platformfeePerc"
+          ORDER BY tt.price ASC
+        `;
+
+      // Calculate pagination (skip if fetchAll is true)
+
+      // Fetch tickets with details (all or paginated)
+      const ticketTypesSummary = await Promise.all(
+        ticketTypesWithStats.map(async (ticketType) => {
+          const tickets = await prisma.ticket.findMany({
+            where: {
+              ticketTypeId: ticketType.ticketTypeId,
+              status: "SUCCESS",
+            },
+            select: {
+              ticketId: true,
+              quantity: true,
+              totalPrice: true,
+              qrCode: true,
+              checkedIn: true,
+              createdAt: true,
+              user: {
+                select: {
+                  userId: true,
+                  name: true,
+                  email: true,
+                  phone: true,
+                  avatar: true,
+                },
+              },
+              AttendeeFieldResponse: {
+                select: {
+                  responseId: true,
+                  value: true,
+                  createdAt: true,
+                  field: {
+                    select: {
+                      fieldId: true,
+                      label: true,
+                      fieldType: true,
+                      required: true,
+                    },
                   },
                 },
               },
             },
-          },
-        });
-        return newAnalytics;
-      }
+            orderBy: { createdAt: "desc" },
+          });
 
-      return analytics;
-    } catch (error) {
-      logger.error("Error in getListerAnalytics:", error);
-      throw error;
+          const totalTicketsForType = Number(ticketType.totalTicketRecords);
+
+          const formattedTickets = tickets.map((ticket) => {
+            const attendeeResponses = ticket.AttendeeFieldResponse.reduce(
+              (acc, response) => {
+                acc[response.field.label] = {
+                  fieldId: response.field.fieldId,
+                  value: response.value,
+                  fieldType: response.field.fieldType,
+                  required: response.field.required,
+                };
+                return acc;
+              },
+              {} as Record<string, any>,
+            );
+
+            return {
+              ticketId: ticket.ticketId,
+              qrCode: ticket.qrCode,
+              quantity: ticket.quantity,
+              totalPrice: ticket.totalPrice,
+              checkedIn: ticket.checkedIn,
+              purchaseDate: ticket.createdAt,
+              buyer: ticket.user,
+              attendeeFields: attendeeResponses,
+            };
+          });
+
+          return {
+            ticketTypeId: ticketType.ticketTypeId,
+            name: ticketType.name,
+            description: ticketType.description,
+            price: ticketType.price,
+            discountedPrice: ticketType.discountedPrice,
+            totalQuantity: ticketType.quantity,
+            soldCount: Number(ticketType.totalTicketsSold),
+            totalTicketsForType: totalTicketsForType,
+            availableCount:
+              ticketType.quantity - Number(ticketType.totalTicketsSold),
+            totalTickets: Number(ticketType.totalTicketsSold),
+            totalTicketRecords: Number(ticketType.totalTicketRecords),
+            checkedInCount: Number(ticketType.checkedInCount),
+            totalRevenue: parseFloat(ticketType.totalRevenue.toFixed(2)),
+            tickets: formattedTickets,
+          };
+        }),
+      );
+
+      // Calculate overall statistics from aggregated data
+      const totalTicketsSold = ticketTypesSummary.reduce(
+        (sum, t) => sum + t.totalTickets,
+        0,
+      );
+      const totalCheckedIn = ticketTypesSummary.reduce(
+        (sum, t) => sum + t.checkedInCount,
+        0,
+      );
+      const totalRevenue = ticketTypesSummary.reduce(
+        (sum, t) => sum + t.totalRevenue,
+        0,
+      );
+      const totalTicketRecords = ticketTypesSummary.reduce(
+        (sum, t) => sum + t.totalTicketRecords,
+        0,
+      );
+
+      return {
+        success: true,
+        data: {
+          event: {
+            eventId: event?.eventId,
+            title: event?.title,
+            date: event?.date,
+            time: event?.time,
+            location: event?.location,
+          },
+          customFields: event?.CustomField,
+          statistics: {
+            totalTicketsSold,
+            totalCheckedIn,
+            totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+            totalTicketRecords,
+            checkInRate:
+              totalTicketsSold > 0
+                ? `${((totalCheckedIn / totalTicketsSold) * 100).toFixed(2)}%`
+                : "0%",
+          },
+          ticketTypes: ticketTypesSummary,
+        },
+      };
+    } catch (e) {
+      logger.error("Error in getEventAttendeeTicketsDetails:", e);
+      throw e;
     }
   }
 }

@@ -1,9 +1,26 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import {
+  getUserProfileCache,
+  invalidateUserCaches,
+  setUserProfileCache,
+} from "../lib/cache";
+import { createToken } from "../lib/jwt-token";
+import { NotFoundError } from "../utils/errors";
 
 export class UserService {
   async getUserProfile(userId: string) {
     try {
+      // Try cache first
+      const cached: any = await getUserProfileCache(userId);
+      if (cached) {
+        logger.info(`User profile cache hit for ${userId}`);
+        // Generate fresh token
+        const token = createToken((cached as any).userId, (cached as any).role);
+        return { ...cached, token };
+      }
+
+      // Cache miss - fetch from database
       const userProfile = await prisma.user.findUnique({
         where: { userId },
         select: {
@@ -13,15 +30,24 @@ export class UserService {
           email: true,
           role: true,
           phoneVerified: true,
+          emailVerified: true,
+          avatar: true,
+          profileComplete: true,
           createdAt: true,
           updatedAt: true,
         },
       });
 
       if (!userProfile) {
-        throw new Error("User not found");
+        throw new NotFoundError("User not found");
       }
-      return userProfile;
+
+      // Cache the profile (without token)
+      await setUserProfileCache(userId, userProfile);
+
+      // Generate token
+      const token = createToken(userProfile.userId, userProfile.role);
+      return { ...userProfile, token };
     } catch (error: any) {
       logger.error("Error fetching user profile:", error);
       throw new Error("Failed to fetch user profile");
@@ -50,12 +76,15 @@ export class UserService {
       });
 
       if (!updatedUser) {
-        throw new Error("User not found or update failed");
+        throw new NotFoundError("User not found or update failed");
       }
+
+      // Invalidate all user-related caches
+      await invalidateUserCaches(userId);
 
       return updatedUser;
     } catch (error: any) {
-      logger("Error updating user profile:", error);
+      logger.error("Error updating user profile:", error);
       throw new Error("Failed to update user profile");
     }
   }

@@ -2,11 +2,12 @@ import { fetchPublicEventsSSR } from "@/lib/api/fetchPublicEvents";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
+import { Bricolage_Grotesque, Inter } from "next/font/google";
+import ClientLayout from "./_components/ClientLayout";
+import PwaPrompt from "./_components/PwaPrompt";
+import NotificationModalWrapper from "@/components/NotificationModalWrapper";
 import "./globals.css";
 import Providers from "./providers";
-import ClientLayout from "./_components/ClientLayout";
-import { Bricolage_Grotesque, Inter } from "next/font/google";
-import PwaPrompt from "./_components/PwaPrompt";
 
 const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -24,8 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL("https://www.tixin.in"),
     title: {
-      default:
-        "Tixin - Book Tickets & Host Events | Payment Integration, Custom Pages & Vendor Management",
+      default: "Tixin - Book Tickets & Host Events",
       template: "%s | Tixin - India's Leading Event Platform",
     },
     description:
@@ -108,10 +108,8 @@ export async function generateMetadata(): Promise<Metadata> {
       "online ticket sales platform",
     ],
     alternates: {
-      canonical: "https://www.tixin.in",
       languages: {
         "en-IN": "https://www.tixin.in",
-        "hi-IN": "https://www.tixin.in/hi",
       },
     },
     openGraph: {
@@ -595,6 +593,7 @@ export default async function RootLayout({
           <ClientLayout>
             {children}
             <PwaPrompt />
+            <NotificationModalWrapper />
             <SpeedInsights />
             <Analytics />
           </ClientLayout>

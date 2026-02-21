@@ -4,14 +4,18 @@ import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import {
-  getCachedToken,
-  getCachedUser,
-  isTokenBlacklisted,
-  setCachedToken,
-  setCachedUser,
-} from "../lib/redis-fn";
+  getTokenDataAndBlacklistStatus,
+  getUserCache,
+  setTokenCache,
+  setUserCache,
+} from "../lib/cache";
 import type { AuthenticatedRequest, JwtPayload } from "../types/auth";
-import { sendError } from "../utils/responseMsg";
+import {
+  ForbiddenError,
+  NotFoundError,
+  ServiceUnavailableError,
+  UnauthorizedError,
+} from "../utils/errors";
 
 export const authMiddleware = async (
   req: AuthenticatedRequest,
@@ -23,22 +27,20 @@ export const authMiddleware = async (
     const token = authHeader?.replace("Bearer ", "");
 
     if (!token) {
-      return sendError(res, "No token provided", 401);
+      throw new NotFoundError("No token provided");
     }
 
-    if (!process.env.JWT_SECRET) {
+    if (!config.JWT_SECRET) {
       logger.error("JWT_SECRET is not defined");
-      return sendError(res, "Server configuration error", 500);
+      throw new NotFoundError("Server configuration error");
     }
 
     // Check blacklist early - fastest check
-    const [isBlacklisted, cachedUserId] = await Promise.all([
-      isTokenBlacklisted(token),
-      getCachedToken(token),
-    ]);
+    const [isBlacklisted, cachedUserId] =
+      await getTokenDataAndBlacklistStatus(token);
 
     if (isBlacklisted) {
-      return sendError(res, "Token has been blacklisted", 401);
+      throw new ForbiddenError("Token has been blacklisted");
     }
 
     let userId = cachedUserId;
@@ -47,15 +49,15 @@ export const authMiddleware = async (
     // If no cached token, verify JWT
     if (!userId) {
       try {
-        decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
+        decoded = jwt.verify(token, config.JWT_SECRET) as JwtPayload;
         userId = decoded.userId;
       } catch (_jwtError) {
-        return sendError(res, "Invalid Authorization token", 401);
+        throw new UnauthorizedError("Invalid Authorization token");
       }
     }
 
     // Try to get user from cache first
-    let user = await getCachedUser(userId);
+    let user = await getUserCache(userId);
 
     if (!user) {
       // Fetch from database with minimal fields
@@ -68,45 +70,45 @@ export const authMiddleware = async (
           phone: true,
           phoneVerified: true,
           emailVerified: true,
-          isActive: true, // Added this important field
+          isActive: true,
         },
       });
 
       if (!user) {
-        return sendError(res, "User not found", 404);
+        throw new NotFoundError("User not found");
       }
 
       // Check if user is active
-      if (!user.isActive) {
-        return sendError(res, "Account has been deactivated", 401);
+      if (!(user as any).isActive) {
+        throw new UnauthorizedError("Account has been deactivated");
       }
 
       // Cache both user and token (only if we had to fetch from DB)
-      const cachePromises = [setCachedUser(userId, user)];
+      const cachePromises = [setUserCache(userId, user)];
 
       // Only cache token if we just verified it (not already cached)
       if (!cachedUserId) {
-        cachePromises.push(setCachedToken(token, userId));
+        cachePromises.push(setTokenCache(token, userId));
       }
 
       await Promise.all(cachePromises);
     } else {
       // Even if user is cached, check if active (this is a fast in-memory check)
-      if (!user.isActive) {
-        return sendError(res, "Account has been deactivated", 401);
+      if (!(user as any).isActive) {
+        throw new ForbiddenError("Account has been deactivated");
       }
 
       // If user was cached but token wasn't, cache the token
       if (!cachedUserId) {
-        await setCachedToken(token, userId);
+        await setTokenCache(token, userId);
       }
     }
 
-    req.user = user;
+    req.user = user as any;
     next();
   } catch (error) {
-    logger("Auth Middleware Error:", error);
-    return sendError(res, "Authentication failed", 500);
+    logger.error("Auth Middleware Error:", error);
+    throw new ServiceUnavailableError("Authentication failed");
   }
 };
 
@@ -117,11 +119,11 @@ export const requireRole = (roles: string[]) => {
 
   return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return sendError(res, "Authentication required", 401);
+      throw new UnauthorizedError("Authentication required");
     }
 
     if (!roleSet.has(req.user.role)) {
-      return sendError(res, "Access denied", 403);
+      throw new ForbiddenError("Access denied");
     }
 
     next();

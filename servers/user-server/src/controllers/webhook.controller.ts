@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 import crypto from "node:crypto";
 import { config } from "../config";
-import logger from "../config/logger";
 import { PaymentService } from "../services/payment.service";
+import { logError, logInfo, logWarn } from "../utils/logger-context";
 import { sendError, sendSuccess } from "../utils/responseMsg";
 
 export class WebhookController {
@@ -19,57 +19,80 @@ export class WebhookController {
       const webhookSecret = config.RAZORPAY_WEBHOOK_SECRET;
 
       if (!webhookSignature || !webhookSecret) {
-        logger.error("Missing webhook signature or secret");
+        logError(req, "Missing webhook signature or secret");
         return sendError(res, "Invalid webhook request", 400);
       }
 
-      // Create expected signature
-      const body = JSON.stringify(req.body);
+      // Get raw body (express.raw middleware provides Buffer in req.body)
+      const isBuffer = Buffer.isBuffer(req.body);
+      const rawBody = isBuffer
+        ? req.body.toString("utf8")
+        : JSON.stringify(req.body);
+
+      // Log body type for debugging
+      logInfo(req, "Webhook body type check", {
+        isBuffer,
+        bodyType: typeof req.body,
+        bodyLength: rawBody.length,
+      });
+
+      // Create expected signature using raw body
       const expectedSignature = crypto
         .createHmac("sha256", webhookSecret)
-        .update(body)
+        .update(rawBody)
         .digest("hex");
 
       // Verify signature
       if (expectedSignature !== webhookSignature) {
-        logger.error("Invalid webhook signature");
+        logError(req, "Invalid webhook signature", {
+          expectedSignature,
+          receivedSignature: webhookSignature,
+          bodyPreview: rawBody.substring(0, 100),
+        });
         return sendError(res, "Invalid signature", 400);
       }
 
-      const event = req.body.event;
-      const payload = req.body.payload.payment.entity;
+      // Parse the body for processing
+      const parsedBody = Buffer.isBuffer(req.body)
+        ? JSON.parse(rawBody)
+        : req.body;
 
-      logger.info(`Received webhook event: ${event}`);
+      const event = parsedBody.event;
+      const payload = parsedBody.payload.payment.entity;
+
+      logInfo(req, "Received webhook event", { event, paymentId: payload.id });
 
       // Handle different webhook events
       switch (event) {
         case "payment.captured":
-          await this.handlePaymentCaptured(payload);
+          await this.handlePaymentCaptured(req, payload);
           break;
 
         case "payment.failed":
-          await this.handlePaymentFailed(payload);
+          await this.handlePaymentFailed(req, payload);
           break;
 
         default:
-          logger.info(`Unhandled webhook event: ${event}`);
+          logInfo(req, "Unhandled webhook event", { event });
       }
 
       // Always return 200 to acknowledge receipt
       return sendSuccess(res, "Webhook processed successfully");
     } catch (error) {
-      logger.error("Error processing webhook:", error);
+      logError(req, "Error processing webhook", error);
       // Still return 200 to prevent Razorpay from retrying
       return sendSuccess(res, "Webhook received");
     }
   }
 
-  private async handlePaymentCaptured(payment: any) {
+  private async handlePaymentCaptured(req: Request, payment: any) {
     try {
       const ticketId = payment.notes?.ticketId;
 
       if (!ticketId) {
-        logger.warn("Payment captured but no ticketId in notes");
+        logWarn(req, "Payment captured but no ticketId in notes", {
+          paymentId: payment.id,
+        });
         return;
       }
 
@@ -77,43 +100,51 @@ export class WebhookController {
       const ticket = await this.paymentService.getTicketStatus(ticketId);
 
       if (ticket?.status === "SUCCESS") {
-        logger.info(`Ticket ${ticketId} already processed, skipping`);
+        logInfo(req, "Ticket already processed, skipping", { ticketId });
         return;
       }
 
       // Process the payment
-      const result = await this.paymentService.verifyPayment(
+      await this.paymentService.verifyPayment(
         payment.order_id,
         payment.id,
         "", // Signature already verified by webhook
         true, // Skip signature verification
       );
 
-      if (result.error) {
-        logger.error(`Error processing webhook payment: ${result.error}`);
-      } else {
-        logger.info(
-          `Successfully processed payment via webhook for ticket ${ticketId}`,
-        );
-      }
-    } catch (error) {
-      logger.error("Error handling payment.captured webhook:", error);
+      logInfo(req, "Successfully processed payment via webhook", {
+        ticketId,
+        paymentId: payment.id,
+      });
+    } catch (error: any) {
+      logError(req, "Error handling payment.captured webhook", error, {
+        ticketId: payment.notes?.ticketId,
+        paymentId: payment.id,
+      });
     }
   }
 
-  private async handlePaymentFailed(payment: any) {
+  private async handlePaymentFailed(req: Request, payment: any) {
     try {
       const ticketId = payment.notes?.ticketId;
 
       if (!ticketId) {
-        logger.warn("Payment failed but no ticketId in notes");
+        logWarn(req, "Payment failed but no ticketId in notes", {
+          paymentId: payment.id,
+        });
         return;
       }
 
       await this.paymentService.handlePaymentFailure(ticketId);
-      logger.info(`Payment failed for ticket ${ticketId}`);
+      logInfo(req, "Payment failed for ticket", {
+        ticketId,
+        paymentId: payment.id,
+      });
     } catch (error) {
-      logger.error("Error handling payment.failed webhook:", error);
+      logError(req, "Error handling payment.failed webhook", error, {
+        ticketId: payment.notes?.ticketId,
+        paymentId: payment.id,
+      });
     }
   }
 }

@@ -1,7 +1,8 @@
 import jwt from "jsonwebtoken";
 import { config } from "../config";
 import logger from "../config/logger";
-import { setCachedToken } from "./redis-fn";
+import { ServiceUnavailableError } from "../utils/errors";
+import { setTokenCache } from "./cache";
 
 export const createToken = (
   userId: string,
@@ -11,7 +12,9 @@ export const createToken = (
   try {
     const secret = config.JWT_SECRET;
     if (!secret) {
-      throw new Error("JWT_SECRET environment variable is not set");
+      throw new ServiceUnavailableError(
+        "JWT_SECRET environment variable is not set",
+      );
     }
 
     const token = jwt.sign({ userId, role }, secret, {
@@ -19,7 +22,7 @@ export const createToken = (
     });
 
     // Store the token in Redis
-    setCachedToken(token, userId).catch((error) => {
+    setTokenCache(token, userId).catch((error) => {
       logger.error("Failed to cache token:", error);
       // Don't throw here as token creation succeeded
     });

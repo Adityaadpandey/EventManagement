@@ -316,20 +316,10 @@ export default function ProfilePage() {
       </div>
     );
 
-  if (!isAuthed)
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FBFBFC] p-6">
-        <button
-          onClick={() => router.push("/auth")}
-          className="px-6 py-3 rounded-full bg-[#FFE348] border-b-2 border-[#FFDA0A]"
-        >
-          Login
-        </button>
-      </div>
-    );
+  if (!isAuthed) return router.push("/auth");
 
   return (
-    <div className="bg-[#FBFBFC] p-6 pb-32 min-h-screen">
+    <div className="bg-[#FBFBFC] p-6 pb-32 min-h-screen overflow-y-auto">
       <div className="mx-auto max-w-4xl">
         {/* Header */}
         <div className="bg-white rounded-3xl shadow-md overflow-hidden mb-6">
@@ -419,6 +409,32 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Lister-specific actions */}
+        {form.role === "LISTER" && (
+          <div className="bg-white rounded-2xl shadow-md p-6 mt-6 flex flex-wrap gap-3 justify-center md:justify-start mb-6">
+            <button
+              onClick={() => router.push("/lister/events")}
+              className="px-6 py-3 rounded-full bg-[#FFE348] border-b-2 border-[#FFDA0A] font-medium hover:brightness-95"
+            >
+              My Events
+            </button>
+
+            <button
+              onClick={() => router.push("/lister")}
+              className="px-6 py-3 rounded-full border border-zinc-200 bg-white hover:bg-zinc-50"
+            >
+              Lister Dashboard
+            </button>
+
+            <button
+              onClick={() => router.push("/lister/events/create")}
+              className="px-6 py-3 rounded-full bg-[#FFE348] border-b-2 border-[#FFDA0A] font-medium hover:brightness-95"
+            >
+              Create Event
+            </button>
+          </div>
+        )}
+
         {/* Personal Info */}
         <div className="bg-white rounded-2xl shadow p-6">
           <h2 className="text-lg font-medium mb-3">Personal Info</h2>
@@ -452,7 +468,7 @@ export default function ProfilePage() {
                 <select
                   value={countryCode}
                   onChange={onCountryCodeChange}
-                  className="px-3 py-3 border border-zinc-200 rounded-xl bg-zinc-50 cursor-pointer"
+                  className="sm:px-2 py-3 border border-zinc-200 rounded-xl bg-zinc-50 cursor-pointer sm:w-auto"
                 >
                   {countryCodes.map((c) => (
                     <option key={c.code} value={c.code}>
@@ -464,7 +480,7 @@ export default function ProfilePage() {
                 <input
                   value={phoneNumber}
                   onChange={onPhoneChange}
-                  className="flex-1 px-4 py-3 border border-zinc-200 rounded-xl bg-zinc-50"
+                  className="flex-1 px-4 py-3 border border-zinc-200 rounded-xl bg-zinc-50 w-full"
                   placeholder="87xxxx0933"
                   type="tel"
                 />

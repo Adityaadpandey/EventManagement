@@ -1,8 +1,25 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
-import { redis } from "../config/redis";
+import {
+  getEventAnalyticsCache,
+  getEventCache,
+  getListerEventsCache,
+  getPublicEventCache,
+  invalidateEventCaches,
+  setEventAnalyticsCache,
+  setEventCache,
+  setListerEventsCache,
+  setPublicEventCache,
+} from "../lib/cache";
 import { sendEmail } from "../lib/mail";
+import { notificationQueue } from "../lib/queues";
 import { CreateEventRequest } from "../types/event";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+  UnauthorizedError,
+} from "../utils/errors";
 
 export class EventService {
   async createEvent(userId: string, eventData: CreateEventRequest) {
@@ -14,15 +31,15 @@ export class EventService {
       });
 
       if (!user) {
-        throw new Error("User not found");
+        throw new NotFoundError("User not found");
       }
 
       if (!user.Lister) {
-        throw new Error("User must be a lister to create events");
+        throw new BadRequestError("User must be a lister to create events");
       }
 
       if (user.Lister.status !== "COMPLETED") {
-        throw new Error(
+        throw new ForbiddenError(
           "Lister profile must be approved before creating events",
         );
       }
@@ -40,13 +57,13 @@ export class EventService {
       ] as const;
       for (const field of requiredFields) {
         if (!eventData[field as keyof CreateEventRequest]) {
-          throw new Error(`${field} is required`);
+          throw new BadRequestError(`${field} is required`);
         }
       }
 
       // Validate ticket types
       if (!eventData.ticketTypes || eventData.ticketTypes.length === 0) {
-        throw new Error("At least one ticket type is required");
+        throw new BadRequestError("At least one ticket type is required");
       }
 
       for (const ticketType of eventData.ticketTypes) {
@@ -55,9 +72,20 @@ export class EventService {
           ticketType.price < 0 ||
           ticketType.quantity <= 0
         ) {
-          throw new Error(
+          throw new BadRequestError(
             "Invalid ticket type data. Name, valid price, and positive quantity are required",
           );
+        }
+
+        // Validate ticket-specific custom fields if provided
+        if (ticketType.customField && ticketType.customField.length > 0) {
+          for (const field of ticketType.customField) {
+            if (!field.label || !field.fieldType) {
+              throw new BadRequestError(
+                `Invalid custom field for ticket type "${ticketType.name}". Label and fieldType are required`,
+              );
+            }
+          }
         }
       }
 
@@ -69,12 +97,12 @@ export class EventService {
         Number.isNaN(eventDate.getTime()) ||
         Number.isNaN(eventTime.getTime())
       ) {
-        throw new Error("Invalid date or time format");
+        throw new BadRequestError("Invalid date or time format");
       }
 
       // Check if event date is in the future
       if (eventDate < new Date()) {
-        throw new Error("Event date must be in the future");
+        throw new BadRequestError("Event date must be in the future");
       }
 
       // Use transaction to ensure data consistency
@@ -110,32 +138,61 @@ export class EventService {
           },
         });
 
-        // Create ticket types
+        // Create ticket types with their custom fields
         const ticketTypes = await Promise.all(
           eventData.ticketTypes.map(async (ticketType) => {
-            return await tx.ticketType.create({
+            // Create the ticket type
+            const createdTicketType = await tx.ticketType.create({
               data: {
                 eventId: event.eventId,
                 name: ticketType.name,
                 description: ticketType.description,
+                discountedPrice: ticketType.discountedPrice,
+                discountReason: ticketType.discountReason,
                 price: ticketType.price,
                 quantity: ticketType.quantity,
+                ticketPrefix: ticketType.ticketPrefix,
                 salesCutoff: ticketType.salesCutoff
                   ? new Date(ticketType.salesCutoff)
                   : null,
               },
             });
+
+            // Create ticket-specific custom fields if provided
+            let ticketCustomFields: any = [];
+            if (ticketType.customField && ticketType.customField.length > 0) {
+              ticketCustomFields = await Promise.all(
+                ticketType.customField.map(async (field) => {
+                  return await tx.customField.create({
+                    data: {
+                      eventId: event.eventId,
+                      ticketTypeId: createdTicketType.ticketTypeId,
+                      label: field.label,
+                      fieldType: field.fieldType,
+                      required: field.required,
+                      options: field.options,
+                    },
+                  });
+                }),
+              );
+            }
+
+            return {
+              ...createdTicketType,
+              customFields: ticketCustomFields,
+            };
           }),
         );
 
-        // Create custom fields if provided
-        let customFields: any = [];
+        // Create event-level custom fields if provided
+        let eventCustomFields: any = [];
         if (eventData.customFields && eventData.customFields.length > 0) {
-          customFields = await Promise.all(
+          eventCustomFields = await Promise.all(
             eventData.customFields.map(async (field) => {
               return await tx.customField.create({
                 data: {
                   eventId: event.eventId,
+                  ticketTypeId: null, // Event-level field, not ticket-specific
                   label: field.label,
                   fieldType: field.fieldType,
                   required: field.required,
@@ -156,7 +213,7 @@ export class EventService {
         return {
           event,
           ticketTypes,
-          customFields,
+          eventCustomFields,
         };
       });
 
@@ -174,8 +231,16 @@ export class EventService {
               },
             },
           },
-          TicketType: true,
-          CustomField: true,
+          TicketType: {
+            include: {
+              CustomField: true, // Include ticket-specific custom fields
+            },
+          },
+          CustomField: {
+            where: {
+              ticketTypeId: null, // Only event-level custom fields
+            },
+          },
           EventAnalytics: true,
         },
       });
@@ -192,249 +257,16 @@ export class EventService {
     }
   }
 
-  async getPublicEvents(
-    cursor?: string,
-    limit = 10,
-    longitude?: number,
-    latitude?: number,
-    includeGlobalEvents = true, // New parameter to control global events
-  ) {
-    limit = Math.min(Number(limit) || 10, 100);
-
-    // Validate location parameters
-    const hasValidLocation =
-      longitude !== undefined &&
-      latitude !== undefined &&
-      !isNaN(longitude) &&
-      !isNaN(latitude) &&
-      latitude >= -90 &&
-      latitude <= 90 &&
-      longitude >= -180 &&
-      longitude <= 180;
-
-    // Enhanced cache key with global events flag
-    const locationKey = hasValidLocation
-      ? `${latitude!.toFixed(3)}_${longitude!.toFixed(3)}_${includeGlobalEvents}`
-      : "all";
-    const cacheKey = `public-events:v2:${locationKey}:${cursor || "first"}:${limit}`;
-
-    try {
-      // 1. Try cache first
-      const cached = await redis.get(cacheKey);
-      if (cached) {
-        logger.info(`Cache hit for key: ${cacheKey}`);
-        return JSON.parse(cached);
-      }
-
-      logger.info(`Cache miss for key: ${cacheKey}`);
-
-      // 2. Build query conditions
-      const baseWhere = {
-        status: "APPROVED" as const,
-        date: {
-          gte: new Date(), // Only future events
-        },
-      };
-
-      let locationEvents: any[] = [];
-      let globalEvents: any[] = [];
-
-      // 3. Fetch location-based events if location is provided
-      if (hasValidLocation) {
-        const radiusKm = 300;
-        const latDelta = radiusKm / 111; // degrees latitude
-        const lonDelta =
-          radiusKm / (111 * Math.cos((latitude! * Math.PI) / 180)); // degrees longitude
-
-        const locationWhere = {
-          ...baseWhere,
-          latitude: {
-            gte: latitude! - latDelta,
-            lte: latitude! + latDelta,
-            not: null,
-          },
-          longitude: {
-            gte: longitude! - lonDelta,
-            lte: longitude! + lonDelta,
-            not: null,
-          },
-        };
-
-        locationEvents = await prisma.event.findMany({
-          where: locationWhere,
-          take: limit * 2, // Fetch more for distance filtering
-          ...(cursor && {
-            cursor: { eventId: cursor },
-            skip: 1,
-          }),
-          orderBy: [
-            { date: "asc" }, // Prioritize upcoming events
-            { eventId: "asc" },
-          ],
-          select: this.getEventSelectFields(),
-        });
-
-        // Filter by precise distance and add distance field
-        locationEvents = locationEvents
-          .map((event) => {
-            const distance = this.calculateDistance(
-              latitude!,
-              longitude!,
-              event.latitude!,
-              event.longitude!,
-            );
-            return { ...event, distance };
-          })
-          .filter((event) => event.distance <= radiusKm)
-          .sort((a, b) => a.distance - b.distance); // Sort by distance
-
-        logger.info(
-          `Found ${locationEvents.length} location-based events within ${radiusKm}km`,
-        );
-      }
-
-      // 4. Fetch global events (events without coordinates) if requested
-      if (includeGlobalEvents) {
-        const globalWhere = {
-          ...baseWhere,
-          OR: [{ latitude: null }, { longitude: null }],
-        };
-
-        globalEvents = await prisma.event.findMany({
-          where: globalWhere,
-          take: hasValidLocation ? Math.ceil(limit / 3) : limit, // Fewer global events if location-based search
-          orderBy: [{ date: "asc" }, { eventId: "asc" }],
-          select: this.getEventSelectFields(),
-        });
-
-        // Add distance field for consistency (null for global events)
-        globalEvents = globalEvents.map((event) => ({
-          ...event,
-          distance: null,
-        }));
-
-        logger.info(`Found ${globalEvents.length} global events`);
-      }
-
-      // 5. Combine and sort events
-      let allEvents = [...locationEvents, ...globalEvents];
-
-      // Sort combined events: location-based first (by distance), then global (by date)
-      allEvents.sort((a, b) => {
-        // Location events come first, sorted by distance
-        if (a.distance !== null && b.distance !== null) {
-          return a.distance - b.distance;
-        }
-        if (a.distance !== null && b.distance === null) {
-          return -1; // Location events before global
-        }
-        if (a.distance === null && b.distance !== null) {
-          return 1; // Global events after location
-        }
-        // Both are global events, sort by date
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
-      });
-
-      // 6. Apply pagination
-      const hasNextPage = allEvents.length > limit;
-      const paginatedEvents = allEvents.slice(0, limit);
-      const nextCursor =
-        hasNextPage && paginatedEvents.length > 0
-          ? paginatedEvents[paginatedEvents.length - 1].eventId
-          : null;
-
-      // 7. Enhance events with additional computed fields
-      const enhancedEvents = paginatedEvents.map((event) => ({
-        ...event,
-        // Remove distance from final response (used only for sorting)
-        distance: undefined,
-        // Add computed fields
-        isGlobalEvent: event.latitude === null || event.longitude === null,
-        minPrice: Math.min(...event.TicketType.map((t: any) => t.price)),
-        maxPrice: Math.max(...event.TicketType.map((t: any) => t.price)),
-        totalTickets: event.TicketType.reduce(
-          (sum: number, t: any) => sum + t.quantity,
-          0,
-        ),
-        // Format date for better UX
-        formattedDate: new Date(event.date).toLocaleDateString(),
-        formattedTime: new Date(event.time).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      }));
-
-      const result = {
-        events: enhancedEvents,
-        nextCursor,
-        hasNextPage,
-        metadata: {
-          totalReturned: enhancedEvents.length,
-          locationBasedCount: locationEvents.length,
-          globalEventsCount: globalEvents.length,
-          searchLocation: hasValidLocation ? { latitude, longitude } : null,
-          radiusKm: hasValidLocation ? 300 : null,
-        },
-      };
-
-      // 8. Cache with appropriate TTL
-      const ttl = hasValidLocation ? 60 : 120; // Longer cache for location searches
-      await redis.set(cacheKey, JSON.stringify(result), "EX", ttl);
-
-      logger.info(
-        `Returning ${result.events.length} events (${locationEvents.length} local, ${globalEvents.length} global)`,
-      );
-      return result;
-    } catch (error) {
-      logger.error("Error in getPublicEvents:", error);
-      throw error;
-    }
-  }
-
-  // Helper method to get consistent select fields
-  private getEventSelectFields() {
-    return {
-      eventId: true,
-      title: true,
-      description: true,
-      date: true,
-      time: true,
-      chips: true,
-      restrictions: true,
-      longitude: true,
-      latitude: true,
-      tags: true,
-      location: true,
-      capacity: true,
-      banner_horizontal: true,
-      banner_vertical: true,
-      banner_square: true,
-      TicketType: {
-        select: {
-          ticketTypeId: true,
-          name: true,
-          price: true,
-          quantity: true,
-          salesCutoff: true,
-        },
-      },
-      lister: {
-        select: {
-          listerId: true,
-          user: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-          bio: true,
-        },
-      },
-    };
-  }
-
   async getListerEvents(userId: string) {
     try {
+      // Try cache first
+      const cached = await getListerEventsCache(userId);
+      if (cached) {
+        logger.info(`Lister events cache hit for user ${userId}`);
+        return cached;
+      }
+
+      // Cache miss - fetch from database
       const events = await prisma.event.findMany({
         where: {
           lister: {
@@ -452,6 +284,9 @@ export class EventService {
         logger.warn(`No events found for user ${userId}`);
       }
 
+      // Cache the results
+      await setListerEventsCache(userId, events);
+
       return events;
     } catch (error) {
       logger.error("Error in getListerEvents:", error);
@@ -462,11 +297,11 @@ export class EventService {
   async getPublicEventDetails(eventId: string) {
     try {
       // Try to get from cache first
-      const cacheKey = `event:public:${eventId}`;
-      const cached = await redis.get(cacheKey);
 
+      const cached = await getPublicEventCache(eventId);
       if (cached) {
-        return JSON.parse(cached);
+        logger.info(`Public event cache hit for ${eventId}`);
+        return cached;
       }
 
       // If not in cache, fetch from database
@@ -495,21 +330,40 @@ export class EventService {
           longitude: true,
           latitude: true,
           tags: true,
+          canBuy: true,
           location: true,
           capacity: true,
           TicketType: {
             select: {
               ticketTypeId: true,
               name: true,
+              description: true,
               price: true,
               quantity: true,
               discountedPrice: true,
               discountReason: true,
               salesCutoff: true,
+              platformfee: true,
+              soldCount: true,
+              CustomField: {
+                // Include ticket-specific custom fields
+                select: {
+                  fieldId: true,
+                  label: true,
+                  fieldType: true,
+                  required: true,
+                  options: true,
+                },
+              },
             },
           },
           CustomField: {
+            // Include event-level custom fields only
+            where: {
+              ticketTypeId: null,
+            },
             select: {
+              fieldId: true,
               label: true,
               fieldType: true,
               required: true,
@@ -525,11 +379,11 @@ export class EventService {
       });
 
       if (!event) {
-        throw new Error("Event not found");
+        throw new NotFoundError("Event not found");
       }
 
-      // Store in cache with 10 hour expiration (adjust as needed)
-      await redis.set(cacheKey, JSON.stringify(event), "EX", 3600 * 10);
+      // Store in cache
+      await setPublicEventCache(eventId, event);
 
       return event;
     } catch (error) {
@@ -538,8 +392,28 @@ export class EventService {
     }
   }
 
-  async getEventDetails(userId: string, eventId: string) {
+  async getEventDetails(
+    userId: string,
+    eventId: string,
+    isAdmin: boolean = false,
+  ) {
     try {
+      // Try cache first
+      const cached = await getEventCache(eventId);
+
+      if (cached) {
+        // Verify ownership from cache
+        const cachedEvent = cached as any;
+        if (cachedEvent.lister?.user?.userId !== userId && !isAdmin) {
+          throw new UnauthorizedError(
+            "You do not have permission to view this event",
+          );
+        }
+        logger.info(`Event details cache hit for ${eventId}`);
+        return cached;
+      }
+
+      // Cache miss - fetch from database
       const event = await prisma.event.findUnique({
         where: {
           eventId,
@@ -565,12 +439,17 @@ export class EventService {
       });
 
       if (!event) {
-        throw new Error("Event not found");
+        throw new NotFoundError("Event not found");
       }
 
-      if (event.lister.user.userId !== userId) {
-        throw new Error("You do not have permission to view this event");
+      if (event.lister.user.userId !== userId && !isAdmin) {
+        throw new ForbiddenError(
+          "You do not have permission to view this event",
+        );
       }
+
+      // Cache the event details
+      await setEventCache(eventId, event);
 
       return event;
     } catch (error) {
@@ -595,11 +474,18 @@ export class EventService {
               },
             },
           },
+          CustomField: {
+            include: {
+              _count: {
+                select: { AttendeeFieldResponse: true },
+              },
+            },
+          },
         },
       });
 
       if (!existingEvent) {
-        throw new Error(`Event with ID ${eventId} not found`);
+        throw new NotFoundError(`Event with ID ${eventId} not found`);
       }
 
       // Check if any ticket types have sold tickets
@@ -617,7 +503,7 @@ export class EventService {
         if (hasSoldTickets) {
           // If tickets have been sold, don't allow replacing ticket types
           // Only allow adding new ones
-          throw new Error(
+          throw new BadRequestError(
             "Cannot modify or delete ticket types after tickets have been sold. You can only add new ticket types.",
           );
         } else {
@@ -638,8 +524,15 @@ export class EventService {
       }
 
       // Handle custom fields if provided
-      // Custom fields can be safely replaced as they don't have critical dependencies
       if (customFields && customFields.length > 0) {
+        const hasFieldResponses = existingEvent.CustomField.some(
+          (cf) => cf._count.AttendeeFieldResponse > 0,
+        );
+        if (hasFieldResponses) {
+          throw new BadRequestError(
+            "Cannot modify or delete custom fields after attendees have submitted responses. You can only add new custom fields.",
+          );
+        }
         updatePayload.CustomField = {
           deleteMany: {},
           create: customFields.map((f: any) => ({
@@ -668,6 +561,9 @@ export class EventService {
         },
       });
 
+      // Invalidate all event-related caches
+      await invalidateEventCaches(eventId, userId);
+
       return updatedEvent;
     } catch (error) {
       logger.error("Error in patchEvent:", error);
@@ -675,16 +571,38 @@ export class EventService {
     }
   }
 
-  async updateInfo(eventId: string, update: string) {
+  async updateInfo(
+    eventId: string,
+    update: string,
+    userId: string,
+    imageUrl?: string,
+  ) {
     try {
-      //  so we need to fetch event ticket bought users and send them the email update so we will need the emails of the users who bought tickets for this event
+      // Validate imageUrl if provided
+      if (imageUrl) {
+        try {
+          new URL(imageUrl);
+        } catch {
+          logger.warn("Invalid imageUrl provided — ignoring");
+          imageUrl = undefined;
+        }
+      }
+
+      // Fetch event and ticket holders
       const event = await prisma.event.findUnique({
         where: { eventId },
         include: {
+          lister: {
+            include: {
+              user: {
+                select: { userId: true },
+              },
+            },
+          },
           Ticket: {
             include: {
               user: {
-                select: { email: true, name: true },
+                select: { email: true, name: true, userId: true },
               },
             },
           },
@@ -692,16 +610,65 @@ export class EventService {
       });
 
       if (!event) {
-        throw new Error("Event not found");
+        throw new NotFoundError("Event not found");
       }
+
+      // Verify the caller owns this event (admins bypass via controller)
+      if (event.lister.user.userId !== userId) {
+        throw new ForbiddenError(
+          "You do not have permission to send updates for this event",
+        );
+      }
+
+      // Atomically decrement the counter — this prevents race conditions
+      const decrementResult = await prisma.event.updateMany({
+        where: { eventId, availableMailUpdates: { gt: 0 } },
+        data: { availableMailUpdates: { decrement: 1 } },
+      });
+      if (decrementResult.count === 0) {
+        throw new BadRequestError(
+          "No more email updates available for this event",
+        );
+      }
+
+      const eventTitle = event.title;
+
+      // Extract users from tickets
       const ticketedUsers = event.Ticket.map((t) => t.user);
-      const event_data = event.title;
+
       logger.info(
-        `Fetched ${ticketedUsers.length} ticket holders for event "${event_data}"`,
+        `Fetched ${ticketedUsers.length} ticket holders for event "${eventTitle}"${
+          imageUrl ? " with image" : ""
+        }`,
       );
 
-      // Send email to each user (mocked here)
-      for (const user of ticketedUsers) {
+      const uniqueUsersMap = new Map<
+        string,
+        { email: string; name: string; userId: string }
+      >();
+
+      ticketedUsers.forEach((u) => {
+        if (!uniqueUsersMap.has(u.userId) && u.email) {
+          uniqueUsersMap.set(u.userId, {
+            email: u.email,
+            name: u.name || "Unknown",
+            userId: u.userId,
+          });
+        }
+      });
+
+      const uniqueUsers = Array.from(uniqueUsersMap.values());
+
+      if (uniqueUsers.length === 0) {
+        logger.info(`No ticket buyers to send emails to`);
+        return {
+          success: true,
+          message: "No previous buyers to send emails to",
+          emailsSent: 0,
+        };
+      }
+
+      for (const user of uniqueUsers) {
         if (!user.email) {
           logger.warn(`Skipping user ${user.name ?? "Unknown"} — no email`);
           continue;
@@ -709,22 +676,46 @@ export class EventService {
 
         await sendEmail(
           user.email,
-          `Important Update: ${event_data}`,
+          `Important Update: ${eventTitle}`,
           {
             type: "event-update",
             content: {
               eventUpdate: {
                 message: update,
                 updatedAt: new Date().toISOString(),
+                imageUrl: imageUrl || undefined,
+                eventName: event.title,
+                eventDate: event.date.toISOString().split("T")[0],
+                eventVenue: event.location || undefined,
               },
             },
           },
           user.name ?? "Attendee",
         );
       }
+
+      // Send notifications to all ticket holders
+      for (const user of uniqueUsers) {
+        await notificationQueue.add("send-notification", {
+          userId: user.userId,
+          type: "EVENT_UPDATE",
+          title: `Update: ${eventTitle}`,
+          body: update,
+          link: `/events/${eventId}`,
+          metadata: {
+            eventId,
+            imageUrl: imageUrl || undefined,
+          },
+        });
+      }
+
+      // Invalidate cache (decrement already done atomically above)
+      await invalidateEventCaches(eventId, userId);
+
       return {
-        success: true,
-        message: `Update sent to ${ticketedUsers.length} ticket holders for event "${event_data}"`,
+        message: `Update sent to ${uniqueUsers.length} ticket holders for event "${eventTitle}"`,
+        emailsSent: uniqueUsers.length,
+        updatesRemaining: event.availableMailUpdates - 1,
       };
     } catch (error) {
       logger.error("Error in updateInfo:", error);
@@ -732,23 +723,217 @@ export class EventService {
     }
   }
 
-  // Helper method for calculating distance (Haversine formula)
-  private calculateDistance(
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number,
-  ): number {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+  async getEventAnalytics(
+    userId: string,
+    eventId: string,
+    isAdmin: boolean = false,
+  ) {
+    try {
+      // Try cache first (short TTL for analytics)
+      const cached = await getEventAnalyticsCache(eventId);
+      if (cached) {
+        logger.info(`Event analytics cache hit for ${eventId}`);
+        if (!isAdmin) {
+          // Verify ownership from cache
+          const cachedEvent = cached as any;
+          if (cachedEvent.ownerId !== userId) {
+            throw new UnauthorizedError(
+              "You do not have permission to view this event's analytics",
+            );
+          }
+        }
+        return cached;
+      }
+
+      // OPTIMIZED: Lightweight ownership check first
+      const event = await prisma.event.findUnique({
+        where: { eventId },
+        select: {
+          eventId: true,
+          title: true,
+          date: true,
+          capacity: true,
+          ticketCounter: true,
+          lister: {
+            select: {
+              user: {
+                select: { userId: true },
+              },
+            },
+          },
+          EventAnalytics: {
+            select: {
+              views: true,
+              clicks: true,
+              ticketsSold: true,
+              revenue: true,
+              conversionRate: true,
+              viewsByDay: true,
+              clicksByDay: true,
+              salesByDay: true,
+              revenueByDay: true,
+              ticketTypesSalesByDay: true,
+              lastUpdated: true,
+            },
+          },
+        },
+      });
+
+      if (!event) {
+        throw new NotFoundError("Event not found");
+      }
+
+      if (!isAdmin && event.lister.user.userId !== userId) {
+        throw new UnauthorizedError(
+          "You do not have permission to view this event's analytics",
+        );
+      }
+
+      // OPTIMIZED: Use database aggregation for real-time revenue calculation
+      const ticketStats = await prisma.$queryRaw<
+        Array<{
+          totalTickets: bigint;
+          totalRevenue: number;
+          ticketRecords: bigint;
+        }>
+      >`
+        SELECT
+          COALESCE(SUM(t.quantity), 0)::bigint as "totalTickets",
+          COALESCE(SUM(
+            CASE
+              WHEN tt.platformfee > 0
+              THEN t."totalPrice" - (tt.platformfee * t.quantity)
+              ELSE t."totalPrice" * 0.95
+            END
+          ), 0)::float as "totalRevenue",
+          COUNT(t."ticketId")::bigint as "ticketRecords"
+        FROM "Ticket" t
+        INNER JOIN "TicketType" tt ON t."ticketTypeId" = tt."ticketTypeId"
+        WHERE tt."eventId" = ${eventId}
+          AND t.status = 'SUCCESS'
+      `;
+
+      const realTimeTicketsSold = Number(ticketStats[0]?.totalTickets || 0);
+      const realTimeRevenue = parseFloat(
+        (ticketStats[0]?.totalRevenue || 0).toFixed(2),
+      );
+
+      // Read from EventAnalytics table (kept in sync by worker)
+      const analytics = event.EventAnalytics;
+
+      if (!analytics) {
+        // If analytics don't exist yet, use real-time calculations
+        return {
+          eventId: event.eventId,
+          title: event.title,
+          views: 0,
+          clicks: 0,
+          ticketsSold: realTimeTicketsSold,
+          revenue: realTimeRevenue,
+          conversionRate: 0,
+          totalTickets: Number(ticketStats[0]?.ticketRecords || 0),
+          total_tickets: event.ticketCounter || 0,
+          capacity: event.capacity,
+          capacityUtilization: event.capacity
+            ? parseFloat(
+                ((realTimeTicketsSold * 100) / event.capacity).toFixed(2),
+              )
+            : null,
+          eventDate: event.date,
+          lastUpdated: new Date(),
+          viewsByDay: {},
+          clicksByDay: {},
+          salesByDay: {},
+          revenueByDay: {},
+          ticketTypesSalesByDay: {},
+        };
+      }
+
+      // Return analytics data with real-time revenue calculation
+      const conversionRate =
+        analytics.views > 0
+          ? parseFloat(
+              ((realTimeTicketsSold * 100) / analytics.views).toFixed(2),
+            )
+          : 0;
+
+      const analyticsResult = {
+        eventId: event.eventId,
+        title: event.title,
+        views: analytics.views || 0,
+        clicks: analytics.clicks || 0,
+        ticketsSold: realTimeTicketsSold,
+        revenue: realTimeRevenue,
+        conversionRate,
+        total_tickets: event.ticketCounter || 0,
+        capacity: event.capacity,
+        capacityUtilization: event.capacity
+          ? parseFloat(
+              ((realTimeTicketsSold * 100) / event.capacity).toFixed(2),
+            )
+          : null,
+        eventDate: event.date,
+        lastUpdated: analytics.lastUpdated || new Date(),
+        viewsByDay: analytics.viewsByDay || {},
+        clicksByDay: analytics.clicksByDay || {},
+        salesByDay: analytics.salesByDay || {},
+        revenueByDay: analytics.revenueByDay || {},
+        ticketTypesSalesByDay: analytics.ticketTypesSalesByDay || {},
+        ownerId: event.lister.user.userId,
+      };
+
+      // Cache analytics with short TTL (1 minute)
+      await setEventAnalyticsCache(eventId, analyticsResult);
+
+      return analyticsResult;
+    } catch (error: any) {
+      logger.error("Error in getEventAnalytics:", error);
+      throw error;
+    }
+  }
+
+  async changeEventStatus(
+    userId: string,
+    eventId: string,
+    canBuy: boolean,
+    isAdmin: boolean = false,
+  ) {
+    try {
+      const event = await prisma.event.findUnique({
+        where: { eventId },
+        select: {
+          lister: {
+            select: {
+              user: {
+                select: { userId: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!event) {
+        throw new NotFoundError("Event not found");
+      }
+      if (event.lister.user.userId !== userId && !isAdmin) {
+        throw new ForbiddenError(
+          "You do not have permission to change this event's status",
+        );
+      }
+
+      const updatedEvent = await prisma.event.update({
+        where: { eventId },
+        data: { canBuy },
+      });
+      await invalidateEventCaches(eventId, userId);
+
+      return {
+        message: `Event canBuy status updated to ${canBuy} successfully`,
+        data: updatedEvent,
+      };
+    } catch (error) {
+      logger.error("Error changing event status:", error);
+      throw error;
+    }
   }
 }

@@ -1,12 +1,11 @@
 services:
   backend-service:
-    build:
-      context: .
-      dockerfile: servers/user-server/Dockerfile
-    image: backend-service
+    image: adppandey/backend-user-service:latest
+    pull_policy: always
+    container_name: backend-service
     ports:
       - "7001:7001"
-    command: ["node", "dist/bin.js"]
+    command: ["node", "-r", "newrelic", "dist/bin.js"]
     environment:
       - NODE_ENV=production
       - NODE_OPTIONS=--max-old-space-size=2048
@@ -15,38 +14,30 @@ services:
       - PORT=7001
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://0.0.0.0:7001/health || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
     env_file:
       - .env
+    volumes:
+      - ./certs:/workspace/certs:ro
     restart: unless-stopped
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "5"
-    # DDoS Protection: Resource limits
     deploy:
       update_config:
         parallelism: 1
         delay: 10s
-        order: start-first  # Critical for zero downtime
+        order: start-first
       rollback_config:
         parallelism: 1
         delay: 5s
-      resources:
-        limits:
-          memory: 7G  # Reduced to leave more for nginx cache
-          cpus: '3'
-        reservations:
-          memory: 2G
-          cpus: '1.5'
-    # Security: Read-only root filesystem where possible
     security_opt:
       - no-new-privileges:true
-    # Limit process capabilities
     cap_drop:
       - ALL
     cap_add:
@@ -54,34 +45,31 @@ services:
     networks:
       - app-network
 
+
   worker:
-    build:
-      context: .
-      dockerfile: servers/user-server/Dockerfile
-    image: backend-service
-    command: ["node", "dist/workers/index.worker.js"]
+    image: adppandey/backend-user-service:latest
+    pull_policy: always
+    container_name: worker
+    command: ["node", "-r", "newrelic", "dist/workers/index.worker.js"]
     environment:
       - NODE_ENV=production
       - NODE_OPTIONS=--max-old-space-size=1024
+      - NEW_RELIC_APP_NAME=tixin-workers
     env_file:
       - .env
+    volumes:
+      - ./certs:/workspace/certs:ro
     restart: unless-stopped
-    deploy:
-      replicas: 3
-      resources:
-        limits:
-          memory: 1.5G
-          cpus: '0.75'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
-    # Security hardening
+    depends_on:
+      backend-service:
+        condition: service_healthy
     security_opt:
       - no-new-privileges:true
     cap_drop:
       - ALL
     networks:
       - app-network
+
 
   nginx:
     image: nginx:alpine
@@ -93,20 +81,14 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./blacklist.conf:/etc/nginx/blacklist.conf:ro
       - ./nginx-cache:/var/cache/nginx
-      - /etc/letsencrypt:/etc/letsencrypt:ro
       - nginx-logs:/var/log/nginx
+      - ./letsencrypt/conf:/etc/letsencrypt:rw
+      - ./letsencrypt/www:/var/www/certbot:rw
     depends_on:
       backend-service:
         condition: service_healthy
+        restart: true
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -116,24 +98,117 @@ services:
       - CHOWN
       - SETUID
       - SETGID
-      - DAC_OVERRIDE  # Add this for cache directory access
+      - DAC_OVERRIDE
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/nginx-health || exit 1"]
-      interval: 20s
+      interval: 15s
       timeout: 5s
-      retries: 3
-      start_period: 30s
+      retries: 5
+      start_period: 45s
     sysctls:
-      - net.core.somaxconn=4096
-      - net.ipv4.tcp_max_syn_backlog=8192
-      - net.ipv4.ip_local_port_range=1024 65535
+      net.core.somaxconn: 4096
+      net.ipv4.tcp_max_syn_backlog: 8192
+      net.ipv4.ip_local_port_range: "1024 65535"
     networks:
       - app-network
+    init: true
+
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./letsencrypt/www:/var/www/certbot
+      - ./letsencrypt/conf:/etc/letsencrypt
+    entrypoint: >
+      sh -c "trap exit TERM; while :; do sleep 12h & wait $${!}; certbot renew --webroot -w /var/www/certbot --quiet; done"
+    restart: unless-stopped
+    networks:
+      - app-network
+
+
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+      - "--storage.tsdb.retention.size=5GB"
+      - "--web.enable-lifecycle"
+    depends_on:
+      backend-service:
+        condition: service_healthy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - app-network
+
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: grafana
+    ports:
+      - "127.0.0.1:3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - app-network
+
+
+  redis:
+    image: redis/redis-stack:6.2.6-v19
+    container_name: redis
+    environment:
+      REDIS_ARGS: "--requirepass cantremember"
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "cantremember", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
 networks:
   app-network:
     driver: bridge
-    # Enhanced network configuration
     driver_opts:
       com.docker.network.driver.mtu: 1500
     ipam:
@@ -150,3 +225,10 @@ volumes:
       o: bind
   nginx-logs:
     driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  redis_data:
+    driver: local
+    name: redis_data_prod

@@ -1,13 +1,50 @@
-import { PrismaClient } from "@repo/database";
+import "dotenv/config";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
+import { PrismaClient } from "../generated/prisma/client";
+import logger from "./logger";
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    log: ["error"], // or ['query', 'info', 'warn', 'error'] if debugging
-  });
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// Create a pg Pool so we can inspect pool stats
+const pool = new Pool({
+  connectionString,
+});
+
+// Use the pool in the PrismaPg adapter
+const adapter = new PrismaPg(pool);
+
+// Enable warn logs as events so $on('warn') is typed correctly
+const prisma = new PrismaClient({
+  adapter,
+  log: [
+    { level: "warn", emit: "event" },
+    { level: "error", emit: "event" },
+    { level: "info", emit: "event" },
+  ],
+});
+
+export { prisma };
+
+// Graceful shutdown for Prisma + pool
+process.on("beforeExit", async () => {
+  try {
+    await prisma.$disconnect();
+    await pool.end();
+  } catch (err) {
+    logger.error("Error during graceful shutdown", err);
+  }
+});
+
+// Warn handler (now correctly typed)
+prisma.$on("warn", (e) => {
+  if (e.message?.toLowerCase().includes("connection")) {
+    logger.warn("Prisma connection warning", e);
+  } else {
+    logger.warn("Prisma warning", e);
+  }
+});

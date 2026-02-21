@@ -6,10 +6,23 @@ export const reqMiddleware = (
   res: Response,
   next: NextFunction,
 ) => {
+  // Skip logging for health check and metrics endpoints to reduce noise
+  const skipLogging = req.path === "/health" || req.path === "/metrics";
+
+  if (skipLogging) {
+    return next();
+  }
+
   const start = process.hrtime();
   const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
 
-  logger.info(`Incoming request: ${req.method} ${req.originalUrl} from ${ip}`);
+  logger.info(`Incoming request: ${req.method} ${req.originalUrl} from ${ip}`, {
+    requestId: req.requestId,
+    method: req.method,
+    path: req.originalUrl,
+    ip,
+    userAgent: req.get("User-Agent"),
+  });
 
   res.on("finish", () => {
     const [seconds, nanoseconds] = process.hrtime(start);
@@ -17,6 +30,13 @@ export const reqMiddleware = (
 
     logger.info(
       `Request completed: ${req.method} ${req.originalUrl} - Status: ${res.statusCode} - Duration: ${durationMs} ms`,
+      {
+        requestId: req.requestId,
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: res.statusCode,
+        durationMs: parseFloat(durationMs),
+      },
     );
   });
 

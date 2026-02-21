@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+const customFieldSchema = z.object({
+  label: z.string().min(1, "Custom field label is required"),
+  fieldType: z.string().min(1, "Custom fieldType is required"),
+  required: z.boolean({
+    message: "Custom field 'required' must be a boolean",
+  }),
+  options: z.string().optional().nullable(),
+});
+
 const ticketTypeSchema = z.object({
   name: z.string().min(1, "Ticket name is required"),
   price: z.number().nonnegative("Price must be a non-negative number"),
@@ -9,14 +18,17 @@ const ticketTypeSchema = z.object({
     .number()
     .nonnegative("Discounted price must be a non-negative number")
     .optional(),
-});
-
-const customFieldSchema = z.object({
-  label: z.string().min(1, "Custom field label is required"),
-  fieldType: z.string().min(1, "Custom fieldType is required"),
-  required: z.boolean({
-    message: "Custom field 'required' must be a boolean",
-  }),
+  discountReason: z.string().optional(),
+  ticketPrefix: z
+    .string()
+    .min(2, "Ticket prefix must be at least 2 characters")
+    .max(10, "Ticket prefix must not exceed 10 characters")
+    .regex(
+      /^[A-Z0-9]+$/,
+      "Ticket prefix must contain only uppercase letters and numbers",
+    )
+    .optional(),
+  customField: z.array(customFieldSchema).optional(),
 });
 
 export const createEventSchema = z.object({

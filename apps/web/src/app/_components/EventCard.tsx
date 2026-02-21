@@ -10,6 +10,7 @@ interface EventCardProps {
   date: string;
   location: string;
   price: string | number;
+  discountedPrice?: string | number;
 }
 
 const getOrdinalSuffix = (day: number): string => {
@@ -40,7 +41,7 @@ const formatDate = (dateString: string): string => {
 };
 
 const EventCard: React.FC<EventCardProps> = memo(
-  ({ imageUrl, title, date, location, price }) => {
+  ({ imageUrl, title, date, location, price, discountedPrice, canBuy }) => {
     // Memoize formatted date to prevent recalculation on re-renders
     const formattedDate = useMemo(() => formatDate(date), [date]);
 
@@ -59,16 +60,16 @@ const EventCard: React.FC<EventCardProps> = memo(
     return (
       <Superellipse
         style={{ width: "100%", height: "auto" }}
-        r1={0.01}
-        r2={0.13}
+        r1={0.02}
+        r2={0.1}
       >
-        <div className="flex flex-col gap-1 p-1 pb-2 bg-white md:rounded-[28px] rounded-2xl md:w-[36.25vw] max-w-[522px] w-[91.8vw]">
+        <div className="flex flex-col gap-1 p-1 pb-2 bg-white  md:w-[36.25vw] max-w-[522px] w-[91.8vw]">
           <Superellipse
             style={{ width: "100%", height: "auto" }}
-            r1={0.01}
-            r2={0.13}
+            r1={0.02}
+            r2={0.1}
           >
-            <div className="md:h-[20.069vw] h-[50.256vw] md:rounded-3xl rounded-xl overflow-hidden">
+            <div className="md:h-[20.069vw] h-[50.256vw] overflow-hidden relative">
               <Image
                 src={imageUrl}
                 alt={`${title} event image`}
@@ -79,6 +80,12 @@ const EventCard: React.FC<EventCardProps> = memo(
                 sizes="(max-width: 768px) 91.8vw, 36.25vw"
                 quality={85}
               />
+
+              {canBuy === false && (
+                <span className="absolute top-0 right-0 text-white !text-xl bg-[#FF6363] px-4 py-2 rounded-l-full">
+                  SOLD OUT
+                </span>
+              )}
             </div>
           </Superellipse>
 
@@ -97,9 +104,22 @@ const EventCard: React.FC<EventCardProps> = memo(
                 </span>
               )}
 
-              <h2 className={isFree ? "!text-green-600" : ""}>
-                {priceDisplay}
-              </h2>
+              {!discountedPrice && (
+                <h2 className={isFree ? "!text-green-600" : ""}>
+                  {priceDisplay}
+                </h2>
+              )}
+
+              {Number(discountedPrice) > 0 && (
+                <div className="flex gap-1">
+                  <h2 className="!text-[#007E45] !text-[24px]">
+                    {discountedPrice}
+                  </h2>
+                  <h3 className="line-through text-[#8B8B8B]">
+                    {priceDisplay}
+                  </h3>
+                </div>
+              )}
             </div>
           </div>
         </div>

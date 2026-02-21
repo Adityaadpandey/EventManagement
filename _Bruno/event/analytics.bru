@@ -1,0 +1,16 @@
+meta {
+  name: analytics
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{host}}/event/{{eventId}}/analytics
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

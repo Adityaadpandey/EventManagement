@@ -1,7 +1,10 @@
 import { Job, Worker } from "bullmq";
-import logger from "../config/logger";
 import { redis } from "../config/redis";
 import { sendSMS } from "../lib/twilio-sms";
+
+import { getLogger } from "@repo/logger";
+
+const logger: any = getLogger("Phone OTP Worker", "debug");
 
 interface OtpJobData {
   to: string;
@@ -23,9 +26,9 @@ export const otpWorker = new Worker(
 
     try {
       await sendSMS(otp, parsed.number); // pass formatted number
-      logger.info(`✅ OTP sent to ${parsed.number}`);
+      logger.info(`OTP sent to ${parsed.number}`);
     } catch (err) {
-      logger.error(`❌ Failed to send OTP to ${parsed.number}`, err);
+      logger.error(`Failed to send OTP to ${parsed.number}`, err);
       throw err;
     }
   },

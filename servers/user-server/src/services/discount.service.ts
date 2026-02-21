@@ -1,30 +1,45 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
+import { getDiscountCache, setDiscountCache } from "../lib/cache";
+import { NotFoundError } from "../utils/errors";
+
+interface CreateDiscountParams {
+  eventId: string;
+  code: string;
+  description?: string;
+  discountType: "PERCENTAGE" | "FLAT";
+  discountPct?: number;
+  discountAmt?: number;
+  maxDiscount?: number;
+  minOrderAmt?: number;
+  maxUses?: number;
+  validFrom: Date;
+  validTo: Date;
+}
 
 export class DiscountService {
-  async createDiscountCode(
-    eventId: string,
-    code: string,
-    discountPct: number,
-    maxUses: number,
-    validFrom: Date,
-    validTo: Date,
-  ) {
+  async createDiscountCode(params: CreateDiscountParams) {
     try {
       const newCode = await prisma.discountCode.create({
         data: {
-          eventId,
-          code,
-          discountPct,
-          maxUses,
-          validFrom,
-          validTo,
+          eventId: params.eventId,
+          code: params.code.toUpperCase(),
+          description: params.description,
+          discountType: params.discountType,
+          discountPct: params.discountPct ?? 0,
+          discountAmt: params.discountAmt ?? 0,
+          maxDiscount: params.maxDiscount,
+          minOrderAmt: params.minOrderAmt,
+          maxUses: params.maxUses,
+          validFrom: params.validFrom,
+          validTo: params.validTo,
         },
       });
       logger.info("Discount code created:", newCode);
-      return { data: newCode };
+      return newCode;
     } catch (error) {
-      return { error: "Failed to create discount code" };
+      logger.error("Failed to create discount code:", error);
+      throw new Error("Failed to create discount code");
     }
   }
 
@@ -32,24 +47,38 @@ export class DiscountService {
     try {
       const codes = await prisma.discountCode.findMany({
         where: { eventId },
+        orderBy: { createdAt: "desc" },
       });
-      return { data: codes };
+      return codes;
     } catch (error) {
-      return { error: "Failed to Get the Event's Discount Codes" };
+      logger.error("Failed to get discount codes:", error);
+      throw new Error("Failed to get the event's discount codes");
     }
   }
 
   async getCodeInfoById(code: string, eventId: string) {
     try {
-      const codeInfo = await prisma.discountCode.findUnique({
-        where: { code, eventId },
+      const cache = await getDiscountCache(code, eventId);
+      if (cache) {
+        return cache;
+      }
+
+      const codeInfo = await prisma.discountCode.findFirst({
+        where: {
+          code: code.toUpperCase(),
+          eventId,
+        },
       });
       if (!codeInfo) {
-        return { error: "Discount code not found" };
+        throw new NotFoundError("Discount code not found");
       }
-      return { data: codeInfo };
+      setDiscountCache(code, eventId, codeInfo).catch((err) =>
+        logger.warn("Failed to cache discount code:", err),
+      );
+      return codeInfo;
     } catch (error) {
-      return { error: "Failed to get discount code Info" };
+      logger.error("Failed to get discount code info:", error);
+      throw new Error("Failed to get discount code info");
     }
   }
 }

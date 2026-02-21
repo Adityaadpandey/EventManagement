@@ -12,6 +12,8 @@ interface Event {
   location: string;
   date: string;
   TicketType?: Array<{ price: number }>;
+  discountedPrice?: string | number;
+  canBuy?: boolean;
 }
 
 interface EventsListProps {
@@ -33,7 +35,13 @@ export const EventsList = memo(
               className="group"
             >
               <EventCard
+                discountedPrice={
+                  ev.TicketType && ev.TicketType.length > 0
+                    ? Math.min(...ev.TicketType.map((t) => t.discountedPrice))
+                    : 0
+                }
                 imageUrl={ev.banner_horizontal}
+                canBuy={ev.canBuy}
                 title={ev.title}
                 location={ev.location}
                 date={ev.date}

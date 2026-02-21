@@ -5,14 +5,16 @@ export interface TicketTypeRequest {
   discountedPrice?: number;
   discountReason?: string;
   quantity: number;
+  ticketPrefix?: string;
   salesCutoff?: string; // ISO date string
+  customField?: CustomFieldRequest[];
 }
 
 export interface CustomFieldRequest {
   label: string;
   fieldType: string; // 'text', 'number', 'dropdown', 'email', etc.
   required: boolean;
-  options?: string; // JSON or comma-separated for dropdown options
+  options?: string | null; // JSON or comma-separated for dropdown options
 }
 
 export interface CreateEventRequest {

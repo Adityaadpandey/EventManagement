@@ -1,8 +1,10 @@
 import type { Response } from "express";
 import { prisma } from "../config/db";
-import logger from "../config/logger";
 import { PaymentService } from "../services/payment.service";
 import type { AuthenticatedRequest } from "../types/auth";
+import { isAppError, UnauthorizedError } from "../utils/errors";
+import { formatZodError } from "../utils/formatZodError";
+import { logError, logInfo } from "../utils/logger-context";
 import { sendError, sendSuccess } from "../utils/responseMsg";
 import {
   processRefundSchema,
@@ -23,26 +25,27 @@ export class PaymentController {
       const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
         verifyPaymentSchema.parse(req.body);
 
+      logInfo(req, "Verifying payment", { orderId: razorpay_order_id });
       const result = await this.paymentService.verifyPayment(
         razorpay_order_id,
         razorpay_payment_id,
         razorpay_signature,
       );
 
-      if (result.error) {
-        return sendError(res, result.error, 400);
-      }
-
-      return sendSuccess(
-        res,
-        "Payment verified and ticket confirmed",
-        result.data,
-      );
+      return sendSuccess(res, "Payment verified and ticket confirmed", result);
     } catch (error: any) {
+      logError(req, "Failed to verify payment", error);
       if (error.name === "ZodError") {
-        return sendError(res, error.errors?.[0]?.message, 400);
+        const formattedErrors = formatZodError(error);
+        return sendError(
+          res,
+          { error: formattedErrors || "Validation error" },
+          400,
+        );
       }
-      logger.error("Error verifying payment:", error);
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to verify payment", 500);
     }
   }
@@ -51,14 +54,26 @@ export class PaymentController {
     try {
       const { ticketId } = handlePaymentFailureSchema.parse(req.body);
 
+      logInfo(req, "Handling payment failure", { ticketId });
       const result = await this.paymentService.handlePaymentFailure(ticketId);
 
-      return sendSuccess(res, "Payment failure handled", result.data);
+      return sendSuccess(res, "Payment failure handled", result);
     } catch (error: any) {
+      logError(req, "Failed to handle payment failure", error, {
+        ticketId: req.body.ticketId,
+      });
+
       if (error.name === "ZodError") {
-        return sendError(res, error.errors?.[0]?.message, 400);
+        const formattedErrors = formatZodError(error);
+        return sendError(
+          res,
+          { error: formattedErrors || "Validation error" },
+          400,
+        );
       }
-      logger.error("Error handling payment failure:", error);
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to handle payment failure", 500);
     }
   }
@@ -66,7 +81,7 @@ export class PaymentController {
   async requestRefund(req: AuthenticatedRequest, res: Response) {
     try {
       const userId = req.user?.userId;
-      if (!userId) return sendError(res, "User ID is required", 400);
+      if (!userId) throw new UnauthorizedError("User ID is required");
 
       const { ticketId, reason } = requestRefundSchema.parse(req.body);
       // Verify user owns the ticket
@@ -81,30 +96,29 @@ export class PaymentController {
         return sendError(res, "Ticket not found or access denied", 404);
       }
 
+      logInfo(req, "Requesting refund", { ticketId, userId });
       const result = await this.paymentService.processRefund(
         ticketId,
         ticket.totalPrice,
         reason,
       );
 
-      if (result.error) {
-        return sendError(res, result.error, 400);
-      }
-
-      return sendSuccess(
-        res,
-        "Refund request created successfully",
-        result.data,
-      );
+      return sendSuccess(res, "Refund request created successfully", result);
     } catch (error: any) {
+      logError(req, "Failed to request refund", error, {
+        ticketId: req.body.ticketId,
+      });
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }
-      logger.error("Error requesting refund:", error);
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to request refund", 500);
     }
   }
@@ -120,6 +134,7 @@ export class PaymentController {
         return sendError(res, "Refund ID and action are required", 400);
       }
 
+      logInfo(req, "Processing refund", { refundId, action, userId });
       let result: any;
       if (action === "approve") {
         result = await this.paymentService.completeRefund(refundId, userId!);
@@ -129,16 +144,22 @@ export class PaymentController {
         return sendError(res, "Invalid action. Use 'approve' or 'reject'", 400);
       }
 
-      return sendSuccess(res, `Refund ${action}d successfully`, result.data);
+      return sendSuccess(res, `Refund ${action}d successfully`, result);
     } catch (error: any) {
+      logError(req, "Failed to process refund", error, {
+        refundId: req.body.refundId,
+      });
       if (error.name === "ZodError") {
+        const formattedErrors = formatZodError(error);
         return sendError(
           res,
-          error.errors?.[0]?.message || "Validation error",
+          { error: formattedErrors || "Validation error" },
           400,
         );
       }
-      logger.error("Error processing refund:", error);
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to process refund", 500);
     }
   }
@@ -147,7 +168,7 @@ export class PaymentController {
     try {
       const userId = req.user?.userId;
       const userRole = req.user?.role;
-      const eventId = req.params.eventId;
+      const eventId = req.params.eventId as string;
 
       let searchUserId: string | undefined;
       let searchEventId: string | undefined;
@@ -192,7 +213,12 @@ export class PaymentController {
 
       return sendSuccess(res, "Refunds fetched successfully", result);
     } catch (error) {
-      logger.error("Error fetching refunds:", error);
+      logError(req, "Failed to fetch refunds", error, {
+        eventId: req.params.eventId as string,
+      });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
       return sendError(res, "Failed to fetch refunds", 500);
     }
   }

@@ -34,3 +34,16 @@ export const otpQueue = new Queue("otps", {
     removeOnFail: false,
   },
 });
+
+export const notificationQueue = new Queue("notifications", {
+  connection: redis,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: {
+      type: "exponential",
+      delay: 1000,
+    },
+    removeOnComplete: true,
+    removeOnFail: false,
+  },
+});

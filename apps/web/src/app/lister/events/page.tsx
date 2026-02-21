@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
+import { BarChart, Edit, Mail, Users } from "lucide-react";
+import EventUpdateModal from "@/components/EventUpdateModal";
 
 type ListerEvent = {
   eventId: string;
@@ -18,6 +20,7 @@ type ListerEvent = {
   banner_square: string | null;
   banner_horizontal: string | null;
   location: string | null;
+  availableMailUpdates: number;
 };
 
 function formatDate(dateStr: string) {
@@ -39,13 +42,13 @@ function formatStatus(status: ListerEvent["status"]) {
 
 function statusBadgeClass(status: ListerEvent["status"]) {
   return (
-    (status === "APPROVED" && "bg-green-800 text-green-300") ||
-    (status === "REJECTED" && "bg-red-800 text-red-300") ||
-    (status === "PENDING" && "bg-yellow-800 text-yellow-300") ||
-    (status === "NOT_VIEWED" && "bg-zinc-700 text-zinc-300") ||
-    (status === "CANCELLATION_REQUESTED" && "bg-orange-800 text-orange-300") ||
-    (status === "CANCELLED" && "bg-red-900 text-red-400") ||
-    "bg-zinc-700 text-zinc-300"
+    (status === "APPROVED" && "bg-green-100 text-green-800") ||
+    (status === "REJECTED" && "bg-red-100 text-red-800") ||
+    (status === "PENDING" && "bg-yellow-100 text-yellow-800") ||
+    (status === "NOT_VIEWED" && "bg-gray-100 text-gray-800") ||
+    (status === "CANCELLATION_REQUESTED" && "bg-orange-100 text-orange-800") ||
+    (status === "CANCELLED" && "bg-red-200 text-red-900") ||
+    "bg-gray-100 text-gray-800"
   );
 }
 
@@ -53,6 +56,23 @@ export default function ListerEventsPage() {
   const [items, setItems] = useState<ListerEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [updateModalEvent, setUpdateModalEvent] = useState<ListerEvent | null>(
+    null,
+  );
+
+  const handleUpdateSuccess = (eventId: string) => {
+    setItems((prev) =>
+      prev.map((ev) =>
+        ev.eventId === eventId
+          ? {
+              ...ev,
+              availableMailUpdates: Math.max(0, ev.availableMailUpdates - 1),
+            }
+          : ev,
+      ),
+    );
+  };
 
   useEffect(() => {
     let cancel = false;
@@ -72,83 +92,173 @@ export default function ListerEventsPage() {
     };
   }, []);
 
-  const badge = (s: ListerEvent["status"]) => {
-    const cls =
-      s === "APPROVED"
-        ? "bg-green-100 text-green-700"
-        : s === "REJECTED"
-          ? "bg-red-100 text-red-700"
-          : s === "PENDING"
-            ? "bg-yellow-100 text-yellow-800"
-            : s === "NOT_VIEWED"
-              ? "bg-gray-100 text-gray-700"
-              : "bg-zinc-100 text-zinc-700";
-    return <span className={`text-xs px-2 py-0.5 rounded ${cls}`}>{s}</span>;
+  const handleCopyLink = async (eventId: string) => {
+    const url = `https://tixin.in/event/${eventId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(eventId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      alert("Failed to copy link");
+    }
   };
 
-  if (loading) return <div className="p-4">Loading...</div>;
-  if (err) return <div className="p-4 text-red-600">{err}</div>;
+  if (loading)
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-lg font-medium text-gray-600">Loading...</div>
+      </div>
+    );
+
+  if (err)
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-lg font-medium text-red-600">{err}</div>
+      </div>
+    );
 
   return (
-    <div className="mx-auto w-full p-6 text-white space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">🎫 My Events</h1>
+    <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 pb-40 py-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-3">
+        <h1 className="home-page-heading">My Events</h1>
         <Link
           href="/lister/events/create"
-          className="bg-green-600 hover:bg-green-700 text-sm px-4 py-2 rounded text-white transition"
+          className="bg-[#FFE348] hover:bg-yellow-300 text-gray-900 text-sm sm:text-base font-medium px-4 py-2 rounded-lg transition duration-200 flex items-center gap-2 w-full sm:w-auto justify-center"
         >
-          + Create Event
+          <span>＋</span> Create Event
         </Link>
       </div>
 
+      {/* Empty State */}
       {items.length === 0 ? (
-        <div className="p-6 border border-zinc-700 rounded bg-zinc-900 text-zinc-300">
-          You haven't listed any events yet.
+        <div className="p-6 sm:p-8 border border-gray-200 rounded-lg bg-white text-gray-600 text-center">
+          <p className="text-base sm:text-lg font-medium">
+            No events listed yet.
+          </p>
+          <p className="mt-2 text-sm sm:text-base">
+            Start by creating your first event!
+          </p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {items.map((ev) => (
             <div
               key={ev.eventId}
-              className="bg-zinc-900 border border-zinc-700 rounded-lg p-4 flex flex-col gap-3 hover:shadow-md transition-shadow"
+              className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 flex flex-col gap-3 sm:gap-4 hover:shadow-lg transition-shadow duration-200"
             >
+              {/* Banner */}
               {ev.banner_square || ev.banner_horizontal ? (
-                <div className="relative w-full h-40 rounded overflow-hidden border border-zinc-800">
+                <div className="relative w-full h-40 sm:h-48 rounded-xl overflow-hidden border border-gray-100">
                   <img
                     src={ev.banner_square || ev.banner_horizontal!}
                     alt={ev.title}
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                 </div>
-              ) : null}
+              ) : (
+                <div className="w-full h-40 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+                  No banner
+                </div>
+              )}
 
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold line-clamp-1">
+              {/* Title + Status */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 line-clamp-1">
                   {ev.title}
                 </h2>
                 <span
-                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusBadgeClass(ev.status)}`}
+                  className={`text-xs sm:text-sm font-medium px-3 py-1 rounded-full ${statusBadgeClass(
+                    ev.status,
+                  )}`}
                 >
                   {formatStatus(ev.status)}
                 </span>
               </div>
 
-              <div className="text-sm text-zinc-400">
-                {ev.location && <div>📍 {ev.location}</div>}
-                {ev.date && <div>📅 {formatDate(ev.date)}</div>}
+              {/* Info */}
+              <div className="text-sm sm:text-base text-gray-600 space-y-1">
+                {ev.location && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#FFE348]">📍</span> {ev.location}
+                  </div>
+                )}
+                {ev.date && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#FFE348]">📅</span>{" "}
+                    {formatDate(ev.date)}
+                  </div>
+                )}
               </div>
 
-              <div className="pt-2">
-                <Link
-                  href={`/event/${ev.eventId}`}
-                  className="text-sm text-green-400 hover:underline"
+              {/* Action Links */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 pt-2 text-sm font-medium">
+                {/* Copy / Share */}
+                <button
+                  onClick={() => handleCopyLink(ev.eventId)}
+                  className={`transition duration-200 flex items-center gap-2 justify-center sm:justify-start rounded-md px-3 py-2 border ${
+                    copiedId === ev.eventId
+                      ? "bg-green-50 text-green-700 border-green-200"
+                      : "text-yellow-600 hover:text-yellow-700 border-gray-200 hover:bg-yellow-50"
+                  }`}
                 >
-                  🔗 View public page
+                  {copiedId === ev.eventId ? "✅ Copied!" : "🔗 Copy Link"}
+                </button>
+
+                {/* Analytics */}
+                <Link
+                  href={`/lister/events/${ev.eventId}`}
+                  className="text-blue-600 hover:text-blue-700 transition duration-200 flex items-center gap-2 justify-center sm:justify-start border border-gray-200 rounded-md px-3 py-2 hover:bg-blue-50"
+                >
+                  <BarChart /> Analytics
                 </Link>
+
+                {/* Edit */}
+                <Link
+                  href={`/event/${ev.eventId}/edit`}
+                  className="text-gray-700 hover:text-gray-900 transition duration-200 flex items-center gap-2 justify-center sm:justify-start border border-gray-200 rounded-md px-3 py-2 hover:bg-gray-50"
+                >
+                  <Edit /> Edit
+                </Link>
+
+                <Link
+                  href={`/event/${ev.eventId}/attendees`}
+                  className="text-gray-700 hover:text-gray-900 transition duration-200 flex items-center gap-2 justify-center sm:justify-start border border-gray-200 rounded-md px-3 py-2 hover:bg-gray-50"
+                >
+                  <Users /> Attendees
+                </Link>
+
+                <button
+                  onClick={() => setUpdateModalEvent(ev)}
+                  className="text-gray-700 hover:text-gray-900 transition duration-200 flex items-center gap-2 justify-center sm:justify-start border border-gray-200 rounded-md px-3 py-2 hover:bg-gray-50"
+                >
+                  <Mail size={16} />
+                  Send Update
+                  {ev.availableMailUpdates > 0 ? (
+                    <span className="ml-auto text-xs font-semibold bg-[#FFE348] text-gray-900 rounded-full px-1.5 py-0.5 leading-none">
+                      {ev.availableMailUpdates}
+                    </span>
+                  ) : (
+                    <span className="ml-auto text-xs font-medium bg-gray-100 text-gray-400 rounded-full px-1.5 py-0.5 leading-none">
+                      0
+                    </span>
+                  )}
+                </button>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {/* Event Update Modal */}
+      {updateModalEvent && (
+        <EventUpdateModal
+          eventId={updateModalEvent.eventId}
+          eventTitle={updateModalEvent.title}
+          availableMailUpdates={updateModalEvent.availableMailUpdates}
+          onClose={() => setUpdateModalEvent(null)}
+          onSuccess={handleUpdateSuccess}
+        />
       )}
     </div>
   );

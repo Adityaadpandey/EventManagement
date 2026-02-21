@@ -5,17 +5,19 @@ meta {
 }
 
 post {
-  url: {{host}}/event/{{eventId}}/info-update
+  url: {{host}}/event/info-update/1edc63ac-30b1-42f3-8342-f008eb42439a
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "update":"New place is here"
+    "update":"Party Shuttle: Your Ride To Hangover",
+    "imageUrl":"https://res.cloudinary.com/dcomykzwq/image/upload/v1763209726/WhatsApp_Image_2025-11-15_at_5.52.50_PM_dfxkjt.jpg"
   }
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

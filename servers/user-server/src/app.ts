@@ -7,6 +7,8 @@ import logger from "./config/logger";
 import { connectRedis } from "./config/redis";
 import { compressionMiddleware } from "./middlewares/compression.middleware";
 import { errorHandler } from "./middlewares/error.middleware";
+import { newrelicMiddleware } from "./middlewares/newrelic.middleware";
+import { prometheusMiddleware } from "./middlewares/prometheus.middleware";
 import {
   adminLimiter,
   authLimiter,
@@ -15,6 +17,7 @@ import {
   heavyOperationLimiter,
 } from "./middlewares/rate-limit.middleware";
 import { reqMiddleware } from "./middlewares/req.middleware";
+import { requestIdMiddleware } from "./middlewares/request-id.middleware";
 import { securityMiddleware } from "./middlewares/security.middleware";
 import { adminRouter } from "./routes/v1/admin.router";
 import { authRouter } from "./routes/v1/auth.router";
@@ -22,7 +25,9 @@ import { checkerRouter } from "./routes/v1/checker.router";
 import { discountRouter } from "./routes/v1/discount.router";
 import { eventsRouter } from "./routes/v1/events.router";
 import { listerRouter } from "./routes/v1/lister.router";
+import { notificationRouter } from "./routes/v1/notification.router";
 import { paymentRouter } from "./routes/v1/payment.router";
+import { payoutRouter } from "./routes/v1/payout.router";
 import { TicketTypeRouter } from "./routes/v1/ticket-type.router";
 import { ticketValidationRouter } from "./routes/v1/ticket-validation.router";
 import { ticketRouter } from "./routes/v1/ticket.router";
@@ -30,44 +35,114 @@ import { userRouter } from "./routes/v1/user.router";
 import { getDatabaseMetrics } from "./utils/databseMatrices";
 import { setupGracefulShutdown } from "./utils/gracefullShutdown";
 import { healthCheck } from "./utils/healthCheck";
+import { isNewRelicAvailable } from "./utils/newrelic";
+import { getContentType, getMetrics } from "./utils/prometheusMetrics";
 import { sendError } from "./utils/responseMsg";
 
 const app = express();
 
-// Trust proxy for accurate IP detection in rate limiting
-app.set("trust proxy", true);
+// Disable unnecessary Express features for performance
+app.disable("x-powered-by"); // Hide Express signature
+app.disable("etag"); // Disable ETag generation (use CDN/nginx for this)
 
-// Security headers
+// Trust proxy for accurate IP detection in rate limiting
+// Set to number of proxies (e.g., 1 for single load balancer)
+app.set("trust proxy", 1);
+
+// Optimize view cache for production
+if (config.NODE_ENV === "production") {
+  app.set("view cache", true);
+}
+
+// Security headers with optimized configuration
 app.use(
   helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https:"],
-      },
+    contentSecurityPolicy:
+      config.NODE_ENV === "production"
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              styleSrc: ["'self'", "'unsafe-inline'"],
+              scriptSrc: ["'self'"],
+              imgSrc: ["'self'", "data:", "https:"],
+              connectSrc: ["'self'"],
+              fontSrc: ["'self'"],
+              objectSrc: ["'none'"],
+              mediaSrc: ["'self'"],
+              frameSrc: ["'none'"],
+            },
+          }
+        : false, // Disable CSP in development for easier debugging
+    crossOriginEmbedderPolicy: false, // Allow embedding if needed
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    dnsPrefetchControl: { allow: true },
+    frameguard: { action: "deny" },
+    hidePoweredBy: true,
+    hsts: {
+      maxAge: 31536000, // 1 year
+      includeSubDomains: true,
+      preload: true,
     },
+    ieNoOpen: true,
+    noSniff: true,
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    xssFilter: true,
   }),
 );
 
-// Apply compression early in the middleware chain
+// Add request ID tracking (before any logging)
+app.use(requestIdMiddleware);
+
+// Prometheus HTTP metrics (after request ID, before body parsing)
+app.use(prometheusMiddleware);
+
+// Body parsing with strict limits and optimized settings
+// Skip JSON parsing for webhook routes that need raw body for signature verification
+app.use((req, res, next) => {
+  if (req.path === "/api/v1/payment/webhook") {
+    return next();
+  }
+  express.json({
+    limit: "5mb",
+    strict: true, // Only parse arrays and objects
+    type: "application/json",
+  })(req, res, next);
+});
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "5mb",
+    parameterLimit: 1000, // Limit number of parameters
+  }),
+);
+
+// Apply compression AFTER body parsing for better performance
 app.use(compressionMiddleware);
 
-// Body parsing with strict limits for DDoS protection
-app.use(express.json({ limit: "5mb" })); // Reduced from 10mb
-app.use(express.urlencoded({ extended: true, limit: "5mb" }));
+// CORS with optimized configuration
+const allowedOrigins = [
+  "https://www.tixin.in",
+  "https://stag.tixin.in",
+  "http://localhost:3000",
+  ...(config.NODE_ENV !== "production" ? ["http://localhost:3000"] : []),
+];
 
-// CORS with proper configuration
 app.use(
   cors({
-    origin: [
-      "https://www.tixin.in",
-      "http://localhost:3000",
-      "https://stag.tixin.in",
-    ],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        logger.warn(`CORS blocked origin: ${origin}`);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
-    optionsSuccessStatus: 200,
+    optionsSuccessStatus: 204, // Use 204 instead of 200 for OPTIONS
     maxAge: 86400, // Cache preflight for 24 hours
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
@@ -75,18 +150,15 @@ app.use(
       "Authorization",
       "X-Requested-With",
       "Checker-Auth",
+      "X-Request-ID",
+    ],
+    exposedHeaders: [
+      "X-Request-ID",
+      "X-RateLimit-Limit",
+      "X-RateLimit-Remaining",
     ],
   }),
 );
-
-// Handle OPTIONS requests early (before security middleware)
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    res.status(200).end();
-    return;
-  }
-  next();
-});
 
 // DDoS Protection Layer 1: Block known suspicious IPs
 app.use(blockSuspiciousIPs);
@@ -97,26 +169,55 @@ app.use(securityMiddleware);
 // DDoS Protection Layer 3: Rate limiting
 app.use(combinedLimiter);
 
-// Request middleware
-app.use(reqMiddleware);
-
-// Health check endpoint (no rate limiting)
 app.get("/health", async (_, res: Response) => {
   const status = await healthCheck();
   const allHealthy = Object.values(status).every(Boolean);
-  res.status(allHealthy ? 200 : 503).json({
+  const response = {
     ...status,
     status: allHealthy ? "ok" : "unhealthy",
     timestamp: new Date().toISOString(),
     worker: process.pid,
-  });
+  };
+  res.status(allHealthy ? 200 : 503).json(response);
 });
 
-// Metrics endpoint for monitoring
+// Request middleware (logs all requests except health checks)
+app.use(reqMiddleware);
+
+// New Relic custom transaction tracking
+if (isNewRelicAvailable()) {
+  app.use(newrelicMiddleware);
+}
+
+// Metrics endpoint — default: Prometheus text; Accept: application/json → legacy JSON
 app.get("/metrics", async (req: Request, res: Response) => {
-  return res.json({
-    getDatabaseMetrics: await getDatabaseMetrics(),
-  });
+  try {
+    const acceptHeader = req.get("Accept") || "";
+    if (acceptHeader.includes("application/json")) {
+      const { collectMetrics } = await import("./utils/metrics");
+      const dbMetrics = await getDatabaseMetrics();
+      return res.json({ database: dbMetrics, application: collectMetrics() });
+    }
+
+    // Default: Prometheus text format (for Prometheus scraper)
+    const metrics = await getMetrics();
+    return res.set("Content-Type", getContentType()).send(metrics);
+  } catch (error) {
+    logger.error("Error fetching metrics:", error);
+    return res.status(500).json({ error: "Failed to fetch metrics" });
+  }
+});
+
+// Explicit JSON-only metrics endpoint for internal dashboards
+app.get("/metrics/json", async (_: Request, res: Response) => {
+  try {
+    const { collectMetrics } = await import("./utils/metrics");
+    const dbMetrics = await getDatabaseMetrics();
+    return res.json({ database: dbMetrics, application: collectMetrics() });
+  } catch (error) {
+    logger.error("Error fetching metrics:", error);
+    return res.status(500).json({ error: "Failed to fetch metrics" });
+  }
 });
 
 // Auth routes with strict rate limiting
@@ -141,6 +242,8 @@ app.use("/api/v1/ticket", ticketRouter);
 app.use("/api/v1/checker", checkerRouter);
 app.use("/api/v1/discount", discountRouter);
 app.use("/api/v1/ticket-type", TicketTypeRouter);
+app.use("/api/v1/payout", payoutRouter);
+app.use("/api/v1/notification", notificationRouter);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
@@ -163,10 +266,13 @@ export const startServer = async () => {
       logger.info(`${config.SERVICE_NAME} running on port ${config.PORT}`);
       logger.info(`Environment: ${config.NODE_ENV}`);
       logger.info(`Worker process: ${process.pid}`);
+      logger.info(`Node version: ${process.version}`);
     });
 
-    server.keepAliveTimeout = 65000; // Slightly higher than typical load balancer timeout
+    server.keepAliveTimeout = 65000; // Slightly higher than typical load balancer timeout (60s)
     server.headersTimeout = 66000; // Should be higher than keepAliveTimeout
+    server.requestTimeout = 120000; // 2 minutes for long-running requests
+    server.timeout = 120000; // Socket timeout
 
     setupGracefulShutdown(server);
 

@@ -1,0 +1,16 @@
+meta {
+  name: cancel payout
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{host}}/payout/2815ff2f-5a72-433d-82d9-30e8bf60812e/cancel
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
