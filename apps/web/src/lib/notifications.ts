@@ -266,6 +266,23 @@ export async function subscribeToPushNotifications(
         console.log(
           "🔄 Found existing subscription, unsubscribing to avoid conflicts...",
         );
+        // Tell the server to deactivate the old endpoint BEFORE unsubscribing
+        // so we don't leave a stale "active" subscription in the DB
+        try {
+          await fetch(`${API_BASE_URL}/api/v1/notification/unsubscribe`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ endpoint: existingSubscription.endpoint }),
+          });
+        } catch (serverErr) {
+          console.warn(
+            "⚠️ Could not deactivate old subscription on server:",
+            serverErr,
+          );
+        }
         await existingSubscription.unsubscribe();
         console.log("✅ Old subscription cleared");
       }

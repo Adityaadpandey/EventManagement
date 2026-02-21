@@ -6,6 +6,7 @@ import NotificationModal from "./NotificationModal";
 import {
   subscribeToPushNotifications,
   isPushNotificationSupported,
+  isSubscribed as checkIsSubscribed,
 } from "@/lib/notifications";
 
 export default function NotificationModalWrapper() {
@@ -33,10 +34,21 @@ export default function NotificationModalWrapper() {
       if (Notification.permission !== "granted") return;
 
       try {
-        // Always re-subscribe on login to ensure the server has a valid
-        // subscription with the current VAPID keys. subscribeToPushNotifications
-        // clears any old subscription before creating a new one.
-        console.log("Auto-subscribing to push notifications on login...");
+        // Only re-subscribe if the browser has no existing push subscription.
+        // If a subscription already exists, the server was already notified
+        // when it was created. Re-subscribing every page load creates a new
+        // endpoint each time, leaving stale "active" records in the DB.
+        const alreadySubscribed = await checkIsSubscribed();
+        if (alreadySubscribed) {
+          console.log(
+            "Push subscription already active, skipping auto-subscribe",
+          );
+          return;
+        }
+
+        // No browser subscription found — subscribe now (first visit after
+        // clearing data, or subscription was lost/expired in the browser)
+        console.log("Auto-subscribing to push notifications...");
         await subscribeToPushNotifications(token);
         console.log("Auto-subscribe successful");
       } catch (err) {

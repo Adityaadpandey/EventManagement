@@ -2,7 +2,7 @@
 
 import api from "@/lib/api";
 import { Bell, Loader2, Megaphone, Send, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader, Toast } from "../_components/admin-components";
 
 type Mode = "broadcast" | "targeted";
@@ -14,6 +14,16 @@ export default function AdminNotificationsPage() {
   const [userIds, setUserIds] = useState("");
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [stats, setStats] = useState<{ active: number; total: number } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    api
+      .get("/notification/stats")
+      .then((r) => setStats(r.data?.data))
+      .catch(() => {});
+  }, []);
 
   const canSend = title.trim() && body.trim();
 
@@ -28,17 +38,25 @@ export default function AdminNotificationsPage() {
           .map((id) => id.trim())
           .filter(Boolean);
       }
-      await api.post("/notification/send", payload);
+      const res = await api.post("/notification/send", payload);
+      const result = res.data?.data;
+      const sent = result?.sent ?? 0;
+      const total = result?.total ?? 0;
       setToast({
         msg:
           mode === "broadcast"
-            ? "Notification broadcast to all users!"
+            ? `Broadcast sent to ${sent}/${total} devices!`
             : `Notification sent to ${payload.userIds?.length || 0} users!`,
         ok: true,
       });
       setTitle("");
       setBody("");
       setUserIds("");
+      // Refresh stats after send
+      api
+        .get("/notification/stats")
+        .then((r) => setStats(r.data?.data))
+        .catch(() => {});
     } catch (e: any) {
       setToast({
         msg: e?.response?.data?.message || "Failed to send notification",
@@ -59,6 +77,17 @@ export default function AdminNotificationsPage() {
         title="Push Notifications"
         subtitle="Send push notifications to your users"
       />
+
+      {/* Subscription Stats */}
+      {stats !== null && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl border border-gray-100 shadow-sm w-fit text-sm">
+          <Bell className="w-4 h-4 text-[var(--color-brand)]" />
+          <span className="font-bold text-[var(--color-neutral-dark4)]">
+            {stats.active}
+          </span>
+          <span className="text-gray-400">active subscribers</span>
+        </div>
+      )}
 
       {/* Mode Toggle */}
       <div className="flex gap-2">
