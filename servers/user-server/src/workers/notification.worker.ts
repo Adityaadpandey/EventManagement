@@ -112,19 +112,20 @@ export const notificationWorker = new Worker(
 
           logger.info(`Push sent to subscription ${sub.subscriptionId}`);
         } catch (error: any) {
-          logger.error(
-            `Failed to send push to subscription ${sub.subscriptionId}:`,
-            error,
-          );
-
-          // Mark subscription as inactive if it failed
-          if (error.statusCode === 410 || error.statusCode === 404) {
+          const isGone = error.statusCode === 410 || error.statusCode === 404;
+          if (isGone) {
             await prisma.pushSubscription.update({
               where: { subscriptionId: sub.subscriptionId },
               data: { isActive: false },
             });
             logger.info(
-              `Marked subscription ${sub.subscriptionId} as inactive`,
+              `Marked subscription ${sub.subscriptionId} as inactive (expired)`,
+            );
+          } else {
+            // Transient error (ETIMEDOUT, etc.) — keep subscription active for next attempt
+            const code = error.code || error.statusCode || "UNKNOWN";
+            logger.warn(
+              `Transient push error for ${sub.subscriptionId}: ${code} — keeping active`,
             );
           }
         }

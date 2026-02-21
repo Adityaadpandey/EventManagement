@@ -321,28 +321,26 @@ export class NotificationService {
         ),
       );
 
-      // Remove failed subscriptions (expired or invalid)
-      const failedSubscriptions = results
+      // Only deactivate subscriptions confirmed gone (404/410), not transient failures
+      const goneIds = results
         .map((result: any, index: number) => ({
           result,
           subscription: subscriptions[index],
         }))
-        .filter(({ result }: any) => result.status === "rejected")
-        .map(({ subscription }: any) => subscription);
+        .filter(
+          ({ result }: any) =>
+            result.status === "rejected" &&
+            result.reason?.subscriptionGone === true,
+        )
+        .map(({ subscription }: any) => subscription.subscriptionId);
 
-      if (failedSubscriptions.length > 0) {
+      if (goneIds.length > 0) {
         await prisma.pushSubscription.updateMany({
-          where: {
-            subscriptionId: {
-              in: failedSubscriptions.map((sub: any) => sub.subscriptionId),
-            },
-          },
-          data: {
-            isActive: false,
-          },
+          where: { subscriptionId: { in: goneIds } },
+          data: { isActive: false },
         });
         logger.info(
-          `Deactivated ${failedSubscriptions.length} invalid subscriptions`,
+          `Deactivated ${goneIds.length} expired subscriptions for user ${userId}`,
         );
       }
 
@@ -392,14 +390,12 @@ export class NotificationService {
   }
 
   /**
-   * Send notification to all users
+   * Send notification to all users (batched to avoid rate limiting / ETIMEDOUT)
    */
   async sendToAll(payload: NotificationPayload) {
     try {
       const subscriptions = await prisma.pushSubscription.findMany({
-        where: {
-          isActive: true,
-        },
+        where: { isActive: true },
         select: {
           subscriptionId: true,
           endpoint: true,
@@ -413,54 +409,60 @@ export class NotificationService {
         return { success: false, message: "No subscriptions found" };
       }
 
-      const results = await Promise.allSettled(
-        subscriptions.map((sub: any) =>
+      logger.info(
+        `Broadcasting to ${subscriptions.length} subscriptions in batches of 50`,
+      );
+
+      const results = await this.sendInBatches(
+        subscriptions,
+        50,
+        (sub: any) =>
           this.sendNotification(
             {
               endpoint: sub.endpoint,
-              keys: {
-                p256dh: sub.p256dh,
-                auth: sub.auth,
-              },
+              keys: { p256dh: sub.p256dh, auth: sub.auth },
             },
             payload,
           ),
-        ),
+        200,
       );
 
-      // Remove failed subscriptions
-      const failedSubscriptions = results
-        .map((result: any, index: number) => ({
-          result,
-          subscription: subscriptions[index],
-        }))
-        .filter(({ result }: any) => result.status === "rejected")
-        .map(({ subscription }: any) => subscription);
+      // Only deactivate subscriptions confirmed gone (404/410), not transient failures
+      const goneIds = results
+        .map((result, index) => ({ result, sub: subscriptions[index] }))
+        .filter(({ result }) => {
+          if (result.status !== "rejected") return false;
+          return (result.reason as any)?.subscriptionGone === true;
+        })
+        .map(({ sub }) => sub.subscriptionId);
 
-      if (failedSubscriptions.length > 0) {
+      if (goneIds.length > 0) {
         await prisma.pushSubscription.updateMany({
-          where: {
-            subscriptionId: {
-              in: failedSubscriptions.map((sub: any) => sub.subscriptionId),
-            },
-          },
-          data: {
-            isActive: false,
-          },
+          where: { subscriptionId: { in: goneIds } },
+          data: { isActive: false },
         });
+        logger.info(`Deactivated ${goneIds.length} expired subscriptions`);
       }
 
       const successCount = results.filter(
-        (r: any) => r.status === "fulfilled",
+        (r) => r.status === "fulfilled",
       ).length;
+      const transientFails = results.filter(
+        (r) =>
+          r.status === "rejected" &&
+          (r as any).reason?.subscriptionGone === false,
+      ).length;
+
       logger.info(
-        `Broadcast notification sent to ${successCount}/${subscriptions.length} devices`,
+        `Broadcast done: ${successCount}/${subscriptions.length} sent, ${goneIds.length} expired cleaned up, ${transientFails} transient errors`,
       );
 
       return {
         success: true,
         sent: successCount,
         total: subscriptions.length,
+        expired: goneIds.length,
+        transientErrors: transientFails,
       };
     } catch (error) {
       logger.error("Error broadcasting notification:", error);
@@ -569,15 +571,38 @@ export class NotificationService {
   }
 
   /**
-   * Core method to send push notification
+   * Send notifications in batches to avoid rate limiting and timeouts
+   */
+  private async sendInBatches<T>(
+    items: T[],
+    batchSize: number,
+    fn: (item: T) => Promise<any>,
+    delayMs = 200,
+  ): Promise<PromiseSettledResult<any>[]> {
+    const results: PromiseSettledResult<any>[] = [];
+    for (let i = 0; i < items.length; i += batchSize) {
+      const batch = items.slice(i, i + batchSize);
+      const batchResults = await Promise.allSettled(batch.map(fn));
+      results.push(...batchResults);
+      if (i + batchSize < items.length) {
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Core method to send push notification.
+   * Returns { success: true } on success.
+   * Throws with `subscriptionGone = true` for 404/410 (deactivate subscription).
+   * Throws with `subscriptionGone = false` for transient errors (keep subscription active).
    */
   private async sendNotification(
     subscription: PushSubscription,
     payload: NotificationPayload,
   ) {
+    const pushPayload = JSON.stringify(payload);
     try {
-      const pushPayload = JSON.stringify(payload);
-
       await webpush.sendNotification(
         {
           endpoint: subscription.endpoint,
@@ -590,20 +615,25 @@ export class NotificationService {
         {
           TTL: 86400, // 24 hours
           urgency: "high",
-        },
+          timeout: 10000, // 10 second timeout per request
+        } as any,
       );
-
       return { success: true };
     } catch (error: any) {
-      // Handle specific errors
       if (error.statusCode === 410 || error.statusCode === 404) {
-        // Subscription expired or not found
         logger.warn("Push subscription expired or not found");
-        throw error; // Will be caught and subscription removed
+        const err = new Error("Subscription gone") as any;
+        err.subscriptionGone = true;
+        throw err;
       }
-
-      logger.error("Error sending push notification:", error);
-      throw error;
+      // Transient errors (ETIMEDOUT, ECONNREFUSED, etc.) — keep subscription active
+      const code = error.code || error.message || "UNKNOWN";
+      logger.warn(
+        `Transient push error (${code}) — keeping subscription active`,
+      );
+      const err = new Error(`Push transient error: ${code}`) as any;
+      err.subscriptionGone = false;
+      throw err;
     }
   }
 }
