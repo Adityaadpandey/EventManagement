@@ -131,6 +131,20 @@ export class NotificationController {
   }
 
   /**
+   * Get subscription stats (Admin only)
+   * GET /api/v1/notification/stats
+   */
+  async getSubscriptionStats(req: Request, res: Response) {
+    try {
+      const stats = await notificationService.getSubscriptionStats();
+      return sendSuccess(res, "Subscription stats", stats);
+    } catch (error) {
+      logger.error("Error fetching subscription stats:", error);
+      return sendError(res, "Failed to fetch stats", 500);
+    }
+  }
+
+  /**
    * Get VAPID public key
    * GET /api/v1/notification/vapid-public-key
    */

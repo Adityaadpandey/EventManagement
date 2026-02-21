@@ -232,6 +232,17 @@ export class NotificationService {
   }
 
   /**
+   * Get push subscription stats
+   */
+  async getSubscriptionStats() {
+    const [active, inactive] = await Promise.all([
+      prisma.pushSubscription.count({ where: { isActive: true } }),
+      prisma.pushSubscription.count({ where: { isActive: false } }),
+    ]);
+    return { active, inactive, total: active + inactive };
+  }
+
+  /**
    * Cleanup stale push subscriptions (older than 90 days)
    */
   async cleanupStaleSubscriptions() {
@@ -407,6 +418,17 @@ export class NotificationService {
       if (subscriptions.length === 0) {
         logger.warn("No push subscriptions found");
         return { success: false, message: "No subscriptions found" };
+      }
+
+      // Pre-broadcast cleanup: delete inactive subs older than 30 days
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const cleaned = await prisma.pushSubscription.deleteMany({
+        where: { isActive: false, updatedAt: { lt: thirtyDaysAgo } },
+      });
+      if (cleaned.count > 0) {
+        logger.info(
+          `Pre-broadcast cleanup: removed ${cleaned.count} stale inactive subscriptions`,
+        );
       }
 
       logger.info(

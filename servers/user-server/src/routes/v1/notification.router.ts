@@ -66,6 +66,13 @@ router.post(
 );
 
 // Admin only routes
+router.get(
+  "/stats",
+  authMiddleware,
+  requireRole(["ADMIN"]),
+  notificationController.getSubscriptionStats.bind(notificationController),
+);
+
 router.post(
   "/send",
   authMiddleware,
