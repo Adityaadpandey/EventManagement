@@ -1,4 +1,3 @@
-import api from "@/lib/api";
 import { EventSummary } from "@/lib/features/eventsSlice";
 
 export async function fetchPublicEventsSSR(): Promise<{
@@ -6,9 +5,19 @@ export async function fetchPublicEventsSSR(): Promise<{
   meta: { page: number; totalPages: number; limit: number };
 }> {
   try {
-    const res = await api.get(`/event/public?page=1&limit=10`);
-    const items = res.data?.data ?? [];
-    const meta = res.data?.meta ?? {
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL || "https://api.tixin.in/api/v1";
+    const res = await fetch(`${apiUrl}/event/public?page=1&limit=10`, {
+      mode: "cors",
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch events: ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    const items = data?.data ?? [];
+    const meta = data?.meta ?? {
       page: 1,
       totalPages: 1,
       limit: 10,

@@ -1,42 +1,76 @@
 "use client";
 
-import React, { useEffect, useMemo, useCallback } from "react";
 import {
-  BarChart3,
-  Ticket,
-  Calendar,
-  DollarSign,
-  Users,
-  Edit2,
-  Building2,
-  Plus,
-  Eye,
-  AlertCircle,
-  Loader2,
-  TrendingUp,
-  TrendingDown,
-  Activity,
-} from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  RadialBarChart,
-  RadialBar,
-} from "recharts";
-import {
-  fetchMyLister,
   fetchListerAnalytics,
+  fetchMyLister,
 } from "@/lib/features/listerSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import {
+  Activity,
+  AlertCircle,
+  BarChart3,
+  Building2,
+  Calendar,
+  DollarSign,
+  Edit2,
+  Eye,
+  Loader2,
+  Plus,
+  Ticket,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+import dynamic from "next/dynamic";
+import React, { useCallback, useEffect, useMemo } from "react";
+
+const ListerPerformanceChart = dynamic(
+  () =>
+    import("./_components/lister-charts").then(
+      (mod) => mod.ListerPerformanceChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] w-full bg-gray-50 animate-pulse rounded-xl" />
+    ),
+  },
+);
+const ListerRevenuePieChart = dynamic(
+  () =>
+    import("./_components/lister-charts").then(
+      (mod) => mod.ListerRevenuePieChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] w-full bg-gray-50 animate-pulse rounded-xl" />
+    ),
+  },
+);
+const ListerMetricsComparisonChart = dynamic(
+  () =>
+    import("./_components/lister-charts").then(
+      (mod) => mod.ListerMetricsComparisonChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] w-full bg-gray-50 animate-pulse rounded-xl" />
+    ),
+  },
+);
+const ListerAttendanceGauge = dynamic(
+  () =>
+    import("./_components/lister-charts").then(
+      (mod) => mod.ListerAttendanceGauge,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] w-full bg-gray-50 animate-pulse rounded-xl" />
+    ),
+  },
+);
 
 const ListerDashboard: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -464,19 +498,9 @@ const ListerDashboard: React.FC = () => {
                   <BarChart3 className="w-5 h-5 mr-2 text-[#FFE348]" />
                   Events vs Tickets Performance
                 </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={analyticsCharts.performanceData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip />
-                    <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                      {analyticsCharts.performanceData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                <ListerPerformanceChart
+                  data={analyticsCharts.performanceData}
+                />
               </div>
 
               {/* Revenue Breakdown */}
@@ -485,29 +509,10 @@ const ListerDashboard: React.FC = () => {
                   <DollarSign className="w-5 h-5 mr-2 text-[#FFE348]" />
                   Revenue Breakdown
                 </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={analyticsCharts.revenueBreakdown}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value }) =>
-                        `${name}: ${formatCurrency(value)}`
-                      }
-                      outerRadius={90}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {analyticsCharts.revenueBreakdown.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number) => formatCurrency(value)}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                <ListerRevenuePieChart
+                  data={analyticsCharts.revenueBreakdown}
+                  formatCurrency={formatCurrency}
+                />
               </div>
 
               {/* Metrics Comparison */}
@@ -516,23 +521,9 @@ const ListerDashboard: React.FC = () => {
                   <TrendingUp className="w-5 h-5 mr-2 text-[#FFE348]" />
                   Metrics Overview
                 </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart
-                    data={analyticsCharts.comparisonData}
-                    layout="vertical"
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis type="number" tick={{ fontSize: 12 }} />
-                    <YAxis
-                      dataKey="metric"
-                      type="category"
-                      width={120}
-                      tick={{ fontSize: 12 }}
-                    />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#EAB308" radius={[0, 8, 8, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <ListerMetricsComparisonChart
+                  data={analyticsCharts.comparisonData}
+                />
               </div>
 
               {/* Average Attendance Gauge */}
@@ -541,31 +532,7 @@ const ListerDashboard: React.FC = () => {
                   <Users className="w-5 h-5 mr-2 text-[#FFE348]" />
                   Average Event Attendance
                 </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <RadialBarChart
-                    cx="50%"
-                    cy="50%"
-                    innerRadius="60%"
-                    outerRadius="90%"
-                    data={analyticsCharts.efficiencyData}
-                    startAngle={180}
-                    endAngle={0}
-                  >
-                    <RadialBar
-                      minAngle={15}
-                      background
-                      clockWise
-                      dataKey="value"
-                    />
-                    <Legend
-                      iconSize={10}
-                      layout="vertical"
-                      verticalAlign="middle"
-                      align="right"
-                    />
-                    <Tooltip />
-                  </RadialBarChart>
-                </ResponsiveContainer>
+                <ListerAttendanceGauge data={analyticsCharts.efficiencyData} />
                 <div className="text-center mt-4">
                   <p className="text-3xl font-bold text-gray-900">
                     {statsData.avgAttendance}

@@ -59,7 +59,7 @@ const fmtCur = (v: number) =>
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
-export default function AllBuyersPage() {
+function AllBuyersContent() {
   // Server state
   const [data, setData] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -112,7 +112,9 @@ export default function AllBuyersPage() {
 
   // Re-fetch whenever query params change
   useEffect(() => {
-    fetchBuyers();
+    if (typeof window !== "undefined") {
+      fetchBuyers();
+    }
   }, [fetchBuyers]);
 
   // ── Debounced search handler ──
@@ -153,7 +155,7 @@ export default function AllBuyersPage() {
   };
 
   // ── Render helpers ──
-  const SortIcon = ({ field }: { field: SortField }) =>
+  const renderSortIcon = (field: SortField) =>
     sortField === field ? (
       sortDir === "asc" ? (
         <ChevronUp className="w-3 h-3" />
@@ -260,7 +262,7 @@ export default function AllBuyersPage() {
                       onClick={() => toggleSort("name")}
                       className="group flex items-center gap-1 hover:text-gray-600 transition-colors"
                     >
-                      Buyer <SortIcon field="name" />
+                      Buyer {renderSortIcon("name")}
                     </button>
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -277,7 +279,7 @@ export default function AllBuyersPage() {
                       onClick={() => toggleSort("amount")}
                       className="group flex items-center gap-1 hover:text-gray-600 transition-colors"
                     >
-                      Amount <SortIcon field="amount" />
+                      Amount {renderSortIcon("amount")}
                     </button>
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -285,7 +287,7 @@ export default function AllBuyersPage() {
                       onClick={() => toggleSort("date")}
                       className="group flex items-center gap-1 hover:text-gray-600 transition-colors"
                     >
-                      Date <SortIcon field="date" />
+                      Date {renderSortIcon("date")}
                     </button>
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -485,3 +487,5 @@ export default function AllBuyersPage() {
     </div>
   );
 }
+
+export default AllBuyersContent;

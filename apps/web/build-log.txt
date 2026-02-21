@@ -1,0 +1,135 @@
+
+> web@0.1.0 build
+> next build
+
+   ▲ Next.js 15.4.10
+   - Environments: .env
+
+   Creating an optimized production build ...
+> [PWA] Compile server
+> [PWA] Compile server
+> [PWA] Compile client (static)
+> [PWA] Custom worker found: /Users/aditya/Desktop/BuildEthics/EventManagement/apps/web/worker/index.js
+> [PWA] Build custom worker: /Users/aditya/Desktop/BuildEthics/EventManagement/apps/web/public/worker-d_2XFRjG6G-B8BrwjWQRe.js
+> [PWA] Auto register service worker with: /Users/aditya/Desktop/BuildEthics/EventManagement/node_modules/next-pwa/register.js
+> [PWA] Service worker: /Users/aditya/Desktop/BuildEthics/EventManagement/apps/web/public/sw.js
+> [PWA]   url: /sw.js
+> [PWA]   scope: /
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled successfully in 3.0s
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/22) ...
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+   Generating static pages (5/22) 
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+   Generating static pages (10/22) 
+   Generating static pages (16/22) 
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+SSR fetch error: TypeError: fetch failed
+    at async e (.next/server/chunks/718.js:15:3945)
+    at async q (.next/server/chunks/718.js:15:8037) {
+  [cause]: [AggregateError: ] { code: 'ECONNREFUSED' }
+}
+TypeError: Cannot read properties of undefined (reading 'call')
+    at Object.c [as require] (.next/server/webpack-runtime.js:1:128)
+Error occurred prerendering page "/admin". Read more: https://nextjs.org/docs/messages/prerender-error
+TypeError: Cannot read properties of undefined (reading 'call')
+    at Object.c [as require] (.next/server/webpack-runtime.js:1:128)
+Export encountered an error on /admin/page: /admin, exiting the build.
+ ⨯ Next.js build worker exited with code: 1 and signal: null

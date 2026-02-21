@@ -1,6 +1,11 @@
 "use client";
 
 import {
+  clearAnalyticsError,
+  fetchEventAnalytics,
+  fetchListerEventDetails,
+} from "@/lib/features/eventsSlice";
+import {
   Activity,
   AlertCircle,
   ArrowLeft,
@@ -18,31 +23,93 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  Legend,
-  Line,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
-  clearAnalyticsError,
-  fetchEventAnalytics,
-  fetchListerEventDetails,
-} from "@/lib/features/eventsSlice";
+
+const EventViewsAreaChart = dynamic(
+  () =>
+    import("./_components/event-charts").then((mod) => mod.EventViewsAreaChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[260px] w-full bg-gray-50 flex items-center justify-center animate-pulse rounded-xl text-xs text-gray-400">
+        Loading chart...
+      </div>
+    ),
+  },
+);
+const EventSalesComposedChart = dynamic(
+  () =>
+    import("./_components/event-charts").then(
+      (mod) => mod.EventSalesComposedChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[260px] w-full bg-gray-50 flex items-center justify-center animate-pulse rounded-xl text-xs text-gray-400">
+        Loading chart...
+      </div>
+    ),
+  },
+);
+const EventConversionPieChart = dynamic(
+  () =>
+    import("./_components/event-charts").then(
+      (mod) => mod.EventConversionPieChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[250px] w-full bg-gray-50 flex items-center justify-center animate-pulse rounded-xl text-xs text-gray-400">
+        Loading chart...
+      </div>
+    ),
+  },
+);
+const EventEngagementBarChart = dynamic(
+  () =>
+    import("./_components/event-charts").then(
+      (mod) => mod.EventEngagementBarChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[250px] w-full bg-gray-50 flex items-center justify-center animate-pulse rounded-xl text-xs text-gray-400">
+        Loading chart...
+      </div>
+    ),
+  },
+);
+const EventTicketTypePieChart = dynamic(
+  () =>
+    import("./_components/event-charts").then(
+      (mod) => mod.EventTicketTypePieChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[250px] w-full bg-gray-50 flex items-center justify-center animate-pulse rounded-xl text-xs text-gray-400">
+        Loading chart...
+      </div>
+    ),
+  },
+);
+const EventRevenuePotentialBarChart = dynamic(
+  () =>
+    import("./_components/event-charts").then(
+      (mod) => mod.EventRevenuePotentialBarChart,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[250px] w-full bg-gray-50 flex items-center justify-center animate-pulse rounded-xl text-xs text-gray-400">
+        Loading chart...
+      </div>
+    ),
+  },
+);
 
 const EventAnalytics = () => {
   const router = useRouter();
@@ -654,61 +721,11 @@ const EventAnalytics = () => {
                 {timeSeriesData.length} days
               </span>
             </div>
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart
-                data={timeSeriesData}
-                margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="viewsGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="clicksGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 10 }}
-                  interval={xAxisInterval}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend
-                  wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
-                  iconType="circle"
-                  iconSize={8}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="views"
-                  name="Views"
-                  stroke="#3B82F6"
-                  strokeWidth={2}
-                  fill="url(#viewsGrad)"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="clicks"
-                  name="Clicks"
-                  stroke="#8B5CF6"
-                  strokeWidth={2}
-                  fill="url(#clicksGrad)"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <EventViewsAreaChart
+              data={timeSeriesData}
+              xAxisInterval={xAxisInterval}
+              CustomTooltip={CustomTooltip}
+            />
           </div>
         )}
 
@@ -725,59 +742,11 @@ const EventAnalytics = () => {
                 sales
               </span>
             </div>
-            <ResponsiveContainer width="100%" height={260}>
-              <ComposedChart
-                data={timeSeriesData}
-                margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 10 }}
-                  interval={xAxisInterval}
-                  tickLine={false}
-                />
-                <YAxis
-                  yAxisId="left"
-                  tick={{ fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={false}
-                  allowDecimals={false}
-                />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  tick={{ fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => `₹${v}`}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend
-                  wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
-                  iconType="circle"
-                  iconSize={8}
-                />
-                <Bar
-                  yAxisId="left"
-                  dataKey="sales"
-                  name="Tickets Sold"
-                  fill="#FFE348"
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={32}
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="revenue"
-                  name="Revenue (₹)"
-                  stroke="#10B981"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
+            <EventSalesComposedChart
+              data={timeSeriesData}
+              xAxisInterval={xAxisInterval}
+              CustomTooltip={CustomTooltip}
+            />
           </div>
         )}
 
@@ -788,25 +757,10 @@ const EventAnalytics = () => {
               Conversion Breakdown
             </h3>
             {conversionData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={conversionData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value.toFixed(1)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {conversionData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
+              <EventConversionPieChart
+                data={conversionData}
+                CustomTooltip={CustomTooltip}
+              />
             ) : (
               <div className="h-[250px] flex items-center justify-center text-gray-400 text-sm">
                 No data available
@@ -819,19 +773,10 @@ const EventAnalytics = () => {
               Engagement Overview
             </h3>
             {engagementData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={engagementData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                    {engagementData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <EventEngagementBarChart
+                data={engagementData}
+                CustomTooltip={CustomTooltip}
+              />
             ) : (
               <div className="h-[250px] flex items-center justify-center text-gray-400 text-sm">
                 No data available
@@ -846,32 +791,11 @@ const EventAnalytics = () => {
             {ticketTypeData.length > 0 &&
             !hasUnlimitedTickets &&
             totalTickets > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={ticketTypeData.filter((t: any) => t.quantity > 0)}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name} ${(percent * 100).toFixed(0)}%`
-                    }
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="quantity"
-                  >
-                    {ticketTypeData
-                      .filter((t: any) => t.quantity > 0)
-                      .map((entry: any, index: number) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
+              <EventTicketTypePieChart
+                data={ticketTypeData}
+                COLORS={COLORS}
+                CustomTooltip={CustomTooltip}
+              />
             ) : (
               <div className="h-[250px] flex items-center justify-center text-gray-400 text-xs sm:text-sm text-center px-4">
                 {hasUnlimitedTickets || totalTickets === 0
@@ -886,24 +810,10 @@ const EventAnalytics = () => {
               Revenue Potential by Type
             </h3>
             {ticketTypeData.length > 0 && totalPotentialRevenue > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart
-                  data={ticketTypeData.filter(
-                    (t: any) => t.potentialRevenue > 0,
-                  )}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar
-                    dataKey="potentialRevenue"
-                    fill="#F59E0B"
-                    radius={[8, 8, 0, 0]}
-                    name="Potential Revenue"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <EventRevenuePotentialBarChart
+                data={ticketTypeData}
+                CustomTooltip={CustomTooltip}
+              />
             ) : (
               <div className="h-[250px] flex items-center justify-center text-gray-400 text-xs sm:text-sm text-center px-4">
                 {hasUnlimitedTickets || totalTickets === 0

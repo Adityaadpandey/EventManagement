@@ -123,40 +123,45 @@ export function MetricCard({
   onClick?: () => void;
 }) {
   const content = (
-    <>
+    <div className="relative z-10">
       <div className="flex items-start justify-between mb-3">
         <div
-          className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center`}
+          className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center shadow-inner`}
         >
-          <Icon className={`w-[18px] h-[18px] ${color}`} strokeWidth={1.8} />
+          <Icon className={`w-5 h-5 ${color}`} strokeWidth={2} />
         </div>
         {urgent && (
-          <span className="text-[10px] font-bold bg-[var(--color-primary)] text-[var(--color-neutral-dark2)] px-2 py-0.5 rounded-full">
-            Action
+          <span className="text-[10px] uppercase tracking-wider font-extrabold bg-red-500 text-white px-2.5 py-1 rounded-full animate-pulse shadow-sm">
+            Action Req
           </span>
         )}
       </div>
-      <p className="text-2xl font-bold text-[var(--color-neutral-dark2)] tabular-nums leading-none">
+      <p className="text-3xl font-extrabold text-[var(--color-neutral-dark2)] tabular-nums leading-none tracking-tight">
         {value}
       </p>
-      <p className="text-sm font-medium text-[var(--color-neutral-dark2)] mt-1.5">
+      <p className="text-sm font-semibold text-[var(--color-neutral-dark3)] mt-2">
         {label}
       </p>
       {sub && (
-        <p className="text-xs text-[var(--color-neutral-dark4)] mt-0.5">
+        <p className="text-xs text-[var(--color-neutral-dark4)] mt-1 font-medium">
           {sub}
         </p>
       )}
-    </>
+    </div>
   );
 
-  const cls =
-    "bg-[var(--color-neutral-light)] rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md hover:border-[var(--color-primary)]/30 transition-all duration-200";
+  const cls = `relative overflow-hidden bg-[var(--color-neutral-light)] rounded-3xl p-6 shadow-sm border border-gray-100/80 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group`;
+
+  const decorativeBlob = (
+    <div
+      className={`absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-0 group-hover:opacity-40 transition-opacity duration-500 blur-2xl ${bg}`}
+    />
+  );
 
   if (href) {
-    // We use an anchor instead of Next Link to avoid importing it
     return (
       <a href={href} className={`block ${cls}`}>
+        {decorativeBlob}
         {content}
       </a>
     );
@@ -164,11 +169,17 @@ export function MetricCard({
   if (onClick) {
     return (
       <button onClick={onClick} className={`text-left w-full ${cls}`}>
+        {decorativeBlob}
         {content}
       </button>
     );
   }
-  return <div className={cls}>{content}</div>;
+  return (
+    <div className={cls}>
+      {decorativeBlob}
+      {content}
+    </div>
+  );
 }
 
 export function StatCard({

@@ -21,7 +21,7 @@ import {
 } from "../../_components/admin-components";
 import { type PendingEvent, fmtDateLong } from "../../_lib/admin-utils";
 
-export default function AdminPendingEventsPage() {
+function AdminPendingEventsContent() {
   const [items, setItems] = useState<PendingEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -220,3 +220,5 @@ export default function AdminPendingEventsPage() {
     </div>
   );
 }
+
+export default AdminPendingEventsContent;

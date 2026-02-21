@@ -63,7 +63,7 @@ const ACTION_CONFIG: Record<
   },
 };
 
-export default function AdminPayoutsPage() {
+function AdminPayoutsContent() {
   const [payouts, setPayouts] = useState<AdminPayout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +88,9 @@ export default function AdminPayoutsPage() {
   }, []);
 
   useEffect(() => {
-    load();
+    if (typeof window !== "undefined") {
+      load();
+    }
   }, [load]);
 
   const doAction = async (payoutId: string, action: PayoutAction) => {
@@ -274,8 +276,11 @@ export default function AdminPayoutsPage() {
                   >
                     {actions.map((action) => {
                       const cfg = ACTION_CONFIG[action];
+                      if (!cfg) return null;
                       const key = `${payout.id}-${action}`;
                       const isActing = acting === key;
+                      const ActionIcon = cfg.icon;
+
                       return (
                         <button
                           key={action}
@@ -286,7 +291,7 @@ export default function AdminPayoutsPage() {
                           {isActing ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           ) : (
-                            <cfg.icon
+                            <ActionIcon
                               className="w-3.5 h-3.5"
                               strokeWidth={2.5}
                             />
@@ -361,3 +366,5 @@ export default function AdminPayoutsPage() {
     </div>
   );
 }
+
+export default AdminPayoutsContent;

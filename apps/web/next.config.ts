@@ -25,9 +25,6 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  experimental: {
-    optimizePackageImports: ["framer-motion", "lucide-react"],
-  },
 };
 
 export default withPWAConfig(nextConfig);
