@@ -615,8 +615,9 @@ export class EventService {
         throw new NotFoundError("Event not found");
       }
 
-      // Verify the caller owns this event (admins bypass)
-      if (event.lister.user.userId !== userId && !isAdmin) {
+      // Ensure event has a valid lister/user relationship
+      if (!event.lister?.user?.userId) {
+        logger.error("Event is missing lister or lister user", { eventId });
         throw new ForbiddenError(
           "Event data is incomplete or corrupted",
         );
