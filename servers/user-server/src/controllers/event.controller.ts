@@ -282,19 +282,20 @@ export class EventController {
       const { update, imageUrl } = req.body;
       if (!update) return sendError(res, "Update data is required", 400);
 
-      logInfo(req, "Updating event info", { eventId, hasImage: !!imageUrl });
+      const isAdmin = req.user?.role === "ADMIN";
+      logInfo(req, "Updating event info", {
+        eventId,
+        hasImage: !!imageUrl,
+        isAdmin,
+      });
       const result = await this.eventService.updateInfo(
         eventId,
         update,
         userId,
         imageUrl,
+        isAdmin,
       );
-      return sendSuccess(
-        res,
-        "Event info update processed",
-        result.message,
-        200,
-      );
+      return sendSuccess(res, "Event info update processed", result, 200);
     } catch (error: any) {
       logError(req, "Failed to update event info", error, {
         eventId: req.params.eventId as string,
@@ -375,6 +376,30 @@ export class EventController {
         return sendError(res, error.message, error.statusCode);
       }
       return sendError(res, "Failed to patch event status", 500, error.message);
+    }
+  }
+
+  async publishEvent(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) throw new UnauthorizedError("User ID is required");
+
+      const { eventId } = req.params;
+      logInfo(req, "Publishing event", { eventId, userId });
+
+      const result = await this.eventService.publishEvent(
+        userId,
+        eventId as string,
+      );
+      return sendSuccess(res, result.message, result.data, 200);
+    } catch (error: any) {
+      logError(req, "Failed to publish event", error, {
+        eventId: req.params.eventId,
+      });
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
+      return sendError(res, "Failed to publish event", 500, error.message);
     }
   }
 }

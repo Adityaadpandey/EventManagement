@@ -1,3 +1,4 @@
+import { config } from "../config";
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import {
@@ -576,6 +577,7 @@ export class EventService {
     update: string,
     userId: string,
     imageUrl?: string,
+    isAdmin: boolean = false,
   ) {
     try {
       // Validate imageUrl if provided
@@ -613,27 +615,23 @@ export class EventService {
         throw new NotFoundError("Event not found");
       }
 
-      // Verify the caller owns this event (admins bypass via controller)
-      if (event.lister.user.userId !== userId) {
+      // Verify the caller owns this event (admins bypass)
+      if (event.lister.user.userId !== userId && !isAdmin) {
+        throw new ForbiddenError(
+          "Event data is incomplete or corrupted",
+        );
+      }
+
+      // Verify the caller owns this event (admins bypass)
+      if (event.lister.user.userId !== userId && !isAdmin) {
         throw new ForbiddenError(
           "You do not have permission to send updates for this event",
         );
       }
 
-      // Atomically decrement the counter — this prevents race conditions
-      const decrementResult = await prisma.event.updateMany({
-        where: { eventId, availableMailUpdates: { gt: 0 } },
-        data: { availableMailUpdates: { decrement: 1 } },
-      });
-      if (decrementResult.count === 0) {
-        throw new BadRequestError(
-          "No more email updates available for this event",
-        );
-      }
-
       const eventTitle = event.title;
 
-      // Extract users from tickets
+      // Extract unique ticket holders before decrementing to avoid wasting credits
       const ticketedUsers = event.Ticket.map((t) => t.user);
 
       logger.info(
@@ -665,57 +663,92 @@ export class EventService {
           success: true,
           message: "No previous buyers to send emails to",
           emailsSent: 0,
+          updatesRemaining: event.availableMailUpdates,
         };
       }
 
-      for (const user of uniqueUsers) {
-        if (!user.email) {
-          logger.warn(`Skipping user ${user.name ?? "Unknown"} — no email`);
-          continue;
-        }
-
-        await sendEmail(
-          user.email,
-          `Important Update: ${eventTitle}`,
-          {
-            type: "event-update",
-            content: {
-              eventUpdate: {
-                message: update,
-                updatedAt: new Date().toISOString(),
-                imageUrl: imageUrl || undefined,
-                eventName: event.title,
-                eventDate: event.date.toISOString().split("T")[0],
-                eventVenue: event.location || undefined,
-              },
-            },
-          },
-          user.name ?? "Attendee",
+      // Atomically decrement the counter after confirming there are recipients
+      const decrementResult = await prisma.event.updateMany({
+        where: { eventId, availableMailUpdates: { gt: 0 } },
+        data: { availableMailUpdates: { decrement: 1 } },
+      });
+      if (decrementResult.count === 0) {
+        throw new BadRequestError(
+          "No more email updates available for this event",
         );
       }
 
-      // Send notifications to all ticket holders
-      for (const user of uniqueUsers) {
-        await notificationQueue.add("send-notification", {
-          userId: user.userId,
-          type: "EVENT_UPDATE",
-          title: `Update: ${eventTitle}`,
-          body: update,
-          link: `/events/${eventId}`,
-          metadata: {
+      try {
+        for (const user of uniqueUsers) {
+          if (!user.email) {
+            logger.warn(`Skipping user ${user.name ?? "Unknown"} — no email`);
+            continue;
+          }
+
+          await sendEmail(
+            user.email,
+            `Important Update: ${eventTitle}`,
+            {
+              type: "event-update",
+              content: {
+                eventUpdate: {
+                  message: update,
+                  updatedAt: new Date().toISOString(),
+                  imageUrl: imageUrl || undefined,
+                  eventName: event.title,
+                  eventDate: event.date.toISOString().split("T")[0],
+                  eventVenue: event.location || undefined,
+                },
+              },
+            },
+            user.name ?? "Attendee",
+          );
+        }
+
+        // Send notifications to all ticket holders
+        for (const user of uniqueUsers) {
+          await notificationQueue.add("send-notification", {
+            userId: user.userId,
+            type: "EVENT_UPDATE",
+            title: `Update: ${eventTitle}`,
+            body: update,
+            link: `/events/${eventId}`,
+            metadata: {
+              eventId,
+              imageUrl: imageUrl || undefined,
+            },
+          });
+        }
+      } catch (emailError) {
+        // Roll back the decrement if sending failed; log but don't swallow rollback errors
+        try {
+          await prisma.event.update({
+            where: { eventId },
+            data: { availableMailUpdates: { increment: 1 } },
+          });
+        } catch (rollbackError) {
+          logger.error("Failed to roll back availableMailUpdates decrement", {
             eventId,
-            imageUrl: imageUrl || undefined,
-          },
-        });
+            rollbackError,
+          });
+        }
+        throw emailError;
       }
 
-      // Invalidate cache (decrement already done atomically above)
+      // Invalidate cache
       await invalidateEventCaches(eventId, userId);
+
+      // Fetch the latest availableMailUpdates to ensure updatesRemaining is accurate
+      const updatedMailInfo = await prisma.event.findUnique({
+        where: { eventId },
+        select: { availableMailUpdates: true },
+      });
+      const updatesRemaining = updatedMailInfo?.availableMailUpdates ?? 0;
 
       return {
         message: `Update sent to ${uniqueUsers.length} ticket holders for event "${eventTitle}"`,
         emailsSent: uniqueUsers.length,
-        updatesRemaining: event.availableMailUpdates - 1,
+        updatesRemaining,
       };
     } catch (error) {
       logger.error("Error in updateInfo:", error);
@@ -933,6 +966,88 @@ export class EventService {
       };
     } catch (error) {
       logger.error("Error changing event status:", error);
+      throw error;
+    }
+  }
+
+  async publishEvent(userId: string, eventId: string) {
+    try {
+      const event = await prisma.event.findUnique({
+        where: { eventId },
+        include: {
+          lister: {
+            include: {
+              user: { select: { userId: true, name: true, email: true } },
+            },
+          },
+        },
+      });
+
+      if (!event) throw new NotFoundError("Event not found");
+
+      if (event.lister.user.userId !== userId) {
+        throw new ForbiddenError(
+          "You do not have permission to publish this event",
+        );
+      }
+
+      if (event.status === "PENDING") {
+        throw new BadRequestError("Event is already pending review");
+      }
+      if (event.status === "APPROVED") {
+        throw new BadRequestError("Event is already approved and live");
+      }
+      if (event.status === "CANCELLED") {
+        throw new BadRequestError("Cancelled events cannot be published");
+      }
+
+      const updated = await prisma.event.update({
+        where: { eventId },
+        data: { status: "PENDING" },
+      });
+
+      await invalidateEventCaches(eventId, userId);
+
+      const listerName = event.lister.user.name || "Lister";
+      const listerEmail = event.lister.user.email;
+      const adminEmail = config.ADMIN_EMAIL;
+
+      const reviewContent = {
+        eventTitle: event.title,
+        eventLocation: event.location,
+        eventDate: event.date
+          ? new Date(event.date).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })
+          : null,
+        eventId,
+        listerName,
+      };
+
+      // Email to lister — confirmation
+      sendEmail(
+        listerEmail,
+        `Your event "${event.title}" is under review`,
+        { type: "event-publish-lister", content: reviewContent },
+        listerName,
+      ).catch((e) => logger.error("Failed to send lister publish email:", e));
+
+      // Email to admin — action required
+      sendEmail(
+        adminEmail,
+        `New publish request: "${event.title}"`,
+        { type: "event-publish-admin", content: reviewContent },
+        "Admin",
+      ).catch((e) => logger.error("Failed to send admin publish email:", e));
+
+      return {
+        message: "Event submitted for review successfully",
+        data: updated,
+      };
+    } catch (error) {
+      logger.error("Error publishing event:", error);
       throw error;
     }
   }

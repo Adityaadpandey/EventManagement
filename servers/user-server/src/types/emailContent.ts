@@ -62,4 +62,21 @@ export interface PromotionEmailContent {
   promotion: Promotion;
 }
 
-export type EmailType = "ticket" | "event-update" | "otp" | "promotion";
+// Shared shape for event publish / review emails
+export interface EventReviewEmailContent {
+  eventTitle: string;
+  eventLocation?: string | null;
+  eventDate?: string | null; // pre-formatted date string
+  eventId?: string;
+  listerName?: string;
+}
+
+export type EmailType =
+  | "ticket"
+  | "event-update"
+  | "otp"
+  | "promotion"
+  | "event-publish-lister" // lister submits for review
+  | "event-publish-admin" // admin notified of new submission
+  | "event-approved" // admin approved the event
+  | "event-rejected"; // admin rejected the event
