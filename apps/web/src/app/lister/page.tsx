@@ -19,7 +19,9 @@ import {
   Ticket,
   TrendingUp,
   Users,
+  Wallet,
 } from "lucide-react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import React, { useCallback, useEffect, useMemo } from "react";
 
@@ -437,6 +439,25 @@ const ListerDashboard: React.FC = () => {
               <p className="text-xs text-gray-500">{stat.description}</p>
             </div>
           ))}
+
+          {/* Payouts & Earnings card */}
+          <Link
+            href="/lister/payouts"
+            className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-xl transition-all hover:-translate-y-1 block"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-indigo-50 p-3 rounded-xl">
+                <Wallet className="w-6 h-6 text-indigo-600" />
+              </div>
+            </div>
+            <h3 className="text-gray-600 text-sm font-medium mb-1">
+              Payouts & Earnings
+            </h3>
+            <p className="text-3xl font-bold text-indigo-600 mb-1">Withdraw</p>
+            <p className="text-xs text-gray-500">
+              View balance &amp; request payouts
+            </p>
+          </Link>
         </div>
 
         {/* Analytics Charts - Only show if there's data */}

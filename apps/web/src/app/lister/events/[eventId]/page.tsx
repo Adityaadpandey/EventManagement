@@ -281,15 +281,15 @@ const EventAnalytics = () => {
   // ── Chart data ───────────────────────────────────────────────────────────────
   const engagementData = analytics
     ? [
-        { name: "Total Views", value: analytics.views, fill: "#3B82F6" },
-        { name: "Converted", value: analytics.ticketsSold, fill: "#10B981" },
-        { name: "Did Not Convert", value: nonConverted, fill: "#EF4444" },
+        { name: "Total Views", value: analytics.views, fill: "#f6d100" },
+        { name: "Converted", value: analytics.ticketsSold, fill: "#171717" },
+        { name: "Did Not Convert", value: nonConverted, fill: "#8e8e8e" },
       ]
     : [];
 
   const conversionData = analytics
     ? [
-        { name: "Converted", value: analytics.conversionRate, fill: "#10B981" },
+        { name: "Converted", value: analytics.conversionRate, fill: "#f6d100" },
         {
           name: "Not Converted",
           value: 100 - analytics.conversionRate,
@@ -298,7 +298,7 @@ const EventAnalytics = () => {
       ]
     : [];
 
-  const COLORS = ["#FCD34D", "#FBBF24", "#F59E0B", "#D97706", "#B45309"];
+  const COLORS = ["#f6d100", "#ffe866", "#171717", "#3d3d3d", "#8e8e8e"];
 
   // ── Sub-components ───────────────────────────────────────────────────────────
   const StatCard = ({
@@ -308,8 +308,8 @@ const EventAnalytics = () => {
     subtitle,
     prefix = "",
     suffix = "",
-    bgColor = "bg-yellow-50",
-    iconColor = "text-yellow-600",
+    bgColor = "bg-[var(--color-primary)]/10",
+    iconColor = "text-[var(--color-neutral-dark3)]",
   }: any) => (
     <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
       <div className="flex items-start justify-between mb-3 sm:mb-4">
@@ -542,10 +542,10 @@ const EventAnalytics = () => {
                             width: `${Math.min(100, analytics.capacityUtilization || 0)}%`,
                             backgroundColor:
                               (analytics.capacityUtilization || 0) >= 80
-                                ? "#10B981"
+                                ? "#f6d100"
                                 : (analytics.capacityUtilization || 0) >= 40
-                                  ? "#F59E0B"
-                                  : "#FFE348",
+                                  ? "#ffe866"
+                                  : "#8e8e8e",
                           }}
                         />
                       </div>
@@ -557,10 +557,10 @@ const EventAnalytics = () => {
                 <span
                   className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium h-fit flex-shrink-0 ${
                     event.status === "published"
-                      ? "bg-green-100 text-green-700"
+                      ? "bg-[var(--color-primary)]/15 text-[var(--color-neutral-dark2)]"
                       : event.status === "draft"
-                        ? "bg-gray-100 text-gray-700"
-                        : "bg-yellow-100 text-yellow-700"
+                        ? "bg-gray-100 text-[var(--color-neutral-dark3)]"
+                        : "bg-[var(--color-primary2)]/20 text-[var(--color-neutral-dark3)]"
                   }`}
                 >
                   {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
@@ -577,16 +577,16 @@ const EventAnalytics = () => {
             title="Total Views"
             value={analytics.views}
             subtitle={`${analytics.views === 1 ? "person" : "people"} viewed`}
-            bgColor="bg-blue-50"
-            iconColor="text-blue-600"
+            bgColor="bg-[var(--color-primary)]/10"
+            iconColor="text-[var(--color-neutral-dark3)]"
           />
           <StatCard
             icon={MousePointerClick}
             title="CTA Clicks"
             value={analytics.clicks}
             subtitle={`${clickThroughRate}% click-through`}
-            bgColor="bg-violet-50"
-            iconColor="text-violet-600"
+            bgColor="bg-gray-100"
+            iconColor="text-[var(--color-neutral-dark4)]"
           />
           <StatCard
             icon={Ticket}
@@ -597,8 +597,8 @@ const EventAnalytics = () => {
                 ? "Unlimited capacity"
                 : `${remainingTickets} of ${totalTickets} remaining`
             }
-            bgColor="bg-purple-50"
-            iconColor="text-purple-600"
+            bgColor="bg-[var(--color-primary2)]/15"
+            iconColor="text-[var(--color-neutral-dark3)]"
           />
           <StatCard
             icon={DollarSign}
@@ -606,8 +606,8 @@ const EventAnalytics = () => {
             value={analytics.revenue}
             prefix="₹"
             subtitle={`From ${analytics.ticketsSold} ${analytics.ticketsSold === 1 ? "sale" : "sales"}`}
-            bgColor="bg-green-50"
-            iconColor="text-green-600"
+            bgColor="bg-[var(--color-primary)]/10"
+            iconColor="text-[var(--color-neutral-dark2)]"
           />
           <StatCard
             icon={Target}
@@ -615,8 +615,8 @@ const EventAnalytics = () => {
             value={analytics.conversionRate.toFixed(1)}
             suffix="%"
             subtitle={`${analytics.ticketsSold} of ${analytics.views} converted`}
-            bgColor="bg-yellow-50"
-            iconColor="text-yellow-600"
+            bgColor="bg-[var(--color-primary)]/15"
+            iconColor="text-[var(--color-neutral-dark2)]"
           />
           <StatCard
             icon={TrendingUp}
@@ -627,8 +627,8 @@ const EventAnalytics = () => {
                 ? `${analytics.ticketsSold} of ${analytics.clicks} clicks`
                 : "No clicks yet"
             }
-            bgColor="bg-orange-50"
-            iconColor="text-orange-600"
+            bgColor="bg-gray-100"
+            iconColor="text-[var(--color-neutral-dark4)]"
           />
         </div>
 
@@ -636,8 +636,8 @@ const EventAnalytics = () => {
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
             <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-              <div className="p-1.5 sm:p-2 bg-orange-50 rounded-lg flex-shrink-0">
-                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
+              <div className="p-1.5 sm:p-2 bg-[var(--color-primary)]/10 rounded-lg flex-shrink-0">
+                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-neutral-dark3)]" />
               </div>
               <p className="text-xs sm:text-sm font-medium text-gray-600">
                 Avg Ticket Price
@@ -655,8 +655,8 @@ const EventAnalytics = () => {
 
           <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
             <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-              <div className="p-1.5 sm:p-2 bg-indigo-50 rounded-lg flex-shrink-0">
-                <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+              <div className="p-1.5 sm:p-2 bg-[var(--color-primary2)]/15 rounded-lg flex-shrink-0">
+                <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-neutral-dark3)]" />
               </div>
               <p className="text-xs sm:text-sm font-medium text-gray-600">
                 Revenue Per View
@@ -672,8 +672,8 @@ const EventAnalytics = () => {
 
           <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
             <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-              <div className="p-1.5 sm:p-2 bg-pink-50 rounded-lg flex-shrink-0">
-                <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-pink-600" />
+              <div className="p-1.5 sm:p-2 bg-gray-100 rounded-lg flex-shrink-0">
+                <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-neutral-dark4)]" />
               </div>
               <p className="text-xs sm:text-sm font-medium text-gray-600">
                 Views Per Sale
@@ -691,8 +691,8 @@ const EventAnalytics = () => {
 
           <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
             <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-              <div className="p-1.5 sm:p-2 bg-red-50 rounded-lg flex-shrink-0">
-                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
+              <div className="p-1.5 sm:p-2 bg-[var(--color-error-light)] rounded-lg flex-shrink-0">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-error)]" />
               </div>
               <p className="text-xs sm:text-sm font-medium text-gray-600">
                 Non-Converted
@@ -893,14 +893,16 @@ const EventAnalytics = () => {
                         </td>
                         <td className="py-3 sm:py-4 px-3 sm:px-4 text-right font-medium text-gray-900 text-xs sm:text-sm">
                           {ticket.quantity || (
-                            <span className="text-purple-600">Unlimited</span>
+                            <span className="text-[var(--color-neutral-dark3)]">
+                              Unlimited
+                            </span>
                           )}
                         </td>
                         <td className="py-3 sm:py-4 px-3 sm:px-4 text-right text-xs sm:text-sm">
                           <span
                             className={
                               salesData && salesData.quantity > 0
-                                ? "font-semibold text-green-700"
+                                ? "font-semibold text-[var(--color-neutral-dark2)]"
                                 : "text-gray-400"
                             }
                           >
@@ -911,7 +913,7 @@ const EventAnalytics = () => {
                           <span
                             className={
                               salesData && salesData.revenue > 0
-                                ? "text-green-700"
+                                ? "text-[var(--color-neutral-dark2)]"
                                 : "text-gray-400"
                             }
                           >
@@ -932,22 +934,24 @@ const EventAnalytics = () => {
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-yellow-50 font-semibold">
+                  <tr className="bg-[var(--color-primary)]/10 font-semibold">
                     <td className="py-3 sm:py-4 px-3 sm:px-4 text-gray-900 text-xs sm:text-sm">
                       Total
                     </td>
                     <td className="py-3 sm:py-4 px-3 sm:px-4" />
                     <td className="py-3 sm:py-4 px-3 sm:px-4 text-right text-gray-900 text-xs sm:text-sm">
                       {hasUnlimitedTickets || totalTickets === 0 ? (
-                        <span className="text-purple-600">Unlimited</span>
+                        <span className="text-[var(--color-neutral-dark3)]">
+                          Unlimited
+                        </span>
                       ) : (
                         totalTickets
                       )}
                     </td>
-                    <td className="py-3 sm:py-4 px-3 sm:px-4 text-right text-green-700 text-xs sm:text-sm">
+                    <td className="py-3 sm:py-4 px-3 sm:px-4 text-right text-[var(--color-neutral-dark2)] text-xs sm:text-sm">
                       {actualTicketSales.reduce((s, t) => s + t.quantity, 0)}
                     </td>
-                    <td className="py-3 sm:py-4 px-3 sm:px-4 text-right text-green-700 text-xs sm:text-sm">
+                    <td className="py-3 sm:py-4 px-3 sm:px-4 text-right text-[var(--color-neutral-dark2)] text-xs sm:text-sm">
                       ₹
                       {actualTicketSales
                         .reduce((s, t) => s + t.revenue, 0)
@@ -968,9 +972,9 @@ const EventAnalytics = () => {
         </div>
 
         {/* ── Key Insights ────────────────────────────────────────────────── */}
-        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 sm:p-6 border border-yellow-200">
+        <div className="bg-gradient-to-r from-[var(--color-primary)]/10 to-[var(--color-primary2)]/10 rounded-xl p-4 sm:p-6 border border-[var(--color-primary)]/20">
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600" />
+            <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-neutral-dark3)]" />
             Key Insights
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -1069,7 +1073,7 @@ const EventAnalytics = () => {
 
           {/* Recommendations */}
           {analytics.views > 0 && (
-            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-yellow-200">
+            <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[var(--color-primary)]/20">
               <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">
                 💡 Recommendations:
               </p>

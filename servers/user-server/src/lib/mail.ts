@@ -6,6 +6,7 @@ import {
   EventReviewEmailContent,
   EventUpdateEmailContent,
   OtpEmailContent,
+  PayoutEmailContent,
   TicketEmailContent,
 } from "../types/emailContent";
 import { emailQueue } from "./queues";
@@ -17,7 +18,12 @@ type EmailPayload =
   | { type: "event-publish-lister"; content: EventReviewEmailContent }
   | { type: "event-publish-admin"; content: EventReviewEmailContent }
   | { type: "event-approved"; content: EventReviewEmailContent }
-  | { type: "event-rejected"; content: EventReviewEmailContent };
+  | { type: "event-rejected"; content: EventReviewEmailContent }
+  | { type: "payout-requested-lister"; content: PayoutEmailContent }
+  | { type: "payout-requested-admin"; content: PayoutEmailContent }
+  | { type: "payout-approved"; content: PayoutEmailContent }
+  | { type: "payout-completed"; content: PayoutEmailContent }
+  | { type: "payout-rejected"; content: PayoutEmailContent };
 
 export const sendEmail = async (
   toEmail: string,
@@ -59,6 +65,9 @@ export const sendEmail = async (
     payload.type === "event-approved" ||
     payload.type === "event-rejected"
   ) {
+    templateFile = `${payload.type}.ejs`;
+    templateData = { name, ...payload.content };
+  } else if (payload.type.startsWith("payout-")) {
     templateFile = `${payload.type}.ejs`;
     templateData = { name, ...payload.content };
   } else {

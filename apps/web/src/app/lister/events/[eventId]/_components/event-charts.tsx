@@ -32,12 +32,12 @@ export function EventViewsAreaChart({
       <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="viewsGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.15} />
-            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+            <stop offset="5%" stopColor="#f6d100" stopOpacity={0.15} />
+            <stop offset="95%" stopColor="#f6d100" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="clicksGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.2} />
-            <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
+            <stop offset="5%" stopColor="#8e8e8e" stopOpacity={0.2} />
+            <stop offset="95%" stopColor="#8e8e8e" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -58,7 +58,7 @@ export function EventViewsAreaChart({
           type="monotone"
           dataKey="views"
           name="Views"
-          stroke="#3B82F6"
+          stroke="#f6d100"
           strokeWidth={2}
           fill="url(#viewsGrad)"
           dot={false}
@@ -68,7 +68,7 @@ export function EventViewsAreaChart({
           type="monotone"
           dataKey="clicks"
           name="Clicks"
-          stroke="#8B5CF6"
+          stroke="#8e8e8e"
           strokeWidth={2}
           fill="url(#clicksGrad)"
           dot={false}
@@ -126,7 +126,7 @@ export function EventSalesComposedChart({
           yAxisId="left"
           dataKey="sales"
           name="Tickets Sold"
-          fill="#FFE348"
+          fill="#f6d100"
           radius={[4, 4, 0, 0]}
           maxBarSize={32}
         />
@@ -135,7 +135,7 @@ export function EventSalesComposedChart({
           type="monotone"
           dataKey="revenue"
           name="Revenue (₹)"
-          stroke="#10B981"
+          stroke="#171717"
           strokeWidth={2}
           dot={false}
           activeDot={{ r: 4 }}
@@ -254,7 +254,7 @@ export function EventRevenuePotentialBarChart({
         <Tooltip content={<CustomTooltip />} />
         <Bar
           dataKey="potentialRevenue"
-          fill="#F59E0B"
+          fill="#ffe866"
           radius={[8, 8, 0, 0]}
           name="Potential Revenue"
         />

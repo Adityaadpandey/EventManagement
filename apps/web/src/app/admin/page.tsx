@@ -109,8 +109,8 @@ function AdminDashboardContent() {
       sub: eventsQuery.isPending ? "loading..." : `${approved} approved`,
       icon: CalendarDays,
       href: "/admin/events",
-      color: "text-blue-600",
-      bg: "bg-blue-50/50",
+      color: "text-[var(--color-neutral-dark3)]",
+      bg: "bg-[var(--color-primary)]/10",
       isLoading: eventsQuery.isPending,
     },
     {
@@ -119,8 +119,8 @@ function AdminDashboardContent() {
       sub: "awaiting action",
       icon: Clock,
       href: "/admin/events/pending",
-      color: "text-amber-600",
-      bg: "bg-amber-50/50",
+      color: "text-[var(--color-neutral-dark3)]",
+      bg: "bg-gray-100",
       urgent: !pendingEventsQuery.isPending && pendingCount > 0,
       isLoading: pendingEventsQuery.isPending,
     },
@@ -132,8 +132,8 @@ function AdminDashboardContent() {
       sub: "accepting tickets",
       icon: Ticket,
       href: "/admin/events",
-      color: "text-purple-600",
-      bg: "bg-purple-50/50",
+      color: "text-[var(--color-neutral-dark2)]",
+      bg: "bg-[var(--color-primary2)]/15",
       isLoading: eventsQuery.isPending,
     },
     {
@@ -142,8 +142,8 @@ function AdminDashboardContent() {
       sub: "need processing",
       icon: Banknote,
       href: "/admin/payouts",
-      color: "text-green-600",
-      bg: "bg-green-50/50",
+      color: "text-[var(--color-neutral-dark3)]",
+      bg: "bg-gray-100",
       urgent: !payoutsQuery.isPending && pendingPayouts > 0,
       isLoading: payoutsQuery.isPending,
     },
@@ -153,8 +153,8 @@ function AdminDashboardContent() {
       sub: "completed",
       icon: TrendingUp,
       href: "/admin/payouts",
-      color: "text-emerald-600",
-      bg: "bg-emerald-50/50",
+      color: "text-[var(--color-neutral-dark2)]",
+      bg: "bg-[var(--color-primary)]/10",
       isLoading: payoutsQuery.isPending,
     },
     {
@@ -163,8 +163,8 @@ function AdminDashboardContent() {
       sub: "all time",
       icon: CheckCircle2,
       href: "/admin/payouts",
-      color: "text-indigo-600",
-      bg: "bg-indigo-50/50",
+      color: "text-[var(--color-neutral-dark4)]",
+      bg: "bg-gray-100",
       isLoading: payoutsQuery.isPending,
     },
   ];
@@ -256,23 +256,23 @@ function AdminDashboardContent() {
           );
           if (cancelRequested.length === 0) return null;
           return (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-red-50 border border-red-200 rounded-3xl px-6 py-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[var(--color-error-light)] border border-[var(--color-error)]/20 rounded-3xl px-6 py-5 shadow-sm">
               <div className="flex items-center gap-4">
-                <div className="w-3 h-3 rounded-full bg-red-600 animate-pulse shadow-md" />
+                <div className="w-3 h-3 rounded-full bg-[var(--color-error)] animate-pulse shadow-md" />
                 <div>
-                  <p className="text-base font-extrabold text-red-900">
+                  <p className="text-base font-extrabold text-[var(--color-neutral-dark2)]">
                     {cancelRequested.length} event
                     {cancelRequested.length !== 1 ? "s" : ""} requesting
                     cancellation
                   </p>
-                  <p className="text-sm font-medium text-red-700 mt-0.5">
+                  <p className="text-sm font-medium text-[var(--color-neutral-dark3)] mt-0.5">
                     Review cancellation requests and take action
                   </p>
                 </div>
               </div>
               <Link
                 href={`/admin/events/${cancelRequested[0].eventId}`}
-                className="flex items-center gap-2 bg-red-600 text-white text-sm font-bold px-5 py-2.5 rounded-full hover:bg-red-700 hover:scale-[1.02] transition-all shadow-md shrink-0"
+                className="flex items-center gap-2 bg-[var(--color-error)] text-white text-sm font-bold px-5 py-2.5 rounded-full hover:opacity-90 hover:scale-[1.02] transition-all shadow-md shrink-0"
               >
                 Review <ArrowRight className="w-4 h-4" />
               </Link>
@@ -297,7 +297,7 @@ function AdminDashboardContent() {
           title="Completed Payouts Trend"
           data={chartData}
           dataKey="amount"
-          color="#10b981"
+          color="#f6d100"
         />
       )}
 
@@ -373,7 +373,7 @@ function AdminDashboardContent() {
               ) : (
                 recentPayouts.map((p) => (
                   <div
-                    key={p.id}
+                    key={p.payoutId}
                     className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
@@ -427,11 +427,11 @@ function AdminDashboardContent() {
                         width: `${pct}%`,
                         background:
                           s === "APPROVED"
-                            ? "linear-gradient(90deg, #22c55e, #16a34a)"
+                            ? "linear-gradient(90deg, #f6d100, #ffe866)"
                             : s === "REJECTED" || s === "CANCELLED"
-                              ? "linear-gradient(90deg, #ef4444, #dc2626)"
+                              ? "linear-gradient(90deg, #ff0000, #ff6666)"
                               : s === "PENDING"
-                                ? "linear-gradient(90deg, #eab308, #ca8a04)"
+                                ? "linear-gradient(90deg, #8e8e8e, #3d3d3d)"
                                 : "linear-gradient(90deg, #9ca3af, #6b7280)",
                       }}
                     />

@@ -42,24 +42,25 @@ const ACTION_CONFIG: Record<
     label: "Approve",
     icon: CheckCircle2,
     className:
-      "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100",
+      "bg-[var(--color-primary)]/15 text-[var(--color-neutral-dark2)] border border-[var(--color-primary)] hover:bg-[var(--color-primary)]/25",
   },
   complete: {
     label: "Complete",
     icon: Check,
-    className: "bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm",
+    className:
+      "bg-[var(--color-primary)] text-[var(--color-neutral-dark2)] hover:bg-[var(--color-primary2)] shadow-sm",
   },
   reject: {
     label: "Reject",
     icon: XCircle,
     className:
-      "bg-[var(--color-neutral-light)] text-red-500 border border-red-200 hover:bg-red-50",
+      "bg-[var(--color-neutral-light)] text-[var(--color-error)] border border-[var(--color-error)]/20 hover:bg-[var(--color-error-light)]",
   },
   reverse: {
     label: "Reverse",
     icon: RotateCcw,
     className:
-      "bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100",
+      "bg-gray-100 text-[var(--color-neutral-dark3)] border border-gray-200 hover:bg-gray-200",
   },
 };
 
@@ -153,24 +154,24 @@ function AdminPayoutsContent() {
             value={payouts.length}
             sub="all time"
             icon={Banknote}
-            color="text-indigo-600"
-            bg="bg-indigo-50"
+            color="text-[var(--color-neutral-dark3)]"
+            bg="bg-gray-100"
           />
           <MetricCard
             label="Pending Amount"
             value={fmtCur(pendingTotal)}
             sub={`${payouts.filter((p) => p.status === "PENDING").length} requests`}
             icon={Loader2}
-            color="text-amber-600"
-            bg="bg-amber-50"
+            color="text-[var(--color-neutral-dark3)]"
+            bg="bg-gray-100"
           />
           <MetricCard
             label="Total Paid Out"
             value={fmtCur(completedTotal)}
             sub="completed payouts"
             icon={CheckCircle2}
-            color="text-emerald-600"
-            bg="bg-emerald-50"
+            color="text-[var(--color-neutral-dark2)]"
+            bg="bg-[var(--color-primary)]/10"
           />
           <MetricCard
             label="Needs Action"
@@ -181,8 +182,8 @@ function AdminPayoutsContent() {
             }
             sub="approve or complete"
             icon={RotateCcw}
-            color="text-blue-600"
-            bg="bg-blue-50"
+            color="text-[var(--color-neutral-dark2)]"
+            bg="bg-[var(--color-primary2)]/15"
           />
         </div>
       )}
@@ -223,17 +224,17 @@ function AdminPayoutsContent() {
         <div className="space-y-3">
           {filtered.map((payout) => {
             const actions = PAYOUT_ALLOWED_ACTIONS[payout.status] || [];
-            const isExp = expanded === payout.id;
+            const isExp = expanded === payout.payoutId;
 
             return (
               <div
-                key={payout.id}
+                key={payout.payoutId}
                 className="bg-[var(--color-neutral-light)] rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
               >
                 {/* Main row */}
                 <div
                   className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 sm:p-5 cursor-pointer hover:bg-[var(--background)]/30 transition-colors"
-                  onClick={() => setExpanded(isExp ? null : payout.id)}
+                  onClick={() => setExpanded(isExp ? null : payout.payoutId)}
                 >
                   {/* Lister icon */}
                   <div className="hidden sm:flex w-10 h-10 rounded-xl bg-gray-100 items-center justify-center shrink-0">
@@ -277,7 +278,7 @@ function AdminPayoutsContent() {
                     {actions.map((action) => {
                       const cfg = ACTION_CONFIG[action];
                       if (!cfg) return null;
-                      const key = `${payout.id}-${action}`;
+                      const key = `${payout.payoutId}-${action}`;
                       const isActing = acting === key;
                       const ActionIcon = cfg.icon;
 
@@ -285,7 +286,7 @@ function AdminPayoutsContent() {
                         <button
                           key={action}
                           disabled={!!acting}
-                          onClick={() => doAction(payout.id, action)}
+                          onClick={() => doAction(payout.payoutId, action)}
                           className={`flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-bold transition-all disabled:opacity-50 ${cfg.className}`}
                         >
                           {isActing ? (
@@ -301,7 +302,9 @@ function AdminPayoutsContent() {
                       );
                     })}
                     <button
-                      onClick={() => setExpanded(isExp ? null : payout.id)}
+                      onClick={() =>
+                        setExpanded(isExp ? null : payout.payoutId)
+                      }
                       className="p-1.5 rounded-xl hover:bg-gray-100 transition-colors"
                     >
                       {isExp ? (
@@ -319,24 +322,24 @@ function AdminPayoutsContent() {
                     <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-300 mb-3">
                       Bank Details
                     </p>
-                    {payout.bankDetails ? (
+                    {payout.lister?.BankDetails ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {[
                           {
                             label: "Account Holder",
-                            value: payout.bankDetails.accountHolderName,
+                            value: payout.lister.BankDetails.accountHolderName,
                           },
                           {
                             label: "Account Number",
-                            value: payout.bankDetails.accountNumber,
+                            value: payout.lister.BankDetails.accountNumber,
                           },
                           {
                             label: "IFSC Code",
-                            value: payout.bankDetails.ifsc,
+                            value: payout.lister.BankDetails.ifscCode,
                           },
                           {
                             label: "Bank Name",
-                            value: payout.bankDetails.bankName,
+                            value: payout.lister.BankDetails.bankName,
                           },
                         ].map((f) =>
                           f.value ? (

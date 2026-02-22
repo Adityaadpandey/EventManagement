@@ -28,8 +28,8 @@ export function Toast({
     <div
       className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl text-sm font-medium shadow-lg border backdrop-blur-sm transition-all animate-[slideUp_0.3s_ease-out] ${
         ok
-          ? "bg-emerald-50/95 text-emerald-700 border-emerald-200"
-          : "bg-red-50/95 text-red-600 border-red-200"
+          ? "bg-[var(--color-primary)]/20 text-[var(--color-neutral-dark2)] border-[var(--color-primary)]"
+          : "bg-[var(--color-error-light)] text-[var(--color-error)] border-[var(--color-error)]/20"
       }`}
     >
       {msg}
@@ -131,7 +131,7 @@ export function MetricCard({
           <Icon className={`w-5 h-5 ${color}`} strokeWidth={2} />
         </div>
         {urgent && (
-          <span className="text-[10px] uppercase tracking-wider font-extrabold bg-red-500 text-white px-2.5 py-1 rounded-full animate-pulse shadow-sm">
+          <span className="text-[10px] uppercase tracking-wider font-extrabold bg-[var(--color-error)] text-white px-2.5 py-1 rounded-full animate-pulse shadow-sm">
             Action Req
           </span>
         )}

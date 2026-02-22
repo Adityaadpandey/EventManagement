@@ -205,7 +205,7 @@ function AllBuyersContent() {
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by name, email, event, or ticket ID..."
-            className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-gray-200 bg-[var(--color-neutral-light)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20 focus:border-[var(--color-brand)] transition-all shadow-sm"
+            className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-gray-200 bg-[var(--color-neutral-light)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all shadow-sm"
           />
           {searchInput && (
             <button
@@ -313,7 +313,7 @@ function AllBuyersContent() {
                       {b.Event?.eventId ? (
                         <Link
                           href={`/admin/events/${b.Event.eventId}`}
-                          className="text-sm text-blue-600 hover:underline line-clamp-1"
+                          className="text-sm text-[var(--color-neutral-dark3)] font-medium hover:text-[var(--color-neutral-dark2)] hover:underline line-clamp-1"
                         >
                           {b.Event.title || b.Event.eventId.slice(0, 8)}
                         </Link>
@@ -341,7 +341,7 @@ function AllBuyersContent() {
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${b.checkedIn ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-gray-100 text-gray-500 border-gray-200"}`}
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${b.checkedIn ? "bg-[var(--color-primary)]/15 text-[var(--color-neutral-dark2)] border-[var(--color-primary)]" : "bg-gray-100 text-[var(--color-neutral-dark4)] border-gray-200"}`}
                       >
                         {b.checkedIn ? "Checked In" : "Pending"}
                       </span>
@@ -371,7 +371,7 @@ function AllBuyersContent() {
                     )}
                   </div>
                   <span
-                    className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full border ${b.checkedIn ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-gray-100 text-gray-500 border-gray-200"}`}
+                    className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full border ${b.checkedIn ? "bg-[var(--color-primary)]/15 text-[var(--color-neutral-dark2)] border-[var(--color-primary)]" : "bg-gray-100 text-[var(--color-neutral-dark4)] border-gray-200"}`}
                   >
                     {b.checkedIn ? "In" : "Pending"}
                   </span>
@@ -380,7 +380,7 @@ function AllBuyersContent() {
                   {b.Event?.eventId ? (
                     <Link
                       href={`/admin/events/${b.Event.eventId}`}
-                      className="text-xs text-blue-600 hover:underline"
+                      className="text-xs text-[var(--color-neutral-dark3)] font-medium hover:text-[var(--color-neutral-dark2)] hover:underline"
                     >
                       {b.Event.title || "Event"}
                     </Link>

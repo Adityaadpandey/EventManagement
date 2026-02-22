@@ -71,6 +71,20 @@ export interface EventReviewEmailContent {
   listerName?: string;
 }
 
+export interface PayoutEmailContent {
+  amount: string; // pre-formatted e.g. ₹10,000
+  payoutId: string;
+  type?: string;
+  approvedAmount?: string;
+  remark?: string;
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  listerName?: string;
+  listerEmail?: string;
+  paidAt?: string;
+}
+
 export type EmailType =
   | "ticket"
   | "event-update"
@@ -79,4 +93,9 @@ export type EmailType =
   | "event-publish-lister" // lister submits for review
   | "event-publish-admin" // admin notified of new submission
   | "event-approved" // admin approved the event
-  | "event-rejected"; // admin rejected the event
+  | "event-rejected" // admin rejected the event
+  | "payout-requested-lister"
+  | "payout-requested-admin"
+  | "payout-approved"
+  | "payout-completed"
+  | "payout-rejected";

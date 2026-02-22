@@ -13,7 +13,7 @@ function ActivityChartContent({
   title,
   data,
   dataKey = "value",
-  color = "#8b5cf6",
+  color = "#f6d100",
 }: {
   title: string;
   data: any[];
