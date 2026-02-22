@@ -33,20 +33,10 @@ import {
   Users,
   X,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import {
   ChartCard as ChartCardShared,
   ConfirmDialog,
@@ -69,6 +59,27 @@ import {
   fmtTime,
   type EventAction,
 } from "../../_lib/admin-utils";
+
+const AnalyticsLineChart = dynamic(
+  () =>
+    import("./_components/analytics-charts").then((m) => m.AnalyticsLineChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full bg-gray-50 animate-pulse rounded-xl" />
+    ),
+  },
+);
+const AnalyticsBarChart = dynamic(
+  () =>
+    import("./_components/analytics-charts").then((m) => m.AnalyticsBarChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full bg-gray-50 animate-pulse rounded-xl" />
+    ),
+  },
+);
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -216,17 +227,6 @@ const TABS = [
   { key: "Discounts" as const, icon: Tag, label: "Discounts" },
 ];
 type Tab = (typeof TABS)[number]["key"];
-
-const TOOLTIP_STYLE = {
-  contentStyle: {
-    backgroundColor: "#fff",
-    border: "1px solid #f3f4f6",
-    borderRadius: 12,
-    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.05)",
-  },
-  labelStyle: { color: "var(--color-neutral-dark2)", fontWeight: 600 },
-  itemStyle: { color: "var(--color-neutral-dark3)" },
-};
 
 const ACTION_META: Record<
   EventAction,
@@ -1340,107 +1340,47 @@ export default function AdminEventDetailPage() {
 
               {analytics.viewsByDay &&
                 Object.keys(analytics.viewsByDay).length > 0 && (
-                  <ChartCardShared title="Views Over Time">
-                    <ResponsiveContainer width="100%" height={180}>
-                      <LineChart
-                        data={recordToChartData(analytics.viewsByDay, "views")}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                        <XAxis
-                          dataKey="date"
-                          tick={{ fill: "#9ca3af", fontSize: 10 }}
-                          tickLine={false}
-                        />
-                        <YAxis
-                          tick={{ fill: "#9ca3af", fontSize: 10 }}
-                          tickLine={false}
-                          axisLine={false}
-                          width={30}
-                        />
-                        <Tooltip {...TOOLTIP_STYLE} />
-                        <Line
-                          type="monotone"
-                          dataKey="views"
-                          stroke="#3b82f6"
-                          strokeWidth={2}
-                          dot={false}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </ChartCardShared>
+                  <div className="h-[300px] w-full mt-6">
+                    <AnalyticsLineChart
+                      data={recordToChartData(analytics.viewsByDay, "views")}
+                      dataKey="views"
+                      stroke="#8b5cf6"
+                    />
+                  </div>
                 )}
 
               {analytics.salesByDay &&
                 Object.keys(analytics.salesByDay).length > 0 && (
                   <ChartCardShared title="Ticket Sales Over Time">
-                    <ResponsiveContainer width="100%" height={180}>
-                      <BarChart
+                    <div className="h-[300px] w-full mt-6">
+                      <AnalyticsBarChart
                         data={recordToChartData(
                           analytics.salesByDay,
                           "tickets",
                         )}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                        <XAxis
-                          dataKey="date"
-                          tick={{ fill: "#9ca3af", fontSize: 10 }}
-                          tickLine={false}
-                        />
-                        <YAxis
-                          tick={{ fill: "#9ca3af", fontSize: 10 }}
-                          tickLine={false}
-                          axisLine={false}
-                          width={30}
-                        />
-                        <Tooltip {...TOOLTIP_STYLE} />
-                        <Bar
-                          dataKey="tickets"
-                          fill="var(--color-primary2)"
-                          radius={[4, 4, 0, 0]}
-                          name="Tickets"
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
+                        dataKey="tickets"
+                        fill="var(--color-primary2)"
+                      />
+                    </div>
                   </ChartCardShared>
                 )}
 
               {analytics.revenueByDay &&
                 Object.keys(analytics.revenueByDay).length > 0 && (
-                  <ChartCardShared title="Revenue Over Time">
-                    <ResponsiveContainer width="100%" height={180}>
-                      <LineChart
-                        data={recordToChartData(
-                          analytics.revenueByDay,
-                          "revenue",
-                        )}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                        <XAxis
-                          dataKey="date"
-                          tick={{ fill: "#9ca3af", fontSize: 10 }}
-                          tickLine={false}
-                        />
-                        <YAxis
-                          tick={{ fill: "#9ca3af", fontSize: 10 }}
-                          tickLine={false}
-                          axisLine={false}
-                          width={40}
-                          tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}k`}
-                        />
-                        <Tooltip
-                          {...TOOLTIP_STYLE}
-                          formatter={(v: number) => [fmtCur(v), "Revenue"]}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="revenue"
-                          stroke="#10b981"
-                          strokeWidth={2}
-                          dot={false}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </ChartCardShared>
+                  <div className="h-[300px] w-full mt-6">
+                    <AnalyticsLineChart
+                      data={recordToChartData(
+                        analytics.revenueByDay,
+                        "revenue",
+                      )}
+                      dataKey="revenue"
+                      stroke="#10b981"
+                      yAxisTickFormatter={(v: number) =>
+                        `₹${(v / 1000).toFixed(0)}k`
+                      }
+                      tooltipFormatter={(v: number) => [fmtCur(v), "Revenue"]}
+                    />
+                  </div>
                 )}
             </>
           )}

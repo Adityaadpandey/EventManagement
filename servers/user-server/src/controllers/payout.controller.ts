@@ -212,7 +212,9 @@ export class PayoutController {
     try {
       const payoutId = req.params.payoutId as string;
       if (!payoutId) throw new NotFoundError("Payout ID is required");
-      const { approvedAmount, remark } = approvePayoutSchema.parse(req.body);
+      const { approvedAmount, remark } = approvePayoutSchema.parse(
+        req.body ?? {},
+      );
 
       const payout = await this.payoutService.approvePayout(
         payoutId,

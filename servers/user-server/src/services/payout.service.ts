@@ -1,11 +1,17 @@
 import { prisma } from "../config/db";
 import logger from "../config/logger";
 import { Prisma } from "../generated/prisma/client";
+import { sendEmail } from "../lib/mail";
 import {
   BadRequestError,
   NotFoundError,
   UnauthorizedError,
 } from "../utils/errors";
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "adityapandeyadp@gmail.com";
+
+const fmtAmount = (amount: Prisma.Decimal | number): string =>
+  `₹${Number(amount).toLocaleString("en-IN")}`;
 
 export class PayoutService {
   /**
@@ -272,6 +278,50 @@ export class PayoutService {
         `Payout request created: ${payout.payoutId} for ${requestedAmount}`,
       );
 
+      // Fire-and-forget emails
+      const listerName =
+        payout.lister?.user?.name || payout.lister?.companyName || "Lister";
+      const listerEmail = payout.lister?.user?.email;
+      const formattedAmount = fmtAmount(requestedAmount);
+
+      if (listerEmail) {
+        sendEmail(
+          listerEmail,
+          "Payout Request Received – Under Review",
+          {
+            type: "payout-requested-lister",
+            content: {
+              amount: formattedAmount,
+              payoutId: payout.payoutId,
+              type: data.type,
+            },
+          },
+          listerName,
+        ).catch(() => {});
+      }
+
+      const bankDetails = await prisma.bankDetails.findUnique({
+        where: { listerId: lister.listerId },
+      });
+
+      sendEmail(
+        ADMIN_EMAIL,
+        `New Payout Request – ${formattedAmount} from ${listerName}`,
+        {
+          type: "payout-requested-admin",
+          content: {
+            amount: formattedAmount,
+            payoutId: payout.payoutId,
+            listerName,
+            listerEmail: listerEmail || "N/A",
+            bankName: bankDetails?.bankName || "N/A",
+            accountNumber: bankDetails?.accountNumber || "N/A",
+            ifscCode: bankDetails?.ifscCode || "N/A",
+          },
+        },
+        "Admin",
+      ).catch(() => {});
+
       return payout;
     } catch (error) {
       logger.error(`Payout request failed for user ${userId}: ${error}`);
@@ -431,6 +481,35 @@ export class PayoutService {
 
       logger.info(`Payout ${payoutId} approved for amount ${finalAmount}`);
 
+      // Fire-and-forget email to lister
+      prisma.lister
+        .findUnique({
+          where: { listerId: payout.listerId },
+          select: {
+            companyName: true,
+            user: { select: { name: true, email: true } },
+          },
+        })
+        .then((l) => {
+          const lEmail = l?.user?.email;
+          const lName = l?.user?.name || l?.companyName || "Lister";
+          if (!lEmail) return;
+          sendEmail(
+            lEmail,
+            "Payout Approved – Processing Now",
+            {
+              type: "payout-approved",
+              content: {
+                amount: fmtAmount(payout.amount),
+                approvedAmount: fmtAmount(finalAmount),
+                payoutId,
+              },
+            },
+            lName,
+          ).catch(() => {});
+        })
+        .catch(() => {});
+
       return updatedPayout;
     } catch (error) {
       logger.error(`Failed to approve payout ${payoutId}: ${error}`);
@@ -484,6 +563,47 @@ export class PayoutService {
       });
 
       logger.info(`Payout ${payoutId} marked as completed`);
+
+      // Fire-and-forget email to lister
+      const lEmail = updatedPayout.lister?.user?.email;
+      const lName =
+        updatedPayout.lister?.user?.name ||
+        updatedPayout.lister?.companyName ||
+        "Lister";
+      if (lEmail) {
+        const paidAmount = fmtAmount(
+          updatedPayout.approvedAmount || updatedPayout.amount,
+        );
+        const paidOn = updatedPayout.paidAt
+          ? new Date(updatedPayout.paidAt).toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })
+          : new Date().toLocaleDateString("en-IN");
+        prisma.bankDetails
+          .findUnique({
+            where: { listerId: updatedPayout.listerId },
+          })
+          .then((bankDetails) => {
+            sendEmail(
+              lEmail,
+              "Payout Completed – Funds Transferred!",
+              {
+                type: "payout-completed",
+                content: {
+                  amount: paidAmount,
+                  payoutId,
+                  bankName: bankDetails?.bankName || "Your bank",
+                  accountNumber: bankDetails?.accountNumber || "****",
+                  paidAt: paidOn,
+                },
+              },
+              lName,
+            ).catch(() => {});
+          })
+          .catch(() => {});
+      }
 
       return updatedPayout;
     } catch (error) {
@@ -558,6 +678,36 @@ export class PayoutService {
       logger.info(
         `Payout ${payoutId} rejected (was ${payout.status}, now FAILED)`,
       );
+
+      // Fire-and-forget email to lister
+      const rejectAmount = fmtAmount(payout.amount);
+      prisma.lister
+        .findUnique({
+          where: { listerId: payout.listerId },
+          select: {
+            companyName: true,
+            user: { select: { name: true, email: true } },
+          },
+        })
+        .then((l) => {
+          const rEmail = l?.user?.email;
+          const rName = l?.user?.name || l?.companyName || "Lister";
+          if (!rEmail) return;
+          sendEmail(
+            rEmail,
+            "Payout Request Not Approved",
+            {
+              type: "payout-rejected",
+              content: {
+                amount: rejectAmount,
+                payoutId,
+                remark: reason || undefined,
+              },
+            },
+            rName,
+          ).catch(() => {});
+        })
+        .catch(() => {});
 
       return updatedPayout;
     } catch (error) {

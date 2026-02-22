@@ -20,9 +20,9 @@ module.exports = {
             );
           }
           const data = await response.json();
-          allEvents = [...allEvents, ...data.items];
-          hasMore =
-            data.items.length === limit && data.totalPages > currentPage;
+          const items = data.items || data.data || [];
+          allEvents = [...allEvents, ...items];
+          hasMore = items.length === limit && data.totalPages > currentPage;
           currentPage++;
         }
         return { items: allEvents };

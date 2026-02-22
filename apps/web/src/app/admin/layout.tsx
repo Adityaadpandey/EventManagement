@@ -16,6 +16,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { Providers } from "./providers";
+
 type Counts = { pending: number; payoutsAction: number };
 
 const navItems = [
@@ -57,11 +59,7 @@ const navItems = [
   },
 ];
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [counts, setCounts] = useState<Counts>({
     pending: 0,
@@ -70,26 +68,28 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      api.get("/admin/get-all-pending-events").catch(() => null),
-      api.get("/admin/payout/all").catch(() => null),
-    ]).then(([pendRes, payRes]) => {
-      const pendArr = Array.isArray(pendRes?.data?.data)
-        ? pendRes.data.data
-        : [];
-      const payData = payRes?.data?.data;
-      const payArr = Array.isArray(payData)
-        ? payData
-        : Array.isArray(payData?.payouts)
-          ? payData.payouts
+    if (typeof window !== "undefined") {
+      Promise.all([
+        api.get("/admin/get-all-pending-events").catch(() => null),
+        api.get("/admin/payout/all").catch(() => null),
+      ]).then(([pendRes, payRes]) => {
+        const pendArr = Array.isArray(pendRes?.data?.data)
+          ? pendRes.data.data
           : [];
-      setCounts({
-        pending: pendArr.length,
-        payoutsAction: payArr.filter(
-          (p: any) => p.status === "PENDING" || p.status === "APPROVED",
-        ).length,
+        const payData = payRes?.data?.data;
+        const payArr = Array.isArray(payData)
+          ? payData
+          : Array.isArray(payData?.payouts)
+            ? payData.payouts
+            : [];
+        setCounts({
+          pending: pendArr.length,
+          payoutsAction: payArr.filter(
+            (p: any) => p.status === "PENDING" || p.status === "APPROVED",
+          ).length,
+        });
       });
-    });
+    }
   }, [pathname]);
 
   // Close sidebar on route change
@@ -99,6 +99,7 @@ export default function AdminLayout({
 
   // Close sidebar on escape key
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") setSidebarOpen(false);
     };
@@ -285,7 +286,9 @@ export default function AdminLayout({
         </div>
 
         {/* Page content */}
-        <div className="flex-1 overflow-y-auto">{children}</div>
+        <div className="flex-1 overflow-y-auto">
+          <Providers>{children}</Providers>
+        </div>
       </div>
 
       {/* ── Mobile bottom nav ── */}
@@ -340,3 +343,5 @@ export default function AdminLayout({
     </div>
   );
 }
+
+export default AdminLayoutContent;

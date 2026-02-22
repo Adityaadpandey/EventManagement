@@ -12,22 +12,23 @@ export type AdminEvent = {
 };
 
 export type AdminPayout = {
-  id: string;
+  payoutId: string;
   amount: number;
-  status: "PENDING" | "APPROVED" | "COMPLETED" | "REJECTED" | "REVERSED";
+  approvedAmount?: number | null;
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED";
   createdAt: string;
   updatedAt: string;
   lister?: {
     companyName?: string | null;
     user?: { name?: string | null; email?: string | null };
+    BankDetails?: {
+      accountHolderName?: string | null;
+      accountNumber?: string | null;
+      ifscCode?: string | null;
+      bankName?: string | null;
+    } | null;
   };
   event?: { title?: string | null };
-  bankDetails?: {
-    accountHolderName?: string | null;
-    accountNumber?: string | null;
-    ifsc?: string | null;
-    bankName?: string | null;
-  };
 };
 
 export type PendingEvent = {
@@ -44,21 +45,31 @@ export type PendingEvent = {
 // ─── Status Badge Mappings ───────────────────────────────────────────────────
 
 export const EVENT_STATUS_STYLES: Record<string, string> = {
-  APPROVED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  REJECTED: "bg-red-50 text-red-600 border border-red-200",
-  PENDING: "bg-amber-50 text-amber-700 border border-amber-200",
-  NOT_VIEWED: "bg-gray-100 text-gray-500 border border-gray-200",
+  APPROVED:
+    "bg-[var(--color-primary)]/15 text-[var(--color-neutral-dark2)] border border-[var(--color-primary)]",
+  REJECTED:
+    "bg-[var(--color-error-light)] text-[var(--color-error)] border border-[var(--color-error)]/20",
+  PENDING:
+    "bg-gray-100 text-[var(--color-neutral-dark3)] border border-gray-200",
+  NOT_VIEWED:
+    "bg-gray-100 text-[var(--color-neutral-dark4)] border border-gray-200",
   CANCELLATION_REQUESTED:
-    "bg-orange-50 text-orange-700 border border-orange-200",
-  CANCELLED: "bg-red-50 text-red-400 border border-red-100",
+    "bg-[var(--color-error-light)] text-[var(--color-error)] border border-[var(--color-error)]/20",
+  CANCELLED:
+    "bg-gray-100 text-[var(--color-neutral-dark4)] border border-gray-200",
 };
 
 export const PAYOUT_STATUS_STYLES: Record<string, string> = {
-  COMPLETED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  APPROVED: "bg-blue-50 text-blue-700 border border-blue-200",
-  PENDING: "bg-amber-50 text-amber-700 border border-amber-200",
-  REJECTED: "bg-red-50 text-red-600 border border-red-200",
-  REVERSED: "bg-orange-50 text-orange-700 border border-orange-200",
+  COMPLETED:
+    "bg-[var(--color-primary)]/15 text-[var(--color-neutral-dark2)] border border-[var(--color-primary)]",
+  PROCESSING:
+    "bg-[var(--color-primary2)]/20 text-[var(--color-neutral-dark3)] border border-[var(--color-primary2)]",
+  PENDING:
+    "bg-gray-100 text-[var(--color-neutral-dark3)] border border-gray-200",
+  FAILED:
+    "bg-[var(--color-error-light)] text-[var(--color-error)] border border-[var(--color-error)]/20",
+  CANCELLED:
+    "bg-gray-100 text-[var(--color-neutral-dark4)] border border-gray-200",
 };
 
 export const EVENT_STATUSES = [
@@ -73,20 +84,20 @@ export const EVENT_STATUSES = [
 export const PAYOUT_STATUSES = [
   "ALL",
   "PENDING",
-  "APPROVED",
+  "PROCESSING",
   "COMPLETED",
-  "REJECTED",
-  "REVERSED",
+  "FAILED",
+  "CANCELLED",
 ] as const;
 
 export type PayoutAction = "approve" | "complete" | "reject" | "reverse";
 
 export const PAYOUT_ALLOWED_ACTIONS: Record<string, PayoutAction[]> = {
   PENDING: ["approve", "reject"],
-  APPROVED: ["complete", "reject"],
+  PROCESSING: ["complete", "reject"],
   COMPLETED: ["reverse"],
-  REJECTED: [],
-  REVERSED: [],
+  FAILED: [],
+  CANCELLED: [],
 };
 
 // ─── Event Actions ───────────────────────────────────────────────────────────

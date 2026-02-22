@@ -7,7 +7,7 @@ import { PageHeader, Toast } from "../_components/admin-components";
 
 type Mode = "broadcast" | "targeted";
 
-export default function AdminNotificationsPage() {
+function AdminNotificationsContent() {
   const [mode, setMode] = useState<Mode>("broadcast");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -205,3 +205,5 @@ export default function AdminNotificationsPage() {
     </div>
   );
 }
+
+export default AdminNotificationsContent;
