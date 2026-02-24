@@ -100,7 +100,8 @@ function AdminDashboardContent() {
         .reduce((s, p) => s + p.amount, 0);
   const pendingPayouts = payoutsQuery.isPending
     ? 0
-    : payouts.filter((p) => ["PENDING", "APPROVED"].includes(p.status)).length;
+    : payouts.filter((p) => ["PENDING", "PROCESSING"].includes(p.status))
+        .length;
 
   const metrics = [
     {

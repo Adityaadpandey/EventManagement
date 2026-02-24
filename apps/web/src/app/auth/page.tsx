@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
+  hydrateSession,
   requestOtp,
   verifyOtp,
-  hydrateSession,
 } from "@/lib/features/authSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 
 const stepVariants = {
   initial: { opacity: 0, y: 40, x: 40 },
   animate: { opacity: 1, y: 0, x: 0 },
   exit: { opacity: 0, y: -40, x: -40 },
-  transition: { duration: 0.4, ease: "easeOut" },
+  transition: { duration: 0.4, ease: "easeOut" as const },
 };
 
 export default function AuthPage() {
@@ -216,13 +216,7 @@ export default function AuthPage() {
         className="relative md:max-w-[524px] w-screen bg-white rounded-t-3xl md:rounded-4xl max-h-[90vh] sm:p-9 p-[8.9vw] sm:pb-40 md:pb-9 pb-32 sm:pt-9 pt-2 z-10 overflow-hidden"
         style={{ boxShadow: "0 0 54px 10px rgba(0, 0, 0, 0.08)" }}
         layout
-        initial={{
-          y:
-            typeof window !== "undefined" && window.innerWidth < 768
-              ? "100%"
-              : 0,
-          opacity: 0,
-        }}
+        initial={{ opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: "100%", opacity: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -301,7 +295,9 @@ export default function AuthPage() {
                     <input
                       key={idx}
                       id={`otp-${idx}`}
-                      ref={(el) => (otpRefs.current[idx] = el)}
+                      ref={(el) => {
+                        otpRefs.current[idx] = el;
+                      }}
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"

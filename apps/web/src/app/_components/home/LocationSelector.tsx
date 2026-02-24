@@ -1,8 +1,8 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, Loader2, MapPin, Navigation } from "lucide-react";
 import { memo } from "react";
-import { MapPin, Loader2, ChevronDown, Navigation } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface LocationSelectorProps {
   userLocation: string;
@@ -103,7 +103,7 @@ export const LocationSelector = memo(
                   onClick={() => onSelectLocation(city)}
                   className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 transition-colors text-sm ${
                     userLocation === city && !isAutoDetected
-                      ? "bg-blue-50 text-blue-700 font-medium"
+                      ? "bg-yellow-50 text-[var(--color-neutral-dark2)] font-medium"
                       : "text-gray-700"
                   }`}
                 >

@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Head from "next/head";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import Link from "next/link";
 
 // Error Fallback Component
 const ErrorFallback = ({ error }: { error: Error }) => (
@@ -16,7 +15,7 @@ const ErrorFallback = ({ error }: { error: Error }) => (
       <p className="text-gray-600 mt-2">{error.message}</p>
       <button
         onClick={() => window.location.reload()}
-        className="mt-4 inline-flex items-center px-4 py-2 bg-[#F6D100] text-white rounded-lg shadow-sm hover:bg-blue-700 transition-colors duration-300"
+        className="mt-4 inline-flex items-center px-4 py-2 bg-[var(--color-primary)] text-black rounded-lg shadow-sm hover:brightness-95 transition-colors duration-300"
       >
         Refresh Page
       </button>
@@ -69,7 +68,7 @@ export default function AboutUs() {
               <div className="flex items-center space-x-3 sm:space-x-4">
                 <button
                   onClick={() => router.back()}
-                  className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 bg-white text-gray-700 rounded-lg shadow-sm hover:bg-blue-50 transition-colors duration-300 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#F6D100]"
+                  className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 bg-white text-gray-700 rounded-lg shadow-sm hover:bg-gray-50 transition-colors duration-300 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                   aria-label="Go back to previous page"
                 >
                   <svg

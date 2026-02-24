@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
-import { Upload, X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Upload, X } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 interface ImageUploadProps {
   label: string;
@@ -337,7 +337,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       <div
         className={`
           relative border-2 border-dashed rounded-xl overflow-hidden transition-all duration-200
-          ${isDragging && !disabled ? "border-blue-500 bg-blue-50 scale-[1.02]" : "border-gray-300"}
+          ${isDragging && !disabled ? "border-[var(--color-primary)] bg-yellow-50 scale-[1.02]" : "border-gray-300"}
           ${!preview && !disabled ? "hover:border-gray-400 hover:bg-gray-50" : ""}
           ${disabled ? "opacity-60 cursor-not-allowed" : ""}
         `}
@@ -408,7 +408,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
                   </div>
                   <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-blue-500 transition-all duration-300 rounded-full"
+                      className="h-full bg-[var(--color-primary)] transition-all duration-300 rounded-full"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>

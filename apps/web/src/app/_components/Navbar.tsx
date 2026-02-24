@@ -1,24 +1,16 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState, useRef } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Home,
-  PlusSquare,
-  User,
-  Bell,
-  ShieldCheck,
-  TicketIcon,
-  X,
-} from "lucide-react";
-import { useSelector, useDispatch } from "react-redux";
-import { AppDispatch, RootState } from "@/lib/store";
 import {
   hydrateSession,
   logout as logoutAction,
 } from "@/lib/features/authSlice";
+import { AppDispatch, RootState } from "@/lib/store";
+import { AnimatePresence, motion } from "framer-motion";
+import { Bell, User } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function NavBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -98,20 +90,32 @@ export default function NavBar() {
     group3: [
       ...(profile?.role === "LISTER"
         ? [
-            { href: "/lister/events", label: "My Events", icon: PlusSquare },
+            {
+              href: "/lister/events",
+              label: "My Events",
+              icon: "/svgs/events.svg",
+            },
             {
               href: "/lister/events/create",
               label: "Create Event",
-              icon: PlusSquare,
+              icon: "/svgs/create-event.svg",
             },
           ]
-        : []),
+        : profile?.role === "USER"
+          ? [
+              {
+                href: "/lister/apply",
+                label: "Become a Lister",
+                icon: "/svgs/lister-apply.svg",
+              },
+            ]
+          : []),
       ...(profile?.role === "ADMIN" || profile?.role === "SUPER_ADMIN"
         ? [
             {
               href: "/admin/events/pending",
               label: "Admin – Pending",
-              icon: ShieldCheck,
+              icon: "/svgs/admin-pending.svg",
             },
           ]
         : []),
@@ -126,7 +130,7 @@ export default function NavBar() {
       className={`
         fixed bottom-10 left-1/2 -translate-x-1/2 z-50 bg-[#ffffffb5]
         rounded-full p-[0.416666vw] backdrop-blur-md
-        flex items-center gap-[0.347222vw] max-w-[423px]
+        flex items-center gap-[0.347222vw]
       `}
     >
       {/* Group 1: Home + My Bookings */}
@@ -218,7 +222,7 @@ export default function NavBar() {
                               </span>
                             </div>
                             {/* {!notification.read && (
-                              <span className="w-2 h-2 rounded-full flex-shrink-0 mt-1 bg-blue-500" />
+                              <span className="w-2 h-2 rounded-full flex-shrink-0 mt-1 bg-[var(--color-primary)]" />
                             )} */}
                           </div>
                         </div>
@@ -259,26 +263,34 @@ export default function NavBar() {
         })}
       </div>
 
-      {/* Group 3: Lister/Admin Items */}
-      {/* {navItems.group3.length > 0 && (
-        <div className="flex items-center gap-4 border-l border-zinc-300 pl-4">
-          {navItems.group3.map(({ href, label, icon: Icon }) => {
+      {/* Group 3: Lister / Apply link */}
+      {navItems.group3.length > 0 && (
+        <div className="relative flex items-center gap-[0.347vw] bg-white p-[5px] rounded-full">
+          {navItems.group3.map(({ href, label, icon }) => {
             const isActive = pathname === href;
             return (
-              <Link
-                key={href}
-                href={href}
-                className={`group flex flex-col md:flex-row items-center md:gap-2 text-xs md:text-sm transition-all duration-200 ${
-                  isActive ? "text-[#1E1E1E] font-medium" : "text-zinc-600"
-                }`}
-              >
-                <Icon size={20} strokeWidth={1.5} />
-                <span>{label}</span>
-              </Link>
+              <div key={href} className="relative">
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-active-indicator-g3"
+                    className="absolute inset-0 z-0 bg-[#FFE348] border-b-[0.20833vw] border-[#FFDA0A] rounded-full"
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  />
+                )}
+                <Link
+                  href={href}
+                  className={`relative z-10 flex items-center gap-2 justify-center text-center md:px-4 px-5 py-4 rounded-full transition-colors duration-200 text-sm ${
+                    isActive ? "text-[#1E1E1E] font-semibold" : "text-zinc-600"
+                  }`}
+                >
+                  <img src={icon} alt="" />
+                  <h5>{label}</h5>
+                </Link>
+              </div>
             );
           })}
         </div>
-      )} */}
+      )}
     </motion.nav>
   );
 }

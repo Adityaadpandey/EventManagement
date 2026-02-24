@@ -1,4 +1,5 @@
 import type { Response } from "express";
+import { createToken } from "../lib/jwt-token";
 import { ListerService } from "../services/lister.service";
 import type { AuthenticatedRequest } from "../types/auth";
 import {
@@ -35,7 +36,15 @@ export class ListerController {
         userId,
         validatedData,
       );
-      return sendSuccess(res, "Lister applied successfully", lister);
+
+      // Issue a new token with the updated LISTER role so the frontend
+      // can immediately access lister-scoped routes without re-login.
+      const newToken = createToken(userId, "LISTER");
+
+      return sendSuccess(res, "Lister applied successfully", {
+        lister,
+        token: newToken,
+      });
     } catch (error: any) {
       logError(req, "Failed to apply for lister", error, {
         userId: req.user?.userId,
