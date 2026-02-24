@@ -118,9 +118,9 @@ function AdminNotificationsContent() {
       {/* Form */}
       <div className="bg-[var(--color-neutral-light)] rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
         {/* Mode info */}
-        <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-50/60 border border-blue-100">
-          <Bell className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-          <p className="text-xs text-blue-700 leading-relaxed">
+        <div className="flex items-start gap-3 p-3 rounded-xl bg-yellow-50/60 border border-yellow-100">
+          <Bell className="w-4 h-4 text-[var(--color-primary)] mt-0.5 shrink-0" />
+          <p className="text-xs text-yellow-700 leading-relaxed">
             {mode === "broadcast"
               ? "This will send a push notification to ALL users who have enabled push notifications. Use responsibly."
               : "Enter comma-separated user IDs to send targeted notifications to specific users."}

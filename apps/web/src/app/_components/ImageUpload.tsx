@@ -399,9 +399,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               {uploading ? (
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative">
-                    <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+                    <Loader2 className="w-12 h-12 text-[var(--color-primary)] animate-spin" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xs font-bold text-blue-600">
+                      <span className="text-xs font-bold text-[var(--color-primary)]">
                         {uploadProgress}%
                       </span>
                     </div>

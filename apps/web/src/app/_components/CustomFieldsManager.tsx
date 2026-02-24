@@ -1,5 +1,5 @@
-import React, { memo, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { memo, useCallback } from "react";
 
 const FIELD_TYPES = [
   { value: "text", label: "Text", icon: "T" },
@@ -123,7 +123,7 @@ const CustomFieldsManager = memo(({ customFields, onChange }) => {
           type="button"
           onClick={addCustomField}
           disabled={customFields.length >= 40}
-          className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-[var(--color-primary)] text-black rounded-lg hover:brightness-95 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           + Add Field ({customFields.length}/40)
         </button>
@@ -152,7 +152,7 @@ const CustomFieldsManager = memo(({ customFields, onChange }) => {
           <button
             type="button"
             onClick={addCustomField}
-            className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
+            className="px-6 py-3 bg-[var(--color-primary)] text-black rounded-lg hover:brightness-95"
           >
             Add Your First Field
           </button>
@@ -223,7 +223,7 @@ const CustomFieldsManager = memo(({ customFields, onChange }) => {
                 type="button"
                 onClick={() => duplicateField(index)}
                 disabled={customFields.length >= 40}
-                className="p-1 text-blue-500 hover:text-blue-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                className="p-1 text-[var(--color-primary)] hover:brightness-90 disabled:opacity-30 disabled:cursor-not-allowed"
                 title="Duplicate"
               >
                 <svg
@@ -266,7 +266,7 @@ const CustomFieldsManager = memo(({ customFields, onChange }) => {
 
             {/* Field Number Badge */}
             <div className="absolute top-4 left-4">
-              <span className="inline-flex items-center justify-center w-8 h-8 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
+              <span className="inline-flex items-center justify-center w-8 h-8 bg-yellow-50 text-[var(--color-neutral-dark2)] rounded-full text-sm font-semibold">
                 {index + 1}
               </span>
             </div>
@@ -326,7 +326,9 @@ const CustomFieldsManager = memo(({ customFields, onChange }) => {
                     />
                     <div
                       className={`w-14 h-7 rounded-full shadow-inner transition ${
-                        field.required ? "bg-purple-500" : "bg-gray-300"
+                        field.required
+                          ? "bg-[var(--color-primary)]"
+                          : "bg-gray-300"
                       }`}
                     ></div>
                     <div
@@ -369,7 +371,7 @@ const CustomFieldsManager = memo(({ customFields, onChange }) => {
                         .map((opt, i) => (
                           <span
                             key={i}
-                            className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-md"
+                            className="px-2 py-1 bg-yellow-50 text-[var(--color-neutral-dark2)] text-xs rounded-md"
                           >
                             {opt.trim()}
                           </span>
@@ -381,8 +383,8 @@ const CustomFieldsManager = memo(({ customFields, onChange }) => {
             </div>
 
             {/* Field Preview */}
-            <div className="mt-4 p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border border-purple-200">
-              <p className="text-xs font-semibold text-purple-700 mb-2 uppercase tracking-wide">
+            <div className="mt-4 p-4 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
+              <p className="text-xs font-semibold text-[var(--color-neutral-dark2)] mb-2 uppercase tracking-wide">
                 Preview
               </p>
               <div className="space-y-1">
@@ -399,7 +401,7 @@ const CustomFieldsManager = memo(({ customFields, onChange }) => {
                     }
                   </span>
                   {field.fieldType === "dropdown" && field.options && (
-                    <span className="ml-2 text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded">
+                    <span className="ml-2 text-xs bg-yellow-100 text-[var(--color-neutral-dark2)] px-2 py-0.5 rounded">
                       {
                         field.options.split(",").filter((opt) => opt.trim())
                           .length

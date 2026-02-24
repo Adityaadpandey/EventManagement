@@ -714,7 +714,7 @@ const EventAnalytics = () => {
           <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+                <Eye className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-primary)]" />
                 Views &amp; Clicks Over Time
               </h3>
               <span className="text-xs text-gray-400">

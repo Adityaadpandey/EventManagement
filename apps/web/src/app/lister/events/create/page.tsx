@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { createEvent } from "@/lib/features/eventsSlice";
+import CustomFieldsManager from "@/app/_components/CustomFieldsManager";
 import ImageUpload from "@/app/_components/ImageUpload";
 import TicketTypeManager from "@/app/_components/TicketTypeManager";
-import CustomFieldsManager from "@/app/_components/CustomFieldsManager";
-import { motion, AnimatePresence } from "framer-motion";
+import { createEvent } from "@/lib/features/eventsSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { AnimatePresence, motion } from "framer-motion";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "react-quill-new/dist/quill.snow.css";
 
 // Dynamically import ReactQuill to avoid SSR issues
@@ -682,10 +682,10 @@ const CreateEventPage = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3"
+              className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-start gap-3"
             >
               <svg
-                className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5"
+                className="w-6 h-6 text-[var(--color-primary)] flex-shrink-0 mt-0.5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -698,10 +698,10 @@ const CreateEventPage = () => {
                 />
               </svg>
               <div className="flex-1">
-                <h3 className="font-semibold text-blue-900 mb-1">
+                <h3 className="font-semibold text-yellow-900 mb-1">
                   Draft Found
                 </h3>
-                <p className="text-sm text-blue-700 mb-3">
+                <p className="text-sm text-yellow-700 mb-3">
                   We found an unsaved draft from your previous session. Would
                   you like to continue where you left off?
                 </p>
@@ -709,14 +709,14 @@ const CreateEventPage = () => {
                   <button
                     onClick={loadDraft}
                     disabled={isDraftLoading}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
+                    className="px-4 py-2 bg-[var(--color-primary)] text-black rounded-lg hover:brightness-95 text-sm font-medium disabled:opacity-50"
                   >
                     {isDraftLoading ? "Loading..." : "Continue Draft"}
                   </button>
                   <button
                     onClick={dismissDraft}
                     disabled={isDraftLoading}
-                    className="px-4 py-2 bg-white text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 text-sm font-medium disabled:opacity-50"
+                    className="px-4 py-2 bg-white text-[var(--color-neutral-dark2)] border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium disabled:opacity-50"
                   >
                     Start Fresh
                   </button>
@@ -1073,13 +1073,13 @@ const CreateEventPage = () => {
                     {formData.tags.map((tag, idx) => (
                       <span
                         key={idx}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center gap-2"
+                        className="px-3 py-1 bg-yellow-50 text-[var(--color-neutral-dark2)] rounded-full text-sm flex items-center gap-2"
                       >
                         {tag}
                         <button
                           type="button"
                           onClick={() => removeTag(idx)}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="text-[var(--color-neutral-dark3)] hover:text-[var(--color-neutral-dark)]"
                         >
                           ×
                         </button>
@@ -1270,7 +1270,7 @@ const CreateEventPage = () => {
                     <h3 className="font-semibold text-lg">Basic Information</h3>
                     <button
                       onClick={() => goToStep(1)}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      className="text-sm text-[var(--color-primary)] hover:brightness-90 font-medium"
                     >
                       Edit
                     </button>
@@ -1344,7 +1344,7 @@ const CreateEventPage = () => {
                         {formData.tags.map((tag, idx) => (
                           <span
                             key={idx}
-                            className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
+                            className="px-3 py-1 bg-yellow-50 text-[var(--color-neutral-dark2)] rounded-full text-xs"
                           >
                             {tag}
                           </span>
@@ -1383,7 +1383,7 @@ const CreateEventPage = () => {
                     <h3 className="font-semibold text-lg">Banners</h3>
                     <button
                       onClick={() => goToStep(2)}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      className="text-sm text-[var(--color-primary)] hover:brightness-90 font-medium"
                     >
                       Edit
                     </button>
@@ -1438,7 +1438,7 @@ const CreateEventPage = () => {
                     <h3 className="font-semibold text-lg">Ticket Types</h3>
                     <button
                       onClick={() => goToStep(3)}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      className="text-sm text-[var(--color-primary)] hover:brightness-90 font-medium"
                     >
                       Edit
                     </button>
@@ -1513,7 +1513,7 @@ const CreateEventPage = () => {
                       <h3 className="font-semibold text-lg">Custom Fields</h3>
                       <button
                         onClick={() => goToStep(3)}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        className="text-sm text-[var(--color-primary)] hover:brightness-90 font-medium"
                       >
                         Edit
                       </button>

@@ -70,7 +70,7 @@ const IFSC_REGEX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 
 const STATUS_STYLES: Record<string, string> = {
   PENDING: "bg-amber-50 text-amber-700 border border-amber-200",
-  PROCESSING: "bg-blue-50 text-blue-700 border border-blue-200",
+  PROCESSING: "bg-yellow-50 text-yellow-700 border border-yellow-200",
   COMPLETED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
   FAILED: "bg-red-50 text-red-600 border border-red-200",
   CANCELLED: "bg-gray-100 text-gray-500 border border-gray-200",
@@ -338,7 +338,7 @@ export default function ListerPayoutsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#eff0fb] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+        <Loader2 className="w-8 h-8 text-[var(--color-primary)] animate-spin" />
       </div>
     );
   }
@@ -373,7 +373,7 @@ export default function ListerPayoutsPage() {
         {/* ── Account Balance Card ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Wallet className="w-5 h-5 text-indigo-500" />
+            <Wallet className="w-5 h-5 text-[var(--color-primary)]" />
             <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest">
               Account Balance
             </h2>
@@ -426,7 +426,7 @@ export default function ListerPayoutsPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-indigo-500" />
+              <Building2 className="w-5 h-5 text-[var(--color-primary)]" />
               <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest">
                 Bank Details
               </h2>
@@ -434,7 +434,7 @@ export default function ListerPayoutsPage() {
             {bankDetails && !showBankForm && (
               <button
                 onClick={() => setShowBankForm(true)}
-                className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+                className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-primary)] hover:brightness-90 transition-colors"
               >
                 <Edit2 className="w-3.5 h-3.5" />
                 Edit
@@ -541,7 +541,7 @@ export default function ListerPayoutsPage() {
                       }))
                     }
                     placeholder={f.placeholder}
-                    className={`w-full px-3 py-2.5 rounded-xl border text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all ${
+                    className={`w-full px-3 py-2.5 rounded-xl border text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all ${
                       bankErrors[f.key]
                         ? "border-red-300 bg-red-50"
                         : "border-gray-200"
@@ -557,7 +557,7 @@ export default function ListerPayoutsPage() {
               <button
                 onClick={handleSaveBank}
                 disabled={savingBank}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-60 flex items-center justify-center gap-2 mt-1"
+                className="w-full py-2.5 bg-[var(--color-primary)] hover:brightness-95 text-black text-sm font-bold rounded-xl transition-colors disabled:opacity-60 flex items-center justify-center gap-2 mt-1"
               >
                 {savingBank ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -572,7 +572,7 @@ export default function ListerPayoutsPage() {
         {bankDetails && !showBankForm && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Banknote className="w-5 h-5 text-indigo-500" />
+              <Banknote className="w-5 h-5 text-[var(--color-primary)]" />
               <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest">
                 Request Payout
               </h2>
@@ -600,7 +600,7 @@ export default function ListerPayoutsPage() {
                         }
                         className={`flex-1 py-2 rounded-xl text-sm font-bold border transition-all ${
                           payoutForm.type === t
-                            ? "bg-indigo-600 text-white border-indigo-600"
+                            ? "bg-[var(--color-primary)] text-black border-[var(--color-primary)]"
                             : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                         }`}
                       >
@@ -632,7 +632,7 @@ export default function ListerPayoutsPage() {
                       placeholder={
                         payoutForm.type === "PARTIAL" ? "Min ₹100" : ""
                       }
-                      className={`w-full pl-7 pr-3 py-2.5 rounded-xl border text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all ${
+                      className={`w-full pl-7 pr-3 py-2.5 rounded-xl border text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all ${
                         payoutForm.type === "FULL"
                           ? "text-gray-400 cursor-not-allowed"
                           : "border-gray-200"
@@ -649,7 +649,7 @@ export default function ListerPayoutsPage() {
                 <button
                   onClick={handleRequestPayout}
                   disabled={!canRequestPayout}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-[var(--color-primary)] hover:brightness-95 text-black text-sm font-bold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -666,7 +666,7 @@ export default function ListerPayoutsPage() {
         {/* ── Payout History ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-5 h-5 text-indigo-500" />
+            <Clock className="w-5 h-5 text-[var(--color-primary)]" />
             <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest">
               Payout History
             </h2>
@@ -685,7 +685,7 @@ export default function ListerPayoutsPage() {
                   onClick={() => setFilter(s)}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                     filter === s
-                      ? "bg-indigo-600 text-white"
+                      ? "bg-[var(--color-primary)] text-black"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >

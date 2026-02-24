@@ -1,20 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { useParams } from "next/navigation";
+import api from "@/lib/api";
 import {
-  Search,
-  Download,
-  CheckCircle,
-  XCircle,
-  Users,
-  DollarSign,
-  TrendingUp,
   AlertCircle,
+  CheckCircle,
   ChevronDown,
   ChevronUp,
+  DollarSign,
+  Download,
+  Search,
+  TrendingUp,
+  Users,
+  XCircle,
 } from "lucide-react";
-import api from "@/lib/api";
+import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 interface Buyer {
   userId: string;
@@ -358,7 +358,7 @@ const TicketAttendeesPage = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
+          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-[var(--color-primary)]">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 font-medium">
@@ -368,13 +368,13 @@ const TicketAttendeesPage = () => {
                   ₹{data.statistics.totalRevenue.toFixed(2)}
                 </p>
               </div>
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <DollarSign size={24} className="text-blue-600" />
+              <div className="bg-yellow-50 p-3 rounded-lg">
+                <DollarSign size={24} className="text-[var(--color-primary)]" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
+          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-[var(--color-primary)]">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 font-medium">
@@ -384,8 +384,8 @@ const TicketAttendeesPage = () => {
                   {data.statistics.checkInRate}
                 </p>
               </div>
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <TrendingUp size={24} className="text-purple-600" />
+              <div className="bg-yellow-50 p-3 rounded-lg">
+                <TrendingUp size={24} className="text-[var(--color-primary)]" />
               </div>
             </div>
           </div>

@@ -1,28 +1,28 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useRouter, useParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import dynamic from "next/dynamic";
-import "react-quill-new/dist/quill.snow.css";
-import {
-  Save,
-  ArrowLeft,
-  AlertCircle,
-  Loader2,
-  CheckCircle2,
-  X,
-  Info,
-} from "lucide-react";
-import {
-  updateEvent,
-  fetchListerEventDetails,
-  clearUpdateError,
-} from "@/lib/features/eventsSlice";
+import CustomFieldsManager from "@/app/_components/CustomFieldsManager";
 import ImageUpload from "@/app/_components/ImageUpload";
 import TicketTypeManager from "@/app/_components/TicketTypeManager";
-import CustomFieldsManager from "@/app/_components/CustomFieldsManager";
+import {
+  clearUpdateError,
+  fetchListerEventDetails,
+  updateEvent,
+} from "@/lib/features/eventsSlice";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  Info,
+  Loader2,
+  Save,
+  X,
+} from "lucide-react";
+import dynamic from "next/dynamic";
+import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import "react-quill-new/dist/quill.snow.css";
+import { useDispatch, useSelector } from "react-redux";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
@@ -670,12 +670,12 @@ const EditEventPage = () => {
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3"
+              className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center gap-3"
             >
-              <Info className="w-6 h-6 text-blue-600" />
-              <p className="text-sm text-blue-700">
-                You have unsaved changes. Press{" "}
-                <kbd className="px-2 py-1 bg-blue-100 rounded text-xs font-mono">
+              <Info className="w-6 h-6 text-[var(--color-primary)]" />
+              <p className="text-sm text-yellow-700">
+                Press{" "}
+                <kbd className="px-2 py-1 bg-yellow-100 rounded text-xs font-mono">
                   Ctrl+S
                 </kbd>{" "}
                 or click Save Changes to update.
@@ -907,13 +907,13 @@ const EditEventPage = () => {
                     {formData.tags.map((tag, idx) => (
                       <span
                         key={idx}
-                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center gap-2"
+                        className="px-3 py-1 bg-yellow-50 text-[var(--color-neutral-dark2)] rounded-full text-sm flex items-center gap-2"
                       >
                         {tag}
                         <button
                           type="button"
                           onClick={() => removeTag(idx)}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="text-gray-500 hover:text-gray-700"
                         >
                           ×
                         </button>
