@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo, memo, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import { Ticket, Calendar, MapPin, CheckCircle, XCircle } from "lucide-react";
 import api from "@/lib/api";
 import { RootState } from "@/lib/store";
+import { Calendar, CheckCircle, MapPin, Ticket, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { useSelector } from "react-redux";
 
 type Ticket = {
   ticketId: string;
@@ -361,7 +361,7 @@ export default function MyTicketsPage() {
             )}
 
             {upcoming.length > 0 && (
-              <section className="relative bg-gradient-to-r from-blue-50/30 to-transparent rounded-3xl p-6 md:p-8 border border-blue-100/40 shadow-inner">
+              <section className="relative bg-gradient-to-r from-yellow-50/30 to-transparent rounded-3xl p-6 md:p-8 border border-yellow-100/40 shadow-inner">
                 <div className="flex items-center space-x-5 mb-6">
                   <div>
                     <h3 className="text-4xl text-gray-900 bricolage-grotesque font-medium tracking-tighter">

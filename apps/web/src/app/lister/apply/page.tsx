@@ -107,8 +107,8 @@ export default function ListerApplyPage() {
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
         {/* Hero */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-start gap-4">
-          <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
-            <Building2 className="w-6 h-6 text-indigo-600" />
+          <div className="w-12 h-12 bg-yellow-50 rounded-xl flex items-center justify-center shrink-0">
+            <Building2 className="w-6 h-6 text-[var(--color-primary)]" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 mb-1">
@@ -138,7 +138,7 @@ export default function ListerApplyPage() {
                   setForm((f) => ({ ...f, companyName: e.target.value }))
                 }
                 placeholder="e.g. XYZ eSports"
-                className={`w-full px-4 py-3 rounded-xl border text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all ${
+                className={`w-full px-4 py-3 rounded-xl border text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all ${
                   errors.companyName
                     ? "border-red-300 bg-red-50"
                     : "border-gray-200"
@@ -164,7 +164,7 @@ export default function ListerApplyPage() {
                 }
                 rows={5}
                 placeholder="Tell us about your company, the type of events you host, and your vision…"
-                className={`w-full px-4 py-3 rounded-xl border text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 transition-all resize-none ${
+                className={`w-full px-4 py-3 rounded-xl border text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition-all resize-none ${
                   errors.bio ? "border-red-300 bg-red-50" : "border-gray-200"
                 }`}
               />
@@ -191,7 +191,7 @@ export default function ListerApplyPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors disabled:opacity-60 flex items-center justify-center gap-2 text-sm"
+              className="w-full py-3 bg-[var(--color-primary)] hover:brightness-95 text-black font-bold rounded-xl transition-colors disabled:opacity-60 flex items-center justify-center gap-2 text-sm"
             >
               {submitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

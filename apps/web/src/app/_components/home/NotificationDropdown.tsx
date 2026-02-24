@@ -1,8 +1,8 @@
 "use client";
 
-import { memo } from "react";
-import { Bell } from "lucide-react";
 import { motion } from "framer-motion";
+import { Bell } from "lucide-react";
+import { memo } from "react";
 
 interface Notification {
   id: number;
@@ -37,7 +37,9 @@ export const NotificationDropdown = memo(
               <div
                 key={notification.id}
                 className={`px-3 py-2 hover:bg-gray-50 transition-colors cursor-pointer bg-white rounded-xl ${
-                  !notification.read ? "border-l-4 border-blue-500" : ""
+                  !notification.read
+                    ? "border-l-4 border-[var(--color-primary)]"
+                    : ""
                 }`}
               >
                 <div className="flex justify-between items-start">
