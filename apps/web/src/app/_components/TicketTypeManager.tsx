@@ -1,5 +1,5 @@
+import { AnimatePresence, motion } from "framer-motion";
 import React, { memo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
 type TicketType = {
   name: string;
@@ -53,7 +53,7 @@ const TicketTypeManager: React.FC<TicketTypeManagerProps> = memo(
           <button
             type="button"
             onClick={addTicketType}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            className="px-4 py-2 bg-[var(--color-primary)] text-black rounded-lg hover:brightness-95 transition-colors"
           >
             + Add Ticket Type
           </button>

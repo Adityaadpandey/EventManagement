@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Head from "next/head";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 // Error Fallback Component
@@ -15,7 +15,7 @@ const ErrorFallback = ({ error }: { error: Error }) => (
       <p className="text-gray-600 mt-2">{error.message}</p>
       <button
         onClick={() => window.location.reload()}
-        className="mt-4 inline-flex items-center px-4 py-2 bg-[#F6D100] text-white rounded-lg shadow-sm hover:bg-blue-700 transition-colors duration-200"
+        className="mt-4 inline-flex items-center px-4 py-2 bg-[var(--color-primary)] text-black rounded-lg shadow-sm hover:brightness-95 transition-colors duration-200"
       >
         Refresh Page
       </button>

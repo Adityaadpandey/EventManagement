@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { useEffect, useRef, useState } from "react";
 
 // Fix for default marker icons in Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -167,7 +167,7 @@ const MapPicker = ({
           type="button"
           onClick={handleGetCurrentLocation}
           disabled={isLocating}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
+          className="px-4 py-2 bg-[var(--color-primary)] text-black rounded-lg hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
         >
           {isLocating ? (
             <>

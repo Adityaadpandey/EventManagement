@@ -2,26 +2,19 @@
 
 import { isPushNotificationSupported, isSubscribed } from "@/lib/notifications";
 import { Bell, X } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface NotificationModalProps {
   token?: string;
   onEnable: () => Promise<void>;
-  error?: string | null;
-  onRetry?: () => void;
-  isRetrying?: boolean;
 }
 
 export default function NotificationModal({
   token,
   onEnable,
-  error,
-  onRetry,
-  isRetrying,
 }: NotificationModalProps) {
   const [show, setShow] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const [loading, setLoading] = useState(false);
   const autoDismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -45,7 +38,6 @@ export default function NotificationModal({
         if (permission === "denied") return;
 
         if (permission === "default") {
-          // Small delay so it doesn't pop instantly on page load
           setTimeout(() => setShow(true), 2000);
           return;
         }
@@ -64,7 +56,7 @@ export default function NotificationModal({
 
   // Auto-dismiss after 8 seconds if user doesn't interact
   useEffect(() => {
-    if (show && !loading) {
+    if (show) {
       autoDismissTimer.current = setTimeout(() => {
         dismiss(false);
       }, 8000);
@@ -72,7 +64,7 @@ export default function NotificationModal({
     return () => {
       if (autoDismissTimer.current) clearTimeout(autoDismissTimer.current);
     };
-  }, [show, loading]);
+  }, [show]);
 
   const dismiss = (permanent: boolean) => {
     if (autoDismissTimer.current) clearTimeout(autoDismissTimer.current);
@@ -91,23 +83,22 @@ export default function NotificationModal({
     }, 300);
   };
 
-  const handleEnable = async () => {
+  const handleEnable = () => {
     if (autoDismissTimer.current) clearTimeout(autoDismissTimer.current);
-    setLoading(true);
-    try {
-      await onEnable();
-      setLeaving(true);
-      setTimeout(() => {
-        setShow(false);
-        setLeaving(false);
-        localStorage.removeItem("notification-modal-permanently-dismissed");
-        sessionStorage.removeItem("notification-modal-session-dismissed");
-      }, 300);
-    } catch (error: any) {
-      console.error("Failed to enable notifications:", error);
-    } finally {
-      setLoading(false);
-    }
+
+    // Dismiss modal immediately — fire and forget
+    setLeaving(true);
+    setTimeout(() => {
+      setShow(false);
+      setLeaving(false);
+      localStorage.removeItem("notification-modal-permanently-dismissed");
+      sessionStorage.removeItem("notification-modal-session-dismissed");
+    }, 300);
+
+    // Run subscription in background — no UI blocking
+    onEnable().catch((err) => {
+      console.warn("Background notification subscription failed:", err);
+    });
   };
 
   if (!show) return null;
@@ -124,7 +115,7 @@ export default function NotificationModal({
         }`}
       >
         {/* Icon */}
-        <div className="w-10 h-10 bg-[#f6d100] rounded-full flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 bg-[var(--color-primary)] rounded-full flex items-center justify-center shrink-0">
           <Bell className="w-5 h-5 text-black" />
         </div>
 
@@ -134,49 +125,20 @@ export default function NotificationModal({
             className="text-sm font-semibold text-black leading-tight"
             style={{ fontFamily: "Bricolage Grotesque, sans-serif" }}
           >
-            {error ? "Setup failed" : "Enable notifications"}
+            Enable notifications
           </p>
           <p className="text-xs text-gray-500 leading-tight mt-0.5">
-            {error ? "Tap to retry" : "Get updates for tickets & events"}
+            Get updates for tickets & events
           </p>
         </div>
 
         {/* Action */}
         <button
-          onClick={
-            isRetrying
-              ? () => {
-                  onRetry?.();
-                  handleEnable();
-                }
-              : handleEnable
-          }
-          disabled={loading}
-          className="px-4 py-2 bg-[#f6d100] text-black text-sm font-semibold rounded-xl hover:bg-[#e5c200] disabled:opacity-50 transition-all shrink-0"
+          onClick={handleEnable}
+          className="px-4 py-2 bg-[var(--color-primary)] text-black text-sm font-semibold rounded-xl hover:brightness-95 transition-all shrink-0"
           style={{ fontFamily: "Bricolage Grotesque, sans-serif" }}
         >
-          {loading ? (
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="none"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-          ) : isRetrying ? (
-            "Retry"
-          ) : (
-            "Enable"
-          )}
+          Enable
         </button>
 
         {/* Close */}

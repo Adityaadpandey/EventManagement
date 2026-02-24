@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import EventUpdateModal from "@/components/EventUpdateModal";
 import api from "@/lib/api";
 import { BarChart, Edit, Loader2, Mail, Send, Users } from "lucide-react";
-import EventUpdateModal from "@/components/EventUpdateModal";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 type ListerEvent = {
   eventId: string;
@@ -283,7 +283,7 @@ export default function ListerEventsPage() {
                 {/* Analytics */}
                 <Link
                   href={`/lister/events/${ev.eventId}`}
-                  className="text-blue-600 hover:text-blue-700 transition duration-200 flex items-center gap-2 justify-center sm:justify-start border border-gray-200 rounded-md px-3 py-2 hover:bg-blue-50"
+                  className="text-[var(--color-primary)] hover:brightness-90 transition duration-200 flex items-center gap-2 justify-center sm:justify-start border border-gray-200 rounded-md px-3 py-2 hover:bg-yellow-50"
                 >
                   <BarChart /> Analytics
                 </Link>
