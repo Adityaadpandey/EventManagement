@@ -297,10 +297,10 @@ export default function ListerEventsPage() {
                 </Link>
 
                 <Link
-                  href={`/event/${ev.eventId}/attendees`}
+                  href={`/lister/events/${ev.eventId}/attendees`}
                   className="text-gray-700 hover:text-gray-900 transition duration-200 flex items-center gap-2 justify-center sm:justify-start border border-gray-200 rounded-md px-3 py-2 hover:bg-gray-50"
                 >
-                  <Users /> Attendees
+                  <Users size={16} /> Attendees
                 </Link>
 
                 <button
