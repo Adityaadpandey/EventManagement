@@ -11,6 +11,12 @@ export const revalidate = 3600; // ISR - revalidate every hour
 
 // Precompute helper functions (moved outside to avoid recreation)
 const HTML_TAG_REGEX = /<\/?[^>]+(>|$)/g;
+const SITE_URL = "https://www.tixin.in";
+
+function toAbsoluteUrl(url: string): string {
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${SITE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+}
 
 function stripHtml(html: string): string {
   return html.replace(HTML_TAG_REGEX, "");
@@ -162,11 +168,12 @@ export default async function EventPage({
     notFound();
   }
 
-  const imageUrl =
+  const rawImageUrl =
     event.banner_horizontal ||
     event.banner_square ||
     event.banner_vertical ||
-    "https://www.tixin.in/logos/logoOnBlack.png";
+    "/logos/logoOnBlack.png";
+  const imageUrl = toAbsoluteUrl(rawImageUrl);
 
   const lowestPrice =
     event.TicketType && event.TicketType.length > 0
@@ -183,7 +190,7 @@ export default async function EventPage({
     location: {
       "@type": "Place",
       name: event.location || "TBA",
-      ...(event.latitude && event.longitude
+      ...(event.latitude != null && event.longitude != null
         ? {
             geo: {
               "@type": "GeoCoordinates",
@@ -211,8 +218,8 @@ export default async function EventPage({
     },
     organizer: {
       "@type": "Organization",
-      name: (event as any).lister?.user?.name || "Tixin",
-      url: "https://www.tixin.in",
+      name: event.lister?.user?.name || "Tixin",
+      url: SITE_URL,
     },
   };
 

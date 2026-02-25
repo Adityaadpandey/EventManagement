@@ -29,17 +29,17 @@ if (!self.define) {
 }
 define(["./workbox-495fd258"], function (e) {
   "use strict";
-  (importScripts("worker-W6aAqPinUY3pakwev4vhN.js"),
+  (importScripts("worker-CY0yWq6VWu_UXxkJP5s8T.js"),
     self.skipWaiting(),
     e.clientsClaim(),
     e.precacheAndRoute(
       [
         {
-          url: "/_next/static/W6aAqPinUY3pakwev4vhN/_buildManifest.js",
+          url: "/_next/static/CY0yWq6VWu_UXxkJP5s8T/_buildManifest.js",
           revision: "934ca2c3d96812696fbc3dc28235cde8",
         },
         {
-          url: "/_next/static/W6aAqPinUY3pakwev4vhN/_ssgManifest.js",
+          url: "/_next/static/CY0yWq6VWu_UXxkJP5s8T/_ssgManifest.js",
           revision: "b6652df95db52feb4daf4eca35380933",
         },
         {
@@ -83,8 +83,8 @@ define(["./workbox-495fd258"], function (e) {
           revision: "1df2d005d0c60cf0",
         },
         {
-          url: "/_next/static/chunks/3686-36d9e8dbe4bac1a7.js",
-          revision: "36d9e8dbe4bac1a7",
+          url: "/_next/static/chunks/3686-ebb7f28afd089bc5.js",
+          revision: "ebb7f28afd089bc5",
         },
         {
           url: "/_next/static/chunks/4314.8f579be2d2a0385b.js",
