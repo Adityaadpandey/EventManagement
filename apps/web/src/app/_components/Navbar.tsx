@@ -95,21 +95,16 @@ export default function NavBar() {
               label: "My Events",
               icon: "/svgs/events.svg",
             },
-            {
-              href: "/lister/events/create",
-              label: "Create Event",
-              icon: "/svgs/create-event.svg",
-            },
           ]
-        : profile?.role === "USER"
-          ? [
+        : profile?.role === "ADMIN" || profile?.role === "SUPER_ADMIN"
+          ? []
+          : [
               {
-                href: "/lister/apply",
-                label: "Become a Lister",
+                href: profile ? "/lister/apply" : "/auth",
+                label: "Apply",
                 icon: "/svgs/lister-apply.svg",
               },
-            ]
-          : []),
+            ]),
       ...(profile?.role === "ADMIN" || profile?.role === "SUPER_ADMIN"
         ? [
             {
@@ -267,7 +262,8 @@ export default function NavBar() {
       {navItems.group3.length > 0 && (
         <div className="relative flex items-center gap-[0.347vw] bg-white p-[5px] rounded-full">
           {navItems.group3.map(({ href, label, icon }) => {
-            const isActive = pathname === href;
+            // Never highlight when linking to /auth; otherwise active on exact path match
+            const isActive = href !== "/auth" && pathname === href;
             return (
               <div key={href} className="relative">
                 {isActive && (
@@ -279,7 +275,7 @@ export default function NavBar() {
                 )}
                 <Link
                   href={href}
-                  className={`relative z-10 flex items-center gap-2 justify-center text-center md:px-4 px-5 py-4 rounded-full transition-colors duration-200 text-sm ${
+                  className={`relative z-10 flex items-center gap-3 justify-center text-center md:px-5 px-7 py-4 rounded-full transition-colors duration-200 ${
                     isActive ? "text-[#1E1E1E] font-semibold" : "text-zinc-600"
                   }`}
                 >
