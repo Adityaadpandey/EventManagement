@@ -220,7 +220,9 @@ export default async function EventPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(eventJsonLd).replace(/</g, "\\u003c"),
+        }}
       />
       <Suspense fallback={<EventLoading />}>
         <EventClient eventId={eventId} initialEvent={event} />

@@ -29,11 +29,19 @@ if (!self.define) {
 }
 define(["./workbox-495fd258"], function (e) {
   "use strict";
-  (importScripts("worker-gitKH6maiWTkxJ7ylB9zp.js"),
+  (importScripts("worker-W6aAqPinUY3pakwev4vhN.js"),
     self.skipWaiting(),
     e.clientsClaim(),
     e.precacheAndRoute(
       [
+        {
+          url: "/_next/static/W6aAqPinUY3pakwev4vhN/_buildManifest.js",
+          revision: "934ca2c3d96812696fbc3dc28235cde8",
+        },
+        {
+          url: "/_next/static/W6aAqPinUY3pakwev4vhN/_ssgManifest.js",
+          revision: "b6652df95db52feb4daf4eca35380933",
+        },
         {
           url: "/_next/static/chunks/0198aeb4-6f7024e1bccc7d70.js",
           revision: "6f7024e1bccc7d70",
@@ -367,14 +375,6 @@ define(["./workbox-495fd258"], function (e) {
           revision: "f122eb5736c93ee8",
         },
         {
-          url: "/_next/static/gitKH6maiWTkxJ7ylB9zp/_buildManifest.js",
-          revision: "934ca2c3d96812696fbc3dc28235cde8",
-        },
-        {
-          url: "/_next/static/gitKH6maiWTkxJ7ylB9zp/_ssgManifest.js",
-          revision: "b6652df95db52feb4daf4eca35380933",
-        },
-        {
           url: "/_next/static/media/19cfc7226ec3afaa-s.woff2",
           revision: "9dda5cfc9a46f256d0e131bb535e46f8",
         },
@@ -461,9 +461,6 @@ define(["./workbox-495fd258"], function (e) {
           revision: "a8b84668311e92bc3950e2c61ad6d362",
         },
         { url: "/manifest.json", revision: "482bb23f14bb69d0f2681299e40ffcd8" },
-        { url: "/robots.txt", revision: "830b62988b91e450d42658284476ef74" },
-        { url: "/sitemap-0.xml", revision: "699ddcd5fc796eba5c8d91eb77457560" },
-        { url: "/sitemap.xml", revision: "05a7e4c9b5cd66441f73de132244a1f8" },
         {
           url: "/svgs/DraswerDash.svg",
           revision: "7e5aed928b8bfbc4d6155e33b4f57a9c",

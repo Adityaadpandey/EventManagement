@@ -7,16 +7,29 @@ async function fetchAllEventIds(): Promise<
   { eventId: string; date?: string }[]
 > {
   try {
-    const res = await fetch(`${API_URL}/event/public?page=1&limit=200`, {
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const events = data?.data ?? [];
-    return events.map((e: any) => ({
-      eventId: e.eventId,
-      date: e.date,
-    }));
+    const allEvents: { eventId: string; date?: string }[] = [];
+    let page = 1;
+    const limit = 200;
+
+    while (true) {
+      const res = await fetch(
+        `${API_URL}/event/public?page=${page}&limit=${limit}`,
+        { next: { revalidate: 3600 } },
+      );
+      if (!res.ok) return [];
+      const data = await res.json();
+      const pageEvents = data?.data ?? [];
+      if (!Array.isArray(pageEvents) || pageEvents.length === 0) break;
+
+      for (const e of pageEvents) {
+        allEvents.push({ eventId: e.eventId, date: e.date });
+      }
+
+      if (pageEvents.length < limit) break;
+      page += 1;
+    }
+
+    return allEvents;
   } catch {
     return [];
   }

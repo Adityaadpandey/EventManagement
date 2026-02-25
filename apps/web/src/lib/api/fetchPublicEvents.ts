@@ -42,14 +42,14 @@ export async function fetchPublicEventsSSR(): Promise<{
 
     const json = await res.json();
     const items: SSREventData[] = json?.data ?? [];
-    const pagination = json?.meta?.pagination ?? defaultMeta;
+    const meta = json?.meta ?? defaultMeta;
 
     return {
       items,
       meta: {
-        nextCursor: pagination.nextCursor ?? null,
-        hasNextPage: pagination.hasNextPage ?? false,
-        limit: pagination.limit ?? 10,
+        nextCursor: meta.nextCursor ?? null,
+        hasNextPage: meta.hasNextPage ?? false,
+        limit: meta.limit ?? 10,
       },
     };
   } catch (err) {
