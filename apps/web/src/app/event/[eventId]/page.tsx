@@ -1,14 +1,13 @@
+import EventClient from "@/app/_components/EventClient";
+import { getEventDetails } from "@/lib/api/getEventDetails";
+import type { EventDetails } from "@/lib/features/eventsSlice";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import EventClient from "@/app/_components/EventClient";
-import { getEventDetails } from "@/lib/api/getEventDetails";
 import EventLoading from "./loading";
 
 // Aggressive caching for better performance
-export const revalidate = 3600; // ISR - revalidate every hour instead of 60s
-export const dynamic = "force-static"; // Force static generation when possible
-export const fetchCache = "force-cache"; // Aggressively cache fetches
+export const revalidate = 3600; // ISR - revalidate every hour
 
 // Precompute helper functions (moved outside to avoid recreation)
 const HTML_TAG_REGEX = /<\/?[^>]+(>|$)/g;
@@ -67,7 +66,7 @@ export async function generateMetadata({
     // Reduced timeout for faster failure
     const event = await Promise.race([
       getEventDetails(eventId),
-      new Promise((_, reject) =>
+      new Promise<EventDetails | null>((_, reject) =>
         setTimeout(() => reject(new Error("Timeout")), 2000),
       ),
     ]);
@@ -163,9 +162,69 @@ export default async function EventPage({
     notFound();
   }
 
+  const imageUrl =
+    event.banner_horizontal ||
+    event.banner_square ||
+    event.banner_vertical ||
+    "https://www.tixin.in/logos/logoOnBlack.png";
+
+  const lowestPrice =
+    event.TicketType && event.TicketType.length > 0
+      ? Math.min(...event.TicketType.map((t) => t.discountedPrice ?? t.price))
+      : 0;
+
+  const eventJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.title,
+    startDate: event.date || undefined,
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    eventStatus: "https://schema.org/EventScheduled",
+    location: {
+      "@type": "Place",
+      name: event.location || "TBA",
+      ...(event.latitude && event.longitude
+        ? {
+            geo: {
+              "@type": "GeoCoordinates",
+              latitude: event.latitude,
+              longitude: event.longitude,
+            },
+          }
+        : {}),
+      address: {
+        "@type": "PostalAddress",
+        name: event.location || "India",
+        addressCountry: "IN",
+      },
+    },
+    image: imageUrl,
+    description: event.description
+      ? event.description.replace(/<\/?[^>]+(>|$)/g, "").slice(0, 200)
+      : `Book tickets for ${event.title} on Tixin`,
+    offers: {
+      "@type": "Offer",
+      url: `https://www.tixin.in/event/${eventId}`,
+      price: lowestPrice,
+      priceCurrency: "INR",
+      availability: "https://schema.org/InStock",
+    },
+    organizer: {
+      "@type": "Organization",
+      name: (event as any).lister?.user?.name || "Tixin",
+      url: "https://www.tixin.in",
+    },
+  };
+
   return (
-    <Suspense fallback={<EventLoading />}>
-      <EventClient eventId={eventId} initialEvent={event} />
-    </Suspense>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+      />
+      <Suspense fallback={<EventLoading />}>
+        <EventClient eventId={eventId} initialEvent={event} />
+      </Suspense>
+    </>
   );
 }

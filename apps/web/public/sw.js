@@ -1,47 +1,39 @@
 if (!self.define) {
   let e,
     s = {};
-  const a = (a, c) => (
-    (a = new URL(a + ".js", c).href),
-    s[a] ||
+  const c = (c, a) => (
+    (c = new URL(c + ".js", a).href),
+    s[c] ||
       new Promise((s) => {
         if ("document" in self) {
           const e = document.createElement("script");
-          ((e.src = a), (e.onload = s), document.head.appendChild(e));
-        } else ((e = a), importScripts(a), s());
+          ((e.src = c), (e.onload = s), document.head.appendChild(e));
+        } else ((e = c), importScripts(c), s());
       }).then(() => {
-        let e = s[a];
-        if (!e) throw new Error(`Module ${a} didn’t register its module`);
+        let e = s[c];
+        if (!e) throw new Error(`Module ${c} didn’t register its module`);
         return e;
       })
   );
-  self.define = (c, i) => {
+  self.define = (a, i) => {
     const n =
       e ||
       ("document" in self ? document.currentScript.src : "") ||
       location.href;
     if (s[n]) return;
     let t = {};
-    const r = (e) => a(e, n),
-      d = { module: { uri: n }, exports: t, require: r };
-    s[n] = Promise.all(c.map((e) => d[e] || r(e))).then((e) => (i(...e), t));
+    const f = (e) => c(e, n),
+      r = { module: { uri: n }, exports: t, require: f };
+    s[n] = Promise.all(a.map((e) => r[e] || f(e))).then((e) => (i(...e), t));
   };
 }
 define(["./workbox-495fd258"], function (e) {
   "use strict";
-  (importScripts("worker-Ts8RDH48G-heqg1-j9pNp.js"),
+  (importScripts("worker-gitKH6maiWTkxJ7ylB9zp.js"),
     self.skipWaiting(),
     e.clientsClaim(),
     e.precacheAndRoute(
       [
-        {
-          url: "/_next/static/Ts8RDH48G-heqg1-j9pNp/_buildManifest.js",
-          revision: "1fe35d673a747b4cea55f777ab8d78f7",
-        },
-        {
-          url: "/_next/static/Ts8RDH48G-heqg1-j9pNp/_ssgManifest.js",
-          revision: "b6652df95db52feb4daf4eca35380933",
-        },
         {
           url: "/_next/static/chunks/0198aeb4-6f7024e1bccc7d70.js",
           revision: "6f7024e1bccc7d70",
@@ -227,20 +219,20 @@ define(["./workbox-495fd258"], function (e) {
           revision: "79367f66d618f332",
         },
         {
-          url: "/_next/static/chunks/app/checker/layout-bd0338304df97e84.js",
-          revision: "bd0338304df97e84",
+          url: "/_next/static/chunks/app/checker/layout-fe1b725f02fdce6f.js",
+          revision: "fe1b725f02fdce6f",
         },
         {
-          url: "/_next/static/chunks/app/checker/page-73eb400a462b75c4.js",
-          revision: "73eb400a462b75c4",
+          url: "/_next/static/chunks/app/checker/page-77a5867041f1d6f8.js",
+          revision: "77a5867041f1d6f8",
         },
         {
           url: "/_next/static/chunks/app/event/%5BeventId%5D/edit/page-072b4b6bcb3d715b.js",
           revision: "072b4b6bcb3d715b",
         },
         {
-          url: "/_next/static/chunks/app/event/%5BeventId%5D/loading-bd0338304df97e84.js",
-          revision: "bd0338304df97e84",
+          url: "/_next/static/chunks/app/event/%5BeventId%5D/loading-fe1b725f02fdce6f.js",
+          revision: "fe1b725f02fdce6f",
         },
         {
           url: "/_next/static/chunks/app/event/%5BeventId%5D/not-found-9e568a53ffd0dd00.js",
@@ -251,8 +243,8 @@ define(["./workbox-495fd258"], function (e) {
           revision: "8868cadebb776861",
         },
         {
-          url: "/_next/static/chunks/app/layout-c264e9801ad65e51.js",
-          revision: "c264e9801ad65e51",
+          url: "/_next/static/chunks/app/layout-7b5b5b5cdf4f9b3e.js",
+          revision: "7b5b5b5cdf4f9b3e",
         },
         {
           url: "/_next/static/chunks/app/lister/apply/page-8f6c762b50b29ea0.js",
@@ -263,8 +255,8 @@ define(["./workbox-495fd258"], function (e) {
           revision: "1773a112eac8f3b1",
         },
         {
-          url: "/_next/static/chunks/app/lister/events/%5BeventId%5D/attendees/page-e9c9ffb6340f0b50.js",
-          revision: "e9c9ffb6340f0b50",
+          url: "/_next/static/chunks/app/lister/events/%5BeventId%5D/attendees/page-afebfe55263abfdc.js",
+          revision: "afebfe55263abfdc",
         },
         {
           url: "/_next/static/chunks/app/lister/events/%5BeventId%5D/page-3e2ad9a16c91faca.js",
@@ -291,8 +283,8 @@ define(["./workbox-495fd258"], function (e) {
           revision: "3b1cab2d48b4bc54",
         },
         {
-          url: "/_next/static/chunks/app/page-426d3238499eb3e8.js",
-          revision: "426d3238499eb3e8",
+          url: "/_next/static/chunks/app/page-f12bffd52c035e94.js",
+          revision: "f12bffd52c035e94",
         },
         {
           url: "/_next/static/chunks/app/privacy-policy/page-f7ba99151ef78538.js",
@@ -303,8 +295,16 @@ define(["./workbox-495fd258"], function (e) {
           revision: "f295a67bf442d4cd",
         },
         {
-          url: "/_next/static/chunks/app/server-sitemap.xml/route-bd0338304df97e84.js",
-          revision: "bd0338304df97e84",
+          url: "/_next/static/chunks/app/robots.txt/route-fe1b725f02fdce6f.js",
+          revision: "fe1b725f02fdce6f",
+        },
+        {
+          url: "/_next/static/chunks/app/server-sitemap.xml/route-fe1b725f02fdce6f.js",
+          revision: "fe1b725f02fdce6f",
+        },
+        {
+          url: "/_next/static/chunks/app/sitemap.xml/route-fe1b725f02fdce6f.js",
+          revision: "fe1b725f02fdce6f",
         },
         {
           url: "/_next/static/chunks/app/terms-and-conditions/page-dee274ea69e5c702.js",
@@ -365,6 +365,14 @@ define(["./workbox-495fd258"], function (e) {
         {
           url: "/_next/static/css/f122eb5736c93ee8.css",
           revision: "f122eb5736c93ee8",
+        },
+        {
+          url: "/_next/static/gitKH6maiWTkxJ7ylB9zp/_buildManifest.js",
+          revision: "934ca2c3d96812696fbc3dc28235cde8",
+        },
+        {
+          url: "/_next/static/gitKH6maiWTkxJ7ylB9zp/_ssgManifest.js",
+          revision: "b6652df95db52feb4daf4eca35380933",
         },
         {
           url: "/_next/static/media/19cfc7226ec3afaa-s.woff2",
@@ -454,7 +462,7 @@ define(["./workbox-495fd258"], function (e) {
         },
         { url: "/manifest.json", revision: "482bb23f14bb69d0f2681299e40ffcd8" },
         { url: "/robots.txt", revision: "830b62988b91e450d42658284476ef74" },
-        { url: "/sitemap-0.xml", revision: "8e9c8372c86ac732e7a6963325ad2f79" },
+        { url: "/sitemap-0.xml", revision: "699ddcd5fc796eba5c8d91eb77457560" },
         { url: "/sitemap.xml", revision: "05a7e4c9b5cd66441f73de132244a1f8" },
         {
           url: "/svgs/DraswerDash.svg",
@@ -535,8 +543,8 @@ define(["./workbox-495fd258"], function (e) {
             cacheWillUpdate: async ({
               request: e,
               response: s,
-              event: a,
-              state: c,
+              event: c,
+              state: a,
             }) =>
               s && "opaqueredirect" === s.type
                 ? new Response(s.body, {
