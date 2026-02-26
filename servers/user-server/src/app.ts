@@ -96,15 +96,25 @@ app.use(requestIdMiddleware);
 // Prometheus HTTP metrics (after request ID, before body parsing)
 app.use(prometheusMiddleware);
 
-// Body parsing with strict limits and optimized settings
+// DDoS Protection Layer 1: Block known suspicious IPs (Redis-backed, shared across workers)
+app.use(blockSuspiciousIPs);
+
+// DDoS Protection Layer 2: Security middleware (attack pattern detection — no body needed)
+app.use(securityMiddleware);
+
+// DDoS Protection Layer 3: Rate limiting — BEFORE body parsing so large-body floods
+// don't consume memory before we can reject the request
+app.use(combinedLimiter);
+
+// Body parsing with strict limits — only reached after rate limiting passes
 // Skip JSON parsing for webhook routes that need raw body for signature verification
 app.use((req, res, next) => {
   if (req.path === "/api/v1/payment/webhook") {
     return next();
   }
   express.json({
-    limit: "5mb",
-    strict: true, // Only parse arrays and objects
+    limit: "512kb", // Tightened from 5mb — most API payloads are tiny
+    strict: true,
     type: "application/json",
   })(req, res, next);
 });
@@ -112,8 +122,8 @@ app.use((req, res, next) => {
 app.use(
   express.urlencoded({
     extended: true,
-    limit: "5mb",
-    parameterLimit: 1000, // Limit number of parameters
+    limit: "512kb", // Tightened from 5mb
+    parameterLimit: 100, // Reduced from 1000
   }),
 );
 
@@ -159,15 +169,6 @@ app.use(
     ],
   }),
 );
-
-// DDoS Protection Layer 1: Block known suspicious IPs
-app.use(blockSuspiciousIPs);
-
-// DDoS Protection Layer 2: Security middleware (attack pattern detection)
-app.use(securityMiddleware);
-
-// DDoS Protection Layer 3: Rate limiting
-app.use(combinedLimiter);
 
 app.get("/health", async (_, res: Response) => {
   const status = await healthCheck();
@@ -271,8 +272,9 @@ export const startServer = async () => {
 
     server.keepAliveTimeout = 65000; // Slightly higher than typical load balancer timeout (60s)
     server.headersTimeout = 66000; // Should be higher than keepAliveTimeout
-    server.requestTimeout = 120000; // 2 minutes for long-running requests
-    server.timeout = 120000; // Socket timeout
+    server.requestTimeout = 30000; // 30s — tight timeout kills slow/stalled connections faster
+    server.timeout = 30000; // Socket timeout
+    server.maxConnections = 1000; // Hard cap on concurrent TCP connections per worker
 
     setupGracefulShutdown(server);
 
