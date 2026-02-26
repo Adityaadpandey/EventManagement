@@ -51,6 +51,10 @@ export type EventDetails = EventSummary & {
   policies?: string | null;
   dutyLeavesDetails?: string | null;
   CustomField?: CustomField[];
+  lister?: {
+    user?: { name?: string; email?: string };
+    bio?: string;
+  } | null;
 };
 
 export type EventAnalytics = {
@@ -202,7 +206,7 @@ export const fetchPublicEvents = createAsyncThunk<
 
       const res = await api.get(`/event/public?${params.toString()}`);
       const data = res.data?.data ?? [];
-      const meta = res.data?.meta ?? {};
+      const meta = res.data?.meta?.pagination ?? {};
 
       return {
         events: data,

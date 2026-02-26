@@ -2,20 +2,21 @@ import { NextResponse } from "next/server";
 
 async function fetchPublicEvents({ page = 1, limit = 100 }) {
   try {
-    let allEvents = [];
+    const allEvents: any[] = [];
     let currentPage = page;
-    let hasMore = true;
 
-    while (hasMore) {
+    while (true) {
       const response = await fetch(
         `https://api.tixin.in/api/v1/event/public?page=${currentPage}&limit=${limit}`,
-        { next: { revalidate: 3600 } }, // Cache for 1 hour
+        { next: { revalidate: 3600 } },
       );
       if (!response.ok)
         throw new Error(`API request failed with status ${response.status}`);
-      const data = await response.json();
-      allEvents = [...allEvents, ...data.items];
-      hasMore = data.items.length === limit && data.totalPages > currentPage;
+      const json = await response.json();
+      const items = json?.data ?? [];
+      if (!Array.isArray(items) || items.length === 0) break;
+      allEvents.push(...items);
+      if (items.length < limit) break;
       currentPage++;
     }
     return { items: allEvents };
@@ -37,9 +38,10 @@ export async function GET() {
     },
     ...events.items.map((ev: any) => ({
       loc: `https://www.tixin.in/event/${ev.eventId}`,
-      lastmod: new Date(
-        ev.date && !isNaN(new Date(ev.date)) ? ev.date : new Date(),
-      ).toISOString(),
+      lastmod:
+        ev.date && !isNaN(Number(new Date(ev.date)))
+          ? new Date(ev.date).toISOString()
+          : new Date().toISOString(),
       changefreq: "daily",
       priority: 0.9,
     })),

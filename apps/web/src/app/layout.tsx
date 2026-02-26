@@ -1,11 +1,14 @@
-import { fetchPublicEventsSSR } from "@/lib/api/fetchPublicEvents";
+import NotificationModalWrapper from "@/components/NotificationModalWrapper";
+import {
+  fetchPublicEventsSSR,
+  type SSREventData,
+} from "@/lib/api/fetchPublicEvents";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Inter } from "next/font/google";
 import ClientLayout from "./_components/ClientLayout";
 import PwaPrompt from "./_components/PwaPrompt";
-import NotificationModalWrapper from "@/components/NotificationModalWrapper";
 import "./globals.css";
 import Providers from "./providers";
 
@@ -179,64 +182,69 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let eventData = [];
+  let eventData: SSREventData[] = [];
   try {
-    const response = await fetchPublicEventsSSR({ page: 1, limit: 10 });
-    eventData = Array.isArray(response)
-      ? response
-      : response?.events && Array.isArray(response.events)
-        ? response.events
-        : [];
+    const response = await fetchPublicEventsSSR();
+    eventData = response.items ?? [];
   } catch (error) {
     console.error("Failed to fetch events for structured data:", error);
     eventData = [];
   }
 
-  const eventSchema = eventData.map((event) => ({
-    "@type": "Event",
-    name: event.name || "Untitled Event",
-    startDate: event.startDate || new Date().toISOString(),
-    endDate: event.endDate || event.startDate || new Date().toISOString(),
-    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-    eventStatus: "https://schema.org/EventScheduled",
-    location: {
-      "@type": "Place",
-      name: event.venue || "Unknown Venue",
-      address: {
-        "@type": "PostalAddress",
-        addressLocality: event.city || "Unknown City",
-        addressRegion: event.state || "Unknown State",
-        addressCountry: "IN",
+  const stripHtml = (html: string) => html.replace(/<\/?[^>]+(>|$)/g, "");
+
+  const eventSchema = eventData.map((event) => {
+    const img =
+      event.banner_horizontal || event.banner_square || event.banner_vertical;
+    const image = img
+      ? img.startsWith("http")
+        ? img
+        : `https://www.tixin.in${img}`
+      : "https://www.tixin.in/logos/logoOnBlack.png";
+
+    return {
+      "@type": "Event",
+      name: event.title || "Untitled Event",
+      startDate: event.date || new Date().toISOString(),
+      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      eventStatus: "https://schema.org/EventScheduled",
+      location: {
+        "@type": "Place",
+        name: event.location || "TBA",
+        ...(event.latitude && event.longitude
+          ? {
+              geo: {
+                "@type": "GeoCoordinates",
+                latitude: event.latitude,
+                longitude: event.longitude,
+              },
+            }
+          : {}),
+        address: {
+          "@type": "PostalAddress",
+          name: event.location || "India",
+          addressCountry: "IN",
+        },
       },
-    },
-    image: event.imageUrl
-      ? event.imageUrl.startsWith("http")
-        ? event.imageUrl
-        : `https://www.tixin.in${event.imageUrl}`
-      : "https://www.tixin.in/logos/logoOnBlack.png",
-    description:
-      event.description ||
-      "Discover and book tickets for this event on Tixin - India's leading event platform",
-    offers: {
-      "@type": "Offer",
-      url: `https://www.tixin.in/events/${event.id || "unknown"}`,
-      price: event.price != null ? event.price : 0,
-      priceCurrency: "INR",
-      availability: "https://schema.org/InStock",
-      validFrom: event.startDate || new Date().toISOString(),
-    },
-    organizer: {
-      "@type": "Organization",
-      name: event.organizerName || "Tixin",
-      url: "https://www.tixin.in",
-    },
-    performer: event.performerName
-      ? {
-          "@type": "PerformingGroup",
-          name: event.performerName,
-        }
-      : undefined,
-  }));
+      image,
+      description: event.description
+        ? stripHtml(event.description).slice(0, 200)
+        : `Book tickets for ${event.title} on Tixin`,
+      offers: {
+        "@type": "Offer",
+        url: `https://www.tixin.in/event/${event.eventId}`,
+        price: event.minPrice ?? 0,
+        priceCurrency: "INR",
+        availability: "https://schema.org/InStock",
+        validFrom: event.date || new Date().toISOString(),
+      },
+      organizer: {
+        "@type": "Organization",
+        name: event.lister?.user?.name || "Tixin",
+        url: "https://www.tixin.in",
+      },
+    };
+  });
 
   const structuredData = [
     {
@@ -350,10 +358,7 @@ export default async function RootLayout({
       itemListElement: eventSchema.map((event, index) => ({
         "@type": "ListItem",
         position: index + 1,
-        item: {
-          "@type": "Event",
-          ...event,
-        },
+        item: event,
       })),
     },
     {
