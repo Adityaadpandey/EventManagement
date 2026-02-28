@@ -12,12 +12,13 @@ const BLOCK_TTL = 60 * 60; // 1 hour in seconds
 const VIOLATION_TTL = 60 * 60; // track violations for 1 hour
 const VIOLATION_THRESHOLD = 5;
 
-// Single shared Redis store instance (reused across all limiters)
-const sharedRedisStore = new RedisStore({
-  sendCommand: (...args: string[]) =>
-    redis.call(args[0], ...args.slice(1)) as Promise<any>,
-  prefix: "rl:",
-});
+// Factory: each limiter MUST get its own RedisStore instance (express-rate-limit ERR_ERL_STORE_REUSE)
+const makeStore = (prefix: string) =>
+  new RedisStore({
+    sendCommand: (...args: string[]) =>
+      redis.call(args[0], ...args.slice(1)) as Promise<any>,
+    prefix: `rl:${prefix}:`,
+  });
 
 // Helper function to get IP address with proper fallback
 const getClientIP = (req: Request): string => {
@@ -85,7 +86,7 @@ export const blockSuspiciousIPs = async (
 
 // Enhanced general limiter
 export const limiter = rateLimit({
-  store: sharedRedisStore,
+  store: makeStore("general"),
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 250,
   standardHeaders: true,
@@ -121,7 +122,7 @@ export const limiter = rateLimit({
 
 // STRICT rate limiter for authentication routes
 export const authLimiter = rateLimit({
-  store: sharedRedisStore,
+  store: makeStore("auth"),
   windowMs: 15 * 60 * 1000,
   max: 8,
   skipSuccessfulRequests: true,
@@ -155,7 +156,7 @@ export const authLimiter = rateLimit({
 
 // Rate limiter for heavy operations
 export const heavyOperationLimiter = rateLimit({
-  store: sharedRedisStore,
+  store: makeStore("heavy"),
   windowMs: 5 * 60 * 1000,
   max: 15,
   standardHeaders: true,
@@ -183,7 +184,7 @@ export const heavyOperationLimiter = rateLimit({
 
 // Burst rate limiter — tightest window, first line of defence
 export const burstLimiter = rateLimit({
-  store: sharedRedisStore,
+  store: makeStore("burst"),
   windowMs: 60 * 1000, // 1 minute
   max: 60,
   standardHeaders: true,
@@ -216,7 +217,7 @@ export const burstLimiter = rateLimit({
 });
 
 export const adminLimiter = rateLimit({
-  store: sharedRedisStore,
+  store: makeStore("admin"),
   windowMs: 15 * 60 * 1000,
   max: 40,
   validate: { trustProxy: true },
