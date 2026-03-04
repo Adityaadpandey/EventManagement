@@ -50,6 +50,10 @@ interface ModalProps {
   proceedFromTypes: () => void;
   discountCode: string;
   setDiscountCode: (code: string) => void;
+  appliedDiscount: any;
+  discountError: string | null;
+  applyingDiscount: boolean;
+  applyDiscountCode: () => void;
   countryCode: string;
   setCountryCode: (code: string) => void;
 }
@@ -89,6 +93,10 @@ const Modal: React.FC<ModalProps> = ({
   proceedFromTypes,
   discountCode,
   setDiscountCode,
+  appliedDiscount,
+  discountError,
+  applyingDiscount,
+  applyDiscountCode,
   countryCode,
   setCountryCode,
 }) => {
@@ -758,18 +766,63 @@ const Modal: React.FC<ModalProps> = ({
 
                     <div className="flex flex-col gap-8 justify-between h-full">
                       {ev?._count?.DiscountCode > 0 && (
-                        <div className="relative">
-                          <input
-                            value={discountCode}
-                            onChange={(e) => setDiscountCode(e.target.value)}
-                            placeholder="Have a coupon code?"
-                            className="w-full py-3 px-5 text-xs border border-[#E5E5E5] text-[#8B8B8B] rounded-full outline-0"
-                            aria-label="Discount code"
-                          />
+                        <div className="space-y-2">
+                          <div className="relative">
+                            <input
+                              value={discountCode}
+                              onChange={(e) => {
+                                setDiscountCode(e.target.value);
+                                if (discountError) {
+                                  // Clear error when user starts typing
+                                }
+                              }}
+                              placeholder="Have a coupon code?"
+                              className="w-full py-3 px-5 text-xs border border-[#E5E5E5] text-[#8B8B8B] rounded-full outline-0"
+                              aria-label="Discount code"
+                              disabled={applyingDiscount || !!appliedDiscount}
+                            />
 
-                          <button className="text-[10px] px-3 py-2 bg-[#E5E5E5] rounded-full absolute top-[5px] right-[5px] cursor-pointer">
-                            Apply
-                          </button>
+                            <button
+                              onClick={applyDiscountCode}
+                              disabled={
+                                applyingDiscount ||
+                                !discountCode.trim() ||
+                                !!appliedDiscount
+                              }
+                              className="text-[10px] px-3 py-2 bg-[#E5E5E5] rounded-full absolute top-[5px] right-[5px] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#d5d5d5] transition-colors"
+                            >
+                              {applyingDiscount
+                                ? "..."
+                                : appliedDiscount
+                                  ? "Applied"
+                                  : "Apply"}
+                            </button>
+                          </div>
+
+                          {appliedDiscount && (
+                            <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 px-3 py-2 rounded-full">
+                              <svg
+                                className="w-4 h-4"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              <span className="font-medium">
+                                Discount applied: {appliedDiscount.code}
+                              </span>
+                            </div>
+                          )}
+
+                          {discountError && (
+                            <div className="text-xs text-red-500 px-3">
+                              {discountError}
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -786,47 +839,75 @@ const Modal: React.FC<ModalProps> = ({
                             ₹{selectedTicket.platformfee * selectedQuantity}
                           </p>
                         </div>
+                        {appliedDiscount && (
+                          <div className="flex justify-between px-2">
+                            <p className="text-green-600">Discount</p>
+                            <p className="text-green-600 font-medium">
+                              -₹
+                              {appliedDiscount.discountType === "PERCENTAGE"
+                                ? (
+                                    ((selectedTicket?.price ?? 0) *
+                                      selectedQuantity *
+                                      (appliedDiscount.discountPct ?? 0)) /
+                                    100
+                                  ).toFixed(2)
+                                : (
+                                    (appliedDiscount.discountAmt ?? 0) *
+                                    selectedQuantity
+                                  ).toFixed(2)}
+                            </p>
+                          </div>
+                        )}
                         <div className="flex justify-between bg-[#F5F5F5] py-3 px-2 rounded-md m-0">
                           <h5 className="text-[#8B8B8B]">TOTAL</h5>
                           <h5>
-                            ₹
-                            {selectedTicket?.discountedPrice ? (
-                              <>
-                                <span className="discounted-price">
-                                  ₹
-                                  {(
-                                    (selectedTicket.discountedPrice ?? 0) *
-                                      selectedQuantity +
-                                    selectedTicket.platformfee *
-                                      selectedQuantity
-                                  ).toFixed(2)}
-                                </span>
-                                <span
-                                  className="original-price"
-                                  style={{
-                                    textDecoration: "line-through",
-                                    marginLeft: "8px",
-                                  }}
-                                >
-                                  ₹
-                                  {(
-                                    (selectedTicket.price ?? 0) *
-                                      selectedQuantity +
-                                    selectedTicket.platformfee *
-                                      selectedQuantity
-                                  ).toFixed(2)}
-                                </span>
-                              </>
-                            ) : (
-                              <span>
-                                ₹
-                                {(
-                                  (selectedTicket?.price ?? 0) *
-                                    selectedQuantity +
-                                  selectedTicket.platformfee * selectedQuantity
-                                ).toFixed(2)}
-                              </span>
-                            )}
+                            {(() => {
+                              const subtotal =
+                                (selectedTicket?.price ?? 0) * selectedQuantity;
+                              const platformFee =
+                                selectedTicket.platformfee * selectedQuantity;
+                              let discount = 0;
+
+                              if (appliedDiscount) {
+                                if (
+                                  appliedDiscount.discountType === "PERCENTAGE"
+                                ) {
+                                  discount =
+                                    (subtotal *
+                                      (appliedDiscount.discountPct ?? 0)) /
+                                    100;
+                                  if (
+                                    appliedDiscount.maxDiscount &&
+                                    discount > appliedDiscount.maxDiscount
+                                  ) {
+                                    discount = appliedDiscount.maxDiscount;
+                                  }
+                                } else {
+                                  discount =
+                                    (appliedDiscount.discountAmt ?? 0) *
+                                    selectedQuantity;
+                                }
+                              }
+
+                              const total = subtotal + platformFee - discount;
+                              const originalTotal = subtotal + platformFee;
+
+                              return (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold">
+                                    ₹{total.toFixed(2)}
+                                  </span>
+                                  {appliedDiscount && (
+                                    <span
+                                      className="text-sm text-[#8B8B8B] line-through"
+                                      style={{ textDecoration: "line-through" }}
+                                    >
+                                      ₹{originalTotal.toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </h5>
                         </div>
                       </div>
