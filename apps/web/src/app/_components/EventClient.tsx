@@ -208,6 +208,9 @@ export default function EventClient({
   const [buying, setBuying] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
   const [discountCode, setDiscountCode] = useState<string>("");
+  const [appliedDiscount, setAppliedDiscount] = useState<any>(null);
+  const [discountError, setDiscountError] = useState<string | null>(null);
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
   const [countryCode, setCountryCode] = useState("91");
 
   const eventDate = new Date(ev.date);
@@ -677,13 +680,54 @@ export default function EventClient({
     setBuyError(null);
     setLocalAuthMsg(null);
     setDiscountCode("");
+    setAppliedDiscount(null);
+    setDiscountError(null);
   }, []);
+
+  const applyDiscountCode = useCallback(async () => {
+    if (!discountCode.trim()) {
+      setDiscountError("Please enter a discount code");
+      return;
+    }
+
+    if (!selectedTicketId) {
+      setDiscountError("Please select a ticket first");
+      return;
+    }
+
+    setApplyingDiscount(true);
+    setDiscountError(null);
+
+    try {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const res = await api.get(
+        `/discount/${discountCode.trim()}/${eventId}`,
+        config,
+      );
+
+      const discountData = res.data?.data || res.data;
+      setAppliedDiscount(discountData);
+      setDiscountError(null);
+    } catch (err: any) {
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Invalid or expired discount code";
+      setDiscountError(errorMsg);
+      setAppliedDiscount(null);
+    } finally {
+      setApplyingDiscount(false);
+    }
+  }, [discountCode, selectedTicketId, token, eventId]);
 
   const selectTicketType = useCallback((ticketTypeId: string) => {
     setSelectedTicketId(ticketTypeId);
     setSelectedQuantity(1);
     setLocalAuthMsg(null);
     setBuyError(null);
+    // Clear discount when changing ticket type
+    setAppliedDiscount(null);
+    setDiscountError(null);
   }, []);
 
   const handleAttendeeChange = useCallback((label: string, value: string) => {
@@ -694,11 +738,21 @@ export default function EventClient({
   const incQty = useCallback(() => {
     if (!selectedTicket) return;
     setSelectedQuantity((q) => Math.min(q + 1, selectedTicket.quantity));
-  }, [selectedTicket]);
+    // Clear applied discount when quantity changes
+    if (appliedDiscount) {
+      setAppliedDiscount(null);
+      setDiscountError("Quantity changed. Please reapply discount code.");
+    }
+  }, [selectedTicket, appliedDiscount]);
 
   const decQty = useCallback(() => {
     setSelectedQuantity((q) => Math.max(1, q - 1));
-  }, []);
+    // Clear applied discount when quantity changes
+    if (appliedDiscount) {
+      setAppliedDiscount(null);
+      setDiscountError("Quantity changed. Please reapply discount code.");
+    }
+  }, [appliedDiscount]);
 
   const proceedFromTypes = useCallback(() => {
     if (!selectedTicketId || !selectedTicket) {
@@ -1193,6 +1247,10 @@ export default function EventClient({
         proceedFromTypes={proceedFromTypes}
         discountCode={discountCode}
         setDiscountCode={setDiscountCode}
+        appliedDiscount={appliedDiscount}
+        discountError={discountError}
+        applyingDiscount={applyingDiscount}
+        applyDiscountCode={applyDiscountCode}
         countryCode={countryCode}
         setCountryCode={setCountryCode}
       />

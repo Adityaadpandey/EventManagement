@@ -6,88 +6,92 @@ import { config } from "../config";
 import logger from "../config/logger";
 import { redis } from "../config/redis";
 
-// Suspicious IP tracking
-const suspiciousIPs = new Set<string>();
-const ipViolationCount = new Map<string, number>();
+const BLOCK_PREFIX = "blocked_ip:";
+const VIOLATION_PREFIX = "ip_violations:";
+const BLOCK_TTL = 60 * 60; // 1 hour in seconds
+const VIOLATION_TTL = 60 * 60; // track violations for 1 hour
+const VIOLATION_THRESHOLD = 5;
 
-// Create Redis store for rate limiting with enhanced configuration
-const createRedisStore = () => {
-  return new RedisStore({
+// Factory: each limiter MUST get its own RedisStore instance (express-rate-limit ERR_ERL_STORE_REUSE)
+const makeStore = (prefix: string) =>
+  new RedisStore({
     sendCommand: (...args: string[]) =>
       redis.call(args[0], ...args.slice(1)) as Promise<any>,
-    prefix: "rl:", // Rate limit prefix
+    prefix: `rl:${prefix}:`,
   });
-};
 
 // Helper function to get IP address with proper fallback
 const getClientIP = (req: Request): string => {
-  // Handle forwarded IPs from load balancers/proxies
   const forwarded = req.headers["x-forwarded-for"];
   const realIp = req.headers["x-real-ip"];
-  const ip =
-    (forwarded as string)?.split(",")[0] || realIp || req.ip || "unknown";
-  return ip as string;
+  return ((forwarded as string)?.split(",")[0] ||
+    realIp ||
+    req.ip ||
+    "unknown") as string;
 };
 
-// Track and block suspicious IPs
-const trackSuspiciousIP = (ip: string) => {
-  const count = (ipViolationCount.get(ip) || 0) + 1;
-  ipViolationCount.set(ip, count);
-
-  // Block IP after 5 violations within tracking period
-  if (count >= 5) {
-    suspiciousIPs.add(ip);
-    logger.error(`IP blocked due to repeated violations: ${ip}`, {
-      violations: count,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Auto-unblock after 1 hour
-    setTimeout(
-      () => {
-        suspiciousIPs.delete(ip);
-        ipViolationCount.delete(ip);
-        logger.info(`IP unblocked: ${ip}`);
-      },
-      60 * 60 * 1000,
-    );
+// Track violations in Redis so all workers share the state
+const trackSuspiciousIP = async (ip: string): Promise<void> => {
+  try {
+    const violationKey = `${VIOLATION_PREFIX}${ip}`;
+    const count = await redis.incr(violationKey);
+    if (count === 1) {
+      // First violation — set expiry
+      await redis.expire(violationKey, VIOLATION_TTL);
+    }
+    if (count >= VIOLATION_THRESHOLD) {
+      const blockKey = `${BLOCK_PREFIX}${ip}`;
+      await redis.set(blockKey, "1", "EX", BLOCK_TTL);
+      logger.error(`IP blocked due to repeated violations: ${ip}`, {
+        violations: count,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } catch (err) {
+    logger.error("Redis error in trackSuspiciousIP", { err, ip });
   }
 };
 
-// Middleware to block suspicious IPs
-export const blockSuspiciousIPs = (
+// Middleware to block suspicious IPs — checked in Redis, shared across workers
+export const blockSuspiciousIPs = async (
   req: Request,
   res: Response,
   next: NextFunction,
-) => {
+): Promise<void> => {
   const ip = getClientIP(req);
-
-  if (suspiciousIPs.has(ip)) {
-    logger.warn(`Blocked request from suspicious IP: ${ip}`, {
-      url: req.url,
-      method: req.method,
-      userAgent: req.get("User-Agent"),
-    });
-    return res.status(403).json({
-      error:
-        "Access denied. Your IP has been temporarily blocked due to suspicious activity.",
-      retryAfter: "1 hour",
+  try {
+    const blocked = await redis.get(`${BLOCK_PREFIX}${ip}`);
+    if (blocked) {
+      logger.warn(`Blocked request from suspicious IP: ${ip}`, {
+        url: req.url,
+        method: req.method,
+        userAgent: req.get("User-Agent"),
+      });
+      res.status(403).json({
+        error:
+          "Access denied. Your IP has been temporarily blocked due to suspicious activity.",
+        retryAfter: "1 hour",
+      });
+      return;
+    }
+  } catch (err) {
+    // Redis down — fail open to avoid blocking legitimate traffic
+    logger.error("Redis error in blockSuspiciousIPs, failing open", {
+      err,
+      ip,
     });
   }
-
   next();
 };
 
-// Enhanced general limiter with DDoS protection
+// Enhanced general limiter
 export const limiter = rateLimit({
-  store: createRedisStore(),
+  store: makeStore("general"),
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 250, // Reduced from 300 for better protection
+  max: 250,
   standardHeaders: true,
-  validate: {
-    trustProxy: true,
-  },
   legacyHeaders: false,
+  validate: { trustProxy: true },
   message: {
     error: "Too many requests from this IP, please try again later.",
     retryAfter: "15 minutes",
@@ -102,15 +106,13 @@ export const limiter = rateLimit({
   },
   handler: (req: Request, res: Response) => {
     const ip = getClientIP(req);
-    trackSuspiciousIP(ip);
-
+    trackSuspiciousIP(ip).catch(() => {});
     logger.warn(`Rate limit reached`, {
-      ip: req.ip,
+      ip,
       userAgent: req.get("User-Agent"),
       url: req.url,
       method: req.method,
     });
-
     res.status(429).json({
       error: "Too many requests from this IP, please try again later.",
       retryAfter: "15 minutes",
@@ -118,33 +120,33 @@ export const limiter = rateLimit({
   },
 });
 
-// STRICT rate limiter for authentication routes (DDoS protection)
+// STRICT rate limiter for authentication routes
 export const authLimiter = rateLimit({
-  store: createRedisStore(),
+  store: makeStore("auth"),
   windowMs: 15 * 60 * 1000,
-  max: 8, // Reduced from 10 for better security
+  max: 8,
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: true },
   message: {
     error: "Too many authentication attempts. Please try again later.",
     retryAfter: "15 minutes",
   },
-  validate: {
-    trustProxy: true,
+  keyGenerator: (req: Request) => {
+    const ip = getClientIP(req);
+    return `auth:${ipKeyGenerator(ip)}`;
   },
   handler: (req: Request, res: Response) => {
     const ip = getClientIP(req);
-    trackSuspiciousIP(ip);
-
+    trackSuspiciousIP(ip).catch(() => {});
     logger.error(`Auth rate limit reached - potential brute force attack`, {
-      ip: req.ip,
+      ip,
       userAgent: req.get("User-Agent"),
       url: req.url,
       method: req.method,
       timestamp: new Date().toISOString(),
     });
-
     res.status(429).json({
       error: "Too many authentication attempts. Please try again later.",
       retryAfter: "15 minutes",
@@ -152,27 +154,27 @@ export const authLimiter = rateLimit({
   },
 });
 
-// Rate limiter for heavy operations with DDoS protection
+// Rate limiter for heavy operations
 export const heavyOperationLimiter = rateLimit({
-  store: createRedisStore(),
-  windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 15, // Reduced from 20 for better protection
+  store: makeStore("heavy"),
+  windowMs: 5 * 60 * 1000,
+  max: 15,
   standardHeaders: true,
   legacyHeaders: false,
-  validate: {
-    trustProxy: true,
+  validate: { trustProxy: true },
+  keyGenerator: (req: Request) => {
+    const ip = getClientIP(req);
+    return `heavy:${ipKeyGenerator(ip)}`;
   },
   handler: (req: Request, res: Response) => {
     const ip = getClientIP(req);
-    trackSuspiciousIP(ip);
-
+    trackSuspiciousIP(ip).catch(() => {});
     logger.warn(`Heavy operation rate limit reached`, {
-      ip: req.ip,
+      ip,
       url: req.url,
       method: req.method,
       timestamp: new Date().toISOString(),
     });
-
     res.status(429).json({
       error: "Too many resource-intensive requests. Please slow down.",
       retryAfter: "5 minutes",
@@ -180,16 +182,14 @@ export const heavyOperationLimiter = rateLimit({
   },
 });
 
-// Burst rate limiter for DDoS protection
+// Burst rate limiter — tightest window, first line of defence
 export const burstLimiter = rateLimit({
-  store: createRedisStore(),
+  store: makeStore("burst"),
   windowMs: 60 * 1000, // 1 minute
-  max: 60, // Reduced from 100 for better protection
-  validate: {
-    trustProxy: true,
-  },
+  max: 60,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: true },
   message: {
     error: "Request rate too high. Please slow down.",
     retryAfter: "1 minute",
@@ -198,21 +198,17 @@ export const burstLimiter = rateLimit({
     const ip = getClientIP(req);
     return `burst:${ipKeyGenerator(ip)}`;
   },
-  skip: (req: Request) => {
-    return req.path === "/health" || req.path === "/metrics";
-  },
+  skip: (req: Request) => req.path === "/health" || req.path === "/metrics",
   handler: (req: Request, res: Response) => {
     const ip = getClientIP(req);
-    trackSuspiciousIP(ip);
-
+    trackSuspiciousIP(ip).catch(() => {});
     logger.warn(`Burst rate limit reached - potential DDoS`, {
-      ip: req.ip,
+      ip,
       url: req.url,
       method: req.method,
       userAgent: req.get("User-Agent"),
       timestamp: new Date().toISOString(),
     });
-
     res.status(429).json({
       error: "Request rate too high. Please slow down.",
       retryAfter: "1 minute",
@@ -221,12 +217,10 @@ export const burstLimiter = rateLimit({
 });
 
 export const adminLimiter = rateLimit({
-  store: createRedisStore(),
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 40, // Reduced from 50 for better security
-  validate: {
-    trustProxy: true,
-  },
+  store: makeStore("admin"),
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  validate: { trustProxy: true },
   keyGenerator: (req: Request) => {
     const ip = getClientIP(req);
     const userId = (req as any).user?.id || "anonymous";
@@ -234,17 +228,15 @@ export const adminLimiter = rateLimit({
   },
   handler: (req: Request, res: Response) => {
     const ip = getClientIP(req);
-    trackSuspiciousIP(ip);
-
+    trackSuspiciousIP(ip).catch(() => {});
     logger.error(`Admin rate limit reached - SECURITY ALERT`, {
-      ip: req.ip,
+      ip,
       userAgent: req.get("User-Agent"),
       url: req.url,
       method: req.method,
       userId: (req as any).user?.id,
       timestamp: new Date().toISOString(),
     });
-
     res.status(429).json({
       error: "Too many admin requests. Access temporarily restricted.",
       retryAfter: "15 minutes",
@@ -252,12 +244,13 @@ export const adminLimiter = rateLimit({
   },
 });
 
-export const combinedLimiter = (req: Request, res: Response, next: any) => {
-  // Apply burst protection first
+export const combinedLimiter = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   burstLimiter(req, res, (err: any) => {
     if (err) return next(err);
-
-    // Then apply general limiter
     limiter(req, res, next);
   });
 };
