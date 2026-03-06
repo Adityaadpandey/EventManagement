@@ -759,7 +759,9 @@ const Modal: React.FC<ModalProps> = ({
                         <p className="text-[#8B8B8B]">Ticket Details:</p>
                         <p className="text-zinc-900">
                           {selectedTicket?.name || "N/A"} – ₹
-                          {selectedTicket?.price || 0} × {selectedQuantity}
+                          {(selectedTicket?.discountedPrice ??
+                            selectedTicket?.price ??
+                            0) * selectedQuantity}
                         </p>
                       </div>
                     </div>
@@ -830,7 +832,10 @@ const Modal: React.FC<ModalProps> = ({
                         <div className="flex justify-between px-2">
                           <p className="text-[#8B8B8B]">SUB TOTAL</p>
                           <p className="text-zinc-900">
-                            ₹{(selectedTicket?.price ?? 0) * selectedQuantity}
+                            ₹
+                            {(selectedTicket?.discountedPrice ??
+                              selectedTicket?.price ??
+                              0) * selectedQuantity}
                           </p>
                         </div>
                         <div className="flex justify-between px-2">
@@ -846,7 +851,9 @@ const Modal: React.FC<ModalProps> = ({
                               -₹
                               {appliedDiscount.discountType === "PERCENTAGE"
                                 ? (
-                                    ((selectedTicket?.price ?? 0) *
+                                    ((selectedTicket?.discountedPrice ??
+                                      selectedTicket?.price ??
+                                      0) *
                                       selectedQuantity *
                                       (appliedDiscount.discountPct ?? 0)) /
                                     100
@@ -863,7 +870,9 @@ const Modal: React.FC<ModalProps> = ({
                           <h5>
                             {(() => {
                               const subtotal =
-                                (selectedTicket?.price ?? 0) * selectedQuantity;
+                                (selectedTicket?.discountedPrice ??
+                                  selectedTicket?.price ??
+                                  0) * selectedQuantity;
                               const platformFee =
                                 selectedTicket.platformfee * selectedQuantity;
                               let discount = 0;
