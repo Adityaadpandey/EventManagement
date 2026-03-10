@@ -105,13 +105,13 @@ export default function NotificationModal({
 
   return (
     <div
-      className={`fixed bottom-4 left-4 right-4 z-[9999] flex justify-center pointer-events-none`}
+      className={`fixed top-4 left-4 right-4 z-[9999] flex justify-center pointer-events-none`}
     >
       <div
-        className={`pointer-events-auto bg-white rounded-2xl shadow-2xl max-w-sm w-full p-4 flex items-center gap-3 border border-gray-100 transition-all duration-300 ${
+        className={`pointer-events-none bg-white rounded-2xl shadow-2xl max-w-sm w-full p-4 flex items-center gap-3 border border-gray-100 transition-all duration-300 ${
           leaving
-            ? "opacity-0 translate-y-4"
-            : "opacity-100 translate-y-0 animate-slide-up"
+            ? "opacity-0 -translate-y-4"
+            : "opacity-100 translate-y-0 animate-slide-down"
         }`}
       >
         {/* Icon */}
@@ -135,7 +135,7 @@ export default function NotificationModal({
         {/* Action */}
         <button
           onClick={handleEnable}
-          className="px-4 py-2 bg-[var(--color-primary)] text-black text-sm font-semibold rounded-xl hover:brightness-95 transition-all shrink-0"
+          className="pointer-events-auto px-4 py-2 bg-[var(--color-primary)] text-black text-sm font-semibold rounded-xl hover:brightness-95 transition-all shrink-0"
           style={{ fontFamily: "Bricolage Grotesque, sans-serif" }}
         >
           Enable
@@ -144,16 +144,16 @@ export default function NotificationModal({
         {/* Close */}
         <button
           onClick={() => dismiss(false)}
-          className="text-gray-300 hover:text-gray-500 transition-colors shrink-0"
+          className="pointer-events-auto text-gray-300 hover:text-gray-500 transition-colors shrink-0"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       <style jsx>{`
-        @keyframes slide-up {
+        @keyframes slide-down {
           from {
-            transform: translateY(100%);
+            transform: translateY(-100%);
             opacity: 0;
           }
           to {
@@ -161,8 +161,8 @@ export default function NotificationModal({
             opacity: 1;
           }
         }
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out;
+        .animate-slide-down {
+          animation: slide-down 0.3s ease-out;
         }
       `}</style>
     </div>
