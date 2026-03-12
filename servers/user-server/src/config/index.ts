@@ -26,11 +26,9 @@ interface Config {
   VAPID_PUBLIC_KEY: string;
   VAPID_PRIVATE_KEY: string;
 
-  RESEND_API_KEY: string;
-
-  // AWS_REGION: string;
-  // AWS_ACCESS_KEY_ID: string;
-  // AWS_SECRET_ACCESS_KEY: string;
+  AWS_REGION: string;
+  AWS_ACCESS_KEY_ID: string;
+  AWS_SECRET_ACCESS_KEY: string;
 
   ADMIN_EMAIL: string;
 }
@@ -128,11 +126,9 @@ export const config: Config = {
   SMTP_USER: process.env.SMTP_USER || "",
   SMTP_PASS: process.env.SMTP_PASS || "",
 
-  RESEND_API_KEY: process.env.RESEND_API_KEY || "",
-
-  // AWS_REGION: process.env.AWS_REGION || "us-east-1",
-  // AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID || "",
-  // AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY || "",
+  AWS_REGION: process.env.AWS_REGION || "us-east-1",
+  AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID || "",
+  AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY || "",
 
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || "adityapandeyadp@gmail.com",
 
