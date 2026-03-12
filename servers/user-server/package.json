@@ -45,7 +45,8 @@
   "license": "ISC",
   "pnpm": {
     "overrides": {
-      "ioredis": "^5.9.3"
+      "ioredis": "^5.9.3",
+      "@types/pg": "^8.15.6"
     }
   },
   "dependencies": {
