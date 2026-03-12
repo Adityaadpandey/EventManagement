@@ -48,6 +48,7 @@ export const emailWorker = new Worker(
         payload.attachments = attachments.map((a) => ({
           filename: a.filename,
           content: a.content,
+          contentId: a.cid,
         }));
       }
 
