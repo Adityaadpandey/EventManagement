@@ -108,7 +108,8 @@ export const authMiddleware = async (
     next();
   } catch (error) {
     logger.error("Auth Middleware Error:", error);
-    throw new ServiceUnavailableError("Authentication failed");
+    // the error needed to be thrown not a new instance of error
+    throw error;
   }
 };
 
