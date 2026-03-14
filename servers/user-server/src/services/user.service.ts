@@ -50,7 +50,7 @@ export class UserService {
       return { ...userProfile, token };
     } catch (error: any) {
       logger.error("Error fetching user profile:", error);
-      throw new Error("Failed to fetch user profile");
+      throw error;
     }
   }
 
