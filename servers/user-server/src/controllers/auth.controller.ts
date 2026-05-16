@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
+import { blacklistToken } from "../lib/cache";
 import AuthService from "../services/auth.service";
+import type { AuthenticatedRequest } from "../types/auth";
 import { isAppError } from "../utils/errors";
 import { formatZodError } from "../utils/formatZodError";
 import { logError, logInfo } from "../utils/logger-context";
@@ -66,6 +68,21 @@ export class AuthController {
         return sendError(res, error.message, error.statusCode);
       }
       return sendError(res, "Failed to verify OTP", 500);
+    }
+  }
+
+  async logout(req: AuthenticatedRequest, res: Response) {
+    try {
+      const token = req.header("Authorization")?.replace("Bearer ", "");
+      if (token) {
+        await blacklistToken(token);
+      }
+      return sendSuccess(res, "Logged out successfully");
+    } catch (error: any) {
+      if (isAppError(error)) {
+        return sendError(res, error.message, error.statusCode);
+      }
+      return sendError(res, "Failed to logout", 500);
     }
   }
 }

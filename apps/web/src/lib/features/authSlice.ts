@@ -1,5 +1,5 @@
 // src/lib/features/authSlice.ts
-import api from "@/lib/api";
+import api, { apiUtils } from "@/lib/api";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
 type User = {
@@ -130,12 +130,23 @@ export const hydrateSession = createAsyncThunk<
     return { token, user };
   } catch (err: any) {
     // clear token on failure
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
-    }
+    apiUtils.clearToken();
     return rejectWithValue("Session expired. Please log in again.");
   }
 });
+
+export const logoutAsync = createAsyncThunk<void, void>(
+  "auth/logout",
+  async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // best-effort — always clear client-side regardless
+    } finally {
+      apiUtils.clearToken();
+    }
+  },
+);
 
 const authSlice = createSlice({
   name: "auth",
@@ -146,9 +157,7 @@ const authSlice = createSlice({
       state.token = null;
       state.otpSent = false;
       state.hydrated = true;
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("token");
-      }
+      apiUtils.clearToken();
     },
     // optional lightweight sync hydrate action (not required if you use hydrateSession)
     hydrateSync(state) {
@@ -209,6 +218,21 @@ const authSlice = createSlice({
         state.loading = false;
         state.hydrated = true;
         state.error = action.payload || null;
+      })
+
+      // logoutAsync
+      .addCase(logoutAsync.fulfilled, (state) => {
+        state.user = null;
+        state.token = null;
+        state.otpSent = false;
+        state.hydrated = true;
+      })
+      .addCase(logoutAsync.rejected, (state) => {
+        // still clear client state even if server call failed
+        state.user = null;
+        state.token = null;
+        state.otpSent = false;
+        state.hydrated = true;
       });
   },
 });

@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  hydrateSession,
-  logout as logoutAction,
-} from "@/lib/features/authSlice";
+import { hydrateSession, logoutAsync } from "@/lib/features/authSlice";
 import { AppDispatch, RootState } from "@/lib/store";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell, User } from "lucide-react";
@@ -51,9 +48,8 @@ export default function NavBar() {
     };
   }, []);
 
-  const logout = () => {
-    dispatch(logoutAction());
-    router.refresh();
+  const logout = async () => {
+    await dispatch(logoutAsync());
     router.push("/");
   };
 
