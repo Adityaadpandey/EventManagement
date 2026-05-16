@@ -9,6 +9,16 @@ COPY packages ./packages
 RUN npm install -g pnpm
 
 WORKDIR /workspace/packages/logger
+
+RUN printf '%s\n' \
+'onlyBuiltDependencies[]=@datadog/pprof' \
+'onlyBuiltDependencies[]=@newrelic/fn-inspect' \
+'onlyBuiltDependencies[]=@newrelic/native-metrics' \
+'onlyBuiltDependencies[]=protobufjs' \
+>> ~/.npmrc
+
+RUN cat ~/.npmrc
+
 RUN pnpm install && pnpm run build
 
 WORKDIR /workspace
