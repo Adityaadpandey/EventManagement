@@ -4,7 +4,11 @@ FROM node:22-alpine AS builder
 WORKDIR /workspace
 
 COPY packages ./packages
+
 RUN npm install -g pnpm
+
+# Allow lifecycle/postinstall scripts
+RUN pnpm config set ignore-scripts false
 
 WORKDIR /workspace/packages/logger
 RUN pnpm install && pnpm run build
@@ -16,6 +20,10 @@ COPY servers/user-server/tsconfig.json ./servers/user-server/
 COPY servers/user-server/ ./servers/user-server/
 
 WORKDIR /workspace/servers/user-server
+
+# Allow lifecycle/postinstall scripts
+RUN pnpm config set ignore-scripts false
+
 RUN pnpm install
 RUN npx prisma generate
 RUN pnpm run build
@@ -47,6 +55,10 @@ ARG BUILD_DATE
 ENV BUILD_DATE=${BUILD_DATE}
 
 RUN npm install -g pnpm
+
+# Allow lifecycle/postinstall scripts
+RUN pnpm config set ignore-scripts false
+
 RUN pnpm install --prod
 
 EXPOSE 7001
