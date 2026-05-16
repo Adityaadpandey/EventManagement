@@ -5,22 +5,24 @@ FROM node:22-alpine AS builder
 
 WORKDIR /workspace
 
-# Install pnpm (stable version that does NOT enforce approve-builds)
+# Install pnpm (stable version)
 RUN npm install -g pnpm@9.15.9
 
-# Copy repo
+# Copy entire monorepo (required for TurboRepo)
 COPY . .
 
-# Install and build logger package
-WORKDIR /workspace/packages/logger
+# Install all dependencies for workspace
 RUN pnpm install
-RUN pnpm run build
 
-# Install and build server
+# Build logger package
+RUN pnpm --filter ./packages/logger run build
+
+# Build backend service
+RUN pnpm --filter ./servers/user-server run build
+
+# Generate prisma client
 WORKDIR /workspace/servers/user-server
-RUN pnpm install
 RUN npx prisma generate
-RUN pnpm run build
 
 
 # ----------------------------
@@ -33,27 +35,20 @@ WORKDIR /workspace
 # Install pnpm
 RUN npm install -g pnpm@9.15.9
 
-# Copy built artifacts
+# Copy full workspace (needed for runtime resolution)
+COPY . .
+
+# Install production dependencies for workspace (IMPORTANT FIX)
+RUN pnpm install --frozen-lockfile --prod
+
+# Copy build outputs from builder
 COPY --from=builder /workspace/packages ./packages
 COPY --from=builder /workspace/servers/user-server/dist ./servers/user-server/dist
-COPY --from=builder /workspace/servers/user-server/package*.json ./servers/user-server/
 COPY --from=builder /workspace/servers/user-server/newrelic.js ./servers/user-server/newrelic.js
 
 WORKDIR /workspace/servers/user-server
 
-# Create cert directory
-RUN mkdir -p /workspace/certs
-
 ENV NODE_ENV=production
-
-ARG APP_VERSION=unknown
-ENV APP_VERSION=${APP_VERSION}
-
-ARG BUILD_DATE
-ENV BUILD_DATE=${BUILD_DATE}
-
-# Install production deps only
-RUN pnpm install --prod
 
 EXPOSE 7001
 
