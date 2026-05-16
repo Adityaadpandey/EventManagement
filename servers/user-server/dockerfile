@@ -1,33 +1,39 @@
+# ----------------------------
 # Build stage
+# ----------------------------
 FROM node:22-alpine AS builder
 
 WORKDIR /workspace
 
-COPY packages ./packages
-RUN npm install -g pnpm
+# Install pnpm (stable version that does NOT enforce approve-builds)
+RUN npm install -g pnpm@9.15.9
 
+# Copy repo
+COPY . .
+
+# Install and build logger package
 WORKDIR /workspace/packages/logger
-RUN pnpm install && pnpm run build
+RUN pnpm install
+RUN pnpm run build
 
-WORKDIR /workspace
-
-COPY servers/user-server/package*.json ./servers/user-server/
-COPY servers/user-server/tsconfig.json ./servers/user-server/
-COPY servers/user-server/ ./servers/user-server/
-
+# Install and build server
 WORKDIR /workspace/servers/user-server
 RUN pnpm install
 RUN npx prisma generate
 RUN pnpm run build
 
-# ------------------------------------------------------------
 
+# ----------------------------
 # Production stage
+# ----------------------------
 FROM node:22-alpine
 
 WORKDIR /workspace
 
-# Copy built assets
+# Install pnpm
+RUN npm install -g pnpm@9.15.9
+
+# Copy built artifacts
 COPY --from=builder /workspace/packages ./packages
 COPY --from=builder /workspace/servers/user-server/dist ./servers/user-server/dist
 COPY --from=builder /workspace/servers/user-server/package*.json ./servers/user-server/
@@ -35,7 +41,7 @@ COPY --from=builder /workspace/servers/user-server/newrelic.js ./servers/user-se
 
 WORKDIR /workspace/servers/user-server
 
-# Create directory for SSL certificates
+# Create cert directory
 RUN mkdir -p /workspace/certs
 
 ENV NODE_ENV=production
@@ -46,7 +52,7 @@ ENV APP_VERSION=${APP_VERSION}
 ARG BUILD_DATE
 ENV BUILD_DATE=${BUILD_DATE}
 
-RUN npm install -g pnpm
+# Install production deps only
 RUN pnpm install --prod
 
 EXPOSE 7001

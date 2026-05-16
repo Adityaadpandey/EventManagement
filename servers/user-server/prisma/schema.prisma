@@ -1,2792 +1,548 @@
 generator client {
-  provider        = "prisma-client"
-  output          = "../src/generated/prisma"
-  previewFeatures = ["partialIndexes"]
+    provider = "prisma-client"
+    output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
-}
-
-/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
-model User {
-  userId                                     String                        @id @default(uuid())
-  phone                                      String?                       @unique
-  email                                      String?                       @unique
-  password                                   String?
-  name                                       String?
-  avatar                                     String?
-  isActive                                   Boolean                       @default(true)
-  phoneVerified                              Boolean                       @default(false)
-  emailVerified                              Boolean                       @default(false)
-  profileComplete                            Boolean                       @default(false)
-  role                                       Role                          @default(USER)
-  createdAt                                  DateTime                      @default(now())
-  updatedAt                                  DateTime                      @updatedAt
-  bio                                        String?
-  googleId                                   String?                       @unique
-  interests                                  String[]
-  Booking                                    Booking[]
-  CheckIn                                    CheckIn[]
-  DiscountCode                               DiscountCode[]
-  EventBookmark                              EventBookmark[]
-  EventCohost                                EventCohost[]
-  EventFeedback                              EventFeedback[]
-  EventFollow                                EventFollow[]
-  EventLike                                  EventLike[]
-  EventReport                                EventReport[]
-  Invitation                                 Invitation[]
-  Lister                                     Lister?
-  ListerFollow                               ListerFollow[]
-  ListerNotificationPreference               ListerNotificationPreference?
-  Notification                               Notification[]
-  OpsChatMessage                             OpsChatMessage[]
-  OpsEmail                                   OpsEmail[]
-  OpsEventTeam                               OpsEventTeam[]
-  OpsInvite                                  OpsInvite[]
-  OpsOrgMember                               OpsOrgMember[]
-  OpsRelation_OpsRelation_linkedUserIdToUser OpsRelation[]                 @relation("OpsRelation_linkedUserIdToUser")
-  OpsRelation_OpsRelation_ownerIdToUser      OpsRelation[]                 @relation("OpsRelation_ownerIdToUser")
-  OpsTask_OpsTask_assigneeIdToUser           OpsTask[]                     @relation("OpsTask_assigneeIdToUser")
-  OpsTask_OpsTask_ownerIdToUser              OpsTask[]                     @relation("OpsTask_ownerIdToUser")
-  OpsTimelineEvent                           OpsTimelineEvent[]
-  Payment                                    Payment[]
-  PushSubscription                           PushSubscription[]
-  Referral                                   Referral[]
-  Refund                                     Refund[]
-  SlotBooking                                SlotBooking[]
-  TeamMember                                 TeamMember[]
-  Ticket                                     Ticket[]
-  TicketScanLog                              TicketScanLog[]
-  VenueStaff                                 VenueStaff[]
-  WaitlistEntry                              WaitlistEntry[]
-
-  @@index([role, isActive])
-  @@index([createdAt(sort: Desc)])
-  @@index([email, isActive])
-  @@index([phone, isActive])
-  @@index([interests], type: Gin)
-}
-
-model Lister {
-  listerId                                          String                 @id @default(uuid())
-  userId                                            String                 @unique
-  companyName                                       String?
-  companyLogo                                       String?
-  bio                                               String?
-  createdAt                                         DateTime               @default(now())
-  updatedAt                                         DateTime               @updatedAt
-  status                                            ListerStatus           @default(PENDING)
-  website                                           String?
-  contactEmail                                      String?
-  contactPhone                                      String?
-  about                                             String?
-  facebookLink                                      String?
-  followersCount                                    Int                    @default(0)
-  founderInfo                                       String?
-  instagramLink                                     String?
-  isFeatured                                        Boolean                @default(false)
-  isSubscribed                                      Boolean                @default(false)
-  isVerified                                        Boolean                @default(false)
-  linkedinLink                                      String?
-  totalEventsHosted                                 Int                    @default(0)
-  wikidataQid                                       String?
-  xLink                                             String?
-  youtubeLink                                       String?
-  Account                                           Account?
-  BankDetails                                       BankDetails?
-  CRMContact                                        CRMContact[]
-  DiscountCode                                      DiscountCode[]
-  EmailCampaign                                     EmailCampaign[]
-  Event                                             Event[]
-  EventComms                                        EventComms[]
-  InboxEmail                                        InboxEmail[]
-  user                                              User                   @relation(fields: [userId], references: [userId])
-  ListerAnalytics                                   ListerAnalytics?
-  ListerEmailAccount                                ListerEmailAccount?
-  ListerFollow                                      ListerFollow[]
-  ListerMeetingAccount                              ListerMeetingAccount[]
-  ListerRazorpayConfig                              ListerRazorpayConfig?
-  ListerSubscription                                ListerSubscription?
-  OpsEmailTemplate                                  OpsEmailTemplate[]
-  OpsInvite                                         OpsInvite[]
-  OpsOrgMember                                      OpsOrgMember[]
-  Partnership_Partnership_organizerListerIdToLister Partnership[]          @relation("Partnership_organizerListerIdToLister")
-  Partnership_Partnership_partnerListerIdToLister   Partnership[]          @relation("Partnership_partnerListerIdToLister")
-  Payout                                            Payout[]
-  TicketChecker                                     TicketChecker[]
-  Vendor                                            Vendor[]
-  Venue                                             Venue[]
-
-  @@index([status, createdAt(sort: Desc)])
-  @@index([followersCount(sort: Desc)])
-  @@index([isVerified, isFeatured])
-}
-
-model BankDetails {
-  bankDetailsId     String   @id @default(uuid())
-  listerId          String   @unique
-  bankName          String
-  accountNumber     String
-  ifscCode          String
-  accountHolderName String
-  branchCode        String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  lister            Lister   @relation(fields: [listerId], references: [listerId])
-}
-
-model Account {
-  accountId   String        @id @default(uuid())
-  listerId    String        @unique
-  balance     Decimal       @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  lister      Lister        @relation(fields: [listerId], references: [listerId])
-  LedgerEntry LedgerEntry[]
-
-  @@index([balance])
-  @@index([balance(sort: Desc), listerId], map: "idx_account_high_balance", where: raw("(balance > (1000)::numeric)"))
-}
-
-model Payout {
-  payoutId        String       @id @default(uuid())
-  listerId        String
-  eventId         String?
-  type            PayoutType   @default(FULL)
-  amount          Decimal
-  approvedAmount  Decimal?
-  status          PayoutStatus @default(PENDING)
-  remark          String?
-  requestedAt     DateTime     @default(now())
-  approvedAt      DateTime?
-  paidAt          DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  failureReason   String?
-  netAmount       Decimal
-  paymentMethod   String?
-  platformFee     Decimal      @default(0)
-  processedAt     DateTime?
-  processingNotes String?
-  refundedAmount  Decimal      @default(0)
-  scheduledFor    DateTime?
-  transactionId   String?
-  event           Event?       @relation(fields: [eventId], references: [eventId])
-  lister          Lister       @relation(fields: [listerId], references: [listerId])
-
-  @@index([status, requestedAt(sort: Desc)])
-  @@index([listerId, status])
-  @@index([eventId, status])
-  @@index([scheduledFor])
-  @@index([amount(sort: Desc), status], map: "idx_payout_amount_status", where: raw("(status <> 'CANCELLED'::\"PayoutStatus\")"))
-  @@index([paidAt(sort: Desc), listerId, amount], map: "idx_payout_completed", where: raw("(status = 'COMPLETED'::\"PayoutStatus\")"))
-  @@index([eventId, type, status, requestedAt(sort: Desc)], map: "idx_payout_event_type", where: raw("(\"eventId\" IS NOT NULL)"))
-  @@index([listerId, requestedAt(sort: Desc)], map: "idx_payout_pending", where: raw("(status = ANY (ARRAY['PENDING'::\"PayoutStatus\", 'PROCESSING'::\"PayoutStatus\"]))"))
-  @@index([status, requestedAt(sort: Desc), listerId], map: "idx_payout_pending_priority", where: raw("(status = ANY (ARRAY['PENDING'::\"PayoutStatus\", 'PROCESSING'::\"PayoutStatus\"]))"))
-}
-
-model LedgerEntry {
-  id            String   @id @default(uuid())
-  accountId     String
-  entryType     String
-  amount        Decimal
-  balanceAfter  Decimal
-  referenceType String?
-  referenceId   String?
-  createdAt     DateTime @default(now())
-  account       Account  @relation(fields: [accountId], references: [accountId])
-
-  @@index([accountId, createdAt(sort: Desc)])
-  @@index([referenceType, referenceId])
-  @@index([accountId, createdAt(sort: Desc), amount], map: "idx_ledger_credits", where: raw("(\"entryType\" = 'CREDIT'::text)"))
-  @@index([accountId, createdAt(sort: Desc), amount], map: "idx_ledger_debits", where: raw("(\"entryType\" = 'DEBIT'::text)"))
-  @@index([referenceType, referenceId, createdAt(sort: Desc)], map: "idx_ledger_reference_complete", where: raw("((\"referenceType\" IS NOT NULL) AND (\"referenceId\" IS NOT NULL))"))
-}
-
-/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
-model Event {
-  eventId               String                @id @default(uuid())
-  listerId              String
-  title                 String
-  description           String
-  banner_horizontal     String
-  banner_vertical       String
-  banner_square         String
-  date                  DateTime
-  time                  DateTime
-  location              String
-  capacity              Int?
-  status                Status                @default(NOT_VIEWED)
-  rejection_comment     String?
-  cancellation_note     String?
-  samplePoster          String?
-  socialMediaGraphic    String?
-  eventFormat           String?
-  requestedVenue        String?
-  termsConditions       String?
-  rulesRegulations      String?
-  policies              String?
-  dutyLeavesDetails     String?
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  chips                 String[]
-  latitude              Float?
-  longitude             Float?
-  restrictions          String?
-  tags                  String[]
-  availableMailUpdates  Int                   @default(2)
-  ticketCounter         Int                   @default(0)
-  canBuy                Boolean               @default(true)
-  aboutArtist           String?
-  autoPromoteWaitlist   Boolean               @default(false)
-  autoTeamFill          Boolean               @default(false)
-  certificateInfo       String?
-  clonedFromEventId     String?
-  customApiKey          String?
-  customUrl             String?               @unique
-  embeddable            Boolean               @default(true)
-  endDate               DateTime?
-  endTime               DateTime?
-  eventCategory         EventCategory?
-  eventTheme            Json?
-  eventType             EventType             @default(SOLO)
-  externalMeetingId     String?
-  faqContent            String?
-  gmeetLink             String?
-  groupBookingEnabled   Boolean               @default(false)
-  healthNotes           String?
-  healthStatus          EventHealthStatus     @default(GOOD)
-  healthStatusUpdatedAt DateTime?
-  isFeatured            Boolean               @default(false)
-  mapDirections         String?
-  maxTeamSize           Int?
-  maxTeams              Int?
-  maxTicketsPerPerson   Int?
-  maxWaitlistSize       Int?
-  meetingProvider       MeetingProvider?
-  minTeamSize           Int?
-  minTeams              Int?
-  postponement_note     String?
-  prizesGoodies         String?
-  requiresApproval      Boolean               @default(false)
-  saleEndsAt            DateTime?
-  saleStartsAt          DateTime?
-  salesPaused           Boolean               @default(false)
-  salesPausedAt         DateTime?
-  showOnDiscover        Boolean               @default(true)
-  showOnHomePage        Boolean               @default(false)
-  subCategory           String?
-  thumbnail             String?
-  ticketingEnabled      Boolean               @default(true)
-  timeline              String?
-  venueDetails          String?
-  visibility            EventVisibility       @default(PUBLIC)
-  zoomLink              String?
-  Booking               Booking[]
-  CheckIn               CheckIn[]
-  CustomField           CustomField[]
-  DiscountCode          DiscountCode[]
-  lister                Lister                @relation(fields: [listerId], references: [listerId])
-  EventAnalytics        EventAnalytics?
-  EventBookmark         EventBookmark[]
-  EventCohost           EventCohost[]
-  EventComms            EventComms[]
-  EventFeedback         EventFeedback[]
-  EventFollow           EventFollow[]
-  EventGallery          EventGallery[]
-  EventLike             EventLike[]
-  EventOffering         EventOffering[]
-  EventReminderSetting  EventReminderSetting?
-  EventReport           EventReport[]
-  EventSection          EventSection[]
-  EventSyndication      EventSyndication[]
-  EventTimeSlot         EventTimeSlot[]
-  InboxEmail            InboxEmail[]
-  Invitation            Invitation[]
-  OpsChat               OpsChat[]
-  OpsEmail              OpsEmail[]
-  OpsEventSettings      OpsEventSettings?
-  OpsEventTeam          OpsEventTeam[]
-  OpsMoneyItem          OpsMoneyItem[]
-  OpsRelation           OpsRelation[]
-  OpsTask               OpsTask[]
-  OpsTimelineEvent      OpsTimelineEvent[]
-  Partnership           Partnership[]
-  Payment               Payment[]
-  Payout                Payout[]
-  RSVP                  RSVP[]
-  Refund                Refund[]
-  Team                  Team[]
-  Ticket                Ticket[]
-  TicketChecker         TicketChecker[]
-  TicketScanLog         TicketScanLog[]
-  TicketType            TicketType[]
-  TicketTypeGroup       TicketTypeGroup[]
-  WaitlistEntry         WaitlistEntry[]
-
-  @@index([status, date])
-  @@index([listerId, status, createdAt(sort: Desc)])
-  @@index([date, status])
-  @@index([tags], type: Gin)
-  @@index([customUrl])
-  @@index([eventType, eventCategory])
-  @@index([healthStatus])
-  @@index([isFeatured, showOnHomePage])
-  @@index([isFeatured, visibility, status, date])
-  @@index([latitude, longitude])
-  @@index([listerId, date])
-  @@index([saleStartsAt, saleEndsAt])
-  @@index([visibility, status, date])
-  @@index([visibility, status, showOnDiscover, date])
-  @@index([visibility, status, showOnHomePage, date])
-  @@index([date, listerId], map: "idx_event_approved_date", where: raw("(status = 'APPROVED'::\"Status\")"))
-}
-
-model CustomField {
-  fieldId               String                  @id @default(uuid())
-  eventId               String
-  label                 String
-  fieldType             String
-  required              Boolean                 @default(false)
-  options               String?
-  ticketTypeId          String?
-  isLeaderOnly          Boolean                 @default(false)
-  placeholder           String?
-  validationRules       String?
-  AttendeeFieldResponse AttendeeFieldResponse[]
-  event                 Event                   @relation(fields: [eventId], references: [eventId])
-  ticketType            TicketType?             @relation(fields: [ticketTypeId], references: [ticketTypeId])
-
-  @@index([eventId, required])
-  @@index([ticketTypeId])
-}
-
-model TicketType {
-  ticketTypeId      String               @id @default(uuid())
-  eventId           String
-  name              String
-  description       String?
-  price             Float
-  quantity          Int
-  salesCutoff       DateTime?
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  soldCount         Int                  @default(0)
-  discountReason    String?
-  discountedPrice   Float?
-  platformfee       Int                  @default(0)
-  ticketPrefix      String?
-  platformfeePerc   Float                @default(0.025)
-  capacityLimit     Int?
-  discountQuantity  Int?
-  discountSoldCount Int                  @default(0)
-  feeBornBy         FeeBornBy            @default(HOST)
-  gatewayFeePerc    Float                @default(0.025)
-  groupId           String?
-  maxTeamSize       Int?
-  minTeamSize       Int?
-  paused            Boolean              @default(false)
-  salesClosesAt     DateTime?
-  salesOpensAt      DateTime?
-  visibility        TicketTypeVisibility @default(PUBLIC)
-  CustomField       CustomField[]
-  Team              Team[]
-  Ticket            Ticket[]
-  event             Event                @relation(fields: [eventId], references: [eventId])
-  TicketTypeGroup   TicketTypeGroup?     @relation(fields: [groupId], references: [groupId])
-
-  @@index([eventId, price])
-  @@index([salesCutoff])
-  @@index([groupId])
-  @@index([paused, eventId])
-  @@index([visibility, eventId])
-}
-
-model Ticket {
-  ticketId              String                  @id @default(uuid())
-  ticketTypeId          String?
-  userId                String
-  status                TicketPaymentStatus     @default(PENDING)
-  quantity              Int
-  totalPrice            Float
-  qrCode                String?                 @unique
-  checkedIn             Boolean                 @default(false)
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
-  bookingId             String?
-  eventId               String
-  faceValue             Float                   @default(0)
-  feeBornBy             FeeBornBy               @default(HOST)
-  gatewayFee            Float                   @default(0)
-  invitedBy             String?
-  isGuestTicket         Boolean                 @default(false)
-  platformFee           Float                   @default(0)
-  teamId                String?
-  wasDiscounted         Boolean                 @default(false)
-  AttendeeFieldResponse AttendeeFieldResponse[]
-  CheckIn               CheckIn?
-  Refund                Refund[]
-  TeamMember            TeamMember?
-  Booking               Booking?                @relation(fields: [bookingId], references: [bookingId])
-  Event                 Event                   @relation(fields: [eventId], references: [eventId])
-  Team                  Team?                   @relation(fields: [teamId], references: [teamId])
-  ticketType            TicketType?             @relation(fields: [ticketTypeId], references: [ticketTypeId])
-  user                  User                    @relation(fields: [userId], references: [userId])
-  TicketScanLog         TicketScanLog[]
-
-  @@index([userId, status, createdAt(sort: Desc)])
-  @@index([ticketTypeId, status])
-  @@index([status, createdAt(sort: Desc)])
-  @@index([bookingId])
-  @@index([eventId, checkedIn])
-  @@index([eventId, status, checkedIn])
-  @@index([eventId, status])
-  @@index([teamId])
-  @@index([userId, createdAt(sort: Desc)], map: "idx_ticket_success_user", where: raw("(status = 'SUCCESS'::\"TicketPaymentStatus\")"))
-}
-
-model AttendeeFieldResponse {
-  responseId String      @id @default(uuid())
-  ticketId   String
-  fieldId    String
-  value      String
-  createdAt  DateTime    @default(now())
-  field      CustomField @relation(fields: [fieldId], references: [fieldId])
-  ticket     Ticket      @relation(fields: [ticketId], references: [ticketId])
-
-  @@index([ticketId])
-  @@index([fieldId, value])
-}
-
-model TicketChecker {
-  checkerId     String          @id @default(uuid())
-  listerId      String
-  eventId       String?
-  username      String
-  password      String
-  active        Boolean         @default(true)
-  deprecated    Boolean         @default(false)
-  expiresAt     DateTime?
-  revokedAt     DateTime?
-  createdAt     DateTime        @default(now())
-  createdBy     String?
-  name          String?
-  permissions   String[]
-  event         Event?          @relation(fields: [eventId], references: [eventId])
-  lister        Lister          @relation(fields: [listerId], references: [listerId])
-  TicketScanLog TicketScanLog[]
-
-  @@unique([eventId, username])
-  @@index([listerId, active])
-  @@index([eventId, active])
-  @@index([expiresAt])
-  @@index([eventId, listerId], map: "idx_ticketchecker_active", where: raw("((active = true) AND (deprecated = false))"))
-}
-
-model TicketScanLog {
-  scanId            String         @id @default(uuid())
-  ticketId          String
-  checkerId         String?
-  performedByUserId String?
-  scannedAt         DateTime       @default(now())
-  action            String
-  success           Boolean
-  note              String?
-  deviceInfo        String?
-  ipAddress         String?
-  eventId           String
-  location          String?
-  checker           TicketChecker? @relation(fields: [checkerId], references: [checkerId])
-  Event             Event          @relation(fields: [eventId], references: [eventId])
-  performedByUser   User?          @relation(fields: [performedByUserId], references: [userId])
-  ticket            Ticket         @relation(fields: [ticketId], references: [ticketId])
-
-  @@index([ticketId, scannedAt(sort: Desc)])
-  @@index([checkerId, scannedAt(sort: Desc)])
-  @@index([success, scannedAt(sort: Desc)])
-  @@index([eventId, scannedAt(sort: Desc)])
-}
-
-/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
-model DiscountCode {
-  codeId                  String        @id @default(uuid())
-  eventId                 String?
-  code                    String        @unique
-  description             String?
-  discountPct             Float?
-  maxUses                 Int?
-  usesCount               Int           @default(0)
-  validFrom               DateTime?
-  validTo                 DateTime?
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
-  discountAmt             Float?
-  discountType            DiscountType
-  maxDiscount             Float?
-  minOrderAmt             Float?
-  affiliateCode           String?       @unique
-  isActive                Boolean       @default(true)
-  kind                    DiscountKind  @default(PROMO)
-  listerId                String?
-  referrerId              String?
-  resourceId              String?
-  shareToUnlockClickCount Int           @default(0)
-  shareToUnlockThreshold  Int?
-  venueId                 String?
-  Booking                 Booking[]
-  event                   Event?        @relation(fields: [eventId], references: [eventId])
-  Lister                  Lister?       @relation(fields: [listerId], references: [listerId])
-  User                    User?         @relation(fields: [referrerId], references: [userId])
-  SlotBooking             SlotBooking[]
-
-  @@index([eventId, validFrom, validTo])
-  @@index([code, eventId])
-  @@index([affiliateCode])
-  @@index([isActive])
-  @@index([kind, eventId])
-  @@index([listerId])
-  @@index([referrerId])
-}
-
-model EventAnalytics {
-  analyticsId           String   @id @default(uuid())
-  eventId               String   @unique
-  views                 Int      @default(0)
-  clicks                Int      @default(0)
-  ticketsSold           Int      @default(0)
-  revenue               Decimal  @default(0)
-  conversionRate        Float    @default(0)
-  lastUpdated           DateTime @default(now()) @updatedAt
-  clicksByDay           Json?
-  createdAt             DateTime @default(now())
-  deviceBreakdown       Json?
-  revenueByDay          Json?
-  salesByDay            Json?
-  trafficSources        Json?
-  viewsByDay            Json?
-  ticketTypesSalesByDay Json?
-  abandonedCheckouts    Int      @default(0)
-  followCount           Int      @default(0)
-  friendsLikedBy        Json?
-  likeCount             Int      @default(0)
-  locationData          Json?
-  shares                Int      @default(0)
-  uniqueVisitors        Int      @default(0)
-  event                 Event    @relation(fields: [eventId], references: [eventId])
-
-  @@index([revenue(sort: Desc)])
-  @@index([ticketsSold(sort: Desc)])
-  @@index([lastUpdated(sort: Desc)])
-  @@index([views(sort: Desc)])
-}
-
-model ListerAnalytics {
-  id               String   @id @default(uuid())
-  listerId         String   @unique
-  totalEvents      Int      @default(0)
-  totalRevenue     Float    @default(0)
-  totalTicketsSold Int      @default(0)
-  lastUpdated      DateTime @default(now()) @updatedAt
-  avgRating        Float    @default(0)
-  pastEvents       Int      @default(0)
-  upcomingEvents   Int      @default(0)
-  lister           Lister   @relation(fields: [listerId], references: [listerId])
-
-  @@index([totalRevenue(sort: Desc)])
-  @@index([totalTicketsSold(sort: Desc)])
-  @@index([avgRating(sort: Desc)])
-}
-
-model Refund {
-  refundId           String       @id @default(uuid())
-  ticketId           String
-  amount             Float
-  reason             String?
-  status             RefundStatus @default(PENDING)
-  processedBy        String?
-  processedAt        DateTime?
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-  additionalDetails  String?
-  adminNotes         String?
-  approvedAt         DateTime?
-  approvedBy         String?
-  eventId            String
-  gatewayFeeRefund   Float        @default(0)
-  lastAttemptAt      DateTime?
-  listerRefund       Float        @default(0)
-  platformFeeRefund  Float        @default(0)
-  processingAttempts Int          @default(0)
-  razorpayRefundId   String?
-  rejectedAt         DateTime?
-  rejectedBy         String?
-  rejectionReason    String?
-  requestedAt        DateTime     @default(now())
-  userId             String
-  Event              Event        @relation(fields: [eventId], references: [eventId])
-  ticket             Ticket       @relation(fields: [ticketId], references: [ticketId])
-  User               User         @relation(fields: [userId], references: [userId])
-}
-
-model Notification {
-  notificationId String    @id @default(uuid())
-  userId         String
-  title          String
-  message        String
-  link           String?
-  read           Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  readAt         DateTime?
-  sent           Boolean   @default(false)
-  sentAt         DateTime?
-  type           String?   @default("info")
-  user           User      @relation(fields: [userId], references: [userId])
-
-  @@index([userId, read, createdAt(sort: Desc)])
-  @@index([sent, createdAt])
-  @@index([userId, createdAt(sort: Desc)], map: "idx_notification_unread", where: raw("(read = false)"))
-  @@index([createdAt], map: "idx_notification_unsent", where: raw("(sent = false)"))
-}
-
-model PushSubscription {
-  subscriptionId String   @id @default(uuid())
-  userId         String
-  endpoint       String   @unique
-  p256dh         String
-  auth           String
-  userAgent      String?
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  lastUsedAt     DateTime @default(now())
-  user           User     @relation(fields: [userId], references: [userId])
-
-  @@index([userId, isActive])
-}
-
-model AuditLog {
-  logId      String   @id
-  userId     String?
-  userRole   Role?
-  action     String
-  entityType String
-  entityId   String?
-  changes    Json?
-  metadata   Json?
-  ipAddress  String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
-
-  @@index([action, createdAt(sort: Desc)])
-  @@index([entityType, entityId])
-  @@index([userId, createdAt(sort: Desc)])
-}
-
-model Booking {
-  bookingId             String            @id
-  userId                String
-  eventId               String
-  status                BookingStatus     @default(HELD)
-  subtotal              Float
-  discountCodeId        String?
-  discountAmount        Float             @default(0)
-  platformFee           Float             @default(0)
-  gatewayFee            Float             @default(0)
-  feesBornBy            BookingFeesBornBy @default(HOST)
-  total                 Float
-  holdExpiresAt         DateTime
-  qrCode                String?           @unique
-  city                  String?
-  state                 String?
-  userAgent             String?
-  referrer              String?
-  commonFieldResponses  Json              @default("[]")
-  registrationAnswers   Json              @default("{}")
-  approvalClaimToken    String?           @unique
-  approvalClaimExpiry   DateTime?
-  approvalRequestedAt   DateTime?
-  approvalDecidedAt     DateTime?
-  approvalDecidedBy     String?
-  approvalDeclineReason String?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime
-  DiscountCode          DiscountCode?     @relation(fields: [discountCodeId], references: [codeId])
-  Event                 Event             @relation(fields: [eventId], references: [eventId])
-  User                  User              @relation(fields: [userId], references: [userId])
-  EventFeedback         EventFeedback[]
-  Payment               Payment?
-  SlotBooking           SlotBooking[]
-  Ticket                Ticket[]
-
-  @@index([approvalClaimToken])
-  @@index([eventId, city])
-  @@index([eventId, createdAt(sort: Desc)])
-  @@index([eventId, status, approvalRequestedAt(sort: Desc)])
-  @@index([eventId, status, createdAt(sort: Desc)])
-  @@index([eventId, status])
-  @@index([holdExpiresAt, status])
-  @@index([status, holdExpiresAt])
-  @@index([userId, createdAt])
-  @@index([userId, status, createdAt(sort: Desc)])
-}
-
-model CRMContact {
-  contactId              String                   @id
-  listerId               String
-  name                   String
-  email                  String
-  phone                  String?
-  tags                   String[]
-  source                 String?
-  sourceId               String?
-  notes                  String?
-  customFields           Json?
-  isSubscribed           Boolean                  @default(true)
-  unsubscribedAt         DateTime?
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime
-  Lister                 Lister                   @relation(fields: [listerId], references: [listerId])
-  EmailCampaignRecipient EmailCampaignRecipient[]
-
-  @@unique([listerId, email])
-  @@index([email])
-  @@index([listerId, isSubscribed])
-  @@index([tags])
-}
-
-model CashHandover {
-  handoverId      String         @id
-  venueId         String
-  staffId         String
-  bookingIds      String[]
-  totalAmount     Float
-  status          HandoverStatus @default(PENDING)
-  submittedAt     DateTime       @default(now())
-  approvedAt      DateTime?
-  approvedBy      String?
-  rejectionReason String?
-
-  @@index([staffId, submittedAt(sort: Desc)])
-  @@index([venueId, status])
-}
-
-model Certificate {
-  certificateId  String    @id
-  eventId        String
-  ticketId       String
-  recipientName  String
-  recipientEmail String
-  certificateUrl String
-  templateId     String?
-  issuedAt       DateTime  @default(now())
-  downloadedAt   DateTime?
-
-  @@index([eventId])
-  @@index([recipientEmail])
-  @@index([ticketId])
-}
-
-model CertificateTemplate {
-  templateId  String   @id
-  listerId    String
-  name        String
-  description String?
-  templateUrl String
-  fields      Json
-  isDefault   Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime
-
-  @@index([listerId, isActive])
-}
-
-model CheckIn {
-  checkInId         String   @id
-  ticketId          String   @unique
-  eventId           String
-  checkedInBy       String
-  checkedInAt       DateTime @default(now())
-  checkInMethod     String   @default("QR_SCAN")
-  checkedInQuantity Int      @default(1)
-  location          String?
-  deviceInfo        String?
-  notes             String?
-  User              User     @relation(fields: [checkedInBy], references: [userId])
-  Event             Event    @relation(fields: [eventId], references: [eventId])
-  Ticket            Ticket   @relation(fields: [ticketId], references: [ticketId])
-
-  @@index([checkedInBy])
-  @@index([eventId, checkedInAt(sort: Desc)])
-}
-
-model EmailCampaign {
-  campaignId             String                   @id
-  listerId               String
-  name                   String
-  subject                String
-  content                String
-  status                 EmailCampaignStatus      @default(DRAFT)
-  scheduledAt            DateTime?
-  sentAt                 DateTime?
-  targetTags             String[]
-  eventId                String?
-  totalRecipients        Int                      @default(0)
-  sentCount              Int                      @default(0)
-  openedCount            Int                      @default(0)
-  clickedCount           Int                      @default(0)
-  failedCount            Int                      @default(0)
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime
-  Lister                 Lister                   @relation(fields: [listerId], references: [listerId])
-  EmailCampaignAnalytics EmailCampaignAnalytics?
-  EmailCampaignRecipient EmailCampaignRecipient[]
-
-  @@index([listerId, status])
-  @@index([scheduledAt])
-}
-
-model EmailCampaignAnalytics {
-  id            String        @id
-  campaignId    String        @unique
-  openRate      Float         @default(0)
-  clickRate     Float         @default(0)
-  bounceRate    Float         @default(0)
-  deviceStats   Json?
-  linkClicks    Json?
-  updatedAt     DateTime
-  EmailCampaign EmailCampaign @relation(fields: [campaignId], references: [campaignId])
-}
-
-model EmailCampaignRecipient {
-  id            String        @id
-  campaignId    String
-  contactId     String
-  sent          Boolean       @default(false)
-  sentAt        DateTime?
-  opened        Boolean       @default(false)
-  openedAt      DateTime?
-  clicked       Boolean       @default(false)
-  clickedAt     DateTime?
-  failed        Boolean       @default(false)
-  failureReason String?
-  EmailCampaign EmailCampaign @relation(fields: [campaignId], references: [campaignId])
-  CRMContact    CRMContact    @relation(fields: [contactId], references: [contactId])
-
-  @@unique([campaignId, contactId])
-  @@index([campaignId, opened])
-  @@index([campaignId, sent])
-}
-
-model EventBookmark {
-  id        String   @id
-  userId    String
-  eventId   String
-  createdAt DateTime @default(now())
-  Event     Event    @relation(fields: [eventId], references: [eventId])
-  User      User     @relation(fields: [userId], references: [userId])
-
-  @@unique([userId, eventId])
-  @@index([eventId, createdAt(sort: Desc)])
-  @@index([userId, createdAt(sort: Desc)])
-}
-
-model EventCohost {
-  cohostId     String     @id
-  eventId      String
-  userId       String
-  role         CohostRole
-  invitedEmail String?
-  invitedAt    DateTime   @default(now())
-  acceptedAt   DateTime?
-  addedAt      DateTime   @default(now())
-  Event        Event      @relation(fields: [eventId], references: [eventId])
-  User         User       @relation(fields: [userId], references: [userId])
-
-  @@unique([eventId, userId])
-  @@index([eventId, role])
-  @@index([userId])
-}
-
-model EventComms {
-  commsId        String            @id
-  eventId        String
-  listerId       String
-  audienceKind   CommsAudienceKind
-  ticketTypeIds  String[]          @default([])
-  subject        String
-  body           String
-  status         CommsStatus       @default(DRAFT)
-  sendAt         DateTime?
-  sentAt         DateTime?
-  recipientCount Int?
-  bullmqJobId    String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime
-  Event          Event             @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
-  Lister         Lister            @relation(fields: [listerId], references: [listerId])
-
-  @@index([eventId, status])
-  @@index([listerId])
-}
-
-model EventFeedback {
-  feedbackId String         @id
-  eventId    String
-  userId     String
-  bookingId  String?
-  rating     FeedbackRating
-  ratingInt  Int?
-  nps        Int?
-  comment    String?
-  body       String?
-  createdAt  DateTime       @default(now())
-  Booking    Booking?       @relation(fields: [bookingId], references: [bookingId])
-  Event      Event          @relation(fields: [eventId], references: [eventId])
-  User       User           @relation(fields: [userId], references: [userId])
-
-  @@unique([eventId, userId])
-  @@index([bookingId])
-  @@index([eventId, ratingInt])
-  @@index([eventId, rating])
-}
-
-model EventFollow {
-  id        String   @id
-  userId    String
-  eventId   String
-  createdAt DateTime @default(now())
-  Event     Event    @relation(fields: [eventId], references: [eventId])
-  User      User     @relation(fields: [userId], references: [userId])
-
-  @@unique([userId, eventId])
-  @@index([eventId, createdAt(sort: Desc)])
-  @@index([userId, createdAt(sort: Desc)])
-}
-
-model EventGallery {
-  galleryId  String   @id
-  eventId    String
-  imageUrl   String
-  caption    String?
-  orderIndex Int
-  createdAt  DateTime @default(now())
-  Event      Event    @relation(fields: [eventId], references: [eventId])
-
-  @@index([eventId, orderIndex])
-}
-
-model EventLike {
-  id        String   @id
-  userId    String
-  eventId   String
-  createdAt DateTime @default(now())
-  Event     Event    @relation(fields: [eventId], references: [eventId])
-  User      User     @relation(fields: [userId], references: [userId])
-
-  @@unique([userId, eventId])
-  @@index([eventId, createdAt(sort: Desc)])
-  @@index([userId, createdAt(sort: Desc)])
-}
-
-model EventOffering {
-  offeringId  String   @id
-  eventId     String
-  title       String
-  description String?
-  imageUrl    String?
-  orderIndex  Int
-  createdAt   DateTime @default(now())
-  Event       Event    @relation(fields: [eventId], references: [eventId])
-
-  @@index([eventId, orderIndex])
-}
-
-model EventReminderSetting {
-  eventId    String   @id
-  reminder7d Boolean  @default(true)
-  reminder1d Boolean  @default(true)
-  reminder3h Boolean  @default(true)
-  postEvent  Boolean  @default(false)
-  updatedAt  DateTime
-  Event      Event    @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
-}
-
-model EventReport {
-  reportId   String            @id
-  eventId    String
-  reporterId String
-  reason     EventReportReason
-  details    String?
-  status     EventReportStatus @default(OPEN)
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime
-  Event      Event             @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
-  User       User              @relation(fields: [reporterId], references: [userId])
-
-  @@unique([reporterId, eventId])
-  @@index([eventId, createdAt(sort: Desc)])
-  @@index([status, createdAt(sort: Desc)])
-}
-
-model EventSection {
-  sectionId  String   @id
-  eventId    String
-  title      String
-  content    String
-  orderIndex Int
-  isVisible  Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime
-  Event      Event    @relation(fields: [eventId], references: [eventId])
-
-  @@index([eventId, orderIndex])
-}
-
-model EventSyndication {
-  id         String              @id
-  eventId    String
-  platform   SyndicationPlatform
-  externalId String?
-  status     SyndicationStatus   @default(PENDING)
-  errorMsg   String?
-  syncedAt   DateTime?
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime
-  Event      Event               @relation(fields: [eventId], references: [eventId], onDelete: Cascade)
-
-  @@unique([eventId, platform])
-  @@index([status, createdAt])
-}
-
-model EventTimeSlot {
-  slotId    String   @id
-  eventId   String
-  startTime DateTime
-  endTime   DateTime
-  capacity  Int?
-  booked    Int      @default(0)
-  label     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  Event     Event    @relation(fields: [eventId], references: [eventId])
-
-  @@index([eventId, startTime])
-}
-
-model FeatureRequest {
-  requestId   String    @id
-  eventId     String
-  featureType String
-  status      String    @default("PENDING")
-  requestedAt DateTime  @default(now())
-  reviewedAt  DateTime?
-  reviewedBy  String?
-  reviewNote  String?
-
-  @@index([eventId, featureType])
-  @@index([status, requestedAt(sort: Desc)])
-}
-
-model InboxEmail {
-  id             String       @id
-  gmailMessageId String       @unique
-  gmailThreadId  String
-  listerId       String
-  eventId        String?
-  relationId     String?
-  fromEmail      String
-  fromName       String?
-  toEmail        String
-  subject        String
-  snippet        String
-  bodyHtml       String?
-  inReplyToId    String?
-  receivedAt     DateTime
-  isRead         Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-  Event          Event?       @relation(fields: [eventId], references: [eventId])
-  Lister         Lister       @relation(fields: [listerId], references: [listerId], onDelete: Cascade)
-  OpsRelation    OpsRelation? @relation(fields: [relationId], references: [relationId])
-
-  @@index([eventId, receivedAt(sort: Desc)])
-  @@index([gmailThreadId])
-  @@index([listerId, receivedAt(sort: Desc)])
-  @@index([relationId])
-}
-
-model Invitation {
-  inviteId       String       @id
-  eventId        String
-  invitedBy      String
-  recipientEmail String?
-  recipientPhone String?
-  recipientName  String?
-  status         InviteStatus @default(PENDING)
-  message        String?
-  sentAt         DateTime     @default(now())
-  respondedAt    DateTime?
-  Event          Event        @relation(fields: [eventId], references: [eventId])
-  User           User         @relation(fields: [invitedBy], references: [userId])
-
-  @@index([eventId, status])
-  @@index([invitedBy])
-  @@index([recipientEmail])
-}
-
-model ListerEmailAccount {
-  id           String        @id
-  listerId     String        @unique
-  provider     EmailProvider
-  email        String
-  name         String
-  accessToken  String
-  refreshToken String
-  tokenExpiry  DateTime
-  lastSyncedAt DateTime?
-  syncError    String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime
-  Lister       Lister        @relation(fields: [listerId], references: [listerId], onDelete: Cascade)
-
-  @@index([listerId])
-}
-
-model ListerFollow {
-  id        String   @id
-  userId    String
-  listerId  String
-  createdAt DateTime @default(now())
-  Lister    Lister   @relation(fields: [listerId], references: [listerId])
-  User      User     @relation(fields: [userId], references: [userId])
-
-  @@unique([userId, listerId])
-  @@index([listerId, createdAt(sort: Desc)])
-  @@index([userId, createdAt(sort: Desc)])
-}
-
-model ListerMeetingAccount {
-  id           String          @id
-  listerId     String
-  provider     MeetingProvider
-  accountEmail String
-  accessToken  String
-  refreshToken String
-  expiresAt    DateTime
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime
-  Lister       Lister          @relation(fields: [listerId], references: [listerId], onDelete: Cascade)
-
-  @@unique([listerId, provider])
-  @@index([listerId])
-}
-
-model ListerNotificationPreference {
-  userId                   String   @id
-  newBookingEmail          Boolean  @default(true)
-  refundRequestEmail       Boolean  @default(true)
-  payoutEmail              Boolean  @default(true)
-  salesEndingReminderEmail Boolean  @default(true)
-  weeklyDigestEmail        Boolean  @default(false)
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime
-  User                     User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
-}
-
-model ListerRazorpayConfig {
-  id                        String                    @id
-  listerId                  String                    @unique
-  encryptedKeyId            String
-  encryptedKeySecret        String
-  razorpayWebhookId         String?
-  encryptedWebhookSecret    String?
-  webhookRegistrationStatus WebhookRegistrationStatus @default(PENDING)
-  webhookRegistrationError  String?
-  isActive                  Boolean                   @default(false)
-  isVerified                Boolean                   @default(false)
-  verifiedAt                DateTime?
-  createdAt                 DateTime                  @default(now())
-  updatedAt                 DateTime
-  Lister                    Lister                    @relation(fields: [listerId], references: [listerId])
-  Payment                   Payment[]
-}
-
-model ListerRecommendation {
-  recommendationId   String   @id
-  targetListerId     String
-  recommendedEventId String
-  reason             String
-  score              Float
-  createdAt          DateTime @default(now())
-
-  @@index([targetListerId, score(sort: Desc)])
-}
-
-model ListerSubscription {
-  id                     String             @id
-  listerId               String             @unique
-  planId                 String
-  status                 SubscriptionStatus @default(CREATED)
-  razorpaySubscriptionId String             @unique
-  currentPeriodStart     DateTime?
-  currentPeriodEnd       DateTime?
-  ticketsUsedThisPeriod  Int                @default(0)
-  createdAt              DateTime           @default(now())
-  updatedAt              DateTime
-  Lister                 Lister             @relation(fields: [listerId], references: [listerId])
-  SubscriptionPlan       SubscriptionPlan   @relation(fields: [planId], references: [id])
-
-  @@index([listerId, status])
-  @@index([planId])
-  @@index([status, createdAt(sort: Desc)])
-}
-
-model MediaAsset {
-  assetId     String   @id
-  listerId    String
-  fileName    String
-  fileUrl     String
-  fileType    String
-  mimeType    String
-  fileSize    Int
-  dimensions  Json?
-  duration    Int?
-  tags        String[]
-  description String?
-  uploadedAt  DateTime @default(now())
-
-  @@index([listerId, fileType])
-  @@index([tags])
-}
-
-model MultiDayPass {
-  passId         String         @id
-  name           String
-  description    String?
-  price          Float
-  validDays      Int
-  includedEvents String[]
-  maxUses        Int?
-  soldCount      Int            @default(0)
-  validFrom      DateTime
-  validUntil     DateTime
-  isActive       Boolean        @default(true)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime
-  PassPurchase   PassPurchase[]
-
-  @@index([validFrom, validUntil])
-}
-
-model OAuthConnection {
-  connectionId String        @id
-  userId       String
-  provider     OAuthProvider
-  providerId   String
-  accessToken  String
-  refreshToken String?
-  expiresAt    DateTime?
-  scope        String[]
-  isActive     Boolean       @default(true)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime
-
-  @@unique([provider, providerId])
-  @@index([userId, provider])
-}
-
-model OpsChat {
-  chatId         String           @id
-  type           ChatType
-  eventId        String
-  relationId     String?
-  title          String?
-  unreadCount    Int              @default(0)
-  lastActivity   DateTime         @default(now())
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime
-  Event          Event            @relation(fields: [eventId], references: [eventId])
-  OpsRelation    OpsRelation?     @relation(fields: [relationId], references: [relationId])
-  OpsChatMessage OpsChatMessage[]
-
-  @@index([eventId, lastActivity(sort: Desc)])
-  @@index([relationId])
-  @@index([unreadCount])
-}
-
-model OpsChatMessage {
-  messageId   String    @id
-  chatId      String
-  userId      String
-  content     String
-  attachments String[]
-  isRead      Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  editedAt    DateTime?
-  OpsChat     OpsChat   @relation(fields: [chatId], references: [chatId])
-  User        User      @relation(fields: [userId], references: [userId])
-
-  @@index([chatId, createdAt(sort: Desc)])
-  @@index([isRead])
-  @@index([userId])
-}
-
-model OpsCriticalIssue {
-  issueId      String    @id
-  eventId      String
-  type         String
-  severity     String
-  title        String
-  description  String
-  taskId       String?
-  relationId   String?
-  moneyId      String?
-  isResolved   Boolean   @default(false)
-  resolvedAt   DateTime?
-  resolvedBy   String?
-  resolvedNote String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime
-
-  @@index([createdAt(sort: Desc)])
-  @@index([eventId, isResolved, severity])
-  @@index([type, isResolved])
-}
-
-model OpsEmail {
-  emailId        String       @id
-  eventId        String
-  recipientEmail String
-  recipientName  String?
-  relationId     String?
-  subject        String
-  body           String
-  templateId     String?
-  sentBy         String
-  sentAt         DateTime     @default(now())
-  openedAt       DateTime?
-  clickedAt      DateTime?
-  sent           Boolean      @default(false)
-  failed         Boolean      @default(false)
-  failureReason  String?
-  gmailMessageId String?
-  gmailThreadId  String?
-  createdAt      DateTime     @default(now())
-  Event          Event        @relation(fields: [eventId], references: [eventId])
-  OpsRelation    OpsRelation? @relation(fields: [relationId], references: [relationId])
-  User           User         @relation(fields: [sentBy], references: [userId])
-
-  @@index([eventId, sentAt(sort: Desc)])
-  @@index([recipientEmail])
-  @@index([relationId])
-  @@index([sentBy])
-}
-
-model OpsEmailTemplate {
-  templateId  String   @id
-  listerId    String
-  name        String
-  description String?
-  subject     String
-  body        String
-  category    String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime
-  Lister      Lister   @relation(fields: [listerId], references: [listerId])
-
-  @@index([isActive])
-  @@index([listerId, category])
-}
-
-model OpsEventSettings {
-  settingsId           String   @id
-  eventId              String   @unique
-  healthRules          Json?
-  automationRules      Json?
-  customFields         Json?
-  notificationSettings Json?
-  updatedAt            DateTime
-  createdAt            DateTime @default(now())
-  Event                Event    @relation(fields: [eventId], references: [eventId])
-}
-
-model OpsEventTeam {
-  id          String        @id
-  eventId     String
-  userId      String
-  role        EventTeamRole @default(MEMBER)
-  permissions String[]
-  addedAt     DateTime      @default(now())
-  addedBy     String?
-  Event       Event         @relation(fields: [eventId], references: [eventId])
-  User        User          @relation(fields: [userId], references: [userId])
-
-  @@unique([eventId, userId])
-  @@index([eventId, role])
-  @@index([userId])
-}
-
-model OpsInvite {
-  inviteId    String          @id
-  listerId    String
-  email       String
-  name        String?
-  role        OrgRole         @default(VIEWER)
-  permissions String[]
-  status      OpsInviteStatus @default(PENDING)
-  token       String          @unique
-  expiresAt   DateTime
-  invitedBy   String
-  acceptedBy  String?
-  acceptedAt  DateTime?
-  revokedAt   DateTime?
-  message     String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime
-  User        User            @relation(fields: [invitedBy], references: [userId])
-  Lister      Lister          @relation(fields: [listerId], references: [listerId], onDelete: Cascade)
-
-  @@index([email, status])
-  @@index([expiresAt, status])
-  @@index([invitedBy])
-  @@index([listerId, status])
-  @@index([token])
-}
-
-model OpsMoneyItem {
-  moneyId        String      @id
-  eventId        String
-  type           MoneyType
-  description    String
-  expectedAmount Decimal
-  receivedAmount Decimal     @default(0)
-  status         MoneyStatus @default(EXPECTED)
-  relationId     String?
-  expectedDate   DateTime?
-  receivedDate   DateTime?
-  notes          String?
-  tags           String[]
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime
-  Event          Event       @relation(fields: [eventId], references: [eventId])
-
-  @@index([eventId, type, status])
-  @@index([relationId])
-  @@index([status, expectedDate])
-}
-
-model OpsOrgMember {
-  memberId    String          @id
-  listerId    String
-  userId      String
-  role        OrgRole         @default(VIEWER)
-  status      OrgMemberStatus @default(ACTIVE)
-  invitedBy   String?
-  invitedAt   DateTime?
-  addedAt     DateTime        @default(now())
-  permissions String[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime
-  Lister      Lister          @relation(fields: [listerId], references: [listerId], onDelete: Cascade)
-  User        User            @relation(fields: [userId], references: [userId], onDelete: Cascade)
-
-  @@unique([listerId, userId])
-  @@index([listerId, role, status])
-  @@index([status])
-  @@index([userId, status])
-}
-
-model OpsRelation {
-  relationId                          String             @id
-  eventId                             String
-  type                                RelationType
-  name                                String
-  email                               String?
-  phone                               String?
-  contactEmail                        String?
-  contactPhone                        String?
-  linkedUserId                        String?
-  isExternalContact                   Boolean            @default(true)
-  linkedAt                            DateTime?
-  company                             String?
-  role                                String?
-  contactPerson                       String?
-  status                              RelationStatus     @default(PENDING)
-  priority                            RelationPriority   @default(MEDIUM)
-  ownerId                             String
-  nextAction                          String?
-  nextActionDate                      DateTime?
-  isWaiting                           Boolean            @default(false)
-  isDone                              Boolean            @default(false)
-  notes                               String?
-  customFields                        Json?
-  tags                                String[]
-  linkedTicketId                      String?
-  linkedVendorId                      String?
-  createdAt                           DateTime           @default(now())
-  updatedAt                           DateTime
-  InboxEmail                          InboxEmail[]
-  OpsChat                             OpsChat[]
-  OpsEmail                            OpsEmail[]
-  Event                               Event              @relation(fields: [eventId], references: [eventId])
-  User_OpsRelation_linkedUserIdToUser User?              @relation("OpsRelation_linkedUserIdToUser", fields: [linkedUserId], references: [userId])
-  User_OpsRelation_ownerIdToUser      User               @relation("OpsRelation_ownerIdToUser", fields: [ownerId], references: [userId])
-  OpsTask                             OpsTask[]
-  OpsTimelineEvent                    OpsTimelineEvent[]
-
-  @@index([contactEmail])
-  @@index([contactPhone])
-  @@index([eventId, priority])
-  @@index([eventId, type, status])
-  @@index([isDone, isWaiting])
-  @@index([isExternalContact])
-  @@index([linkedUserId])
-  @@index([nextActionDate])
-  @@index([ownerId])
-}
-
-model OpsTask {
-  taskId                        String       @id
-  eventId                       String
-  title                         String
-  description                   String?
-  status                        TaskStatus   @default(TODO)
-  priority                      TaskPriority @default(MEDIUM)
-  ownerId                       String
-  assigneeId                    String?
-  dueDate                       DateTime?
-  completedAt                   DateTime?
-  relationId                    String?
-  tags                          String[]
-  notes                         String?
-  createdAt                     DateTime     @default(now())
-  updatedAt                     DateTime
-  User_OpsTask_assigneeIdToUser User?        @relation("OpsTask_assigneeIdToUser", fields: [assigneeId], references: [userId])
-  Event                         Event        @relation(fields: [eventId], references: [eventId])
-  User_OpsTask_ownerIdToUser    User         @relation("OpsTask_ownerIdToUser", fields: [ownerId], references: [userId])
-  OpsRelation                   OpsRelation? @relation(fields: [relationId], references: [relationId])
-
-  @@index([assigneeId, status])
-  @@index([dueDate, status])
-  @@index([eventId, status, dueDate])
-  @@index([ownerId, status])
-  @@index([relationId])
-}
-
-model OpsTimelineEvent {
-  timelineId  String            @id
-  eventId     String
-  type        TimelineEventType
-  description String
-  metadata    Json?
-  userId      String?
-  relationId  String?
-  taskId      String?
-  moneyId     String?
-  emailId     String?
-  createdAt   DateTime          @default(now())
-  Event       Event             @relation(fields: [eventId], references: [eventId])
-  OpsRelation OpsRelation?      @relation(fields: [relationId], references: [relationId])
-  User        User?             @relation(fields: [userId], references: [userId])
-
-  @@index([eventId, createdAt(sort: Desc)])
-  @@index([relationId, createdAt(sort: Desc)])
-  @@index([type, createdAt(sort: Desc)])
-  @@index([userId])
-}
-
-model PageCopy {
-  id          String   @id
-  slug        String   @unique
-  intro       String
-  generatedAt DateTime @default(now())
-  updatedAt   DateTime
-
-  @@index([slug])
-}
-
-model PageFaq {
-  id          String   @id
-  slug        String   @unique
-  questions   Json
-  generatedAt DateTime @default(now())
-  updatedAt   DateTime
-
-  @@index([slug])
-}
-
-model Partnership {
-  partnershipId                                String   @id
-  eventId                                      String
-  partnerListerId                              String?
-  organizerListerId                            String
-  partnerName                                  String
-  partnerLogo                                  String?
-  partnerType                                  String
-  partnerUrl                                   String?
-  description                                  String?
-  createdAt                                    DateTime @default(now())
-  Event                                        Event    @relation(fields: [eventId], references: [eventId])
-  Lister_Partnership_organizerListerIdToLister Lister   @relation("Partnership_organizerListerIdToLister", fields: [organizerListerId], references: [listerId])
-  Lister_Partnership_partnerListerIdToLister   Lister?  @relation("Partnership_partnerListerIdToLister", fields: [partnerListerId], references: [listerId])
-
-  @@index([eventId])
-  @@index([organizerListerId])
-  @@index([partnerListerId])
-}
-
-model PassPurchase {
-  purchaseId   String              @id
-  passId       String
-  userId       String
-  qrCode       String              @unique
-  status       TicketPaymentStatus @default(PENDING)
-  usesCount    Int                 @default(0)
-  purchasedAt  DateTime            @default(now())
-  activatedAt  DateTime?
-  expiresAt    DateTime
-  MultiDayPass MultiDayPass        @relation(fields: [passId], references: [passId])
-
-  @@index([passId, status])
-  @@index([userId])
-}
-
-model Payment {
-  paymentId              String                @id
-  userId                 String
-  eventId                String
-  razorpayOrderId        String                @unique
-  razorpayPaymentId      String?               @unique
-  razorpaySignature      String?
-  amount                 Float
-  currency               String                @default("INR")
-  status                 PaymentStatus         @default(PENDING)
-  method                 String?
-  methodType             String?
-  platformFee            Float
-  listerRevenue          Float
-  receiptId              String                @unique
-  listerRazorpayConfigId String?
-  bookingId              String?               @unique
-  cardLast4              String?
-  cardNetwork            String?
-  cardType               String?
-  bank                   String?
-  wallet                 String?
-  vpa                    String?
-  email                  String?
-  contact                String?
-  description            String?
-  notes                  Json?
-  razorpayData           Json?
-  failureReason          String?
-  errorCode              String?
-  errorSource            String?
-  errorStep              String?
-  attempts               Int                   @default(1)
-  ipAddress              String?
-  userAgent              String?
-  initiatedAt            DateTime              @default(now())
-  completedAt            DateTime?
-  failedAt               DateTime?
-  createdAt              DateTime              @default(now())
-  updatedAt              DateTime
-  Booking                Booking?              @relation(fields: [bookingId], references: [bookingId])
-  Event                  Event                 @relation(fields: [eventId], references: [eventId])
-  ListerRazorpayConfig   ListerRazorpayConfig? @relation(fields: [listerRazorpayConfigId], references: [id])
-  User                   User                  @relation(fields: [userId], references: [userId])
-
-  @@index([createdAt(sort: Desc)])
-  @@index([eventId, status])
-  @@index([method, status])
-  @@index([razorpayOrderId])
-  @@index([status, createdAt(sort: Desc)])
-  @@index([userId, status, createdAt(sort: Desc)])
-}
-
-model ProcessedWebhookEvent {
-  eventId     String   @id
-  eventType   String
-  processedAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-
-  @@index([processedAt])
-}
-
-model PromotionalOffer {
-  offerId         String   @id
-  listerId        String
-  title           String
-  description     String
-  offerType       String
-  minPurchase     Float?
-  targetAudience  String[]
-  maxRedemptions  Int?
-  redemptionCount Int      @default(0)
-  validFrom       DateTime
-  validUntil      DateTime
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime
-
-  @@index([listerId, isActive])
-  @@index([validFrom, validUntil])
-}
-
-model RSVP {
-  rsvpId     String   @id
-  eventId    String
-  name       String
-  email      String
-  phone      String?
-  attending  Boolean  @default(true)
-  guestCount Int      @default(1)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime
-  Event      Event    @relation(fields: [eventId], references: [eventId])
-
-  @@index([email])
-  @@index([eventId, attending])
-}
-
-model RecurringSlotBooking {
-  recurringId String               @id
-  userId      String
-  resourceId  String
-  frequency   RecurringFrequency
-  dayOfWeek   Int
-  startTime   String
-  endTime     String
-  startDate   DateTime
-  endDate     DateTime?
-  occurrences Int?
-  status      RecurringStatus      @default(ACTIVE)
-  billingMode RecurringBillingMode @default(UPFRONT_ALL)
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime
-  SlotBooking SlotBooking[]
-
-  @@index([resourceId, dayOfWeek])
-  @@index([userId, status])
-}
-
-model Referral {
-  referralId    String    @id
-  referrerId    String
-  referredEmail String
-  referredPhone String?
-  referredName  String?
-  converted     Boolean   @default(false)
-  convertedAt   DateTime?
-  createdAt     DateTime  @default(now())
-  User          User      @relation(fields: [referrerId], references: [userId])
-
-  @@index([referredEmail])
-  @@index([referrerId])
-}
-
-model ResourceAddOn {
-  addOnId          String             @id
-  resourceId       String
-  name             String
-  description      String?
-  priceType        AddOnPriceType     @default(PER_BOOKING)
-  price            Float
-  inventory        Int?
-  isActive         Boolean            @default(true)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime
-  VenueResource    VenueResource      @relation(fields: [resourceId], references: [resourceId], onDelete: Cascade)
-  SlotBookingAddOn SlotBookingAddOn[]
-
-  @@index([resourceId, isActive])
-}
-
-model SlotBooking {
-  slotBookingId        String                @id
-  userId               String
-  venueId              String
-  resourceId           String
-  startTime            DateTime
-  endTime              DateTime
-  durationMinutes      Int
-  playerCount          Int
-  subtotal             Float
-  discountAmount       Float                 @default(0)
-  addOnTotal           Float                 @default(0)
-  platformFee          Float                 @default(0)
-  gstAmount            Float                 @default(0)
-  total                Float
-  discountCodeId       String?
-  status               SlotBookingStatus     @default(HELD)
-  holdExpiresAt        DateTime?
-  razorpayOrderId      String?               @unique
-  razorpayPaymentId    String?
-  refundAmount         Float?
-  razorpayRefundId     String?
-  refundedAt           DateTime?
-  source               BookingSource         @default(ONLINE_WEB)
-  createdByStaffId     String?
-  qrCode               String?               @unique
-  checkedIn            Boolean               @default(false)
-  checkedInAt          DateTime?
-  noShow               Boolean               @default(false)
-  walkInCustomerName   String?
-  walkInCustomerPhone  String?
-  cancelledAt          DateTime?
-  cancelledByUserId    String?
-  cancellationReason   String?
-  recurringBookingId   String?
-  splitPaymentId       String?
-  linkedBookingId      String?
-  userAgent            String?
-  referrer             String?
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime
-  VenueStaff           VenueStaff?           @relation(fields: [createdByStaffId], references: [staffId])
-  DiscountCode         DiscountCode?         @relation(fields: [discountCodeId], references: [codeId])
-  Booking              Booking?              @relation(fields: [linkedBookingId], references: [bookingId])
-  RecurringSlotBooking RecurringSlotBooking? @relation(fields: [recurringBookingId], references: [recurringId])
-  VenueResource        VenueResource         @relation(fields: [resourceId], references: [resourceId])
-  SplitPayment         SplitPayment?         @relation(fields: [splitPaymentId], references: [splitId])
-  User                 User                  @relation(fields: [userId], references: [userId])
-  Venue                Venue                 @relation(fields: [venueId], references: [venueId])
-  SlotBookingAddOn     SlotBookingAddOn[]
-  SlotBookingSlot      SlotBookingSlot[]
-
-  @@index([checkedIn, startTime])
-  @@index([holdExpiresAt, status])
-  @@index([linkedBookingId])
-  @@index([resourceId, startTime, status])
-  @@index([source, venueId, createdAt])
-  @@index([status, holdExpiresAt])
-  @@index([userId, status, createdAt(sort: Desc)])
-  @@index([venueId, startTime, status])
-}
-
-model SlotBookingAddOn {
-  id            String        @id
-  slotBookingId String
-  addOnId       String
-  quantity      Int           @default(1)
-  unitPrice     Float
-  totalPrice    Float
-  ResourceAddOn ResourceAddOn @relation(fields: [addOnId], references: [addOnId])
-  SlotBooking   SlotBooking   @relation(fields: [slotBookingId], references: [slotBookingId], onDelete: Cascade)
-
-  @@unique([slotBookingId, addOnId])
-  @@index([addOnId])
-}
-
-model SlotBookingSlot {
-  id            String      @id
-  slotBookingId String
-  slotId        String
-  SlotBooking   SlotBooking @relation(fields: [slotBookingId], references: [slotBookingId], onDelete: Cascade)
-  VenueSlot     VenueSlot   @relation(fields: [slotId], references: [slotId], onDelete: Cascade)
-
-  @@unique([slotBookingId, slotId])
-  @@index([slotId])
-}
-
-model SlotOverride {
-  overrideId    String           @id
-  resourceId    String
-  startTime     DateTime
-  endTime       DateTime
-  type          SlotOverrideType
-  reason        String?
-  customPrice   Float?
-  createdAt     DateTime         @default(now())
-  createdBy     String
-  VenueResource VenueResource    @relation(fields: [resourceId], references: [resourceId], onDelete: Cascade)
-
-  @@index([resourceId, startTime, endTime])
-}
-
-model SplitPayment {
-  splitId           String              @id
-  slotBookingId     String?             @unique
-  teamId            String?             @unique
-  initiatorUserId   String
-  totalAmount       Float
-  perPersonAmount   Float
-  playerCount       Int
-  status            SplitStatus         @default(PENDING)
-  confirmedCount    Int                 @default(1)
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime
-  SlotBooking       SlotBooking[]
-  SplitPaymentShare SplitPaymentShare[]
-
-  @@index([status])
-}
-
-model SplitPaymentShare {
-  shareId                String           @id
-  splitId                String
-  payerUserId            String?
-  payerName              String?
-  payerEmail             String?
-  payerPhone             String?
-  amount                 Float
-  status                 SplitShareStatus @default(UNPAID)
-  razorpayPaymentLinkId  String?
-  razorpayPaymentLinkUrl String?
-  paidAt                 DateTime?
-  createdAt              DateTime         @default(now())
-  updatedAt              DateTime
-  SplitPayment           SplitPayment     @relation(fields: [splitId], references: [splitId], onDelete: Cascade)
-
-  @@index([razorpayPaymentLinkId])
-  @@index([splitId, status])
-}
-
-model SubscriptionPlan {
-  id                 String               @id
-  name               SubscriptionPlanName @unique
-  displayName        String
-  monthlyPrice       Int
-  ticketQuota        Int?
-  razorpayPlanId     String               @unique
-  isActive           Boolean              @default(true)
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime
-  ListerSubscription ListerSubscription[]
-}
-
-model SystemSetting {
-  settingId   String   @id
-  key         String   @unique
-  value       String
-  dataType    String
-  description String?
-  updatedAt   DateTime
-  updatedBy   String?
-}
-
-model Team {
-  teamId           String       @id
-  eventId          String
-  teamName         String
-  teamLeaderId     String
-  status           TeamStatus   @default(INCOMPLETE)
-  currentSize      Int          @default(1)
-  targetSize       Int
-  joinCode         String?      @unique
-  ticketTypeId     String?
-  requiredSize     Int?
-  maxSize          Int?
-  mergedIntoTeamId String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime
-  Event            Event        @relation(fields: [eventId], references: [eventId])
-  TicketType       TicketType?  @relation(fields: [ticketTypeId], references: [ticketTypeId])
-  TeamMember       TeamMember[]
-  Ticket           Ticket[]
-
-  @@index([eventId, status])
-  @@index([eventId, ticketTypeId, status])
-  @@index([joinCode])
-  @@index([teamLeaderId])
-  @@index([ticketTypeId])
-}
-
-model TeamMember {
-  memberId     String   @id
-  teamId       String
-  userId       String
-  isLeader     Boolean  @default(false)
-  joinedAt     DateTime @default(now())
-  customFields Json?
-  ticketId     String?  @unique
-  Team         Team     @relation(fields: [teamId], references: [teamId])
-  Ticket       Ticket?  @relation(fields: [ticketId], references: [ticketId])
-  User         User     @relation(fields: [userId], references: [userId])
-
-  @@unique([teamId, userId])
-  @@index([teamId])
-  @@index([ticketId])
-  @@index([userId])
-}
-
-model TicketTypeGroup {
-  groupId     String       @id
-  eventId     String
-  name        String
-  description String?
-  orderIndex  Int
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime
-  TicketType  TicketType[]
-  Event       Event        @relation(fields: [eventId], references: [eventId])
-
-  @@index([eventId, orderIndex])
-}
-
-model TourEvent {
-  id         String     @id
-  tourId     String
-  eventId    String
-  orderIndex Int
-  TourSeries TourSeries @relation(fields: [tourId], references: [tourId])
-
-  @@unique([tourId, eventId])
-  @@index([tourId, orderIndex])
-}
-
-model TourSeries {
-  tourId      String      @id
-  listerId    String
-  title       String
-  description String?
-  banner      String?
-  startDate   DateTime
-  endDate     DateTime
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime
-  TourEvent   TourEvent[]
-
-  @@index([listerId, isActive])
-  @@index([startDate, endDate])
-}
-
-model UserRecommendation {
-  recommendationId String   @id
-  userId           String
-  eventId          String
-  score            Float
-  reason           String[]
-  viewed           Boolean  @default(false)
-  clicked          Boolean  @default(false)
-  converted        Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  expiresAt        DateTime
-
-  @@index([eventId])
-  @@index([expiresAt])
-  @@index([userId, score(sort: Desc)])
-}
-
-model Vendor {
-  vendorId    String   @id
-  listerId    String
-  name        String
-  category    String
-  contactName String?
-  email       String?
-  phone       String?
-  address     String?
-  website     String?
-  rating      Float?
-  notes       String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime
-  Lister      Lister   @relation(fields: [listerId], references: [listerId])
-
-  @@index([listerId, category])
-  @@index([listerId, isActive])
-}
-
-model Venue {
-  venueId            String            @id
-  name               String
-  description        String?
-  address            String
-  city               String
-  state              String?
-  country            String
-  zipCode            String?
-  latitude           Float?
-  longitude          Float?
-  capacity           Int?
-  venueType          VenueType?
-  facilities         String[]
-  images             String[]
-  bannerUrl          String?
-  contactName        String?
-  contactEmail       String?
-  contactPhone       String?
-  gstNumber          String?
-  panNumber          String?
-  cancellationPolicy Json?
-  isActive           Boolean           @default(true)
-  isBookable         Boolean           @default(false)
-  acceptsCashOnSite  Boolean           @default(false)
-  ownerListerId      String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime
-  wikidataQid        String?
-  SlotBooking        SlotBooking[]
-  Lister             Lister?           @relation(fields: [ownerListerId], references: [listerId])
-  VenueMembership    VenueMembership[]
-  VenueResource      VenueResource[]
-  VenueStaff         VenueStaff[]
-
-  @@index([city, isActive])
-  @@index([isBookable, city])
-  @@index([latitude, longitude])
-  @@index([ownerListerId])
-  @@index([venueType])
-}
-
-model VenueMembership {
-  membershipId                String                        @id
-  venueId                     String
-  name                        String
-  description                 String?
-  price                       Float
-  durationDays                Int
-  priceMultiplier             Float                         @default(0.85)
-  priorityBookingWindowDays   Int?
-  freeAddOns                  String[]                      @default([])
-  isActive                    Boolean                       @default(true)
-  createdAt                   DateTime                      @default(now())
-  updatedAt                   DateTime
-  Venue                       Venue                         @relation(fields: [venueId], references: [venueId], onDelete: Cascade)
-  VenueMembershipSubscription VenueMembershipSubscription[]
-
-  @@index([venueId, isActive])
-}
-
-model VenueMembershipSubscription {
-  subscriptionId  String           @id
-  membershipId    String
-  userId          String
-  startsAt        DateTime
-  expiresAt       DateTime
-  status          MembershipStatus @default(ACTIVE)
-  paymentId       String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime
-  VenueMembership VenueMembership  @relation(fields: [membershipId], references: [membershipId])
-
-  @@index([membershipId, status])
-  @@index([userId, status, expiresAt])
-}
-
-model VenueResource {
-  resourceId          String           @id
-  venueId             String
-  name                String
-  description         String?
-  activityType        ActivityType
-  orderIndex          Int              @default(0)
-  bookingModel        SlotBookingModel @default(EXCLUSIVE)
-  minPlayers          Int              @default(1)
-  maxPlayers          Int
-  baseRatePerHour     Float
-  pricingMatrix       Json
-  slotDurationMinutes Int              @default(60)
-  minBookingDuration  Int              @default(60)
-  maxBookingDuration  Int?
-  operatingHours      Json
-  advanceBookingDays  Int              @default(20)
-  minNoticeMinutes    Int              @default(60)
-  images              String[]
-  amenities           String[]
-  rules               String?
-  isActive            Boolean          @default(true)
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime
-  ResourceAddOn       ResourceAddOn[]
-  SlotBooking         SlotBooking[]
-  SlotOverride        SlotOverride[]
-  Venue               Venue            @relation(fields: [venueId], references: [venueId], onDelete: Cascade)
-  VenueSlot           VenueSlot[]
-
-  @@index([activityType])
-  @@index([venueId, isActive, orderIndex])
-}
-
-model VenueSlot {
-  slotId          String            @id
-  resourceId      String
-  startTime       DateTime
-  endTime         DateTime
-  status          SlotStatus        @default(AVAILABLE)
-  venueId         String
-  filledCount     Int               @default(0)
-  finalPrice      Float?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime
-  SlotBookingSlot SlotBookingSlot[]
-  VenueResource   VenueResource     @relation(fields: [resourceId], references: [resourceId], onDelete: Cascade)
-
-  @@unique([resourceId, startTime])
-  @@index([resourceId, startTime, endTime])
-  @@index([resourceId, startTime, status])
-  @@index([status, endTime])
-  @@index([venueId, startTime])
-}
-
-model VenueStaff {
-  staffId           String         @id
-  venueId           String
-  userId            String
-  role              VenueStaffRole @default(STAFF)
-  canCreateBookings Boolean        @default(true)
-  canCancelBookings Boolean        @default(false)
-  canApproveCash    Boolean        @default(false)
-  canBlockSlots     Boolean        @default(false)
-  canEditPricing    Boolean        @default(false)
-  invitedAt         DateTime       @default(now())
-  acceptedAt        DateTime?
-  isActive          Boolean        @default(true)
-  SlotBooking       SlotBooking[]
-  User              User           @relation(fields: [userId], references: [userId])
-  Venue             Venue          @relation(fields: [venueId], references: [venueId], onDelete: Cascade)
-
-  @@unique([venueId, userId])
-  @@index([userId, isActive])
-}
-
-model WaitlistEntry {
-  waitlistId  String         @id
-  eventId     String
-  userId      String?
-  email       String?
-  name        String?
-  status      WaitlistStatus @default(WAITING)
-  position    Int
-  notifiedAt  DateTime?
-  expiresAt   DateTime?
-  claimToken  String?        @unique
-  claimExpiry DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime
-  Event       Event          @relation(fields: [eventId], references: [eventId])
-  User        User?          @relation(fields: [userId], references: [userId])
-
-  @@unique([eventId, userId])
-  @@index([claimToken])
-  @@index([eventId, email])
-  @@index([eventId, status, position])
-  @@index([userId, status])
-}
-
-model Webhook {
-  webhookId       String         @id
-  listerId        String
-  url             String
-  events          WebhookEvent[]
-  secret          String
-  isActive        Boolean        @default(true)
-  lastTriggeredAt DateTime?
-  failureCount    Int            @default(0)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime
-  WebhookLog      WebhookLog[]
-
-  @@index([listerId, isActive])
-}
-
-model WebhookLog {
-  logId       String       @id
-  webhookId   String
-  event       WebhookEvent
-  payload     Json
-  statusCode  Int?
-  response    String?
-  success     Boolean
-  attemptedAt DateTime     @default(now())
-  Webhook     Webhook      @relation(fields: [webhookId], references: [webhookId])
-
-  @@index([success, attemptedAt(sort: Desc)])
-  @@index([webhookId, attemptedAt(sort: Desc)])
+    provider = "postgresql"
 }
 
 enum Role {
-  USER
-  LISTER
-  ADMIN
-  SUPER_ADMIN
+    USER
+    LISTER
+    ADMIN
+    SUPER_ADMIN
 }
 
 enum Status {
-  NOT_VIEWED
-  PENDING
-  APPROVED
-  REJECTED
-  CANCELLATION_REQUESTED
-  CANCELLED
-  POSTPONED
+    NOT_VIEWED
+    PENDING
+    APPROVED
+    REJECTED
+    CANCELLATION_REQUESTED
+    CANCELLED
 }
 
 enum TicketPaymentStatus {
-  PENDING
-  SUCCESS
-  FAILED
-  REFUNDED
+    PENDING
+    SUCCESS
+    FAILED
 }
 
 enum RefundStatus {
-  PENDING
-  COMPLETED
-  REJECTED
+    PENDING
+    COMPLETED
+    REJECTED
 }
 
 enum ListerStatus {
-  PENDING
-  COMPLETED
-  REJECTED
+    PENDING
+    COMPLETED
+    REJECTED
+}
+
+model User {
+    userId   String  @id @default(uuid())
+    phone    String? @unique
+    email    String? @unique
+    password String?
+    name     String?
+    avatar   String?
+
+    isActive        Boolean @default(true)
+    phoneVerified   Boolean @default(false)
+    emailVerified   Boolean @default(false)
+    profileComplete Boolean @default(false)
+
+    role Role @default(USER)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Relations
+    Lister           Lister?
+    Ticket           Ticket[]
+    TicketScanLog    TicketScanLog[]
+    Refund           Refund[]
+    Notification     Notification[]
+    PushSubscription PushSubscription[]
+
+    // OPTIMIZED INDEXES
+    @@index([role, isActive]) // Composite covers both individual queries
+    @@index([createdAt(sort: Desc)]) // DESC for recent users
+    @@index([email, isActive]) // Login queries
+    @@index([phone, isActive]) // Phone login queries
+}
+
+model Lister {
+    listerId String @id @default(uuid())
+    userId   String @unique
+    user     User   @relation(fields: [userId], references: [userId])
+
+    companyName   String?
+    companyLogo   String?
+    bio           String?
+    InstagramLink String?
+    FacebookLink  String?
+    XLink         String?
+    website       String?
+
+    contactPhone String?
+    contactEmail String?
+
+    createdAt DateTime     @default(now())
+    updatedAt DateTime     @updatedAt
+    status    ListerStatus @default(PENDING)
+
+    // Relations
+    Event           Event[]
+    TicketChecker   TicketChecker[]
+    ListerAnalytics ListerAnalytics?
+    BankDetails     BankDetails?
+    Account         Account?
+    Payout          Payout[]
+
+    // OPTIMIZED INDEXES - userId already indexed via @unique
+    @@index([status, createdAt(sort: Desc)]) // Combined for pending approvals
+}
+
+model BankDetails {
+    bankDetailsId String @id @default(uuid())
+    listerId      String @unique // Already indexed via @unique
+    lister        Lister @relation(fields: [listerId], references: [listerId])
+
+    bankName          String
+    accountNumber     String
+    ifscCode          String
+    accountHolderName String
+    branchCode        String?
+    createdAt         DateTime @default(now())
+    updatedAt         DateTime @updatedAt
+}
+
+model Account {
+    accountId String @id @default(uuid())
+    listerId  String @unique // Already indexed via @unique
+    lister    Lister @relation(fields: [listerId], references: [listerId])
+
+    balance     Decimal       @default("0")
+    LedgerEntry LedgerEntry[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // OPTIMIZED INDEX
+    @@index([balance]) // For finding accounts by balance thresholds
 }
 
 enum PayoutStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-  CANCELLED
+    PENDING
+    PROCESSING
+    COMPLETED
+    FAILED
+    CANCELLED
 }
 
 enum PayoutType {
-  FULL
-  PARTIAL
+    FULL
+    PARTIAL
+}
+
+model Payout {
+    payoutId String @id @default(uuid())
+    listerId String
+    lister   Lister @relation(fields: [listerId], references: [listerId])
+
+    eventId String?
+    event   Event?  @relation(fields: [eventId], references: [eventId])
+
+    type           PayoutType   @default(FULL)
+    amount         Decimal
+    approvedAmount Decimal?
+    status         PayoutStatus @default(PENDING)
+
+    remark String?
+
+    requestedAt DateTime  @default(now())
+    approvedAt  DateTime?
+    paidAt      DateTime?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // OPTIMIZED INDEXES
+    @@index([status, requestedAt(sort: Desc)]) // Admin dashboard - pending payouts
+    @@index([listerId, status]) // Lister's payout history
+    @@index([eventId, status]) // Event-specific payouts
+}
+
+model LedgerEntry {
+    id        String  @id @default(uuid())
+    accountId String
+    account   Account @relation(fields: [accountId], references: [accountId])
+
+    entryType    String
+    amount       Decimal
+    balanceAfter Decimal
+
+    referenceType String?
+    referenceId   String?
+
+    createdAt DateTime @default(now())
+
+    // OPTIMIZED INDEXES
+    @@index([accountId, createdAt(sort: Desc)]) // Account statement with DESC
+    @@index([referenceType, referenceId]) // Lookup by reference
+}
+
+model Event {
+    eventId  String @id @default(uuid())
+    listerId String
+    lister   Lister @relation(fields: [listerId], references: [listerId])
+
+    title             String
+    description       String
+    banner_horizontal String
+    banner_vertical   String
+    banner_square     String
+    date              DateTime
+    time              DateTime
+    location          String
+    longitude         Float?
+    latitude          Float?
+    capacity          Int?
+    tags              String[]
+    chips             String[]
+    restrictions      String?
+    canBuy            Boolean  @default(true)
+
+    status            Status  @default(NOT_VIEWED)
+    rejection_comment String?
+    cancellation_note String?
+
+    samplePoster       String?
+    socialMediaGraphic String?
+    eventFormat        String?
+    requestedVenue     String?
+    termsConditions    String?
+    rulesRegulations   String?
+    policies           String?
+    dutyLeavesDetails  String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    ticketCounter        Int @default(0)
+    availableMailUpdates Int @default(2)
+
+    Payout Payout[]
+
+    // Relations
+    TicketType     TicketType[]
+    CustomField    CustomField[]
+    TicketChecker  TicketChecker[]
+    Ticket         Ticket[]
+    DiscountCode   DiscountCode[]
+    TicketScanLog  TicketScanLog[]
+    EventAnalytics EventAnalytics?
+    Refund         Refund[]
+    // Spatial index for location queries - use raw SQL for better performance:
+    // CREATE INDEX idx_event_location ON "Event" USING GIST (ll_to_earth(latitude, longitude));
+
+    // OPTIMIZED INDEXES - Most critical for performance
+    @@index([status, date]) // Primary query: approved upcoming events
+    @@index([listerId, status, createdAt(sort: Desc)]) // Lister dashboard
+    @@index([date, status]) // Date filtering with status
+    @@index([tags]) // Tag-based search (GIN index in PostgreSQL)
+}
+
+model CustomField {
+    fieldId               String                  @id @default(uuid())
+    eventId               String
+    event                 Event                   @relation(fields: [eventId], references: [eventId])
+    ticketTypeId          String?
+    ticketType            TicketType?             @relation(fields: [ticketTypeId], references: [ticketTypeId])
+    label                 String
+    fieldType             String
+    required              Boolean                 @default(false)
+    options               String?
+    AttendeeFieldResponse AttendeeFieldResponse[]
+
+    // OPTIMIZED INDEXES
+    @@index([eventId, required]) // Get all required fields for event
+    @@index([ticketTypeId]) // Fields by ticket type
+}
+
+model TicketType {
+    ticketTypeId String @id @default(uuid())
+    eventId      String
+    event        Event  @relation(fields: [eventId], references: [eventId])
+
+    name            String
+    description     String?
+    price           Float
+    discountedPrice Float?
+    discountReason  String?
+    quantity        Int
+    salesCutoff     DateTime?
+
+    platformfee     Int   @default(0)
+    platformfeePerc Float @default(0.05)
+
+    ticketPrefix String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    soldCount Int @default(0)
+
+    // Relations
+    Ticket      Ticket[]
+    CustomField CustomField[]
+
+    // OPTIMIZED INDEXES
+    @@index([eventId, price]) // Event tickets sorted by price
+    @@index([salesCutoff]) // Expiring tickets (WHERE salesCutoff IS NOT NULL)
+}
+
+model Ticket {
+    ticketId     String     @id @default(uuid())
+    ticketTypeId String
+    ticketType   TicketType @relation(fields: [ticketTypeId], references: [ticketTypeId])
+
+    userId String
+    user   User   @relation(fields: [userId], references: [userId])
+
+    status     TicketPaymentStatus @default(PENDING)
+    quantity   Int
+    totalPrice Float
+    qrCode     String              @unique // Already indexed via @unique
+    checkedIn  Boolean             @default(false)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Relations
+    AttendeeFieldResponse AttendeeFieldResponse[]
+    Event                 Event?                  @relation(fields: [eventEventId], references: [eventId])
+    eventEventId          String?
+    TicketScanLog         TicketScanLog[]
+    Refund                Refund[]
+
+    // OPTIMIZED INDEXES - Critical for ticket operations
+    @@index([userId, status, createdAt(sort: Desc)]) // User's ticket history
+    @@index([eventEventId, status]) // Event tickets by status
+    @@index([eventEventId, checkedIn]) // Check-in tracking
+    @@index([ticketTypeId, status]) // Ticket type sales analytics
+    @@index([status, createdAt(sort: Desc)]) // Recent purchases by status
+}
+
+model AttendeeFieldResponse {
+    responseId String      @id @default(uuid())
+    ticketId   String
+    ticket     Ticket      @relation(fields: [ticketId], references: [ticketId])
+    fieldId    String
+    field      CustomField @relation(fields: [fieldId], references: [fieldId])
+    value      String
+    createdAt  DateTime    @default(now())
+
+    // OPTIMIZED INDEXES
+    @@index([ticketId]) // Get all responses for a ticket
+    @@index([fieldId, value]) // Analytics on specific field values
+}
+
+model TicketChecker {
+    checkerId String @id @default(uuid())
+
+    listerId String
+    lister   Lister @relation(fields: [listerId], references: [listerId])
+
+    eventId String?
+    event   Event?  @relation(fields: [eventId], references: [eventId])
+
+    username String
+    password String
+
+    active     Boolean   @default(true)
+    deprecated Boolean   @default(false)
+    expiresAt  DateTime?
+    revokedAt  DateTime?
+
+    createdAt     DateTime        @default(now())
+    createdBy     String?
+    TicketScanLog TicketScanLog[]
+
+    @@unique([eventId, username])
+    // OPTIMIZED INDEXES
+    @@index([listerId, active]) // Lister's active checkers
+    @@index([eventId, active]) // Event's active checkers
+    @@index([expiresAt]) // WHERE expiresAt IS NOT NULL AND expiresAt < NOW()
+}
+
+model TicketScanLog {
+    scanId   String @id @default(uuid())
+    ticketId String
+    ticket   Ticket @relation(fields: [ticketId], references: [ticketId])
+
+    checkerId String?
+    checker   TicketChecker? @relation(fields: [checkerId], references: [checkerId])
+
+    performedByUserId String?
+    performedByUser   User?   @relation(fields: [performedByUserId], references: [userId])
+
+    scannedAt DateTime @default(now())
+    action    String
+    success   Boolean
+    note      String?
+
+    deviceInfo   String?
+    ipAddress    String?
+    Event        Event?  @relation(fields: [eventEventId], references: [eventId])
+    eventEventId String?
+
+    // OPTIMIZED INDEXES - Critical for audit trails
+    @@index([eventEventId, scannedAt(sort: Desc)]) // Event scan history
+    @@index([ticketId, scannedAt(sort: Desc)]) // Ticket scan history
+    @@index([checkerId, scannedAt(sort: Desc)]) // Checker activity
+    @@index([success, scannedAt(sort: Desc)]) // Failed scans
+}
+
+model DiscountCode {
+    codeId      String  @id @default(uuid())
+    eventId     String
+    event       Event   @relation(fields: [eventId], references: [eventId])
+    code        String  @unique // Already indexed via @unique
+    description String?
+
+    discountType DiscountType
+    discountPct  Float?
+    discountAmt  Float?
+    maxDiscount  Float?
+    minOrderAmt  Float?
+
+    maxUses   Int?
+    usesCount Int       @default(0)
+    validFrom DateTime?
+    validTo   DateTime?
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+
+    // OPTIMIZED INDEXES
+    @@index([eventId, validFrom, validTo]) // Active codes for event
+    @@index([code, eventId]) // Code lookup with event context
 }
 
 enum DiscountType {
-  PERCENTAGE
-  FLAT
+    PERCENTAGE
+    FLAT
 }
 
-enum ActivityType {
-  FOOTBALL
-  BADMINTON
-  CRICKET_BOX
-  TENNIS
-  TABLE_TENNIS
-  BASKETBALL
-  GAMING_PC
-  GAMING_CONSOLE
-  VR
-  BOWLING
-  ESCAPE_ROOM
-  POOL_BILLIARDS
-  PICKLEBALL
-  SWIMMING
-  OTHER
+model EventAnalytics {
+    analyticsId String @id @default(uuid())
+    eventId     String @unique // Already indexed via @unique
+    event       Event  @relation(fields: [eventId], references: [eventId])
+
+    views          Int     @default(0)
+    clicks         Int     @default(0)
+    ticketsSold    Int     @default(0)
+    revenue        Decimal @default("0")
+    conversionRate Float   @default(0)
+
+    lastUpdated DateTime @default(now()) @updatedAt
+
+    viewsByDay            Json?
+    clicksByDay           Json?
+    salesByDay            Json?
+    revenueByDay          Json?
+    ticketTypesSalesByDay Json?
+
+    trafficSources  Json?
+    deviceBreakdown Json?
+
+    createdAt DateTime @default(now())
+
+    // OPTIMIZED INDEXES
+    @@index([revenue(sort: Desc)]) // Top revenue events
+    @@index([ticketsSold(sort: Desc)]) // Most popular events
+    @@index([lastUpdated(sort: Desc)]) // Recently updated
 }
 
-enum AddOnPriceType {
-  PER_BOOKING
-  PER_PLAYER
-  PER_HOUR
+model ListerAnalytics {
+    id       String @id @default(uuid())
+    listerId String @unique // Already indexed via @unique
+    lister   Lister @relation(fields: [listerId], references: [listerId])
+
+    totalEvents      Int   @default(0)
+    totalRevenue     Float @default(0)
+    totalTicketsSold Int   @default(0)
+
+    lastUpdated DateTime @default(now()) @updatedAt
+
+    // OPTIMIZED INDEXES
+    @@index([totalRevenue(sort: Desc)]) // Leaderboard
+    @@index([totalTicketsSold(sort: Desc)]) // Leaderboard
 }
 
-enum BookingFeesBornBy {
-  HOST
-  USER
-  MIXED
+model Refund {
+    refundId String @id @default(uuid())
+    ticketId String
+    ticket   Ticket @relation(fields: [ticketId], references: [ticketId])
+
+    amount      Float
+    reason      String?
+    status      RefundStatus @default(PENDING)
+    processedBy String?
+    processedAt DateTime?
+
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+    User         User?    @relation(fields: [userUserId], references: [userId])
+    userUserId   String?
+    Event        Event?   @relation(fields: [eventEventId], references: [eventId])
+    eventEventId String?
+
+    // OPTIMIZED INDEXES
+    @@index([status, createdAt(sort: Desc)]) // Admin: pending refunds
+    @@index([eventEventId, status]) // Event refunds
+    @@index([userUserId, createdAt(sort: Desc)]) // User refund history
+    @@index([ticketId]) // Ticket refunds
 }
 
-enum BookingSource {
-  ONLINE_WEB
-  ONLINE_APP
-  ONLINE_CASH_ONSITE
-  WALK_IN_CASH
-  WALK_IN_UPI
-  STAFF_CREATED
+model Notification {
+    notificationId String    @id @default(uuid())
+    userId         String
+    user           User      @relation(fields: [userId], references: [userId])
+    title          String
+    message        String
+    metadata       Json?
+    link           String?
+    type           String?   @default("info")
+    read           Boolean   @default(false)
+    sent           Boolean   @default(false)
+    createdAt      DateTime  @default(now())
+    readAt         DateTime?
+    sentAt         DateTime?
+
+    // OPTIMIZED INDEXES
+    @@index([userId, read, createdAt(sort: Desc)]) // User's unread notifications
+    @@index([sent, createdAt]) // Unsent notifications queue
 }
 
-enum BookingStatus {
-  HELD
-  PAID
-  EXPIRED
-  CANCELLED
-  FAILED
-  PENDING_APPROVAL
-  APPROVED_AWAITING_PAYMENT
-}
+model PushSubscription {
+    subscriptionId String @id @default(uuid())
+    userId         String
+    user           User   @relation(fields: [userId], references: [userId])
 
-enum ChatType {
-  EVENT_LEVEL
-  RELATION_LEVEL
-}
+    endpoint String @unique // Already indexed via @unique
+    p256dh   String
+    auth     String
 
-enum CohostRole {
-  MANAGER
-  CHECKIN_STAFF
-}
+    userAgent  String?
+    isActive   Boolean  @default(true)
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+    lastUsedAt DateTime @default(now())
 
-enum CommsAudienceKind {
-  ALL_BUYERS
-  BY_TICKET_TYPE
-  CHECKED_IN
-  NOT_CHECKED_IN
-  ABANDONED_CHECKOUTS
-}
-
-enum CommsStatus {
-  DRAFT
-  SCHEDULED
-  SENDING
-  SENT
-  CANCELLED
-}
-
-enum DiscountKind {
-  PROMO
-  AFFILIATE
-  SHARE_TO_UNLOCK
-}
-
-enum EmailCampaignStatus {
-  DRAFT
-  SCHEDULED
-  SENDING
-  SENT
-  FAILED
-}
-
-enum EmailProvider {
-  GMAIL
-  OUTLOOK
-}
-
-enum EventCategory {
-  SPORTS
-  MUSIC
-  CONFERENCE
-  WORKSHOP
-  EXHIBITION
-  FESTIVAL
-  NETWORKING
-  CULTURAL
-  EDUCATIONAL
-  ENTERTAINMENT
-  OTHER
-}
-
-enum EventHealthStatus {
-  GOOD
-  AT_RISK
-  CRITICAL
-}
-
-enum EventReportReason {
-  SPAM
-  SCAM
-  INAPPROPRIATE
-  MISLEADING
-  COPYRIGHT
-  OTHER
-}
-
-enum EventReportStatus {
-  OPEN
-  TRIAGED
-  RESOLVED
-  DISMISSED
-}
-
-enum EventTeamRole {
-  OWNER
-  ADMIN
-  MANAGER
-  MEMBER
-  VIEWER
-}
-
-enum EventType {
-  SOLO
-  TEAM
-  ONLINE
-  OFFLINE
-  HYBRID
-}
-
-enum EventVisibility {
-  PUBLIC
-  PRIVATE
-  UNLISTED
-}
-
-enum FeeBornBy {
-  HOST
-  USER
-}
-
-enum FeedbackRating {
-  EXCELLENT
-  GOOD
-  AVERAGE
-  POOR
-  TERRIBLE
-}
-
-enum HandoverStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-enum InviteStatus {
-  PENDING
-  ACCEPTED
-  DECLINED
-  CANCELLED
-}
-
-enum MeetingProvider {
-  GOOGLE_MEET
-  ZOOM
-}
-
-enum MembershipStatus {
-  ACTIVE
-  EXPIRED
-  CANCELLED
-}
-
-enum MoneyStatus {
-  EXPECTED
-  RECEIVED
-  AT_RISK
-  CANCELLED
-}
-
-enum MoneyType {
-  INCOME_TICKET
-  INCOME_SPONSOR
-  INCOME_OTHER
-  EXPENSE_VENDOR
-  EXPENSE_OPS
-  EXPENSE_OTHER
-}
-
-enum OAuthProvider {
-  GOOGLE
-  FACEBOOK
-  APPLE
-  MICROSOFT
-}
-
-enum OpsInviteStatus {
-  PENDING
-  ACCEPTED
-  EXPIRED
-  REVOKED
-}
-
-enum OrgMemberStatus {
-  ACTIVE
-  SUSPENDED
-}
-
-enum OrgRole {
-  OPERATIONS_HEAD
-  MANAGER
-  STAFF
-  VIEWER
-}
-
-enum PaymentStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-  REFUNDED
-  CANCELLED
-}
-
-enum RecurringBillingMode {
-  UPFRONT_ALL
-  PER_INSTANCE
-}
-
-enum RecurringFrequency {
-  WEEKLY
-  FORTNIGHTLY
-  MONTHLY
-}
-
-enum RecurringStatus {
-  ACTIVE
-  PAUSED
-  CANCELLED
-  COMPLETED
-}
-
-enum RelationPriority {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
-enum RelationStatus {
-  PENDING
-  CONFIRMED
-  IN_PROGRESS
-  WAITING
-  COMPLETED
-  CANCELLED
-}
-
-enum RelationType {
-  ATTENDEE
-  ARTIST
-  SPONSOR
-  VENDOR
-  INTERNAL_TEAM
-  OTHER
-}
-
-enum SlotBookingModel {
-  EXCLUSIVE
-  CAPACITY_FILL
-}
-
-enum SlotBookingStatus {
-  HELD
-  CONFIRMED
-  CANCELLED
-  COMPLETED
-  NO_SHOW
-  REFUNDED
-  PENDING_WALK_IN_APPROVAL
-}
-
-enum SlotOverrideType {
-  BLOCK
-  CUSTOM_PRICE
-  HOLIDAY_HOURS
-}
-
-enum SlotStatus {
-  AVAILABLE
-  HELD
-  BOOKED
-  CANCELLED
-  COMPLETED
-  BLOCKED
-}
-
-enum SplitShareStatus {
-  UNPAID
-  PAID
-  EXPIRED
-  REFUNDED
-}
-
-enum SplitStatus {
-  PENDING
-  CONFIRMED
-  FAILED
-  SETTLED
-}
-
-enum SubscriptionPlanName {
-  BASIC
-  PRO
-  MAX
-}
-
-enum SubscriptionStatus {
-  CREATED
-  AUTHENTICATED
-  ACTIVE
-  HALTED
-  CANCELLED
-  EXPIRED
-  PENDING
-}
-
-enum SyndicationPlatform {
-  ALLEVENTS
-  EVENTBRITE
-}
-
-enum SyndicationStatus {
-  PENDING
-  SUCCESS
-  FAILED
-  SKIPPED
-}
-
-enum TaskPriority {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
-enum TaskStatus {
-  TODO
-  IN_PROGRESS
-  WAITING
-  DONE
-  CANCELLED
-}
-
-enum TeamStatus {
-  INCOMPLETE
-  COMPLETE
-  MERGED
-  PENDING
-  CONFIRMED
-  CANCELLED
-}
-
-enum TicketTypeVisibility {
-  PUBLIC
-  HIDDEN
-  PRIVATE
-}
-
-enum TimelineEventType {
-  STATUS_CHANGE
-  TASK_CREATED
-  TASK_COMPLETED
-  CHAT_MESSAGE
-  EMAIL_SENT
-  MONEY_UPDATE
-  RELATION_ADDED
-  RELATION_UPDATED
-  NOTE_ADDED
-}
-
-enum VenueStaffRole {
-  MANAGER
-  STAFF
-  CHECK_IN
-}
-
-enum VenueType {
-  TURF
-  GAMING_ZONE
-  COURT_COMPLEX
-  ESCAPE_ROOM
-  MULTI_ACTIVITY
-  OTHER
-}
-
-enum WaitlistStatus {
-  WAITING
-  NOTIFIED
-  CONVERTED
-  OFFERED
-  CLAIMED
-  EXPIRED
-  REMOVED
-}
-
-enum WebhookEvent {
-  TICKET_PURCHASED
-  TICKET_CHECKED_IN
-  EVENT_PUBLISHED
-  EVENT_CANCELLED
-  REFUND_PROCESSED
-  PAYMENT_RECEIVED
-}
-
-enum WebhookRegistrationStatus {
-  PENDING
-  SUCCESS
-  FAILED
+    // OPTIMIZED INDEXES
+    @@index([userId, isActive]) // User's active subscriptions
 }
