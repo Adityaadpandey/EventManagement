@@ -19,8 +19,12 @@ RUN printf '%s\n' \
 
 RUN cat ~/.npmrc
 
-RUN pnpm install && pnpm run build
-
+RUN pnpm install \
+  --allow-build=@datadog/pprof \
+  --allow-build=@newrelic/fn-inspect \
+  --allow-build=@newrelic/native-metrics \
+  --allow-build=protobufjs \
+  && pnpm run build
 WORKDIR /workspace
 
 COPY servers/user-server/package*.json ./servers/user-server/
@@ -29,7 +33,12 @@ COPY servers/user-server/ ./servers/user-server/
 
 WORKDIR /workspace/servers/user-server
 
-RUN pnpm install
+RUN pnpm install \
+  --allow-build=@datadog/pprof \
+  --allow-build=@newrelic/fn-inspect \
+  --allow-build=@newrelic/native-metrics \
+  --allow-build=protobufjs
+
 RUN npx prisma generate
 RUN pnpm run build
 
@@ -62,7 +71,11 @@ ENV BUILD_DATE=${BUILD_DATE}
 
 RUN npm install -g pnpm
 
-RUN pnpm install --prod
+RUN pnpm install \
+  --allow-build=@datadog/pprof \
+  --allow-build=@newrelic/fn-inspect \
+  --allow-build=@newrelic/native-metrics \
+  --allow-build=protobufjs --prod
 
 EXPOSE 7001
 
