@@ -1,10 +1,7 @@
-import HomeClient from "@/app/_components/home/HomeClient";
-import { fetchPublicEventsSSR } from "@/lib/api/fetchPublicEvents";
+import AcquisitionLanding from "@/app/_components/AcquisitionLanding";
 
-export const dynamic = "force-dynamic"; // skip build-time prerender (avoids webpack SSR issue with Redux imports)
+export const dynamic = "force-dynamic"; // skip build-time prerender
 
-export default async function HomePage() {
-  const { items: initialEvents } = await fetchPublicEventsSSR();
-
-  return <HomeClient initialEvents={initialEvents} />;
+export default function HomePage() {
+  return <AcquisitionLanding />;
 }
