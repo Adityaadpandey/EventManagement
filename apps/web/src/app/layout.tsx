@@ -26,21 +26,21 @@ const inter = Inter({
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    metadataBase: new URL("https://www.tixin.in"),
+    metadataBase: new URL("https://www.tunyt.com"),
     title: {
-      default: "Tixin - Book Tickets & Host Events",
-      template: "%s | Tixin - India's Leading Event Platform",
+      default: "Tunyt - Book Tickets & Host Events",
+      template: "%s | Tunyt - India's Leading Event Platform",
     },
     description:
-      "Book and host events easily with Tixin. India's premier event management platform with inbuilt payment integration, automated ticket checking, custom event pages with personalized themes, and complete vendor management. Connect with sponsors, artists, and venues. Host fests, hackathons, concerts & workshops with detailed analytics. Seamless booking experience for attendees.",
+      "Book and host events easily with Tunyt. India's premier event management platform with inbuilt payment integration, automated ticket checking, custom event pages with personalized themes, and complete vendor management. Connect with sponsors, artists, and venues. Host fests, hackathons, concerts & workshops with detailed analytics. Seamless booking experience for attendees.",
     keywords: [
       // Brand Keywords - High Priority
-      "Tixin",
-      "Tixin India",
-      "Tixin event platform",
-      "Tixin.in",
-      "book tickets Tixin",
-      "host event on Tixin",
+      "Tunyt",
+      "Tunyt India",
+      "Tunyt event platform",
+      "Tunyt.in",
+      "book tickets Tunyt",
+      "host event on Tunyt",
 
       // Primary Action Keywords
       "buy tickets online",
@@ -112,22 +112,22 @@ export async function generateMetadata(): Promise<Metadata> {
     ],
     alternates: {
       languages: {
-        "en-IN": "https://www.tixin.in",
+        "en-IN": "https://www.tunyt.com",
       },
     },
     openGraph: {
       title:
-        "Tixin - Book Tickets & Host Events | India's Premier Event Platform",
+        "Tunyt - Book Tickets & Host Events | India's Premier Event Platform",
       description:
-        "Book and host events with ease on Tixin. Payment integration, custom event pages, ticket checking, vendor management & analytics. Perfect for fests, hackathons, concerts & workshops. Follow us @tixinhq",
-      url: "https://www.tixin.in",
-      siteName: "Tixin",
+        "Book and host events with ease on Tunyt. Payment integration, custom event pages, ticket checking, vendor management & analytics. Perfect for fests, hackathons, concerts & workshops. Follow us @tunyt",
+      url: "https://www.tunyt.com",
+      siteName: "Tunyt",
       images: [
         {
-          url: "https://www.tixin.in/logos/logoOnBlack.png",
+          url: "https://www.tunyt.com/logos/logoOnBlack.png",
           width: 1200,
           height: 630,
-          alt: "Tixin - India's Leading Event Booking and Hosting Platform",
+          alt: "Tunyt - India's Leading Event Booking and Hosting Platform",
         },
       ],
       locale: "en_IN",
@@ -136,15 +136,15 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      site: "@tixinHQ",
-      creator: "@tixinHQ",
-      title: "Tixin - Book & Host Events with Payment Integration",
+      site: "@Tunyt",
+      creator: "@Tunyt",
+      title: "Tunyt - Book & Host Events with Payment Integration",
       description:
-        "India's premier event platform. Book tickets or host events with custom pages, payment integration, and vendor management. Follow @tixinHQ for updates!",
+        "India's premier event platform. Book tickets or host events with custom pages, payment integration, and vendor management. Follow @Tunyt for updates!",
       images: [
         {
-          url: "https://www.tixin.in/logos/logoOnBlack.png",
-          alt: "Tixin Event Platform - Follow @tixinHQ",
+          url: "https://www.tunyt.com/logos/logoOnBlack.png",
+          alt: "Tunyt Event Platform - Follow @Tunyt",
         },
       ],
     },
@@ -162,16 +162,16 @@ export async function generateMetadata(): Promise<Metadata> {
     verification: {
       google: "BNY6wgxrGFUkTXiKyJWJ-SekyawGaeoFxs5BoirrS80",
     },
-    authors: [{ name: "Tixin", url: "https://www.tixin.in" }],
-    creator: "Tixin",
-    publisher: "Tixin",
+    authors: [{ name: "Tunyt", url: "https://www.tunyt.com" }],
+    creator: "Tunyt",
+    publisher: "Tunyt",
     category: "Events & Entertainment",
     classification: "Event Management and Ticketing Platform",
     other: {
       "mobile-web-app-capable": "yes",
       "apple-mobile-web-app-capable": "yes",
       "apple-mobile-web-app-status-bar-style": "black-translucent",
-      instagram: "@tixinhq",
+      instagram: "@tunyt",
       linkedin: "company/tixin",
     },
   };
@@ -199,8 +199,8 @@ export default async function RootLayout({
     const image = img
       ? img.startsWith("http")
         ? img
-        : `https://www.tixin.in${img}`
-      : "https://www.tixin.in/logos/logoOnBlack.png";
+        : `https://www.tunyt.com${img}`
+      : "https://www.tunyt.com/logos/logoOnBlack.png";
 
     return {
       "@type": "Event",
@@ -229,10 +229,10 @@ export default async function RootLayout({
       image,
       description: event.description
         ? stripHtml(event.description).slice(0, 200)
-        : `Book tickets for ${event.title} on Tixin`,
+        : `Book tickets for ${event.title} on Tunyt`,
       offers: {
         "@type": "Offer",
-        url: `https://www.tixin.in/event/${event.eventId}`,
+        url: `https://www.tunyt.com/event/${event.eventId}`,
         price: event.minPrice ?? 0,
         priceCurrency: "INR",
         availability: "https://schema.org/InStock",
@@ -240,8 +240,8 @@ export default async function RootLayout({
       },
       organizer: {
         "@type": "Organization",
-        name: event.lister?.user?.name || "Tixin",
-        url: "https://www.tixin.in",
+        name: event.lister?.user?.name || "Tunyt",
+        url: "https://www.tunyt.com",
       },
     };
   });
@@ -250,14 +250,14 @@ export default async function RootLayout({
     {
       "@context": "https://schema.org",
       "@type": "Organization",
-      name: "Tixin",
-      alternateName: ["Tixin Event Platform", "Tixin India", "Tixin.in"],
-      url: "https://www.tixin.in",
-      logo: "https://www.tixin.in/logos/icon.png",
-      image: "https://www.tixin.in/logos/logoOnBlack.png",
+      name: "Tunyt",
+      alternateName: ["Tunyt Event Platform", "Tunyt India", "Tunyt.in"],
+      url: "https://www.tunyt.com",
+      logo: "https://www.tunyt.com/logos/icon.png",
+      image: "https://www.tunyt.com/logos/logoOnBlack.png",
       description:
-        "Book and host events easily with Tixin. India's premier event management platform with payment integration, automated ticket checking, custom event pages, and complete vendor management. Connect with sponsors, artists, and venues for seamless event hosting.",
-      slogan: "Book and host events easily with Tixin",
+        "Book and host events easily with Tunyt. India's premier event management platform with payment integration, automated ticket checking, custom event pages, and complete vendor management. Connect with sponsors, artists, and venues for seamless event hosting.",
+      slogan: "Book and host events easily with Tunyt",
       foundingDate: "2023",
       foundingLocation: {
         "@type": "Place",
@@ -272,10 +272,10 @@ export default async function RootLayout({
         availableLanguage: ["English", "Hindi"],
       },
       sameAs: [
-        "https://www.instagram.com/tixinhq",
+        "https://www.instagram.com/tunyt",
         "https://www.linkedin.com/company/tixin/",
-        "https://x.com/tixinHQ",
-        "https://twitter.com/tixinHQ",
+        "https://x.com/Tunyt",
+        "https://twitter.com/Tunyt",
       ],
       areaServed: {
         "@type": "Country",
@@ -293,9 +293,9 @@ export default async function RootLayout({
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      name: "Tixin",
-      alternateName: "Tixin Event Platform",
-      url: "https://www.tixin.in",
+      name: "Tunyt",
+      alternateName: "Tunyt Event Platform",
+      url: "https://www.tunyt.com",
       description:
         "Book and host events easily. India's leading event management platform with payment integration and vendor services.",
       inLanguage: "en-IN",
@@ -303,23 +303,23 @@ export default async function RootLayout({
         "@type": "SearchAction",
         target: {
           "@type": "EntryPoint",
-          urlTemplate: "https://www.tixin.in/search?q={search_term_string}",
+          urlTemplate: "https://www.tunyt.com/search?q={search_term_string}",
         },
         "query-input": "required name=search_term_string",
       },
       publisher: {
         "@type": "Organization",
-        name: "Tixin",
+        name: "Tunyt",
         logo: {
           "@type": "ImageObject",
-          url: "https://www.tixin.in/logos/icon.png",
+          url: "https://www.tunyt.com/logos/icon.png",
         },
       },
     },
     {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
-      name: "Tixin Event Management Platform",
+      name: "Tunyt Event Management Platform",
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       offers: {
@@ -351,7 +351,7 @@ export default async function RootLayout({
     {
       "@context": "https://schema.org",
       "@type": "ItemList",
-      name: "Upcoming Events on Tixin",
+      name: "Upcoming Events on Tunyt",
       description:
         "Discover and book tickets for cultural fests, tech events, hackathons, concerts, and workshops across India",
       numberOfItems: eventSchema.length,
@@ -367,10 +367,10 @@ export default async function RootLayout({
       name: "Event Hosting and Management Services",
       provider: {
         "@type": "Organization",
-        name: "Tixin",
-        url: "https://www.tixin.in",
+        name: "Tunyt",
+        url: "https://www.tunyt.com",
         sameAs: [
-          "https://www.instagram.com/tixinhq",
+          "https://www.instagram.com/tunyt",
           "https://www.linkedin.com/company/tixin/",
         ],
       },
@@ -385,7 +385,7 @@ export default async function RootLayout({
       },
       hasOfferCatalog: {
         "@type": "OfferCatalog",
-        name: "Tixin Services",
+        name: "Tunyt Services",
         itemListElement: [
           {
             "@type": "Offer",
@@ -461,7 +461,7 @@ export default async function RootLayout({
           "@type": "ListItem",
           position: 1,
           name: "Home",
-          item: "https://www.tixin.in",
+          item: "https://www.tunyt.com",
         },
       ],
     },
@@ -471,42 +471,42 @@ export default async function RootLayout({
       mainEntity: [
         {
           "@type": "Question",
-          name: "How do I book tickets on Tixin?",
+          name: "How do I book tickets on Tunyt?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Booking tickets on Tixin is simple. Browse events on our platform, select your desired event, choose the number of tickets, and complete the payment through our secure integrated payment gateway. You'll instantly receive a confirmation email with QR code tickets that can be verified at the venue.",
+            text: "Booking tickets on Tunyt is simple. Browse events on our platform, select your desired event, choose the number of tickets, and complete the payment through our secure integrated payment gateway. You'll instantly receive a confirmation email with QR code tickets that can be verified at the venue.",
           },
         },
         {
           "@type": "Question",
-          name: "How can I host an event on Tixin?",
+          name: "How can I host an event on Tunyt?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Hosting an event on Tixin is as easy as creating a social media post. Simply sign up, create your custom event page with personalized themes and styles, set your ticket prices and quantities, and publish. Tixin handles payment integration, ticket generation, QR code verification, and provides detailed analytics. No technical expertise required!",
+            text: "Hosting an event on Tunyt is as easy as creating a social media post. Simply sign up, create your custom event page with personalized themes and styles, set your ticket prices and quantities, and publish. Tunyt handles payment integration, ticket generation, QR code verification, and provides detailed analytics. No technical expertise required!",
           },
         },
         {
           "@type": "Question",
-          name: "Does Tixin provide vendor management and sponsor connections?",
+          name: "Does Tunyt provide vendor management and sponsor connections?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Yes! Tixin offers comprehensive vendor management services. We connect event organizers with trusted vendors for stage setup, sound systems, lighting, artists, performers, venues, and sponsors. Our platform simplifies vendor coordination and helps you find all event services in one place.",
+            text: "Yes! Tunyt offers comprehensive vendor management services. We connect event organizers with trusted vendors for stage setup, sound systems, lighting, artists, performers, venues, and sponsors. Our platform simplifies vendor coordination and helps you find all event services in one place.",
           },
         },
         {
           "@type": "Question",
-          name: "What features does Tixin offer for event organizers?",
+          name: "What features does Tunyt offer for event organizers?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Tixin provides custom event pages with personalized themes, integrated payment processing, automated QR code ticket checking, vendor management, sponsor connections, real-time analytics dashboard, attendee management, and promotional tools. Everything you need to host successful events in one platform.",
+            text: "Tunyt provides custom event pages with personalized themes, integrated payment processing, automated QR code ticket checking, vendor management, sponsor connections, real-time analytics dashboard, attendee management, and promotional tools. Everything you need to host successful events in one platform.",
           },
         },
         {
           "@type": "Question",
-          name: "Is Tixin free to use?",
+          name: "Is Tunyt free to use?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Yes, event organizers can list their events on Tixin for free. We charge a small service fee on ticket sales to maintain our platform and provide excellent service. Attendees can browse and discover events completely free.",
+            text: "Yes, event organizers can list their events on Tunyt for free. We charge a small service fee on ticket sales to maintain our platform and provide excellent service. Attendees can browse and discover events completely free.",
           },
         },
       ],
@@ -516,12 +516,12 @@ export default async function RootLayout({
       "@type": "ProfilePage",
       mainEntity: {
         "@type": "Organization",
-        name: "Tixin",
-        url: "https://www.tixin.in",
+        name: "Tunyt",
+        url: "https://www.tunyt.com",
         sameAs: [
-          "https://www.instagram.com/tixinhq",
+          "https://www.instagram.com/tunyt",
           "https://www.linkedin.com/company/tixin/",
-          "https://x.com/tixinHQ",
+          "https://x.com/Tunyt",
         ],
       },
     },
@@ -551,7 +551,7 @@ export default async function RootLayout({
         <link rel="shortcut icon" href="/logos/roundedLogo.svg" />
 
         {/* Canonical */}
-        <link rel="canonical" href="https://www.tixin.in" />
+        <link rel="canonical" href="https://www.tunyt.com" />
 
         {/* Preconnect for Performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -569,13 +569,13 @@ export default async function RootLayout({
         {/* Social Media Profile Links */}
         <meta
           property="og:see_also"
-          content="https://www.instagram.com/tixinhq"
+          content="https://www.instagram.com/tunyt"
         />
         <meta
           property="og:see_also"
           content="https://www.linkedin.com/company/tixin/"
         />
-        <meta property="og:see_also" content="https://x.com/tixinHQ" />
+        <meta property="og:see_also" content="https://x.com/Tunyt" />
 
         <meta
           name="subject"
@@ -583,7 +583,7 @@ export default async function RootLayout({
         />
         <meta
           name="abstract"
-          content="Book and host events easily with Tixin - India's premier event platform"
+          content="Book and host events easily with Tunyt - India's premier event platform"
         />
 
         <script

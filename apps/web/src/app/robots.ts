@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin", "/lister", "/auth", "/profile", "/checker"],
       },
     ],
-    sitemap: "https://www.tixin.in/sitemap.xml",
+    sitemap: "https://www.tunyt.com/sitemap.xml",
   };
 }
