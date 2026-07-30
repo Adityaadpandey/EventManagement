@@ -6,10 +6,9 @@ async function fetchPublicEvents({ page = 1, limit = 100 }) {
     let currentPage = page;
 
     while (true) {
-      const response = await fetch(
-        `https://api.tixin.in/api/v1/event/public?page=${currentPage}&limit=${limit}`,
-        { next: { revalidate: 3600 } },
-      );
+      const response = await fetch(`https://api.tunyt.com/api/v1/events`, {
+        next: { revalidate: 3600 },
+      });
       if (!response.ok)
         throw new Error(`API request failed with status ${response.status}`);
       const json = await response.json();
@@ -31,13 +30,13 @@ export async function GET() {
 
   const urls = [
     {
-      loc: "https://www.tixin.in",
+      loc: "https://www.tunyt.com",
       lastmod: new Date().toISOString(),
       changefreq: "daily",
       priority: 1.0,
     },
     ...events.items.map((ev: any) => ({
-      loc: `https://www.tixin.in/event/${ev.eventId}`,
+      loc: `https://www.tunyt.com/events/${ev.eventId}`,
       lastmod:
         ev.date && !isNaN(Number(new Date(ev.date)))
           ? new Date(ev.date).toISOString()

@@ -12,9 +12,9 @@ export default function ClientLayout({
   const pathname = usePathname();
 
   const hideNavOnRoutes = ["/event", "/checker", "/admin"];
-  const shouldHideNav = hideNavOnRoutes.some((path) =>
-    pathname.startsWith(path),
-  );
+  const shouldHideNav =
+    pathname === "/" ||
+    hideNavOnRoutes.some((path) => pathname.startsWith(path));
 
   return (
     <main className="flex flex-col h-screen relative overflow-auto">

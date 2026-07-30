@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://api.tixin.in/api/v1";
+  process.env.NEXT_PUBLIC_API_URL || "https://api.tunyt.com/api/v1";
 
 async function fetchAllEventIds(): Promise<
   { eventId: string; date?: string }[]
@@ -41,19 +41,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
-      url: "https://www.tixin.in",
+      url: "https://www.tunyt.com",
       lastModified: now,
       changeFrequency: "daily",
       priority: 1.0,
     },
     {
-      url: "https://www.tixin.in/about-us",
+      url: "https://www.tunyt.com/terms",
       lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
+      changeFrequency: "yearly",
+      priority: 0.2,
     },
     {
-      url: "https://www.tixin.in/privacy-policy",
+      url: "https://www.tunyt.com/privacy",
       lastModified: now,
       changeFrequency: "yearly",
       priority: 0.3,
@@ -61,7 +61,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   const eventRoutes: MetadataRoute.Sitemap = events.map((event) => ({
-    url: `https://www.tixin.in/event/${event.eventId}`,
+    url: `https://www.tunyt.com/event/${event.eventId}`,
     lastModified: event.date ? new Date(event.date) : now,
     changeFrequency: "weekly" as const,
     priority: 0.8,
