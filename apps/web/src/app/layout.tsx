@@ -152,6 +152,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "events in pune",
       "events in chennai",
       "events in kolkata",
+      "events in gurugram",
       "events in chandigarh",
       "events in ludhiana",
       "events in jalandhar",
