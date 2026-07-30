@@ -34,81 +34,145 @@ export async function generateMetadata(): Promise<Metadata> {
     description:
       "Book and host events easily with Tunyt. India's premier event management platform with inbuilt payment integration, automated ticket checking, custom event pages with personalized themes, and complete vendor management. Connect with sponsors, artists, and venues. Host fests, hackathons, concerts & workshops with detailed analytics. Seamless booking experience for attendees.",
     keywords: [
-      // Brand Keywords - High Priority
-      "Tunyt",
-      "Tunyt India",
-      "Tunyt event platform",
-      "Tunyt.in",
-      "book tickets Tunyt",
-      "host event on Tunyt",
+      // ==========================
+      // Brand (Highest Priority)
+      // ==========================
+      "tunyt",
+      "tunyt india",
+      "tunyt events",
+      "tunyt tickets",
+      "tunyt event platform",
+      "tunyt ticket booking",
+      "tunyt host events",
+      "tunyt.com",
 
-      // Primary Action Keywords
-      "buy tickets online",
+      // ==========================
+      // Primary Search Intent
+      // ==========================
+      "event ticket booking",
       "book event tickets",
-      "host event online",
-      "create event page",
-      "sell event tickets",
-      "event hosting platform India",
+      "buy event tickets",
+      "online event booking",
+      "discover events",
+      "find events near me",
+      "things to do near me",
+      "upcoming events",
+      "events near me today",
+      "weekend events",
+      "local events",
+      "event discovery platform",
 
-      // Core Features
-      "payment integration for events",
-      "ticket checking system",
-      "QR code ticket verification",
-      "custom event pages",
-      "event analytics dashboard",
-      "vendor management platform",
-
-      // Vendor & Services
-      "find event sponsors",
-      "hire artists for events",
-      "event venue booking",
-      "stage setup services",
-      "event vendor connections",
-      "sponsor contacts for events",
-
-      // Event Types
-      "fest tickets India",
-      "hackathon registration",
-      "concert tickets online",
-      "cultural fest booking",
-      "tech events India",
-      "college fest tickets",
-      "DJ night tickets",
-      "workshop registration",
-      "university events",
-      "music festival tickets",
-      "comedy show tickets",
-
-      // Location-based - Major Cities
-      "events in India",
-      "Punjab events",
-      "Jalandhar events",
-      "Ludhiana events",
-      "Chandigarh events",
-      "Delhi NCR events",
-      "Mumbai events",
-      "Bangalore events",
-      "Hyderabad events",
-      "local events near me",
-      "nearby events",
-
-      // Organizer-focused
+      // ==========================
+      // Event Hosting
+      // ==========================
+      "host an event",
+      "create an event",
+      "publish an event",
+      "sell tickets online",
+      "ticket selling platform",
+      "event management platform",
       "event organizer platform",
-      "event management software",
-      "ticket booking system for organizers",
-      "event page builder",
-      "sell tickets online India",
       "event registration platform",
+      "event booking platform",
+      "online ticketing platform",
+      "event management software",
+      "ticket booking software",
+      "event website builder",
+      "event page builder",
+      "event registration software",
 
-      // Long-tail & Question Keywords
-      "how to host an event online",
-      "how to sell event tickets",
+      // ==========================
+      // College & Student Events
+      // ==========================
+      "college fest tickets",
+      "college events",
+      "campus events",
+      "university events",
+      "student events",
+      "college fest registration",
+      "hackathon registration",
+      "hackathon tickets",
+      "tech fest tickets",
+      "cultural fest tickets",
+      "freshers party tickets",
+      "farewell party tickets",
+
+      // ==========================
+      // Entertainment
+      // ==========================
+      "concert tickets",
+      "music festival tickets",
+      "dj night tickets",
+      "standup comedy tickets",
+      "comedy show tickets",
+      "live music events",
+      "open mic events",
+      "gaming tournament registration",
+      "esports tournament",
+      "startup events",
+      "networking events",
+
+      // ==========================
+      // Business Events
+      // ==========================
+      "conference registration",
+      "seminar registration",
+      "workshop registration",
+      "bootcamp registration",
+      "webinar registration",
+      "business networking events",
+      "startup meetup",
+      "tech conference india",
+
+      // ==========================
+      // Features
+      // ==========================
+      "online ticket payments",
+      "event payment integration",
+      "QR ticket verification",
+      "QR code tickets",
+      "digital event tickets",
+      "event check in",
+      "event analytics",
+      "event dashboard",
+      "vendor management",
+      "sponsor management",
+      "artist booking",
+      "venue booking",
+      "custom event pages",
+
+      // ==========================
+      // Location Keywords
+      // ==========================
+      "events in india",
+      "events in delhi",
+      "events in mumbai",
+      "events in bangalore",
+      "events in hyderabad",
+      "events in pune",
+      "events in chennai",
+      "events in kolkata",
+      "events in chandigarh",
+      "events in ludhiana",
+      "events in jalandhar",
+      "events in punjab",
+
+      // ==========================
+      // Long-tail
+      // ==========================
+      "best event ticketing platform india",
+      "best platform to host events",
+      "how to sell event tickets online",
+      "how to organize an event",
+      "how to host a college fest",
       "how to get event sponsors",
-      "find artists for college fest",
-      "best event ticketing platform India",
-      "event management platform for students",
-      "free event listing India",
-      "online ticket sales platform",
+      "find vendors for events",
+      "book tickets online india",
+      "free event listing platform",
+      "event management platform india",
+      "online event ticket booking india",
+      "college event management platform",
+      "student event platform india",
     ],
     alternates: {
       languages: {

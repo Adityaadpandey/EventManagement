@@ -6,10 +6,9 @@ async function fetchPublicEvents({ page = 1, limit = 100 }) {
     let currentPage = page;
 
     while (true) {
-      const response = await fetch(
-        `https://api.tunyt.com/api/v1/event/public?page=${currentPage}&limit=${limit}`,
-        { next: { revalidate: 3600 } },
-      );
+      const response = await fetch(`https://api.tunyt.com/api/v1/events`, {
+        next: { revalidate: 3600 },
+      });
       if (!response.ok)
         throw new Error(`API request failed with status ${response.status}`);
       const json = await response.json();
@@ -37,7 +36,7 @@ export async function GET() {
       priority: 1.0,
     },
     ...events.items.map((ev: any) => ({
-      loc: `https://www.tunyt.com/event/${ev.eventId}`,
+      loc: `https://www.tunyt.com/events/${ev.eventId}`,
       lastmod:
         ev.date && !isNaN(Number(new Date(ev.date)))
           ? new Date(ev.date).toISOString()

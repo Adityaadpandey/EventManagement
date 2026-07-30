@@ -47,13 +47,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1.0,
     },
     {
-      url: "https://www.tunyt.com/about-us",
+      url: "https://www.tunyt.com/terms",
       lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
+      changeFrequency: "yearly",
+      priority: 0.2,
     },
     {
-      url: "https://www.tunyt.com/privacy-policy",
+      url: "https://www.tunyt.com/privacy",
       lastModified: now,
       changeFrequency: "yearly",
       priority: 0.3,
